@@ -1,878 +1,620 @@
 <!DOCTYPE html>
 <html lang="en">
 
-	<head>
+<head>
 
-		<!-- Meta tags -->
-		<meta charset="UTF-8">
-		<meta name="viewport" content="width=device-width, initial-scale=1.0">
-		<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<!-- Meta tags -->
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
 
-		<meta name="description" content="Nicolas Meseguer's website, biography, education, previous experience and published papers."/>
-		<meta name="keywords" content="nicolasmeseguer, NicolasMeseguer, Nicolas Meseguer, nicolas meseguer youtube, nicolas meseguer github, nicolas meseguer murcia, nicolas meseguer cv, nicolas meseguer portfolio"/>
-		
-		<meta name="author" content="Nicolas Meseguer" />
-		<meta name="copyright" content="Work protected by copyright; no distribution without permission." />
-		
-		<!-- Title + Icon -->
-		<title>Nicolas Meseguer</title>
-		<link rel="icon" type="image/x-icon" href="assets/documents/imgs/NicolasMeseguer.ico">
+	<meta name="description" content="Jack V. Le — UT Dallas computer science, research, teaching, and publications." />
+	<meta name="keywords"
+		content="Jack V. Le, nietztein, UT Dallas, computer science, undergraduate research, LLM, software engineering" />
 
-		<!-- Improve SEO -->
-		<meta name="robots" content="index,follow" />
+	<meta name="author" content="Jack V. Le" />
+	<meta name="copyright" content="Work protected by copyright; no distribution without permission." />
 
-		<!-- Styles -->
-		<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-0evHe/X+R7YkIZDRvuzKMRqM+OrBnVFBL6DOitfPri4tjfHxaWutUpFmBp4vmVor" crossorigin="anonymous">
-		<link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v6.2.1/css/all.css">
-		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
-		<link rel="stylesheet" href="https://cdn.rawgit.com/jpswalsh/academicons/master/css/academicons.min.css">
-		<link rel="stylesheet" href="assets/css/main.css">
+	<!-- Title + Icon -->
+	<title>Jack V. Le</title>
+	<link rel="icon" type="image/png" href="https://github.com/nietztein.png">
 
-	</head>
+	<!-- Improve SEO -->
+	<meta name="robots" content="index,follow" />
 
-	<!-- Google tag (gtag.js) & Google Analytics -->
-	<script>
-        fetch('./assets/js/config.json')
-            .then(response => response.json())
-            .then(config => {
-                const scriptTag = document.createElement('script');
-                scriptTag.async = true;
-                scriptTag.src = `https://www.googletagmanager.com/gtag/js?id=${config.googleAnalyticsMeasurementId}`;
-                document.head.appendChild(scriptTag);
+	<!-- Styles -->
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet"
+		integrity="sha384-0evHe/X+R7YkIZDRvuzKMRqM+OrBnVFBL6DOitfPri4tjfHxaWutUpFmBp4vmVor" crossorigin="anonymous">
+	<link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v6.2.1/css/all.css">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+	<link rel="stylesheet" href="https://cdn.rawgit.com/jpswalsh/academicons/master/css/academicons.min.css">
+	<link rel="stylesheet" href="assets/css/main.css">
 
-                window.dataLayer = window.dataLayer || [];
-                function gtag(){dataLayer.push(arguments);}
-                gtag('js', new Date());
+</head>
 
-                gtag('config', config.googleAnalyticsMeasurementId);
-            })
-            .catch(error => console.error('Error loading the configuration:', error));
-    </script>
+<!-- Google tag (gtag.js) & Google Analytics -->
+<script>
+	fetch('./assets/js/config.json')
+		.then(response => response.json())
+		.then(config => {
+			const scriptTag = document.createElement('script');
+			scriptTag.async = true;
+			scriptTag.src = `https://www.googletagmanager.com/gtag/js?id=${config.googleAnalyticsMeasurementId}`;
+			document.head.appendChild(scriptTag);
 
-	<body>
+			window.dataLayer = window.dataLayer || [];
+			function gtag() { dataLayer.push(arguments); }
+			gtag('js', new Date());
 
-		<!-- Bottom rounded button -->
-		<div class="options-button" id="options-toggler"><i class="fa-light fa-arrows-repeat"></i></div>
-		<div class="options-button" id="theme"><i class="fa-duotone fa-lightbulb"></i></div>
-		<div class="options-button" id="lan"><img class="lang-flag" src="https://flagcdn.com/w20/us.png" alt="Flag indicating the english language is selected"></div>
+			gtag('config', config.googleAnalyticsMeasurementId);
+		})
+		.catch(error => console.error('Error loading the configuration:', error));
+</script>
+
+<body>
+
+	<!-- Bottom rounded button -->
+	<div class="options-button" id="options-toggler"><i class="fa-light fa-arrows-repeat"></i></div>
+	<div class="options-button" id="theme"><i class="fa-duotone fa-lightbulb"></i></div>
+	<div class="options-button" id="lan"><img class="lang-flag" src="https://flagcdn.com/w20/us.png"
+			alt="Flag indicating the english language is selected"></div>
 
 
-		<!-- Navbar  -->
-		<nav id="top-nav" class="navbar navbar-expand-md navbar-light bg-light flex-md-nowrap flex-wrap">
-			<div class="container justify-content-center">
-				<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#collapsingNavbar3">
-					<span class="navbar-toggler-icon"></span>
-				</button>
-				<div class="navbar-collapse collapse flex-grow-1 justify-content-center" id="collapsingNavbar3">
-					<ul class="navbar-nav mx-auto language" id="navbarList">
-						<li class="nav-item">
-							<a class="nav-link active" id="aboutme" href="#" 
-								data-es="Sobre Mi" 
-								data-en="About Me">
-							</a>
-						</li>
-						<li class="nav-item">
-							<a class="nav-link" id="education" href="#" 
-								data-es="Educación" 
-								data-en="Education">
+	<!-- Navbar  -->
+	<nav id="top-nav" class="navbar navbar-expand-md navbar-light bg-light flex-md-nowrap flex-wrap">
+		<div class="container justify-content-center">
+			<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#collapsingNavbar3">
+				<span class="navbar-toggler-icon"></span>
+			</button>
+			<div class="navbar-collapse collapse flex-grow-1 justify-content-center" id="collapsingNavbar3">
+				<ul class="navbar-nav mx-auto language" id="navbarList">
+					<li class="nav-item">
+						<a class="nav-link active" id="aboutme" href="#" data-es="Sobre Mi" data-en="About Me">
 						</a>
-						</li>
-						<li class="nav-item">
-							<a class="nav-link" id="publications" href="#" 
-								data-es="Publicaciones" 
-								data-en="Publications">
+					</li>
+					<li class="nav-item">
+						<a class="nav-link" id="education" href="#" data-es="Educación" data-en="Education">
 						</a>
-						</li>
-						<li class="nav-item">
-							<a class="nav-link" id="blog" href="#" 
-								data-es="Blog" 
-								data-en="Blog">
-							</a>
-						</li>
-						<li class="nav-item">
-							<a class="nav-link" id="academic" href="#" 
-								data-es="Enseñanza" 
-								data-en="Academic">
-							</a>
-						</li>
-						<li class="nav-item">
+					</li>
+					<li class="nav-item">
+						<a class="nav-link" id="publications" href="#" data-es="Publicaciones" data-en="Publications">
+						</a>
+					</li>
+					<li class="nav-item">
+						<a class="nav-link" id="blog" href="#" data-es="Textos y prensa" data-en="Writing &amp; press">
+						</a>
+					</li>
+					<li class="nav-item">
+						<a class="nav-link" id="academic" href="#" data-es="Enseñanza" data-en="Teaching">
+						</a>
+					</li>
+					<!-- <li class="nav-item">
 							<a class="nav-link" id="projects" href="#" 
 								data-es="Proyectos" 
 								data-en="Side Projects">
 							</a>
-						</li>
-						<li class="nav-item">
-							<a class="nav-link" id="conferences" href="#" 
-								data-es="Conferencias" 
-								data-en="Conferences">
-							</a>
-						</li>
-						<li class="nav-item">
-							<a class="nav-link" id="experience" href="#" 
-								data-es="Experiencia" 
-								data-en="Experience">
-							</a>
-						</li>
-						<!-- Example using Photos -->
-						<!-- <li class="nav-item">
+						</li> -->
+					<li class="nav-item">
+						<a class="nav-link" id="conferences" href="#" data-es="Conferencias" data-en="Conferences">
+						</a>
+					</li>
+					<li class="nav-item">
+						<a class="nav-link" id="experience" href="#" data-es="Experiencia" data-en="Experience">
+						</a>
+					</li>
+					<!-- Example using Photos -->
+					<!-- <li class="nav-item">
 							<a class="nav-link" id="photos" href="#" 
 								data-es="Fotos" 
 								data-en="Photos">
 							</a>
 						</li> -->
+				</ul>
+			</div>
+		</div>
+	</nav>
+
+	<div class="container" id="main-content">
+		<div class="row content" id="section-content">
+
+			<!-- Jack V. Le profile and contact info -->
+			<div id="leftPanel" class="col-md-3 language">
+				<div class="row mb-3">
+					<div class="col">
+						<img src="https://github.com/nietztein.png"
+							class="rounded me-auto d-block img-fluid profilepicture" alt="Jack V. Le profile picture">
+					</div>
+				</div>
+
+				<h3 class="mb-2">Jack V. Le</h3>
+
+				<p class="mb-4">
+					<span class="t-secondary"
+						data-es="Estudiante de licenciatura en Informática con Honores en la University of Texas at Dallas (UTD). "
+						data-en="Bachelor of Science in Computer Science with Honours student at the University of Texas at Dallas (UT Dallas). "></span>
+					<span data-es="Graduación prevista: dic. 2026." data-en="Expected graduation: Dec 2026."></span>
+				</p>
+
+				<div class="row mb-2">
+					<div class="col-1">
+						<i class="fal fa-map-marker-alt" aria-hidden="true"></i>
+					</div>
+
+					<div class="col-10">
+						Garland, TX,
+						<span data-es="Estados Unidos" data-en="United States">
+						</span>
+					</div>
+				</div>
+
+				<div class="row mb-2">
+					<div class="col-1">
+						<i class="fa-solid fa-link" aria-hidden="true"></i>
+					</div>
+
+					<div class="col-10">
+						<a href="https://nietztein.github.io/" class="link-dark" target="_blank">nietztein.github.io</a>
+					</div>
+				</div>
+
+				<div class="row mb-2">
+					<div class="col-1">
+						<i class="ai ai-cv" aria-hidden="true"></i>
+					</div>
+
+					<div class="col-10">
+						<a href="assets/documents/CV_Template_Academic.pdf" class="link-dark" target="_blank"
+							data-es="CV académico [PDF]" data-en="Academic CV [Updated 5/1/26]"></a>
+					</div>
+				</div>
+
+				<div class="row mb-2">
+					<div class="col-1">
+						<i class="fa-regular fa-envelope" aria-hidden="true"></i>
+					</div>
+
+					<div class="col-10">
+						<a href="mailto:jackle12533@gmail.com" class="link-dark">jackle12533@gmail.com</a>
+					</div>
+				</div>
+
+				<div class="row mb-2">
+					<div class="col-1">
+						<i class="fa-brands fa-linkedin" aria-hidden="true"></i>
+					</div>
+
+					<div class="col-10">
+						<a href="https://www.linkedin.com/in/jack-le-utd/" class="link-dark" target="_blank"
+							rel="noopener noreferrer">LinkedIn</a>
+					</div>
+				</div>
+
+				<div class="row mb-2">
+					<div class="col-1">
+						<i class="fab fa-github" aria-hidden="true"></i>
+					</div>
+
+					<div class="col-10">
+						<a href="https://github.com/nietztein" class="link-dark" target="_blank">GitHub</a>
+					</div>
+				</div>
+			</div>
+
+			<!-- About Me -->
+			<div class="col-md-8 offset-md-1 mb-5 active" id="aboutmeContent">
+				<div class="container">
+					<div class="row language">
+						<p class="mt-2 justify"
+							data-es="Investigador de pregrado en la Universidad de Texas en Dallas (UT Dallas) desde agosto de 2022, con honores Phi Kappa Phi y Collegium V. Su investigación se centra en los modelos de lenguaje — cómo representan el significado, dónde generalizan y dónde fallan — con intereses más amplios que conectan el aprendizaje automático con preguntas sobre cognición y descubrimiento científico. Ha realizado una pasantía de investigación DAAD RISE en Alemania y una pasantía orientada a políticas en CSET, además de trabajo aplicado en visión por computador, ingeniería de software y aprendizaje automático para materiales y texto científico. Imparte clase y califica cursos introductorios de informática y participa en organizaciones estudiantiles y labores de divulgación."
+							data-en="Undergraduate researcher at the University of Texas at Dallas since August 2022, with Phi Kappa Phi and Collegium V Honors. His research centers on language models — how they represent meaning, where they generalize, and where they break — with broader interests connecting machine learning to questions about cognition and scientific discovery. He has held a DAAD RISE research internship in Germany and a policy-oriented internship at CSET, alongside applied work in computer vision, software engineering, and ML for materials and scientific text. He teaches and grades introductory CS courses and is active in student organizations and outreach.">
+						</p>
+
+						<h4 id="researchinterestsH4" class="mt-2" data-es="Áreas de Investigación"
+							data-en="Research Interests">
+						</h4>
+
+						<ul class="mt-1">
+
+							<li class="justify"
+								data-es="Modelos de lenguaje y la estructura del significado que aprenden — incluido el análisis de representaciones, la generalización y la evaluación conductual de sistemas frontera."
+								data-en="Language models and the structure of meaning they learn — including representation analysis, generalization, and behavioral evaluation of frontier systems.">
+							</li>
+
+							<li class="justify mt-2"
+								data-es="Conexiones entre los grandes modelos de lenguaje y el procesamiento del lenguaje humano, con herramientas de la lingüística computacional y la ciencia cognitiva."
+								data-en="Connections between large language models and human language processing, drawing on tools from computational linguistics and cognitive science.">
+							</li>
+
+							<li class="justify mt-2"
+								data-es="Intereses afines incluyen aprendizaje automático para texto científico y de patentes, ML para ciencia de materiales, y equidad y evaluación de la representación en sistemas de IA de alto riesgo."
+								data-en="Adjacent interests include machine learning for scientific and patent text, ML for materials science, and fairness and representation evaluation in high-stakes AI systems.">
+							</li>
+
+						</ul>
+
+						<h4 id="honors-and-awards" class="mt-2" data-es="Premios y Distinciones"
+							data-en="Honors and Awards"></h4>
+
+						<ul class="mt-1">
+
+							<li class="abme-honors-bullet">
+								<strong>2026 DAAD RISE Scholarship</strong> — $5,000
+							</li>
+
+							<li class="abme-honors-bullet mt-2">
+								<strong>2026 Undergraduate Research Scholarship Award (URSA)</strong> — $500
+							</li>
+
+							<li class="abme-honors-bullet mt-2">
+								<strong>2026 Undergraduate Research Scholarship Award (URSA)</strong> — $500
+							</li>
+
+							<li class="abme-honors-bullet mt-2">
+								<strong>2025 Barry Goldwater Scholarship</strong> — $7,500
+							</li>
+
+							<li class="abme-honors-bullet mt-2">
+								<strong>2025 Undergraduate Research Scholarship Award (URSA)</strong> — $500
+							</li>
+
+							<li class="abme-honors-bullet mt-2">
+								<strong>2024 Undergraduate Research Apprenticeship Fellowship (URAP)</strong> — $4,500
+							</li>
+
+							<li class="abme-honors-bullet mt-2">
+								<strong>2024 People’s Choice Award</strong>, Association for Computing Machinery
+								Projects
+							</li>
+
+							<li class="abme-honors-bullet mt-2">
+								<strong>2024 Leland Dillaha MSEE ’97 Undergraduate Scholarship</strong> — $1,000
+							</li>
+
+							<li class="abme-honors-bullet mt-2">
+								<strong>2022 National Merit Scholarship</strong>, UT Dallas — $3,000
+							</li>
+						</ul>
+					</div>
+				</div>
+			</div>
+
+
+			<!-- Education -->
+			<div class="col-md-8 offset-md-1 mb-5" id="educationContent">
+				<div class="container">
+					<div class="row mt-2 language">
+						<h2 class="academic-year-h2" data-en="University of Texas at Dallas"
+							data-es="Universidad de Texas en Dallas"></h2>
+						<div class="trnsf-thin"
+							data-es="Richardson, TX — agosto 2022 a la fecha; graduación prevista: dic. 2026"
+							data-en="Richardson, TX — August 2022–Present; expected graduation: Dec 2026">
+						</div>
+
+						<h3 class="h4 mt-3 mb-0" data-es="Grado en Ciencias de la Computación con Honores"
+							data-en="B.S. in Computer Science with Honours"></h3>
+						<p class="mt-2 justify"
+							data-es="Especializaciones secundarias (minors) en Matemáticas y Ciencia Política. GPA global 3.96/4.0; GPA solo en asignaturas de informática 3.96/4.0. Honores: Phi Kappa Phi y Collegium V Honors."
+							data-en="Minors in Mathematics and Political Science. GPA overall 3.96/4.0; CS-only GPA 3.96/4.0. Honors: The Honor Society of Phi Kappa Phi and Collegium V Honors.">
+						</p>
+
+						<p class="mt-3 mb-1 justify" data-en="Selected coursework at UT Dallas (titles as on transcript)"
+							data-es="Asignaturas seleccionadas en UT Dallas (títulos según el expediente)"></p>
+						<ul class="mt-1 mb-2 ps-3 abme-honors-bullet">
+							<li class="justify" data-en="CS 4V98 — Undergraduate Research in Computer Science" data-es="CS 4V98 — Undergraduate Research in Computer Science"></li>
+							<li class="justify mt-2" data-en="CS 4485 — Computer Science Project" data-es="CS 4485 — Computer Science Project"></li>
+							<li class="justify mt-2" data-en="PSCI 4V76 — Archer Center Washington Internship" data-es="PSCI 4V76 — Archer Center Washington Internship"></li>
+							<li class="justify mt-2" data-en="CS 4349 — Advanced Algorithm Design and Analysis" data-es="CS 4349 — Advanced Algorithm Design and Analysis"></li>
+							<li class="justify mt-2" data-en="CS 4384 — Automata Theory" data-es="CS 4384 — Automata Theory"></li>
+							<li class="justify mt-2" data-en="CS 4337 — Programming Language Paradigms" data-es="CS 4337 — Programming Language Paradigms"></li>
+							<li class="justify mt-2" data-en="CS 4347 — Database Systems" data-es="CS 4347 — Database Systems"></li>
+							<li class="justify mt-2" data-en="CS 3377 — Systems Programming in UNIX and Other Environments" data-es="CS 3377 — Systems Programming in UNIX and Other Environments"></li>
+							<li class="justify mt-2" data-en="CS 4341 — Digital Logic and Computer Design" data-es="CS 4341 — Digital Logic and Computer Design"></li>
+							<li class="justify mt-2" data-en="CS 4141 — Digital Systems Laboratory" data-es="CS 4141 — Digital Systems Laboratory"></li>
+						</ul>
+
+						<h2 class="academic-year-h2 mt-4" data-en="Waseda University" data-es="Universidad Waseda"></h2>
+						<p class="trnsf-thin mb-2"
+							data-en="Study abroad: academic year 2024–2025 · Tokyo, Japan"
+							data-es="Año académico en el extranjero: 2024–2025 · Tokio, Japón"></p>
+						<p class="mt-2 justify mb-3"
+							data-en="All coursework was taught in Japanese (readings, lectures, and assessments)."
+							data-es="Todas las asignaturas se cursaron en japonés (lecturas, clase y evaluación).">
+						</p>
+
+						<p class="mb-1 justify" data-en="Graduate-level courses"
+							data-es="Asignaturas de posgrado"></p>
+						<ul class="mt-1 mb-3 ps-3 abme-honors-bullet">
+							<li class="justify" data-en="Computer vision" data-es="Visión por computador"></li>
+							<li class="justify mt-2" data-en="Natural language processing"
+								data-es="Procesamiento del lenguaje natural"></li>
+							<li class="justify mt-2" data-en="Advanced wireless access"
+								data-es="Acceso inalámbrico avanzado"></li>
+							<li class="justify mt-2"
+								data-en="Distributed, embedded, and real-time processing"
+								data-es="Procesamiento distribuido, empotrado y en tiempo real"></li>
+						</ul>
+
+						<p class="mb-1 justify" data-en="Other courses" data-es="Otras asignaturas"></p>
+						<ul class="mt-1 mb-0 ps-3 abme-honors-bullet">
+							<li class="justify" data-en="Artificial intelligence and logic"
+								data-es="Inteligencia artificial y lógica"></li>
+							<li class="justify mt-2" data-en="Artificial intelligence and complex systems"
+								data-es="Inteligencia artificial y sistemas complejos"></li>
+							<li class="justify mt-2" data-en="Operating systems" data-es="Sistemas operativos"></li>
+							<li class="justify mt-2" data-en="Software engineering" data-es="Ingeniería del software"></li>
+							<li class="justify mt-2" data-en="Data mining" data-es="Minería de datos"></li>
+						</ul>
+					</div>
+				</div>
+			</div>
+
+
+			<!-- Publications -->
+			<div class="col-md-8 offset-md-1 mb-5" id="publicationsContent">
+				<div class="container">
+
+					<div class="row mt-3">
+						<h2 class="pub-year-h2">2026</h2>
+
+						<div class="pub-block">
+							<div class="lucida-console h5">Extreme Summarization of Worldwide Scientific and Patent
+								Document Clusters for Landscape Analysis</div>
+							<div class="pub-authors mt-1">J. V. Le, Rebecca Gelles, Catherine Aiken, Katherine Quinn
+							</div>
+							<div class="pub-congress">Submitted to <em>Scientometrics</em>.</div>
+						</div>
+
+						<div class="pub-block mt-4">
+							<div class="lucida-console h5 mb-1"><a href="https://arxiv.org/abs/2603.07668"
+									class="link-dark" target="_blank" rel="noopener noreferrer">The Effect of Code
+									Obfuscation on Human Program Comprehension</a></div>
+							<div class="pub-authors mt-1">A. H. N. Nguyen, J. V. Le, Ilse Lahnstein Coronado, T. N. Nguyen
+							</div>
+							<div class="pub-congress">arXiv:2603.07668 [cs.SE].</div>
+						</div>
+
+						<div class="pub-block mt-4">
+							<div class="lucida-console h5">Do Machines Struggle Where Humans Do? LLM and Human
+								Comprehension of Obfuscated Code</div>
+							<div class="pub-authors mt-1">J. V. Le, Anh Nguyen, Tien Nguyen</div>
+							<div class="pub-congress">Submitted to <em>Automated Security Engineering (ASE)</em>.</div>
+						</div>
+
+						<div class="pub-block mt-4">
+							<div class="lucida-console h5">Model Understanding of Obfuscated Code</div>
+							<div class="pub-authors mt-1">J. V. Le, Anh Nguyen, Tien Nguyen</div>
+							<div class="pub-congress"><span data-es="Enviado (en revisión)." data-en="Submitted for review."></span></div>
+						</div>
+					</div>
+
+					<div class="row mt-3">
+						<h2 class="pub-year-h2">2024</h2>
+
+						<div class="pub-block">
+							<div class="lucida-console h5">Code as Embedding as AI</div>
+							<div class="pub-authors mt-1">K. Tanaka Ishii, J. V. Le</div>
+							<div class="pub-congress">Submitted to <em>Minds and Machines</em>.</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Writing & press -->
+			<div class="col-md-8 offset-md-1 mb-5" id="blogContent">
+				<div class="container language">
+
+					<h3 class="h4 mt-2" data-es="Prensa y menciones" data-en="Press and mentions"></h3>
+
+					<div class="row mt-2">
+						<h2 class="pub-year-h2">2026</h2>
+						<div class="pub-block">
+							<div class="lucida-console h5 mb-1">
+								<a href="https://etoblog.substack.com/p/new-update-to-the-map-of-science"
+									class="link-dark" target="_blank" rel="noopener noreferrer">New update to the Map of
+									Science: Cluster titles and summaries</a>
+							</div>
+							<div class="pub-authors mt-1">Emerging Technology Observatory (Substack) · Apr 27, 2026</div>
+							<div class="pub-congress"
+								data-es="Actualización del Map of Science (ETO / CSET); relacionado con mi trabajo en el equipo de datos."
+								data-en="Map of Science product update (ETO / CSET); related to my work with the data team.">
+							</div>
+						</div>
+					</div>
+
+					<div class="row mt-4">
+						<h2 class="pub-year-h2">2025</h2>
+						<div class="pub-block">
+							<div class="lucida-console h5 mb-1">
+								<a href="https://engineering.utdallas.edu/news/archive/2025-summer/computer-science-undergrads-win-goldwater-scholarships/"
+									class="link-dark" target="_blank" rel="noopener noreferrer">Computer Science Student
+									Wins Goldwater Scholarship</a>
+							</div>
+							<div class="pub-authors mt-1">Erik Jonsson School of Engineering &amp; Computer Science, UT
+								Dallas</div>
+							<div class="pub-congress"
+								data-es="Perfil de la beca Barry Goldwater (archivo de verano 2025)."
+								data-en="Barry Goldwater Scholarship profile (summer 2025 archive)."></div>
+						</div>
+						<div class="pub-block mt-4">
+							<div class="lucida-console h5 mb-1">
+								<a href="https://news.utdallas.edu/students-teaching/goldwater-scholarships-2025/"
+									class="link-dark" target="_blank" rel="noopener noreferrer">Biology, Computer Science
+									Undergrads Win Goldwater Scholarships</a>
+							</div>
+							<div class="pub-authors mt-1">UT Dallas News Center · May 28, 2025</div>
+							<div class="pub-congress"
+								data-es="Cobertura central de campus sobre los becarios Goldwater 2025."
+								data-en="Central campus news coverage of 2025 Goldwater Scholars."></div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Teaching -->
+			<div class="col-md-8 offset-md-1 mb-5" id="academicContent">
+				<div class="container">
+					<div class="row mt-2 language">
+						<h2 class="academic-year-h2">2025</h2>
+						<div class="academic-block mt-2">
+							<div class="lucida-console h5 academic-name">UTD CS 1337 — Computer Science I</div>
+							<div class="academic-rol mt-1"><span data-en="Grader" data-es="Calificador"></span></div>
+							<div class="academic-year"><span data-en="Fall 2025" data-es="Otoño 2025"></span></div>
+						</div>
+					</div>
+					<div class="row mt-4 language">
+						<h2 class="academic-year-h2">2024</h2>
+						<div class="academic-block">
+							<div class="lucida-console h5 academic-name">UTD CS 2336 — Computer Science II</div>
+							<div class="academic-rol mt-1"><span data-en="Grader" data-es="Calificador"></span></div>
+							<div class="academic-year"><span data-en="Spring 2024" data-es="Primavera 2024"></span>
+							</div>
+						</div>
+						<div class="academic-block mt-4">
+							<div class="lucida-console h5 academic-name">UTD CS 1337 — Computer Science I</div>
+							<div class="academic-rol mt-1"><span data-en="Teaching Assistant"
+									data-es="Asistente de enseñanza"></span></div>
+							<div class="academic-year"><span data-en="Spring 2024" data-es="Primavera 2024"></span>
+							</div>
+						</div>
+						<div class="academic-block mt-4">
+							<div class="lucida-console h5 academic-name">ICODE School — Introduction to Web Development
+							</div>
+							<div class="academic-rol mt-1"><span data-en="Technical Lead"
+									data-es="Líder técnico"></span></div>
+							<div class="academic-year"><span data-en="Fall 2023 – Spring 2024"
+									data-es="Otoño 2023 – Primavera 2024"></span></div>
+						</div>
+					</div>
+					<div class="row mt-4 language">
+						<h2 class="academic-year-h2">2023</h2>
+						<div class="academic-block">
+							<div class="lucida-console h5 academic-name">UTD CS 1334 — Programming Fundamentals for
+								Non-Majors</div>
+							<div class="academic-rol mt-1"><span data-en="Teaching Assistant"
+									data-es="Asistente de enseñanza"></span></div>
+							<div class="academic-year"><span data-en="Fall 2023" data-es="Otoño 2023"></span></div>
+						</div>
+						<div class="academic-block mt-4">
+							<div class="lucida-console h5 academic-name">Garland ISD — Various mathematics courses</div>
+							<div class="academic-rol mt-1"><span data-en="Substitute teacher"
+									data-es="Profesor sustituto"></span></div>
+							<div class="academic-year"><span data-en="Fall 2023 – Present"
+									data-es="Otoño 2023 – presente"></span></div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Conferences -->
+			<div class="col-md-8 offset-md-1 mb-5" id="conferencesContent">
+				<div class="container language">
+					<div class="row mt-2">
+						<h2 class="pub-year-h2">2025</h2>
+						<div class="lucida-console h5">Head Shape Analysis Using Custom Feature Extraction</div>
+						<div class="mt-1">UT Dallas Undergraduate Research Scholars Awards Symposium.</div>
+					</div>
+					<div class="row mt-4">
+						<h2 class="pub-year-h2">2024</h2>
+						<div class="lucida-console h5">Evaluating Large Language Models in Scientific Research:
+							Practical Applications and Challenges</div>
+						<div class="mt-1">UT Dallas Summer Platform for Undergraduate Students.</div>
+					</div>
+					<div class="row mt-4">
+						<h2 class="pub-year-h2">2023</h2>
+						<div class="lucida-console h5">Coding Semantics: Sentiment Analysis for Movie Reviews</div>
+						<div class="mt-1">[Co-presented.] Association for Computing Machinery UT Dallas Research
+							Conference.</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Experience -->
+			<div class="col-md-8 offset-md-1" id="experienceContent">
+				<div class="container language">
+					<h3 class="h5 mt-2" data-es="Investigación" data-en="Research"></h3>
+					<ul>
+						<li class="justify"><strong data-en="Undergraduate Researcher"
+								data-es="Investigador de pregrado">Undergraduate Researcher</strong>, Dr. Tien Nguyen —
+							<span data-en="Attention reallocation for LLMs in software engineering; present."
+								data-es="Reasignación de atención en LLM para ingeniería de software; presente."></span>
+						</li>
+						<li class="justify mt-2"><strong>DAAD RISE</strong>, SprintML, CISPA Helmholtz Center — <span
+								data-en="Summer 2026 (incoming intern)."
+								data-es="Verano 2026 (prácticas próximas)."></span></li>
+						<li class="justify mt-2"><strong data-en="Research Assistant"
+								data-es="Asistente de investigación">Research Assistant</strong>, Dr. Kumiko
+							Tanaka-Ishii — <span
+								data-en="Recurrence quantification analysis of frontier AI models; Fall 2024 – Summer 2025."
+								data-es="Análisis de cuantificación de recurrencia en modelos frontera de IA; otoño 2024 – verano 2025."></span>
+						</li>
+						<li class="justify mt-2"><strong data-en="Undergraduate Researcher"
+								data-es="Investigador de pregrado">Undergraduate Researcher</strong>, Dr. Ovidiu Daescu
+							— <span
+								data-en="Computer vision and feature selection (cranial shape analysis); Spring 2024 – present."
+								data-es="Visión por computador y selección de rasgos (forma craneal); primavera 2024 – presente."></span>
+						</li>
+						<li class="justify mt-2"><strong data-en="Research Intern"
+								data-es="Pasante de investigación">Research Intern</strong>, Hsu Lab — <span
+								data-en="ML for materials science; Summer 2024."
+								data-es="ML para ciencia de materiales; verano 2024."></span></li>
+						<li class="justify mt-2"><strong data-en="Student Researcher"
+								data-es="Estudiante investigador">Student Researcher</strong>, Dr. Doug DeGroot — <span
+								data-en="Sentiment analysis for movie reviews; Fall 2023."
+								data-es="Análisis de sentimiento de reseñas de cine; otoño 2023."></span></li>
+					</ul>
+					<h3 class="h5 mt-4" data-es="Industria" data-en="Industry"></h3>
+					<ul>
+						<li class="justify"><strong>CSET</strong>, Georgetown University — <span
+								data-en="Intern, Spring 2026." data-es="Pasante, primavera 2026."></span></li>
+						<li class="justify mt-2"><strong>Onplanetz</strong> — <span
+								data-en="AI Engineer Intern; Fall 2024 – Spring 2025."
+								data-es="Pasante de ingeniería de IA; otoño 2024 – primavera 2025."></span></li>
+						<li class="justify mt-2"><strong>Relativity</strong>, AI Studio Fellow — <span
+								data-en="Bias and representation in frontier models; Fall 2024."
+								data-es="Sesgo y representación en modelos frontera; otoño 2024."></span></li>
+					</ul>
+					<h3 class="h5 mt-4" data-es="Otras experiencias" data-en="Other experience"></h3>
+					<ul>
+						<li class="justify">UT Dallas Office of Research — <span
+								data-en="Research Information Systems; Summer 2024."
+								data-es="Sistemas de información de investigación; verano 2024."></span></li>
+						<li class="justify mt-2">Break Through Tech AI — <span
+								data-en="AI/ML Fellow, May 2024 – May 2025."
+								data-es="Becario AI/ML, may 2024 – may 2025."></span></li>
+						<li class="justify mt-2">ACM UTD — <span data-en="Back-end developer, Feb 2024 – Apr 2024."
+								data-es="Desarrollador back-end, feb 2024 – abr 2024."></span></li>
+						<li class="justify mt-2">UTDesign — <span
+								data-en="Frontend software developer, Jan 2024 – May 2024."
+								data-es="Desarrollador front-end, ene 2024 – may 2024."></span></li>
+						<li class="justify mt-2">Wolters Kluwer Tax and Accounting — <span data-en="Extern, Mar 2023."
+								data-es="Externo, mar 2023."></span></li>
+					</ul>
+					<h3 class="h5 mt-4" data-es="Comunidad" data-en="Community"></h3>
+					<ul>
+						<li class="justify">UT Design — <span data-en="Code review volunteer, Summer 2024."
+								data-es="Voluntario de revisión de código, verano 2024."></span></li>
+						<li class="justify mt-2">UTD Society of Asian Scientists and Engineers — <span
+								data-en="Secretary and Chair, Jan 2023 – Aug 2024."
+								data-es="Secretario y presidente, ene 2023 – ago 2024."></span></li>
+						<li class="justify mt-2">UTD Artificial Intelligence Society — <span
+								data-en="Officer, Oct 2022 – May 2023."
+								data-es="Cargo directivo, oct 2022 – may 2023."></span></li>
 					</ul>
 				</div>
 			</div>
-		</nav>
 
-		<div class="container" id="main-content">
-			<div class="row content" id="section-content">
-				
-				<!-- Nicolas Meseguer profile and contact info -->
-				<div id="leftPanel" class="col-md-3 language">
-					<div class="row mb-3">
-						<div class="col">
-							<img src="assets/documents/imgs/NicolasMeseguer.webp" class="rounded me-auto d-block img-fluid profilepicture" alt="Nicolas Meseguer profile picture">
-						</div>
-					</div>
-
-					<h3 class="mb-2">Nicolás Meseguer</h3>
-
-					<p class="mb-4">
-						<span class="t-secondary" data-es="Estudiante de doctorado en Arquitectura de Computadores en la Universidad de Murcia y CTO en " 
-						data-en="Ph.D. Computer Architecture Student at University of Murcia and CTO at "></span> <a href="https://mowatave.com" class="link-dark" target="_blank">Mowatave</a>.
+			<!-- Projects -->
+			<div class="col-md-8 offset-md-1" id="projectsContent">
+				<div class="container language">
+					<p class="mt-2 justify"
+						data-es="Los proyectos destacados están integrados en la sección de experiencia e investigación."
+						data-en="Highlighted projects are listed under Experience and research roles.">
 					</p>
-					
-					<div class="row mb-2">
-						<div class="col-1">
-							<i class="fal fa-map-marker-alt" aria-hidden="true"></i>
-						</div>
-
-						<div class="col-10">
-							<span 
-								data-es="Área Metropolitana" 
-								data-en="Greater Murcia Metropolitan Area">
-							</span> 
-							<br/>
-							Murcia, 
-							<span 
-								data-es="España" 
-								data-en="Spain">
-							</span>
-						</div>
-					</div>
-
-					<div class="row mb-2">
-						<div class="col-1">
-							<i class="ai ai-cv" aria-hidden="true"></i>
-						</div>
-
-						<div class="col-10">
-							<a href="assets/documents/NicolasMeseguerCV.pdf" class="link-dark" target="_blank" data-es="CV [Actualizado 03/2024]" data-en="CV [Updated 03/2024]"></a>
-						</div>
-					</div>
-
-					<div class="row mb-2">
-						<div class="col-1">
-							<i class="fa-regular fa-envelope" aria-hidden="true"></i>
-						</div>
-
-						<div class="col-10">
-							<a href="mailto:n.mesegueriborra@um.es" class="link-dark">n.mesegueriborra@um.es</a>
-						</div>
-					</div>
-
-					<div class="row mb-2">
-						<div class="col-1">
-							<i class="fa-brands fa-linkedin" aria-hidden="true"></i>
-						</div>
-
-						<div class="col-10">
-							<a href="https://www.linkedin.com/in/nicolasmeseguer/" class="link-dark" target="_blank">LinkedIn</a>
-						</div>
-					</div>
-
-					<div class="row mb-2">
-						<div class="col-1">
-							<i class="fa-brands fa-twitter" aria-hidden="true"></i>
-						</div>
-
-						<div class="col-10">
-							<a href="https://twitter.com/NicolasMeseguer" class="link-dark" target="_blank">Twitter</a>
-						</div>
-					</div>
-
-					<div class="row mb-2">
-						<div class="col-1">
-							<i class="fab fa-github" aria-hidden="true"></i>
-						</div>
-
-						<div class="col-10">
-							<a href="https://github.com/NicolasMeseguer" class="link-dark" target="_blank">GitHub</a>
-						</div>
-					</div>
-
-					<div class="row mb-2">
-						<div class="col-1">
-							<i class="fab fa-gitlab" aria-hidden="true"></i>
-						</div>
-
-						<div class="col-10">
-							<a href="https://gitlab.com/NicolasMeseguer" class="link-dark" target="_blank">GitLab</a>
-						</div>
-					</div>
-
-					<div class="row mb-2">
-						<div class="col-1">
-							<i class="fa-solid fa-plus"></i>
-						</div>
-
-						<div class="col-10">
-							<a href="https://fseneca.es/tfs/fpi/ficha/8362" class="link-dark" target="_blank"><img class="fseneca" src="/assets/documents/imgs/fseneca-color.svg" alt="Fundación Séneca"></a>
-						</div>
-					</div>
 				</div>
+			</div>
 
-				<!-- About Me -->
-				<div class="col-md-8 offset-md-1 mb-5 active" id="aboutmeContent">
-					<div class="container">
-						<div class="row language">
-							<p class="mt-2 justify" 
-								data-es="Nace en Murcia, España en 1997. En 2021 obtiene el grado de ingeniería informática por la Universidad Católica San Antonio de Murcia con mención honorífica a la excelencia académica. A continuación cursa el máster en la Universidad de Murcia obteniendo el título de máster en nuevas tecnologías en informática en el año 2022. Además, obtuvo una beca de iniciación a la investigación de la Universidad Católica San Antonio de Murcia con duración de 6 meses en el año 2021. En el año 2022 obtiene una beca de la Fundación Séneca para realizar la tesis doctoral en la Universidad de Murcia, donde participa en actividades docentes a partir del año 2023, ese mismo año funda Mowatave, una empresa de desarrollo software, desempeñando el rol de CTO y liderando el equipo técnico. Posee comunicaciones en congresos nacionales. Domina las lenguas español e inglés." 
-								data-en="Born in Murcia, Spain in 1997. In 2021 he obtained a degree in computer engineering from the Universidad Católica San Antonio de Murcia with honorable mention for academic excellence. He then studied a master's degree at the University of Murcia obtaining a master's degree in new technologies in computer science in 2022. In addition, he received a research initiation scholarship from the Universidad Católica San Antonio de Murcia for a period of six months in in 2021. In 2022 he obtained a scholarship from the Fundación Séneca to undertake a doctoral thesis at the University of Murcia, where he participates in teaching activities from 2023. That same year he founded Mowatave, a software development company, serving as the CTO and leading the technical team. He has presented at national conferences and is proficient in both Spanish and English.">
-							</p>
-							
-							<h4 id="researchinterestsH4" class="mt-2" 
-								data-es="Áreas de Investigación" 
-								data-en="Research Interests">
-							</h4>
-
-							<p class="mt-1"
-								data-es="Arquitectura de computadores, redes de interconexión y aceleradores de aprendizaje profundo (aceleradores a nivel de hardware), sin embargo mis estudios de doctorado se centran en arquitecturas de GPUs, concretamente en los nuevos componentes de las futuras generaciones de tarjetas gráficas de NVIDIA y AMD. Para ello actualmente estoy utilizando MGPUSim, un simulador a nivel de eventos para GPUs."
-								data-en="Computer architecture, interconnection networks and deep learning accelerators, however my PhD studies are focused on GPU architectures, specifically on the new components of the future generations of NVIDIA and AMD graphics cards. To this end I am currently using MGPUSim, a software event-based GPU simulator.">
-							</p>
-
-							<h4 id="honors-and-awards" class="mt-2" data-es="Premios y Distinciones" data-en="Honors and Awards"></h4>
-
-							<ul class="mt-1">
-
-								<li class="abme-honors-bullet">
-									<strong>🥉 Telefónica Hack4Good 2024</strong>, <span data-es="con una plataforma para telemedicina integral con varios actores" data-en="with a comprehensive telemedicine platform with several stakeholders"></span> 
-									[<a href="./assets/documents/HackForGood2024NicolasMeseguer.pdf" class="link-dark" target="_blank">1</a>]
-									[<a href="https://www.ucam.edu/noticias/inteligencia-artificial-aplicada-salud-propuesta-ganadora-del-hackforgood-celebrado-ucam" class="link-dark" target="_blank">2</a>] 
-									- <span data-es="Mar, 2024" data-en="Mar, 2024"></span>
-								</li>
-
-								<li class="abme-honors-bullet mt-2">
-									<strong>Programa Séneca 2022</strong>, <span data-es="Formación de Personal Investigador en Universidades y Organismos Públicos de Investigación de la Región de Murcia" data-en="research contract at the University of Murcia"></span> 
-									[<a href="https://fseneca.es/tfs/fpi/ficha/8362" class="link-dark" target="_blank">1</a>]
-									[<a href="https://fseneca.es/web/convocatoria/642" class="link-dark" target="_blank">2</a>] 
-									- <span data-es="Dic, 2022" data-en="Dec, 2022"></span>
-								</li>
-
-								<li class="abme-honors-bullet mt-2">
-									<strong>🥈 Mercedes-Benz Talent Highway</strong>, <span data-es="con un modelo analítico de mercado predictivo" data-en="with a predictive analytical market model"></span> 
-									[<a href="./assets/documents/MercedesBenz2022NicolasMeseguer.pdf" class="link-dark" target="_blank">1</a>] 
-									[<a href="./assets/documents/imgs/honors_awards/NicolasMeseguerMercedes-Benz.jpg" class="link-dark" target="_blank">2</a>] 
-									- Nov, 2022
-								</li>
-
-								<li class="abme-honors-bullet mt-2">
-									<strong><span data-es="Beca Universitaria" data-en="University scholarship"></span></strong> <span data-es="para el máster" data-en="for the master's degree"></span> (M.S.)
-									[<a href="./assets/documents/NicolasMeseguerScholarship.pdf" class="link-dark" target="_blank">1</a>] 
-									- Nov, 2022
-								</li>
-
-								<li class="abme-honors-bullet mt-2">
-									<strong>🥇 Telefónica Hack4Good 2022</strong>, <span data-es="con una aplicación contra el desperdicio cero de alimentos" data-en="with an application against zero food waste"></span>
-									[<a href="./assets/documents/HackForGood2022NicolasMeseguer.pdf" class="link-dark" target="_blank">1</a>]
-									[<a href="https://www.ucam.edu/noticias/investigacion-salud-deporte-protagonistas-actividades-ucam" class="link-dark" target="_blank">2</a>]
-									[<a href="https://www.linkedin.com/posts/universidad-catolica-san-antonio-de-murcia_secyt22-investigaciaejn-salud-activity-6989572524854382592-zMr4" class="link-dark" target="_blank">3</a>] 
-									- Oct, 2022
-								</li>
-
-								<li class="abme-honors-bullet mt-2">
-									<strong><span data-es="Premio Extraordinario" data-en="Extraordinary Award"></span></strong>, <span data-es="por el mejor Expediente Académico en Ingeniería Informática" data-en="for the Best Computer Engineering Academic Record"></span> (B.S.)
-									[<a href="./assets/documents/imgs/honors_awards/NicolasMeseguerAward.jpg" class="link-dark" target="_blank">1</a>] 
-									- Jun, 2022
-								</li>
-
-								<li class="abme-honors-bullet mt-2">
-									<strong><span data-es="Beca de Iniciación a la Investigación" data-en="Research Initiation Scholarship"></span></strong> <span data-es="para jóvenes investigadores prometedores" data-en="for promising young researchers"></span>
-									[<a href="./assets/documents/NicolasMeseguerResearchGrant.pdf" class="link-dark" target="_blank">1</a>] 
-									- Feb, 2021
-								</li>
-
-								<li class="abme-honors-bullet mt-2">
-									<strong><span data-es="Beca Erasmus+" data-en="Erasmus+ Scholarship"></span></strong>, <span data-es="para unas prácticas europeas" data-en="for a european internship"></span>
-									[<a href="./assets/documents/imgs/honors_awards/NicolasMeseguerGermany.png" class="link-dark" target="_blank">1</a>] 
-									- Mar, 2018
-								</li>
-							</ul>
-
-							<h4 id="hobbiesH4" class="mt-2">Hobbies</h4>
-
-							<div class="container">
-								<div class="row mt-3">
-									<div class="thumbnail col-md-3">
-										<img class="rounded mx-auto d-block img-fluid" src="/assets/documents/imgs/hobbies/NicolasMeseguerProgramming.webp" alt="Programming and Math">
-									</div>
-									<div class="col-md-9" id="hobbie1">
-										<b 
-											data-es="Programación + Mates" 
-											data-en="Programming + Math">
-										</b>
-
-										<br />
-										<p class="mt-2 d-inline justify"
-											data-es="Desde pequeño sentí curiosidad por saber cómo se creaban los escenarios (visualmente) de los diferentes videojuegos; cómo los motores gráficos conseguían lo que yo consideraba en aquella época unos 'gráficos increíbles'. Motivado por esto y por mi pasión por la programación, he incluido los ejercicios de"
-											data-en="Since I was a child I was curious to know how the scenarios were created (visually) in different videogames; how the graphics engines managed to achieve, what I considered at that time to be, 'unbelievable graphics'. Motivated by this and by my passion for programming, I've included the exercises in">
-										</p>
-
-										<a href="https://projecteuler.net/" class="link-dark" target="_blank">Project Euler</a> <span data-es="en mi" data-en="into my"></span> <a href="https://github.com/NicolasMeseguer/Toolbox" class="link-dark" target="_blank"><span data-es="propio repositorio de código abierto" data-en="own open-source repository"></span></a>.
-
-									</div>
-								</div>
-
-								<div class="row mt-5">
-									<div class="thumbnail col-md-3">
-										<img class="rounded mx-auto d-block img-fluid" src="/assets/documents/imgs/hobbies/NicolasMeseguerTailandia.webp" alt="Travelling">
-									</div>
-									<div class="col-md-9" id="hobbie2">
-										<b 
-											data-es="Viajar" 
-											data-en="Travelling">
-										</b>
-
-										<br />
-										<p class="mt-2 d-inline justify"
-											data-es="Decidí viajar a Alemania para hacer unas prácticas el mismo año que terminé el grado superior. Desde entonces, me he propuesto ir a un lugar nuevo al menos una vez al año. He recorrido Italia, conducido en moto a través de Tailandia (sin embargo, la pandemia me lo ha puesto bastante dificil estos últimos años)."
-											data-en="I opted to move to Germany for an internship the same year I finished my undergraduate degree (HNC). Since then, I've made it a goal to go to a new location at least once a year. I've been across Italy and Thailand since then (although the pandemic has hampered my progress quite a bit this last years).">
-										</p>
-
-									</div>
-								</div>
-								
-								<div class="row mt-5">
-									<div class="thumbnail col-md-3">
-										<img class="rounded mx-auto d-block img-fluid" src="/assets/documents/imgs/hobbies/NicolasMeseguerYouTube.webp" alt="Content Creator on YouTube">
-									</div>
-									<div class="col-md-9" id="hobbie3">
-										<b 
-											data-es="Filmaker (casi nunca)" 
-											data-en="Video Creator (rarely)">
-										</b>
-
-										<br />
-										<p class="mt-2 d-inline justify"
-											data-es="Me gusta compartir mis experiencias en el campo de la tecnología. Llevo viendo vídeos en internet desde que tengo uso de razón, así que en 2018 decidí crearme un canal de"
-											data-en="I enjoy sharing my experiences, particularly in the field of technology. I've been watching videos on the internet for as long as I can remember, so in 2018 I decided to start a">
-										</p>
-
-										<a href="https://www.youtube.com/c/NicolasMeseguer" class="link-dark" target="_blank">YouTube</a><span data-es="." data-en=""></span>
-
-										<span
-											data-es="Algunos vídeos tienen más de 150 mil visitas a día de hoy... ¿No es increíble? Si tienes suerte puedes encontrarme por"
-											data-en="channel. Some videos have already received over 150 thousand views as of today... Isn't it amazing? If lucky enough you can find me at">
-										</span>
-
-										<a href="https://www.twitch.tv/nicolasmeseguerr" class="link-dark" target="_blank">Twitch</a>
-										
-										</br>
-
-										<span class="lucida-console small">(<i class="fa-light fa-share-from-square"></i> <a href="https://www.youtube.com/@NicolasMeseguerArchive" class="link-dark" target="_blank">YouTube Archive)</a>.</span>
-
-									</div>
-								</div>
-							</div>
-						</div>
-					</div>
-				</div>
-
-
-				<!-- Education -->
-				<div class="col-md-8 offset-md-1 mb-5" id="educationContent">
-					<div class="container">
-						<div class="row mt-2 language">
-							<h2 
-								data-es="Doctorado en Arquitectura de Computadores"
-								data-en="Ph.D. in Computer Architecture"></h2>
-							<div class="trnsf-thin" 
-								data-es="(Universidad de Murcia, 2022-2026)" 
-								data-en="(University of Murcia, 2022-2026)"></div>
-
-							<p class="mt-1 justify"
-								data-es="
-								El diseño del sistema de memoria es un componente clave de cualquier arquitectura, y mucho más crucial en las arquitecturas heterogéneas, que están surgiendo como resultado de la ralentización de la Ley de Moore.
-
-								Aunque las jerarquías de memoria en las arquitecturas de propósito general se han explorado ampliamente a lo largo de los años, los aceleradores de dominio específico tienen restricciones que introducen variaciones en algunas características esenciales. Además, a medida que la capacidad de cálculo de estas arquitecturas heterogéneas crece, también lo hace la necesidad de poder recuperar datos con los que operar, lo que aumenta la presión sobre el diseño del sistema de memoria.
-
-								El objetivo general de este trabajo es sugerir enfoques para abordar dos preocupaciones trascendentales en el diseño del sistema de memoria de un procesador heterogéneo. Por un lado, organizaciones novedosas para las estructuras de memoria empleadas por los núcleos (considerando los aceleradores de deep learning en este caso), a través de las cuales se podrá responder a la exigencia de un ancho de banda cada vez mayor. Por otro lado, investigaremos alternativas a los conceptos actuales de memoria virtual para compartir de forma más eficiente el mismo espacio de memoria entre los núcleos de propósito general y los aceleradores.
-								"
-
-								data-en="
-								The design of the memory system is a key component of any computer architecture, and it is much more crucial in the heterogeneous architectures that are emerging as a result of Moore's Law slowing.
-
-								Although memory hierarchies in general-purpose architectures have been extensively explored over the years, domain-specific accelerators have restrictions that introduces variances in some essential features. Furthermore, as the computational capability of these heterogeneous architectures grows, so does the requirement to be able to retrieve data with which to operate, increasing the pressure on the design of the memory system.
-
-								The overarching goal of this work is to suggest approaches for addressing two transcendental concerns in the design of a heterogeneous processor's memory system. On the one hand, novel organizations for the memory structures employed by cores (considering deep learning accelerators in this case), through which it will be possible to respond to the requirement for ever-increasing bandwidth. On the other hand, we will investigate alternatives to present virtual memory concepts in order to more efficiently share the same memory space across general purpose cores and accelerators.
-								">
-								
-							</p>
-
-							<div class="trnsf-thin">
-								<span 
-									data-es="Tésis:"
-									data-en="Dissertation:">
-								</span>
-								<span class="trnsf-italic"
-									data-es="Por determinar (finales~2026)."
-									data-en="TBD (late~2026).">
-								</span>
-							</div>
-
-						</div>
-
-						<div class="row mt-3 language">
-							<h2 
-								data-es="Máster en Arquitecturas de Altas Prestaciones y Supercomputación"
-								data-en="M.S. in High Performance Architectures and Supercomputing"></h2>
-							<div class="trnsf-thin"
-								data-es="(Universidad de Murcia, 2021-2022) 9,24 - 60 ECTS"
-								data-en="(University of Murcia, 2021-2022) 9,24 - 60 ECTS">
-							</div>
-
-							<p class="mt-1 justify"
-								data-es="
-								Diseño de arquitecturas multinúcleo de alto rendimiento, incluyendo la microarquitectura de cada uno de los núcleos de procesamiento, las cachés y la red de interconexión.
-								Comprender los mecanismos a través de los cuales se puede lograr una comunicación eficiente entre los núcleos (el protocolo de coherencia de la caché).
-								Evaluar el impacto de las diferentes técnicas arquitectónicas en el rendimiento y el consumo de energía de las arquitecturas multinúcleo de alto rendimiento.
-								Estándares de programación paralela: paradigmas de memoria compartida (OpenMP) e interfaz de paso de mensajes (MPI) + paradigmas híbridos (como MPI+OpenMP y OpenMP+CUDA).
-								Nociones de programación paralela, algoritmos y bibliotecas matriciales eficientes en sistemas de alto rendimiento (BLAS, Intel MKL, cuBLAS, ScaLAPACK).
-								Administración de sistemas de alto rendimiento (almacenamiento RAID, reglas de cortafuegos, protocolos de red, gestor de módulos, sistema de colas, arranque en red).
-								"
-
-								data-en="
-								Design high-performance multi-core architectures, including the microarchitecture of each of the processing cores, the caches and the interconnection network.
-								Understand the mechanisms through which efficient communication between cores can be achieved (the cache coherence protocol).
-								Assess the impact of different architectural techniques on the performance and power consumption of high-performance multi-core architectures.
-								Parallel programming standards: shared memory paradigms (OpenMP) and message passing interface (MPI) + hybrid paradigms (such as MPI+OpenMP and OpenMP+CUDA).
-								Notions of parallel programming and efficient matrix algorithms and libraries in high-performance systems (BLAS, Intel MKL, cuBLAS, ScaLAPACK).
-								High performance system administration (RAID storage, firewall rules, network protocols, module manager, queuing system, network boot).
-								">
-								
-							</p>
-
-							<div class="trnsf-thin">
-								<span
-									data-es="TFM:"
-									data-en="Thesis:">
-								</span>
-								<span class="trnsf-italic">
-									<a href="./assets/documents/dissertations/NICOLASMESEGUER_CPU-PCGCN_efficient_processing_of_graph_convolutional_networks_on_CPU_architectures.pdf" class="link-dark" target="_blank"
-									data-es="CPU-PCGCN, procesamiento eficiente de redes convolucionales grafos en arquitecturas CPU."
-									data-en="CPU-PCGCN, efficient processing of graph convolutional networks on CPU architectures.">
-								</a>
-								</span>
-							</div>
-							<div class="trnsf-thin">
-								<span
-									data-es="[encuentra el repositorio"
-									data-en="[find the repository">
-								</span>
-								<a href="https://github.com/NicolasMeseguer/pcgcn" class="link-dark" target="_blank" 
-									data-es="aquí]"
-									data-en="here]">
-								</a>
-							</div>
-
-						</div>
-
-						<div class="row mt-3 language">
-							<h2 
-								data-es="Alumno Interno, Machine Learning y Deep Learning"
-								data-en="Intern Student, Machine Learning and Deep Learning">
-							</h2>
-							<div class="trnsf-thin" 
-								data-es="(Univerisdad Católica de Murcia, 2019-2020) - 12 ECTS" 
-								data-en="(Catholic University of Murcia, 2019-2020) - 12 ECTS">
-							</div>
-
-							<p class="mt-1 justify" 
-								data-es="
-								Introducción a Machine Learning (ML) y a las nociones que sustentan el cálculo de diferentes modelos de Deep Neural Networks (DNNs), como MLPs, CNNs o RNNs.
-								Durante mi estancia de prácticas, desarrollé una red neuronal completamente conectada (FC) y una convolucional (CNN) en C, mejorando la eficiencia de la caché (memoria dinámica, punteros, registros de memoria) y las operaciones matriciales para acelerar el cálculo. 
-								Esta aplicación se distribuye abiertamente a la comunidad científica; es totalmente modular y fácil de usar.
-								"
-
-								data-en="
-								Introduction to Machine Learning (ML) and the notions underpinning the computation of different Deep Neural Networks (DNNs) models, such as MLPs, CNNs, or RNNs.
-								During my time as an intern student, I developed a fully connected (FC) and a convolutional neural network (CNN) in C, improving cache efficency (dynamic memory, pointers, memory registers) and matrix operations to speed up the calculation. 
-								This application is openly distributed to the scientific commmunity; it is totally modular and user-friendly.
-								">
-							</p>
-
-							<div class="trnsf-thin">
-								<span
-									data-es="[encuentra la aplicación"
-									data-en="[find the application">
-								</span>
-								<a href="https://github.com/NicolasMeseguer/DNN" class="link-dark" target="_blank" 
-									data-es="aquí]"
-									data-en="here]">
-								</a>
-							</div>
-
-						</div>
-
-						<div class="row mt-3 language">
-							<h2 
-								data-es="(Honorífico) Grado en Ingeniería Informática"
-								data-en="(Hons) B.S. in Computer Engineering">
-							</h2>
-							<div class="trnsf-thin" 
-								data-es="(Univerisdad Católica de Murcia, 2018-2021) 9,3 - 240 ECTS" 
-								data-en="(Catholic University of Murcia, 2018-2021) 9,3 - 240 ECTS">
-							</div>
-
-							<p class="mt-1 justify"
-								data-es="
-								Estructuras de datos (pilas, colas, listas, grafos), algoritmos (ordenación, hashing, backtracking), 
-								bases de datos (relacionales y no relacionales), programación paralela (OMP y CUDA), 
-								arquitectura de ordenadores (MIPS, modelo Von Neumann, segmentación, multiciclo y monociclo), 
-								cálculo y álgebra lineal, redes, sistemas operativos y seguridad informática (curso CISCO), 
-								metodologías ágiles e ingeniería del software, programación visual avanzada, sistemas inteligentes (Python), 
-								apps móviles nativas y apps web progresivas, etc."
-
-								data-en="
-								Data structures (stacks, queues, lists, graphs), algorithms (sorting, hashing, backtracking), 
-								databases (relational and no relational), parallel programming (OMP and CUDA), 
-								computer architecture (MIPS, Von Neumann model, segmentation, multicycle and monocycle), 
-								calculus and linear algebra, networks, operating systems and computer security (CISCO course), 
-								agile methodologies and software engineering, advanced visual programming, smart systems (Python), 
-								native mobile apps and progressive web apps, etc.">
-								
-							</p>
-
-							<div class="trnsf-thin">
-								<span
-									data-es="TFG:"
-									data-en="Thesis:">
-								</span>
-								<span class="trnsf-italic">
-									<a href="./assets/documents/dissertations/NICOLASMESEGUER_Implementation_and_evaluation_of_the_DLRM_model_in_an_ASIC_accelerator_simulated_by_STONNE.pdf" class="link-dark" target="_blank"
-									data-es="Implementación y evaluación del modelo DLRM en un acelerador ASIC simulado por STONNE"
-									data-en="Implementation and evaluation of the DLRM model in an ASIC accelerator simulated by STONNE.">
-								</a>
-								</span>
-							</div>
-
-						</div>
-
-						<div class="row mt-3 language">
-							<h2 
-								data-es="Grado Superior en Desarrollo de Aplicaciones Web"
-								data-en="HNC Web App Developer">
-							</h2>
-							<div class="trnsf-thin">(IES José Planes, 2016-2018) 8,8 - 120 ECTS </div>
-
-							<p class="mt-1 justify"
-
-								data-es="Desarrollar, implementar y mantener aplicaciones web (enfoque MVC), 
-								independientemente del modelo utilizado y utilizando tecnologías específicas (Laravel, Symfony, Java, React.js o Node.js), 
-								garantizando el acceso seguro a los datos (MySQL, XML o Ajax) y cumpliendo los criterios de accesibilidad, 
-								usabilidad y calidad (Doctrine2, Ruby, SASS, Compass) exigidos por los estándares establecidos."
-
-								data-en="Developing, implementing and maintaining web applications (MVC approach), 
-								irrespective of the model used and using specific technologies (Laravel, Symfony, Java, React.js or Node.js), 
-								guaranteeing secure access to data (MySQL, XML or Ajax) and complying with the accessibility, 
-								usability and quality criteria (Doctrine2, Ruby, SASS, Compass) required by established standards.">
-							</p>
-
-						</div>
-					</div>
-				</div>
-
-
-				<!-- Publications -->
-				<div class="col-md-8 offset-md-1 mb-5" id="publicationsContent">
-					<div class="container">
-
-						<!-- Each new year -->
-						<div class="row mt-3">
-							<h2 class="pub-year-h2">2023</h2>
-
-							<!-- Each new publication inside the given year -->
-							<div class="pub-block">
-								<!-- Title -->
-								<div class="lucida-console h5">CPU-PCGCN: Efficient Processing of Convolutional Graph Networks on CPU Architectures</div>
-								<!-- Authors -->
-								<div class="pub-authors mt-1"><span class="pub-author">Nicolás Meseguer-Iborra</span>, José L. Abellán, Manuel E. Acacio</div>
-								<!-- Place -->
-								<div class="pub-congress">19th International Summer School on Advanced Computer Architecture and Compilation for High-performance Embedded Systems, Fiuggi (Italy), July 2023.</div>
-								<!-- Links -->
-								<div class="mt-1">
-									<span> <i class="far fa-file-pdf"></i> <a href="/assets/documents/publications/2023CPU-PCGCN-Poster.pdf" target="_blank" class="link-dark ">Poster</a> </span>
-									<span class="pub-force-margin-left"> <i class="far fa-file-pdf"></i> <a href="/assets/documents/publications/2023CPU-PCGCN-Abstract.pdf" target="_blank" class="link-dark ">Abstract</a> </span>
-									<!-- This <a> with id citation, will automatically copy to the clipboard the bibtex citation -->
-									<span class="pub-force-margin-left"> <i class="fas fa-quote-left"></i> <a href="#" id="citation" class="link-dark">BibTeX</a> </span>
-								</div>
-								<!-- Citation -->
-								<div class="d-none">
-@article{2023cpupcgcn,
-	author = {Meseguer-Iborra, Nicolas and Abellán, José L. and Acacio, Manuel E.},
-	year = {2023},
-	month = {July},
-	title = {CPU-PCGCN: Efficient Processing of Convolutional Graph Networks on CPU Architectures},
-	journal = {Advanced Computer Architecture and Compilation for High-performance Embedded Systems},
-	volume = {19},
-	pages = {5--8},
-	isbn = {978-90-7842-704-9}
-}</div>
-							</div>
-						</div>
-
-						<div class="row mt-3">
-							<h2 class="pub-year-h2">2022</h2>
-
-							<div class="pub-block">
-								<div class="lucida-console h5">CPU-PCGCN: Procesamiento Eficiente de Redes Convolucionales de Grafos en Arquitecturas CPU</div>
-								<div class="pub-authors mt-1"><span class="pub-author">Nicolás Meseguer-Iborra</span>, Francisco Muñoz-Martínez, José L. Abellán, Manuel E. Acacio</div>
-								<div class="pub-congress">XXXII Jornadas de Paralelismo, Alicante (Spain), September 2022.</div>
-								<div class="mt-1">
-									<span> <i class="far fa-file-pdf"></i> <a href="/assets/documents/publications/2022CPU-PCGCN.pdf" target="_blank" class="link-dark ">PDF</a> </span>
-									<span class="pub-force-margin-left"> <i class="fas fa-quote-left"></i> <a href="#" id="citation" class="link-dark">BibTeX</a> </span>
-								</div>
-								<div class="d-none">
-@article{2022cpupcgcn,
-	author = {Meseguer-Iborra, Nicolas and Muñoz-Martínez, Francisco and Abellán, José L. and Acacio, Manuel E.},
-	year = {2022},
-	month = {June},
-	title = {CPU-PCGCN: Procesamiento Eficiente de Redes Convolucionales de Grafos en Arquitecturas CPU},
-	journal = {Avances en Arquitectura y Tecnología de Computadores},
-	volume = {32},
-	pages = {445--453},
-	isbn = {978-84-1302-185-0}
-}</div>
-							</div>
-						</div>
-
-						<div class="row mt-3">
-							<h2 class="pub-year-h2">2021</h2>
-
-							<div class="pub-block">
-								<div class="lucida-console h5">Evaluación de un Sistema de Recomendación en un Acelerador Híbrido</div>
-								<div class="pub-authors mt-1"><span class="pub-author">Nicolás Meseguer-Iborra</span>, Francisco Muñoz-Martínez, Manuel E. Acacio, José L. Abellán</div>
-								<div class="pub-congress">XXXI Jornadas de Paralelismo, Málaga (Spain), September 2021.</div>
-								<div class="mt-1">
-									<span> <i class="far fa-file-pdf"></i> <a href="/assets/documents/publications/2021DLRM.pdf" target="_blank" class="link-dark">PDF</a> </span>
-									<span class="pub-force-margin-left"> <i class="fas fa-quote-left"></i> <a href="#" id="citation" class="link-dark">BibTeX</a> </span>
-								</div>
-								<div class="d-none">
-@article{2021dlrm,
-	author = {Meseguer-Iborra, Nicolas and Muñoz-Martínez, Francisco and Acacio, Manuel E. and Abellán, José L.},
-	year = {2021},
-	month = {June},
-	title = {Evaluación de un Sistema de Recomendación en un Acelerador Híbrido},
-	journal = {Avances en Arquitectura y Tecnología de Computadores},
-	volume = {31},
-	pages = {107--115},
-	isbn = {978-84-09-32487-3}
-}</div>
-							</div>
-						</div>
-					</div>
-				</div>
-
-				<!-- Blog -->
-				<div class="col-md-8 offset-md-1 mb-5" id="blogContent">
-					<div class="container">
-
-						<div class="clickable mt-4 language">
-							<div class="d-none">https://nicolasmeseguer.notion.site/StreaMemory-Benchmark-35739f7f69404274a1d287f6827ef203</div>
-							<div class="h5">⛲ StreaMemory Benchmark</div>
-							<div class="blog-info mt-2">
-								<div class="d-inline">
-									<i class="fa-light fa-hourglass-clock" aria-hidden="true"></i> 25 min
-								</div>
-
-								<div class="float-end d-inline">
-									<i class="fa-light fa-calendar" aria-hidden="true"></i> 11 feb. 2022
-								</div>
-							</div>
-
-							<div class="blog-short mt-2" 
-								data-es="Explicación del Stream + Memory benchmark en MGPUSim y los archivos que he tenido que modificar para lograrlo."
-								data-en="Explanation of the Stream + Memory benchmark in MGPUSim and the files I had to modify to achieve it.">
-							</div>
-
-							<div class="blog-tags mt-1">
-								<span class="tag t-sky">#benchmark</span> <span class="tag t-lime">#mgpusim</span> <span class="tag t-purple">#akita</span>
-							</div>
-						</div>
-
-						<div class="clickable mt-4 language">
-							<div class="d-none">https://nicolasmeseguer.notion.site/Elementwise-2D-546f8fe9a8a24852a234bdc28b00cd15</div>
-							<div class="h5">🧊 Elementwise 2D Tensor</div>
-							<div class="blog-info mt-2">
-								<div class="d-inline">
-									<i class="fa-light fa-hourglass-clock" aria-hidden="true"></i> 10 min
-								</div>
-
-								<div class="float-end d-inline">
-									<i class="fa-light fa-calendar" aria-hidden="true"></i> 12 dec. 2022
-								</div>
-							</div>
-
-							<div class="blog-short mt-2" 
-								data-es="Explicación de element-wise para un tensor doble (2D) y un caso práctico de porqué no usar tamaños aleatorios para el tamaño de la matriz."
-								data-en="Explanation of element-wise for a double (2D) tensor and a case study of why not to use random sizes for matrix size.">
-							</div>
-
-							<div class="blog-tags mt-1">
-								<span class="tag t-sky">#mgpusim</span> <span class="tag t-sky">#akita</span>
-							</div>
-						</div>
-
-						<div class="clickable mt-4 language">
-							<div class="d-none">https://nicolasmeseguer.notion.site/Tracing-LDS-Unit-69210a9d8fe44b4a997f8391aa508621</div>
-							<div class="h5">🛤️ Tracing LDS Unit</div>
-							<div class="blog-info mt-2">
-								<div class="d-inline">
-									<i class="fa-light fa-hourglass-clock" aria-hidden="true"></i> 20 min
-								</div>
-
-								<div class="float-end d-inline">
-									<i class="fa-light fa-calendar" aria-hidden="true"></i> 30 nov. 2022
-								</div>
-							</div>
-
-							<div class="blog-short mt-2"
-								data-es="¿Alguna vez has querido adjuntar un tracer a un componente específico dentro de MGPUSim? Incluso si ese 'componente' no es un componente como tal, sino un subcomponente de un componente. Este tutorial te será útil."
-								data-en="Have you ever wanted to attach a tracer to a specific component inside MGPUSim? Even if that 'component' is not a component itself but a subcomponent of a component. This tutorial will be helpful.">
-							</div>
-
-							<div class="blog-tags mt-1">
-								<span class="tag t-sky">#mgpusim</span> <span class="tag t-sky">#akita</span> <span class="tag t-sky">#tracing</span>
-							</div>
-						</div>
-
-						<div class="clickable mt-4 language">
-							<div class="d-none">https://nicolasmeseguer.notion.site/DAISEN-Tutorial-9d041575a9b0489099086152fd9a927e</div>
-							<div class="h5">📊 DAISEN Tutorial</div>
-							<div class="blog-info mt-2">
-								<div class="d-inline">
-									<i class="fa-light fa-hourglass-clock" aria-hidden="true"></i> 15 min
-								</div>
-
-								<div class="float-end d-inline">
-									<i class="fa-light fa-calendar" aria-hidden="true"></i> 15 nov. 2022
-								</div>
-							</div>
-
-							<div class="blog-short mt-2" 
-								data-es="Breve tutorial sobre la herramienta de visualización DAISEN utilizada para MGPUSim. Este tutorial viene acompañado con un kernel de referencia."
-								data-en="Brief tutorial about the visualization tool DAISEN used for MGPUSim. This tutorial comes along with a kernel example.">
-							</div>
-
-							<div class="blog-tags mt-1">
-								<span class="tag t-sky">#mgpusim</span> <span class="tag t-sky">#akita</span> <span class="tag t-sky">#daisen</span>
-							</div>
-						</div>
-						
-					</div>
-				</div>
-
-				<!-- Academic / Teaching -->
-				<div class="col-md-8 offset-md-1 mb-5" id="academicContent">
-					<div class="container">
-
-						<!-- Each new year -->
-						<div class="row mt-2 language">
-							<!-- Year -->
-							<h2 class="academic-year-h2">2024</h2>
-
-							<!-- Each subject -->
-							<div class="academic-block mt-4">
-								<!-- Title -->
-								<div class="lucida-console h5 academic-name"> <span data-en="Multi-core and Purpose-built Architectures" data-es="Arquitecturas Multinúcleo y de Propósito Específico (AMPE)"></span></div>
-								<!-- Subtitle -->
-								<div class="academic-rol mt-1"><span data-en="Teaching Assistant" data-es="Profesor de Prácticas"></span></div>
-								<!-- Extra inf -->
-								<div class="academic-year">3.00 ECTS. <span data-en="February 2024 - June 2024" data-es="Febrero 2024 - Junio 2024"></span></div>
-								<!-- Links -->
-								<div class="mt-1"><a href="https://twitter.com/AMPE_UMU" target="_blank" class="link-dark"><i class="fa-brands fa-twitter"></i></a></div>
-							</div>
-						</div>
-
-						<div class="row mt-4 language">
-							<h2 class="academic-year-h2">2023</h2>
-
-							<div class="academic-block">
-								<div class="lucida-console h5 academic-name"> <span data-en="Introduction to Operating Systems" data-es="Introducción a Sistemas Operativos (ISO)"></span></div>
-								<div class="academic-rol mt-1"><span data-en="Teaching Assistant" data-es="Profesor de Prácticas"></span></div>
-								<div class="academic-year">3.00 ECTS. <span data-en="September 2023 - January 2024" data-es="Septiembre 2023 - Enero 2024"></span></div>
-							</div>
-
-							<div class="academic-block mt-4">
-								<div class="lucida-console h5 academic-name"> <span data-en="Multi-core and Purpose-built Architectures" data-es="Arquitecturas Multinúcleo y de Propósito Específico (AMPE)"></span></div>
-								<div class="academic-rol mt-1"><span data-en="Teaching Assistant" data-es="Profesor de Prácticas"></span></div>
-								<div class="academic-year">3.00 ECTS. <span data-en="February 2023 - June 2023" data-es="Febrero 2023 - Junio 2023"></span></div>
-								<div class="mt-1"><a href="https://twitter.com/AMPE_UMU" target="_blank" class="link-dark"><i class="fa-brands fa-twitter"></i></a></div>
-							</div>
-						</div>
-
-						<div class="row mt-4 language">
-							<h2 class="student-h2" data-es="Alumnos" data-en="Students"></h2>
-
-							<div class="student-block">
-								<div class="student-name"> José Ángel Nicolás Ortega </div>
-								<div class="mt-1 h5 lucida-console"><span data-en="Register Bank Modeling on GPUs with MGPUSim" data-es="Modelado del Banco de Registros en GPUs con MGPUSim"></span></div>
-								<div class="student-mark fireworks">9.9 <span data-es="Sobresaliente - M. Honor" data-en="Outstanding - H.M."></span> </div>
-								<div class="mt-2 student-period"> <span data-en="September 2022 - June 2023" data-es="Septiembre 2022 - Junio 2023"></span> </div>
-							</div>
-						</div>
-					</div>
-				</div>
-
-				<!-- Conferences -->
-				<div class="col-md-8 offset-md-1 mb-5" id="conferencesContent">
-					<div class="container language">
-						🌲 
-						<span 
-							data-es="Tienes todo el tiempo en el mundo para diseñar esta página"
-							data-en="You have all the time in the world to design this page.">
-						</span>
-						🌍
-						</div>
-				</div>
-
-				<!-- Experience -->
-				<div class="col-md-8 offset-md-1" id="experienceContent">
-					<div class="container language">
-						🌲 
-						<span 
-							data-es="Tienes todo el tiempo en el mundo para diseñar esta página"
-							data-en="You have all the time in the world to design this page.">
-						</span>
-						🌍
-						</div>
-				</div>
-
-				<!-- Projects -->
-				<div class="col-md-8 offset-md-1" id="projectsContent">
-					<div class="container language">
-						🌲 
-						<span 
-							data-es="Tienes todo el tiempo en el mundo para diseñar esta página"
-							data-en="You have all the time in the world to design this page.">
-						</span>
-						🌍
-						</div>
-				</div>
-
-				<!-- Photos -->
-				<!-- <div class="col-md-8 offset-md-1 mb-5" id="photosContent">
+			<!-- Photos -->
+			<!-- <div class="col-md-8 offset-md-1 mb-5" id="photosContent">
 					<h2 class="section-title language" 
 						data-en="Photos" 
 						data-es="Fotos">
@@ -884,16 +626,19 @@
 				</div> -->
 
 
-			</div>
 		</div>
+	</div>
 
 
-		<!-- Scripts -->
-		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/js/bootstrap.bundle.min.js" integrity="sha384-pprn3073KE6tl6bjs2QrFaJGz5/SUsLqktiwsUTF55Jfv3qYSDhgCecCxMW52nD2" crossorigin="anonymous"></script>
-		<script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
-		<script src="assets/js/languageManager.js"></script>
-		<script src="assets/js/main.js"></script>
-	</body>
+	<!-- Scripts -->
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/js/bootstrap.bundle.min.js"
+		integrity="sha384-pprn3073KE6tl6bjs2QrFaJGz5/SUsLqktiwsUTF55Jfv3qYSDhgCecCxMW52nD2"
+		crossorigin="anonymous"></script>
+	<script src="https://code.jquery.com/jquery-3.6.0.min.js"
+		integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+	<script src="assets/js/languageManager.js"></script>
+	<script src="assets/js/main.js"></script>
+</body>
 
 </html>

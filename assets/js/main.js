@@ -67,7 +67,7 @@ $(document).ready(function(){
 		}
 	});
 
-	// Handle 'Blog' content
+	// Handle Writing & press content
 	$('#blog').click(function(e) {
 
 		// If the div has already the class active, no need to reload the divs...
@@ -84,7 +84,7 @@ $(document).ready(function(){
 		}
 	});
 
-	// Handle 'Academic' content
+	// Handle teaching content
 	$('#academic').click(function(e) {
 
 		// If the div has already the class active, no need to reload the divs...
@@ -204,9 +204,13 @@ $(document).ready(function(){
 	// Handles the Blog events
 	// ******************** //
 
-	// Opens the blog post in a new tab
+	// Opens the blog / press card target URL (hidden in .d-none) in a new tab
 	$('.clickable').click(function(e) {
-		window.open($(e.currentTarget)[0].childNodes[1].innerText, '_blank').focus();
+		var url = $(e.currentTarget).find('.d-none').first().text().trim();
+		if (url.length > 0) {
+			var w = window.open(url, '_blank');
+			if (w) w.opener = null;
+		}
 	});
 
 
