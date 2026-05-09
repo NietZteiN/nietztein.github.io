@@ -4,7 +4,7 @@ class LanguageManager {
   }
 
   async loadConfig() {
-    const response = await fetch("/assets/js/languages.json");
+    const response = await fetch("assets/js/languages.json");
     this.config = await response.json();
     this.availableLanguages = Object.keys(this.config.languages);
     this.setLanguage(localStorage.getItem("lan") || this.config.default);
