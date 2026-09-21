@@ -40,17 +40,9 @@ follow the publishing steps below.
 3. Commit and push. That's it.
 
 A GitHub Action ([`.github/workflows/build-blog.yml`](../.github/workflows/build-blog.yml))
-regenerates the blog outputs from the posts folder and commits them back, so the
-site picks up the new post automatically. **These files are generated — do not
-edit them by hand:**
-
-- `index.json` — post metadata (title, date, summary, tags, word count and
-  reading time) used by the list view, the command palette and the RSS feed.
-- `feed.xml` — RSS 2.0 feed, linked from the page head.
-- `p/<slug>.html` — one tiny page per post carrying Open Graph and Twitter
-  meta tags, which redirects to the in-app post. Share
-  `https://nietztein.github.io/blog/p/<slug>.html` when you want a link
-  preview card; the plain `#/post/<slug>` link works too but shows no card.
+regenerates `index.json` from the posts folder and commits it back, so the site
+picks up the new post automatically. **`index.json` is generated — do not edit it
+by hand.**
 
 ## One-time setup
 
@@ -79,7 +71,4 @@ renders the list, and — when you open a post — fetches its Markdown, convert
 with [marked](https://marked.js.org/), sanitizes it with
 [DOMPurify](https://github.com/cure53/DOMPurify), then applies
 [highlight.js](https://highlightjs.org/) and [KaTeX](https://katex.org/).
-Individual posts are linkable at `#/post/<slug>`. The list view supports
-`#/blog?tag=<tag>` and `#/blog?q=<search>` for linkable filters, and posts get a
-table of contents (three or more headings), copy buttons on code blocks, and
-older/newer links.
+Individual posts are linkable at `#/post/<slug>`.
