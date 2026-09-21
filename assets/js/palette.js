@@ -26,7 +26,6 @@
 		{ label: 'Publications', hash: '#/publications', keywords: 'papers preprints arxiv abstracts' },
 		{ label: 'Writing & press', hash: '#/press', keywords: 'news mentions articles media' },
 		{ label: 'Blog', hash: '#/blog', keywords: 'posts writing essays' },
-		{ label: 'Projects', hash: '#/projects', keywords: 'code software portfolio' },
 		{ label: 'Teaching', hash: '#/teaching', keywords: 'grader teaching assistant courses' },
 		{ label: 'Presentations', hash: '#/presentations', keywords: 'talks symposium conference' },
 		{ label: 'Experience', hash: '#/experience', keywords: 'work internships research industry community' },

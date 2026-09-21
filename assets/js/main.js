@@ -2,7 +2,7 @@
 //
 // Routes (every section is linkable):
 //   #/about  #/education  #/publications  #/press  #/blog  #/post/<slug>
-//   #/projects  #/teaching  #/presentations  #/experience
+//   #/teaching  #/presentations  #/experience
 //
 // The blog module (blog.js) renders inside the #/blog and #/post/* routes;
 // this file decides which section is visible and tells Blog what to draw.
@@ -23,7 +23,6 @@
 		teaching: 'academicContent',
 		presentations: 'presentationsContent',
 		experience: 'experienceContent',
-		projects: 'projectsContent',
 	};
 	var TITLES = {
 		about: 'About',
@@ -35,7 +34,6 @@
 		teaching: 'Teaching',
 		presentations: 'Presentations',
 		experience: 'Experience',
-		projects: 'Projects',
 	};
 	var DEFAULT_ROUTE = 'about';
 	var SITE_NAME = 'Jack V. Le';

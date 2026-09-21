@@ -620,8 +620,6 @@ a {
 	}
 }
 
-/* ---------- Blog: filters, TOC, copy buttons, pager --------------------- */
-
 /* ---------- Blog extras: list controls, TOC, copy buttons, pager --------- */
 /* Uses only the tokens defined in main.css, so both themes are covered.     */
 
@@ -911,8 +909,6 @@ a {
 }
 
 
-/* ---------- Projects + palette button ---------------------------------- */
-
 /* ---------- Command palette button (navbar) ----------------------------- */
 
 /* Same look as .theme-toggle, but pill-shaped to fit the icon + shortcut. */
@@ -959,61 +955,6 @@ a {
 		margin: .5rem .5rem .25rem 0;
 	}
 }
-
-/* ---------- Projects ---------------------------------------------------- */
-
-.project-card {
-	height: 100%;
-	background: var(--surface);
-	border: 1px solid var(--border);
-	border-radius: 16px;
-	padding: 18px 20px;
-	transition: transform var(--dur) var(--ease-out), box-shadow var(--dur) var(--ease-out),
-		border-color var(--dur) var(--ease-out);
-}
-
-.project-card:hover {
-	transform: translateY(-3px);
-	box-shadow: var(--shadow-hover);
-	border-color: var(--accent-ring);
-}
-
-.project-card .h5 {
-	font-weight: 500;
-	font-size: 1.05rem;
-	line-height: 1.4;
-}
-
-.project-desc {
-	color: var(--text-2);
-}
-
-.project-tag {
-	display: inline-block;
-	font-size: 12px;
-	font-weight: 600;
-	padding: 2px 9px;
-	background: var(--accent-soft);
-	color: var(--accent);
-	border-radius: 100px;
-	margin: 0 4px 4px 0;
-}
-
-.project-links {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 1rem;
-	margin-top: .75rem;
-	font-size: .95rem;
-}
-
-.project-links i {
-	font-size: .85em;
-	opacity: .8;
-}
-
-
-/* ---------- Command palette --------------------------------------------- */
 
 /* ---------- Command palette (palette.js) -------------------------------- */
 
