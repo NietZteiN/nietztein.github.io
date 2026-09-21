@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Jack V. Le</title>
+    <link>https://nietztein.github.io/#/blog</link>
+    <atom:link href="https://nietztein.github.io/blog/feed.xml" rel="self" type="application/rss+xml" />
+    <description>Notes on language models, meaning, and research.</description>
+    <language>en-us</language>
+    <lastBuildDate>Mon, 21 Sep 2026 15:32:24 GMT</lastBuildDate>
+    <item>
+      <title>Possessed by Memory</title>
+      <link>https://nietztein.github.io/#/post/possessed-by-memory</link>
+      <guid isPermaLink="false">possessed-by-memory</guid>
+      <pubDate>Thu, 10 Sep 2026 00:00:00 GMT</pubDate>
+      <description>On reading widely, fertile wrong theories, and why memorization is a precondition for thinking.</description>
+      <category>reading</category>
+      <category>memory</category>
+      <category>research</category>
+    </item>
+    <item>
+      <title>Research, Humor, and the Play Drive</title>
+      <link>https://nietztein.github.io/#/post/research-humor-and-the-play-drive</link>
+      <guid isPermaLink="false">research-humor-and-the-play-drive</guid>
+      <pubDate>Thu, 27 Aug 2026 00:00:00 GMT</pubDate>
+      <description>Why genuine research behaves like a joke, and why play requires both form and friction.</description>
+      <category>research</category>
+      <category>philosophy</category>
+      <category>machine-learning</category>
+    </item>
+    <item>
+      <title>Open Questions in Language Acquisition</title>
+      <link>https://nietztein.github.io/#/post/open-questions-in-language-acquisition</link>
+      <guid isPermaLink="false">open-questions-in-language-acquisition</guid>
+      <pubDate>Sat, 01 Aug 2026 00:00:00 GMT</pubDate>
+      <description>My version of Erdős problems. Many of these seem intractable.</description>
+      <category>linguistics</category>
+      <category>language-acquisition</category>
+    </item>
+    <item>
+      <title>Metaphors We Hallucinate By</title>
+      <link>https://nietztein.github.io/#/post/metaphors-we-hallucinate-by</link>
+      <guid isPermaLink="false">metaphors-we-hallucinate-by</guid>
+      <pubDate>Wed, 15 Jul 2026 00:00:00 GMT</pubDate>
+      <description>There are more things in brains and networks, Horatio, than are dreamt of in your metaphors.</description>
+      <category>llm</category>
+      <category>linguistics</category>
+    </item>
+    <item>
+      <title>Towards a Sort of AI Poetry</title>
+      <link>https://nietztein.github.io/#/post/what-language-models-represent</link>
+      <guid isPermaLink="false">what-language-models-represent</guid>
+      <pubDate>Tue, 14 Jul 2026 00:00:00 GMT</pubDate>
+      <description>towards a sort of ai poetry.</description>
+      <category>nlp</category>
+      <category>poetry</category>
+    </item>
+  </channel>
+</rss>
