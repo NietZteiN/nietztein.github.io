@@ -36,7 +36,6 @@
 		{ label: 'GitHub', url: 'https://github.com/nietztein', keywords: 'code repositories nietztein' },
 		{ label: 'LinkedIn', url: 'https://www.linkedin.com/in/jack-le-utd/', keywords: 'profile network' },
 		{ label: 'Email', url: 'mailto:jackle12533@gmail.com', keywords: 'contact mail jackle12533' },
-		{ label: 'RSS feed', url: 'blog/feed.xml', keywords: 'subscribe atom xml' },
 	];
 
 	var ACTIONS = [
