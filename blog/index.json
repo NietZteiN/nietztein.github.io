@@ -9,12 +9,10 @@
       "memory",
       "research"
     ],
-    "words": 1303,
-    "minutes": 7,
     "file": "2026-09-10-possessed-by-memory.md"
   },
   {
-    "slug": "research-humor-and-the-play-drive",
+    "slug": "untitled",
     "title": "Research, Humor, and the Play Drive",
     "date": "2026-08-27",
     "summary": "Why genuine research behaves like a joke, and why play requires both form and friction.",
@@ -23,9 +21,7 @@
       "philosophy",
       "machine-learning"
     ],
-    "words": 377,
-    "minutes": 2,
-    "file": "2026-08-27-research-humor-and-the-play-drive.md"
+    "file": "2026-08-27-untitled.md"
   },
   {
     "slug": "open-questions-in-language-acquisition",
@@ -36,8 +32,6 @@
       "linguistics",
       "language-acquisition"
     ],
-    "words": 962,
-    "minutes": 5,
     "file": "2026-08-01-open-questions-in-language-acquisition.md"
   },
   {
@@ -49,8 +43,6 @@
       "llm",
       "linguistics"
     ],
-    "words": 698,
-    "minutes": 3,
     "file": "2026-07-15-metaphors-we-hallucinate-by.md"
   },
   {
@@ -62,8 +54,6 @@
       "nlp",
       "poetry"
     ],
-    "words": 245,
-    "minutes": 1,
     "file": "2026-07-14-what-language-models-represent.md"
   }
 ]
