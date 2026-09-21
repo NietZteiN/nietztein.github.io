@@ -1,6 +1,26 @@
 [
   {
-    "slug": "untitled",
+    "slug": "possessed-by-memory",
+    "title": "Possessed by Memory",
+    "date": "2026-09-10",
+    "summary": "On reading widely, fertile wrong theories, and why memorization is a precondition for thinking.",
+    "tags": [
+      "reading",
+      "memory",
+      "research"
+    ],
+    "file": "2026-09-10-possessed-by-memory.md"
+  },
+  {
+    "slug": "i-am-an-ai-loop",
+    "title": "I am an AI loop",
+    "date": "2026-09-08",
+    "summary": "",
+    "tags": [],
+    "file": "2026-09-08-i-am-an-ai-loop.md"
+  },
+  {
+    "slug": "research-humor-and-the-play-drive",
     "title": "Research, Humor, and the Play Drive",
     "date": "2026-08-27",
     "summary": "Why genuine research behaves like a joke, and why play requires both form and friction.",
@@ -9,7 +29,7 @@
       "philosophy",
       "machine-learning"
     ],
-    "file": "2026-08-27-untitled.md"
+    "file": "2026-08-27-research-humor-and-the-play-drive.md"
   },
   {
     "slug": "open-questions-in-language-acquisition",

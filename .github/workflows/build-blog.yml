@@ -33,12 +33,12 @@ jobs:
 
       - name: Commit updated index
         run: |
-          if [ -n "$(git status --porcelain blog/index.json)" ]; then
+          if [ -n "$(git status --porcelain blog/index.json blog/feed.xml blog/p)" ]; then
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add blog/index.json
-            git commit -m "chore(blog): rebuild index [skip ci]"
+            git add blog/index.json blog/feed.xml blog/p
+            git commit -m "chore(blog): rebuild index, feed and share pages [skip ci]"
             git push
           else
-            echo "blog/index.json already up to date"
+            echo "blog outputs already up to date"
           fi
