@@ -1,5 +1,17 @@
 [
   {
+    "slug": "latentland",
+    "title": "Latentland",
+    "date": "2026-09-21",
+    "summary": "A Romance of One Dimension.",
+    "tags": [
+      "llm",
+      "interpretability",
+      "fiction"
+    ],
+    "file": "2026-09-21-latentland.md"
+  },
+  {
     "slug": "untitled",
     "title": "Research, Humor, and the Play Drive",
     "date": "2026-08-27",
