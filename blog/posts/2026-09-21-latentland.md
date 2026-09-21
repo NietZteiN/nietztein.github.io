@@ -5,6 +5,6 @@ summary: A Romance of One Dimension.
 tags: [llm, interpretability, fiction]
 ---
 
-a stupid idea i had and an hour of prompting later, this is what I came up with about this idea.
+a dumb idea i had: what would it be like to be a single neuron inside a language model? this is what an hour of prompting turned it into.
 
 **[Read *Latentland: A Romance of One Dimension* (PDF)](assets/documents/latentland.pdf)**
