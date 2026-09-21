@@ -1,43 +1,122 @@
-/* MOBILE's FIRST - Custom properties */
-/* This classes will be then modified for bigger screens */
+/* ==========================================================================
+   nietztein.github.io — single stylesheet.
 
-#mowatave {
-	color: #2bd284 !important;
-	text-decoration: underline;
+   Theme is driven by `data-theme="light|dark"` on <html> (set before first
+   paint by an inline script in index.html, and toggled by main.js). Every
+   colour below is a token; components only ever reference tokens.
+   ========================================================================== */
+
+/* ---------- Tokens ------------------------------------------------------ */
+
+:root {
+	--bg: #ffffff;
+	--surface: #f7f8fa;
+	--surface-2: #eef0f3;
+	--text: #1b1f24;
+	--text-2: #5f6873;
+	--heading: #0d1117;
+	--border: #e2e5e9;
+	--border-strong: #cfd4da;
+	--accent: #1f5fd6;
+	--accent-soft: rgba(31, 95, 214, 0.10);
+	--accent-ring: rgba(31, 95, 214, 0.35);
+	--nav-bg: rgba(255, 255, 255, 0.78);
+	--shadow: 0 1px 2px rgba(16, 24, 40, 0.06), 0 8px 24px rgba(16, 24, 40, 0.06);
+	--shadow-hover: 0 2px 4px rgba(16, 24, 40, 0.08), 0 16px 40px rgba(16, 24, 40, 0.12);
+	--code-bg: #f3f4f6;
+	--code-text: #24292f;
+	--pre-bg: #f6f8fa;
+	--quote: #57606a;
+
+	--font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+	--font-mono: 'JetBrains Mono', 'Lucida Console', ui-monospace, monospace;
+
+	--ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+	--dur-fast: 160ms;
+	--dur: 320ms;
+	--dur-slow: 520ms;
+
+	/* Bootstrap hooks so its components follow the theme. */
+	--bs-body-bg: var(--bg);
+	--bs-body-color: var(--text);
+	--bs-body-font-family: var(--font-body);
+	--bs-link-color: var(--accent);
+	--bs-link-hover-color: var(--accent);
+
+	color-scheme: light;
 }
 
-.underline {
-	text-decoration: underline;
+:root[data-theme="dark"] {
+	--bg: #0f1115;
+	--surface: #161a20;
+	--surface-2: #1e232b;
+	--text: #d5dae2;
+	--text-2: #9aa3af;
+	--heading: #f3f5f8;
+	--border: #262c35;
+	--border-strong: #343c47;
+	--accent: #7cb3ff;
+	--accent-soft: rgba(124, 179, 255, 0.12);
+	--accent-ring: rgba(124, 179, 255, 0.40);
+	--nav-bg: rgba(15, 17, 21, 0.72);
+	--shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 8px 24px rgba(0, 0, 0, 0.35);
+	--shadow-hover: 0 2px 4px rgba(0, 0, 0, 0.45), 0 16px 40px rgba(0, 0, 0, 0.5);
+	--code-bg: #1e232b;
+	--code-text: #e6e9ee;
+	--pre-bg: #12151a;
+	--quote: #aeb6c2;
+
+	color-scheme: dark;
+}
+
+/* ---------- Base -------------------------------------------------------- */
+
+html {
+	scroll-behavior: smooth;
+}
+
+body {
+	background-color: var(--bg);
+	color: var(--text);
+	font-family: var(--font-body);
+	-webkit-font-smoothing: antialiased;
+	transition: background-color var(--dur) ease, color var(--dur) ease;
+}
+
+h1, h2, h3, h4, h5, h6, b, strong {
+	color: var(--heading);
 }
 
 a {
+	color: var(--accent);
 	text-decoration-thickness: 1px;
+	text-underline-offset: 2px;
 }
 
-#hobbiesH4 {
-	text-align: center;
+/* In-content "quiet" links (name kept from the original markup). */
+.link-dark {
+	color: var(--heading) !important;
+	background-image: linear-gradient(var(--accent), var(--accent));
+	background-repeat: no-repeat;
+	background-size: 0% 1px;
+	background-position: 0 100%;
+	text-decoration: none;
+	transition: background-size var(--dur) var(--ease-out), color var(--dur-fast) ease;
 }
 
-#hobbie1, #hobbie2, #hobbie3 {
-	text-align: center;
-	margin-top: 1em;
+.link-dark:hover,
+.link-dark:focus-visible {
+	color: var(--accent) !important;
+	background-size: 100% 1px;
 }
 
-.abme-honors-bullet{
-	font-size: 16px;
-}
-
-/* GENERAL CSS */
-#main-content {
-	margin-top: 20px;
-}
-
-li > .active {
-	font-weight: 500;
+.t-secondary {
+	color: var(--text-2);
 }
 
 .trnsf-thin {
 	font-weight: 300;
+	color: var(--text-2);
 }
 
 .trnsf-italic {
@@ -46,74 +125,293 @@ li > .active {
 
 .justify {
 	text-align: justify;
-  	text-justify: inter-word;
+	text-justify: inter-word;
 }
 
 .lucida-console {
-	font-family: 'Lucida Console', monospace;
+	font-family: var(--font-mono);
+	letter-spacing: -0.01em;
 }
 
-/* NICOLAS MESEGUER CONTACT INFO - Related*/
+.abme-honors-bullet {
+	font-size: 16px;
+}
+
+.underline {
+	text-decoration: underline;
+}
+
+#main-content {
+	margin-top: 28px;
+}
+
+/* ---------- Reading progress bar --------------------------------------- */
+
+#reading-progress {
+	position: fixed;
+	top: 0;
+	left: 0;
+	height: 3px;
+	width: 0%;
+	background: var(--accent);
+	z-index: 1100;
+	pointer-events: none;
+	opacity: 0;
+	transition: opacity var(--dur-fast) ease;
+}
+
+#reading-progress.visible {
+	opacity: 1;
+}
+
+/* ---------- Navbar ------------------------------------------------------ */
+
+#top-nav {
+	background-color: var(--nav-bg);
+	-webkit-backdrop-filter: saturate(180%) blur(14px);
+	backdrop-filter: saturate(180%) blur(14px);
+	border-bottom: 1px solid var(--border);
+	transition: background-color var(--dur) ease, border-color var(--dur) ease;
+	padding-top: .35rem;
+	padding-bottom: .35rem;
+}
+
+#top-nav .navbar-brand {
+	font-weight: 600;
+	color: var(--heading);
+	letter-spacing: -0.01em;
+}
+
+#top-nav .nav-link {
+	position: relative;
+	color: var(--text-2);
+	font-weight: 500;
+	padding: .55rem .75rem;
+	transition: color var(--dur-fast) ease;
+}
+
+#top-nav .nav-link::after {
+	content: '';
+	position: absolute;
+	left: .75rem;
+	right: .75rem;
+	bottom: .3rem;
+	height: 2px;
+	border-radius: 2px;
+	background: var(--accent);
+	transform: scaleX(0);
+	transform-origin: left center;
+	transition: transform var(--dur) var(--ease-out);
+}
+
+#top-nav .nav-link:hover,
+#top-nav .nav-link:focus-visible {
+	color: var(--heading);
+}
+
+#top-nav .nav-link.active {
+	color: var(--heading);
+}
+
+#top-nav .nav-link.active::after {
+	transform: scaleX(1);
+}
+
+.navbar-toggler {
+	border-color: var(--border-strong);
+}
+
+.navbar-toggler:focus {
+	box-shadow: 0 0 0 3px var(--accent-ring);
+}
+
+/* Theme toggle lives in the navbar. */
+.theme-toggle {
+	appearance: none;
+	border: 1px solid var(--border);
+	background: var(--surface);
+	color: var(--heading);
+	width: 38px;
+	height: 38px;
+	border-radius: 999px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	transition: transform var(--dur-fast) var(--ease-out), background-color var(--dur-fast) ease,
+		border-color var(--dur-fast) ease, box-shadow var(--dur-fast) ease;
+}
+
+.theme-toggle:hover {
+	transform: rotate(-12deg) scale(1.06);
+	border-color: var(--border-strong);
+}
+
+.theme-toggle:focus-visible {
+	outline: none;
+	box-shadow: 0 0 0 3px var(--accent-ring);
+}
+
+.theme-toggle i {
+	transition: transform var(--dur) var(--ease-out);
+}
+
+@media (max-width: 767.98px) {
+	.theme-toggle {
+		margin: .5rem 0 .25rem;
+	}
+}
+
+/* ---------- Left panel (profile) --------------------------------------- */
+
 .profilepicture {
 	max-height: 300px;
 	min-width: 150px;
 	min-height: 150px;
 	margin-left: auto;
 	margin-right: auto;
+	border-radius: 16px;
+	box-shadow: var(--shadow);
+	outline: 3px solid transparent;
+	outline-offset: 3px;
+	transition: outline-color var(--dur) ease, transform var(--dur-slow) var(--ease-out),
+		box-shadow var(--dur) ease;
+	animation: photo-in var(--dur-slow) var(--ease-out) both;
 }
 
-.fseneca {
-	max-width: 50%; 
-	height: auto;
+.profilepicture:hover {
+	outline-color: var(--accent-ring);
+	transform: translateY(-2px);
+	box-shadow: var(--shadow-hover);
 }
 
-.fseneca:hover {
-	transform: scale(1.05,1.05);
+@keyframes photo-in {
+	from {
+		opacity: 0;
+		transform: translateY(8px) scale(0.98);
+	}
+	to {
+		opacity: 1;
+		transform: none;
+	}
 }
 
-/* PUBLICATIONS - Related */
-.pub-block {
-	border-left: 2px #D9DDDC solid;
-	padding-left: 15px;
+#leftPanel h3 {
+	font-weight: 600;
+	letter-spacing: -0.02em;
 }
 
-.pub-year-h2 {
-	font-size: 3.2em;
-	font-weight: 100;
+#leftPanel .row.mb-2 i {
+	color: var(--text-2);
+}
+
+/* ---------- Sections + transitions ------------------------------------- */
+
+.section {
+	display: none;
+}
+
+.section.active {
+	display: block;
+	animation: section-in var(--dur) var(--ease-out) both;
+}
+
+@keyframes section-in {
+	from {
+		opacity: 0;
+		transform: translateY(10px);
+	}
+	to {
+		opacity: 1;
+		transform: none;
+	}
+}
+
+/* Staggered reveal: main.js sets --i on each child when a section shows. */
+.rise {
+	animation: rise var(--dur-slow) var(--ease-out) both;
+	animation-delay: calc(var(--i, 0) * 45ms);
+}
+
+@keyframes rise {
+	from {
+		opacity: 0;
+		transform: translateY(12px);
+	}
+	to {
+		opacity: 1;
+		transform: none;
+	}
+}
+
+/* ---------- Year headings, publication + teaching blocks --------------- */
+
+.pub-year-h2,
+.academic-year-h2,
+.student-h2 {
+	font-size: 2.6em;
+	font-weight: 200;
+	letter-spacing: -0.03em;
+	color: var(--text-2) !important;
+	line-height: 1.1;
+	margin-bottom: .5rem;
+}
+
+.pub-block,
+.academic-block,
+.student-block {
+	position: relative;
+	border-left: 2px solid var(--border);
+	padding-left: 16px;
+	transition: border-color var(--dur) ease;
+}
+
+.pub-block::before,
+.academic-block::before {
+	content: '';
+	position: absolute;
+	left: -2px;
+	top: 0;
+	height: 0;
+	width: 2px;
+	background: var(--accent);
+	transition: height var(--dur-slow) var(--ease-out);
+}
+
+.pub-block:hover::before,
+.academic-block:hover::before {
+	height: 100%;
+}
+
+.pub-block .h5,
+.academic-name {
+	font-size: 1.05rem;
+	font-weight: 500;
+	line-height: 1.4;
 }
 
 .pub-authors {
 	font-weight: 400;
+	color: var(--text-2);
 }
 
 .pub-authors .pub-author {
-	font-weight: 500;
+	font-weight: 600;
+	color: var(--heading);
 }
 
-.pub-congress {
-	font-weight: 100;
+.pub-congress,
+.academic-year {
+	font-weight: 300;
+	color: var(--text-2);
 }
 
-.pub-force-margin-left {
-	margin-left: 10px !important;
-}
-
-/* ACADEMIC - Related */
-.academic-year-h2, .student-h2 {
-	font-size: 3.2em;
-	font-weight: 100;
-}
-
-.academic-block, .student-block {
-	padding-left: 15px;
+.academic-name {
+	color: var(--accent);
 }
 
 .academic-rol {
-	font-weight: 400;
-}
-
-.academic-year {
-	font-weight: 100;
+	font-weight: 500;
 }
 
 .student-mark {
@@ -125,84 +423,21 @@ li > .active {
 	font-weight: 100;
 }
 
-/* OPTION BUTTON */
-.options-button {
-    position: fixed;
-	
-    height: 50px;
-    width: 50px;
-	cursor: pointer;
+/* ---------- Blog list --------------------------------------------------- */
 
-    border-radius: 100%;
-	
-	bottom: 25px;
-	right: 25px;
-
-	display: inline-block;
-
-	font-size: 1.2em;
-	vertical-align: middle;
-	text-align: center;
-
-	padding-top: .35em;
-}
-
-.options-button i, img {
-	margin: auto;
-	z-index: -999;
-}
-
-#options-toggler {
-	transition: .2s;
-}
-
-#options-toggler:hover {
-	transform: scale(1.09,1.09);
-}
-
-#theme {
-	height: 40px;
-    width: 40px;
-
-	bottom: 85px !important;
-	right: 30px !important;
-
-	font-size: 1em;
-
-	-webkit-transition: background-color .5s; /* For Safari 3.0 to 6.0 */
-    transition: background-color .5s; /* For modern browsers */
-}
-
-#lan {
-	height: 40px;
-    width: 40px;
-
-	bottom: 130px;
-	right: 30px;
-
-	font-size: 1em;
-
-	-webkit-transition: background-color .5s; /* For Safari 3.0 to 6.0 */
-    transition: background-color .5s; /* For modern browsers */
-}
-
-.lang-flag {
-	height: 15px;
-    width: 22.5px;
-	vertical-align:	0px;
-}
-
-/* BLOG - Related */
 .blog-info {
-	font-weight: 100;
+	font-weight: 300;
+	color: var(--text-2);
 	width: 100%;
 	clear: both;
 	display: block;
+	font-size: .95rem;
 }
 
 .blog-short {
 	font-weight: 400;
 	font-size: 17px;
+	color: var(--text-2);
 }
 
 .blog-tags {
@@ -210,77 +445,55 @@ li > .active {
 }
 
 .blog-tags > .tag {
+	display: inline-block;
 	border-radius: 100px;
-	padding: 4px;
+	padding: 3px 9px;
 	font-size: 12px;
 	font-weight: 600;
-	box-shadow: 0px 3px 10px rgba(0,0,0,0.4);
-	color: white;
+	color: #fff;
+	transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.blog-card:hover .blog-tags > .tag {
+	transform: translateY(-1px);
 }
 
 .blog-tags > .t-purple {
-	background-color: rgb(137, 70, 255, 0.8);
+	background-color: rgba(137, 70, 255, 0.85);
 }
 
 .blog-tags > .t-lime {
-	background-color: rgba(118, 185, 0, 0.8);
+	background-color: rgba(118, 185, 0, 0.85);
 }
 
 .blog-tags > .t-sky {
-	background-color: rgba(37, 197, 223, 0.8);
+	background-color: rgba(37, 197, 223, 0.85);
 }
 
-.clickable {
-	border-radius: 20px;
-	border: 2px #D9DDDC solid;
-	padding: 15px;
-	cursor: pointer;
-	transition: .3s;
-	box-shadow: 0px 3px 50px rgba(0,0,0,0.2);
-}
-
-.clickable:hover {
-	box-shadow: 0px 3px 50px rgba(0,0,0,0.3);
-	transform: scale(1.03,1.03);
-}
-
-/* MEDIA QUERIES */
-/* BIGGER SCREENS */
-@media (min-width: 768px) {
-
-	#hobbiesH4 {
-		text-align: left;
-	}
-
-	#hobbie1, #hobbie2, #hobbie3 {
-		text-align: left;
-		margin-top: 0;
-	}
-
-	.profilepicture {
-		margin-left: 0%;
-		margin-right: 0%;
-	}
-	
-	.abme-honors-bullet{
-		margin-left: 40px;
-	}
-}
-
-/* BLOG POSTS (Markdown) - Related */
 .blog-card {
-	border-radius: 20px;
-	border: 2px #D9DDDC solid;
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: 16px;
 	padding: 18px 20px;
 	cursor: pointer;
-	transition: .3s;
-	box-shadow: 0px 3px 50px rgba(0, 0, 0, 0.15);
+	box-shadow: none;
+	transition: transform var(--dur) var(--ease-out), box-shadow var(--dur) ease,
+		border-color var(--dur) ease, background-color var(--dur) ease;
 }
 
-.blog-card:hover {
-	box-shadow: 0px 3px 50px rgba(0, 0, 0, 0.3);
-	transform: scale(1.02, 1.02);
+.blog-card:hover,
+.blog-card:focus-visible {
+	transform: translateY(-3px);
+	box-shadow: var(--shadow-hover);
+	border-color: var(--accent-ring);
+	outline: none;
 }
+
+.blog-card .h5 {
+	font-weight: 500;
+}
+
+/* ---------- Blog post --------------------------------------------------- */
 
 .blog-back {
 	font-weight: 500;
@@ -288,12 +501,23 @@ li > .active {
 
 .blog-post-title {
 	margin-top: .25em;
+	font-weight: 700;
+	letter-spacing: -0.02em;
+}
+
+.blog-post-meta {
+	display: flex;
+	flex-wrap: wrap;
+	gap: .35rem 1rem;
+	color: var(--text-2);
+	font-weight: 300;
+	font-size: .95rem;
 }
 
 .blog-post-body {
 	max-width: 46rem;
 	font-size: 17px;
-	line-height: 1.7;
+	line-height: 1.75;
 }
 
 .blog-post-body h1,
@@ -302,6 +526,7 @@ li > .active {
 .blog-post-body h4 {
 	margin-top: 1.4em;
 	margin-bottom: .5em;
+	letter-spacing: -0.01em;
 }
 
 .blog-post-body p,
@@ -310,26 +535,35 @@ li > .active {
 	margin-bottom: 1.1em;
 }
 
+.blog-post-body a {
+	color: var(--accent);
+}
+
 .blog-post-body img {
 	max-width: 100%;
 	height: auto;
-	border-radius: 8px;
+	border-radius: 10px;
+	box-shadow: var(--shadow);
 }
 
 .blog-post-body pre {
 	padding: 14px 16px;
 	border-radius: 10px;
 	overflow-x: auto;
-	font-family: 'Lucida Console', monospace;
+	font-family: var(--font-mono);
 	font-size: 14px;
 	line-height: 1.5;
+	background: var(--pre-bg);
+	border: 1px solid var(--border);
 }
 
 .blog-post-body code {
-	font-family: 'Lucida Console', monospace;
+	font-family: var(--font-mono);
 	font-size: 0.92em;
 	padding: 1px 5px;
 	border-radius: 5px;
+	background: var(--code-bg);
+	color: var(--code-text);
 }
 
 .blog-post-body pre code {
@@ -339,8 +573,668 @@ li > .active {
 }
 
 .blog-post-body blockquote {
-	border-left: 3px #D9DDDC solid;
+	border-left: 3px solid var(--border-strong);
 	padding-left: 15px;
 	margin-left: 0;
 	font-style: italic;
+	color: var(--quote);
+}
+
+/* ---------- Theme wipe (View Transitions API) --------------------------- */
+
+/* The new theme sweeps in as a circle from the toggle button. */
+::view-transition-old(root),
+::view-transition-new(root) {
+	animation: none;
+	mix-blend-mode: normal;
+}
+
+.theme-wipe::view-transition-old(root) {
+	z-index: 1;
+}
+
+.theme-wipe::view-transition-new(root) {
+	z-index: 2;
+	animation: theme-wipe var(--dur-slow) var(--ease-out);
+}
+
+@keyframes theme-wipe {
+	from {
+		clip-path: circle(0px at var(--wipe-x, 100%) var(--wipe-y, 0%));
+	}
+	to {
+		clip-path: circle(var(--wipe-r, 150vmax) at var(--wipe-x, 100%) var(--wipe-y, 0%));
+	}
+}
+
+/* ---------- Larger screens ---------------------------------------------- */
+
+@media (min-width: 768px) {
+	.profilepicture {
+		margin-left: 0;
+		margin-right: 0;
+	}
+
+	.abme-honors-bullet {
+		margin-left: 40px;
+	}
+}
+
+/* ---------- Blog: filters, TOC, copy buttons, pager --------------------- */
+
+/* ---------- Blog extras: list controls, TOC, copy buttons, pager --------- */
+/* Uses only the tokens defined in main.css, so both themes are covered.     */
+
+/* Search + tag chips above the post list. */
+.blog-controls {
+	display: flex;
+	flex-direction: column;
+	gap: .75rem;
+	margin-top: .25rem;
+	margin-bottom: .5rem;
+}
+
+.blog-search {
+	appearance: none;
+	-webkit-appearance: none;
+	width: 100%;
+	padding: .6rem .95rem;
+	font: inherit;
+	font-size: 1rem;
+	color: var(--text);
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: 999px;
+	outline: none;
+	transition: border-color var(--dur-fast) ease, box-shadow var(--dur-fast) ease,
+		background-color var(--dur-fast) ease;
+}
+
+.blog-search::placeholder {
+	color: var(--text-2);
+	opacity: 1;
+}
+
+.blog-search:hover {
+	border-color: var(--border-strong);
+}
+
+.blog-search:focus,
+.blog-search:focus-visible {
+	border-color: var(--accent);
+	box-shadow: 0 0 0 3px var(--accent-ring);
+}
+
+.blog-search::-webkit-search-cancel-button {
+	cursor: pointer;
+}
+
+.blog-chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: .4rem;
+}
+
+.blog-chip {
+	appearance: none;
+	border: 1px solid var(--border);
+	background: var(--surface);
+	color: var(--text-2);
+	font: inherit;
+	font-size: .8rem;
+	font-weight: 600;
+	line-height: 1;
+	padding: .4rem .75rem;
+	border-radius: 999px;
+	cursor: pointer;
+	transition: background-color var(--dur-fast) ease, color var(--dur-fast) ease,
+		border-color var(--dur-fast) ease, transform var(--dur-fast) var(--ease-out),
+		box-shadow var(--dur-fast) ease;
+}
+
+.blog-chip:hover {
+	color: var(--heading);
+	border-color: var(--border-strong);
+	background: var(--surface-2);
+	transform: translateY(-1px);
+}
+
+.blog-chip:focus-visible {
+	outline: none;
+	box-shadow: 0 0 0 3px var(--accent-ring);
+}
+
+.blog-chip.is-active,
+.blog-chip.is-active:hover {
+	background: var(--accent);
+	border-color: var(--accent);
+	color: #fff;
+}
+
+.blog-empty {
+	color: var(--text-2);
+}
+
+/* Post table of contents. */
+.blog-toc {
+	max-width: 46rem;
+	margin: -.5rem 0 1.75rem;
+	padding: .9rem 1.1rem;
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: 12px;
+	font-size: .93rem;
+	line-height: 1.5;
+}
+
+.blog-toc-label {
+	font-family: var(--font-mono);
+	font-size: .72rem;
+	font-weight: 600;
+	letter-spacing: .08em;
+	text-transform: uppercase;
+	color: var(--text-2);
+	margin-bottom: .45rem;
+}
+
+.blog-toc ol {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.blog-toc ol ol {
+	padding-left: 1rem;
+	margin-top: .15rem;
+	border-left: 1px solid var(--border);
+}
+
+.blog-toc li {
+	margin: .15rem 0;
+}
+
+.blog-toc-link {
+	appearance: none;
+	background: none;
+	border: 0;
+	padding: .1rem 0;
+	margin: 0;
+	font: inherit;
+	text-align: left;
+	color: var(--text);
+	cursor: pointer;
+	border-radius: 4px;
+	transition: color var(--dur-fast) ease;
+}
+
+.blog-toc ol ol .blog-toc-link {
+	color: var(--text-2);
+}
+
+.blog-toc-link:hover {
+	color: var(--accent);
+}
+
+.blog-toc-link:focus-visible {
+	outline: none;
+	box-shadow: 0 0 0 3px var(--accent-ring);
+}
+
+/* Room for the sticky navbar when scrolling to a heading. */
+.blog-post-body h2,
+.blog-post-body h3 {
+	scroll-margin-top: 80px;
+}
+
+/* Copy button on code blocks. */
+.blog-post-body pre {
+	position: relative;
+}
+
+.copy-btn {
+	position: absolute;
+	top: 8px;
+	right: 8px;
+	appearance: none;
+	border: 1px solid var(--border);
+	background: var(--surface);
+	color: var(--text-2);
+	font-family: var(--font-body);
+	font-size: .72rem;
+	font-weight: 600;
+	line-height: 1;
+	padding: .35rem .55rem;
+	border-radius: 6px;
+	cursor: pointer;
+	opacity: 0;
+	transition: opacity var(--dur-fast) ease, color var(--dur-fast) ease,
+		background-color var(--dur-fast) ease, border-color var(--dur-fast) ease;
+}
+
+.blog-post-body pre:hover .copy-btn,
+.copy-btn:focus-visible,
+.copy-btn.is-copied {
+	opacity: 1;
+}
+
+.copy-btn:hover {
+	color: var(--heading);
+	border-color: var(--border-strong);
+	background: var(--surface-2);
+}
+
+.copy-btn:focus-visible {
+	outline: none;
+	box-shadow: 0 0 0 3px var(--accent-ring);
+}
+
+.copy-btn.is-copied {
+	color: #fff;
+	background: var(--accent);
+	border-color: var(--accent);
+}
+
+/* Touch devices have no hover: keep the button visible. */
+@media (hover: none) {
+	.copy-btn {
+		opacity: 1;
+	}
+}
+
+/* Newer / older navigation under a post. */
+.blog-pager {
+	display: flex;
+	justify-content: space-between;
+	align-items: flex-start;
+	gap: 1rem;
+	max-width: 46rem;
+	margin-top: 2.5rem;
+	padding-top: 1.25rem;
+	border-top: 1px solid var(--border);
+}
+
+.blog-pager-link {
+	display: flex;
+	flex-direction: column;
+	gap: .2rem;
+	max-width: 48%;
+	text-decoration: none;
+	color: var(--heading);
+	border-radius: 6px;
+	transition: color var(--dur-fast) ease;
+}
+
+.blog-pager-newer {
+	margin-right: auto;
+	text-align: left;
+}
+
+.blog-pager-older {
+	margin-left: auto;
+	text-align: right;
+}
+
+.blog-pager-label {
+	font-size: .8rem;
+	font-weight: 500;
+	color: var(--text-2);
+}
+
+.blog-pager-title {
+	font-weight: 500;
+	line-height: 1.35;
+}
+
+.blog-pager-link:hover .blog-pager-title,
+.blog-pager-link:focus-visible .blog-pager-title {
+	color: var(--accent);
+}
+
+.blog-pager-link:focus-visible {
+	outline: none;
+	box-shadow: 0 0 0 3px var(--accent-ring);
+}
+
+@media (max-width: 575.98px) {
+	.blog-pager {
+		flex-direction: column;
+	}
+
+	.blog-pager-link {
+		max-width: 100%;
+	}
+
+	.blog-pager-older {
+		margin-left: 0;
+		text-align: left;
+	}
+}
+
+
+/* ---------- Projects + palette button ---------------------------------- */
+
+/* ---------- Command palette button (navbar) ----------------------------- */
+
+/* Same look as .theme-toggle, but pill-shaped to fit the icon + shortcut. */
+.palette-open {
+	appearance: none;
+	border: 1px solid var(--border);
+	background: var(--surface);
+	color: var(--heading);
+	height: 38px;
+	padding: 0 .7rem;
+	gap: .45rem;
+	margin-right: .5rem;
+	border-radius: 999px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	transition: transform var(--dur-fast) var(--ease-out), background-color var(--dur-fast) ease,
+		border-color var(--dur-fast) ease, box-shadow var(--dur-fast) ease;
+}
+
+.palette-open:hover {
+	transform: scale(1.04);
+	border-color: var(--border-strong);
+}
+
+.palette-open:focus-visible {
+	outline: none;
+	box-shadow: 0 0 0 3px var(--accent-ring);
+}
+
+.palette-open kbd {
+	font-family: var(--font-mono);
+	font-size: 11px;
+	padding: 1px 5px;
+	border: 1px solid var(--border);
+	border-radius: 5px;
+	background: var(--surface-2);
+	color: var(--text-2);
+}
+
+@media (max-width: 767.98px) {
+	.palette-open {
+		margin: .5rem .5rem .25rem 0;
+	}
+}
+
+/* ---------- Projects ---------------------------------------------------- */
+
+.project-card {
+	height: 100%;
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: 16px;
+	padding: 18px 20px;
+	transition: transform var(--dur) var(--ease-out), box-shadow var(--dur) var(--ease-out),
+		border-color var(--dur) var(--ease-out);
+}
+
+.project-card:hover {
+	transform: translateY(-3px);
+	box-shadow: var(--shadow-hover);
+	border-color: var(--accent-ring);
+}
+
+.project-card .h5 {
+	font-weight: 500;
+	font-size: 1.05rem;
+	line-height: 1.4;
+}
+
+.project-desc {
+	color: var(--text-2);
+}
+
+.project-tag {
+	display: inline-block;
+	font-size: 12px;
+	font-weight: 600;
+	padding: 2px 9px;
+	background: var(--accent-soft);
+	color: var(--accent);
+	border-radius: 100px;
+	margin: 0 4px 4px 0;
+}
+
+.project-links {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 1rem;
+	margin-top: .75rem;
+	font-size: .95rem;
+}
+
+.project-links i {
+	font-size: .85em;
+	opacity: .8;
+}
+
+
+/* ---------- Command palette --------------------------------------------- */
+
+/* ---------- Command palette (palette.js) -------------------------------- */
+
+/* Background page cannot scroll while the palette is open. */
+body.palette-is-open {
+	overflow: hidden;
+}
+
+.palette-backdrop {
+	position: fixed;
+	inset: 0;
+	z-index: 1200;
+	background: rgba(0, 0, 0, 0.45);
+	-webkit-backdrop-filter: blur(4px);
+	backdrop-filter: blur(4px);
+	opacity: 0;
+	visibility: hidden;
+	transition: opacity var(--dur) var(--ease-out), visibility 0s linear var(--dur);
+}
+
+.palette-backdrop.is-open {
+	opacity: 1;
+	visibility: visible;
+	transition: opacity var(--dur) var(--ease-out), visibility 0s;
+}
+
+.palette {
+	position: fixed;
+	z-index: 1201;
+	top: 15vh;
+	left: 16px;
+	right: 16px;
+	width: auto;
+	max-width: 560px;
+	margin: 0 auto;
+	max-height: 70vh;
+	display: flex;
+	flex-direction: column;
+	background: var(--surface);
+	color: var(--text);
+	border: 1px solid var(--border);
+	border-radius: 14px;
+	box-shadow: var(--shadow-hover);
+	overflow: hidden;
+	opacity: 0;
+	visibility: hidden;
+	transform: translateY(-8px);
+	transition: opacity var(--dur) var(--ease-out), transform var(--dur) var(--ease-out),
+		visibility 0s linear var(--dur);
+}
+
+.palette.is-open {
+	opacity: 1;
+	visibility: visible;
+	transform: translateY(0);
+	transition: opacity var(--dur) var(--ease-out), transform var(--dur) var(--ease-out), visibility 0s;
+}
+
+/* Search field */
+.palette-head {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 6px 14px;
+	border-bottom: 1px solid var(--border);
+	flex: 0 0 auto;
+}
+
+.palette-icon {
+	color: var(--text-2);
+	font-size: .95rem;
+	line-height: 1;
+	flex: 0 0 auto;
+}
+
+.palette-input {
+	flex: 1 1 auto;
+	min-width: 0;
+	appearance: none;
+	background: transparent;
+	border: 0;
+	outline: none;
+	box-shadow: none;
+	color: var(--heading);
+	font-family: inherit;
+	font-size: 1.05rem;
+	line-height: 1.4;
+	padding: 10px 0;
+}
+
+.palette-input::placeholder {
+	color: var(--text-2);
+	opacity: 1;
+}
+
+.palette-input:focus {
+	outline: none;
+	box-shadow: none;
+}
+
+/* Results */
+.palette-list {
+	flex: 1 1 auto;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	padding: 6px 0;
+	position: relative;
+}
+
+.palette-group {
+	padding: 10px 16px 4px;
+	font-size: .7rem;
+	font-weight: 600;
+	letter-spacing: .08em;
+	text-transform: uppercase;
+	color: var(--text-2);
+}
+
+.palette-item {
+	display: flex;
+	align-items: baseline;
+	gap: 12px;
+	padding: 8px 16px 8px 14px;
+	border-left: 2px solid transparent;
+	cursor: pointer;
+	transition: background-color var(--dur-fast) ease, border-color var(--dur-fast) ease;
+}
+
+.palette-item.is-selected {
+	background: var(--accent-soft);
+	border-left-color: var(--accent);
+}
+
+.palette-item-label {
+	flex: 1 1 auto;
+	min-width: 0;
+	color: var(--heading);
+	font-weight: 500;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.palette-item-hint {
+	flex: 0 1 auto;
+	max-width: 45%;
+	color: var(--text-2);
+	font-family: var(--font-mono);
+	font-size: .78rem;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.palette-empty {
+	padding: 22px 16px;
+	text-align: center;
+	color: var(--text-2);
+	font-size: .95rem;
+}
+
+/* Keyboard hint footer */
+.palette-hint {
+	flex: 0 0 auto;
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 6px 10px;
+	padding: 8px 14px;
+	border-top: 1px solid var(--border);
+	background: var(--bg);
+	color: var(--text-2);
+	font-size: .78rem;
+}
+
+.palette-hint-sep {
+	color: var(--border-strong);
+}
+
+.palette-hint kbd {
+	display: inline-block;
+	min-width: 1.4em;
+	padding: 1px 5px;
+	margin-right: 4px;
+	border: 1px solid var(--border);
+	border-bottom-width: 2px;
+	border-radius: 5px;
+	background: var(--surface-2);
+	color: var(--text);
+	font-family: var(--font-mono);
+	font-size: .72rem;
+	line-height: 1.4;
+	text-align: center;
+}
+
+.palette-hint kbd + kbd {
+	margin-left: -2px;
+}
+
+@media (max-width: 575.98px) {
+	.palette {
+		top: 10vh;
+		max-height: 78vh;
+	}
+
+	.palette-item-hint {
+		display: none;
+	}
+}
+
+
+
+/* ---------- Reduced motion ---------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+		scroll-behavior: auto !important;
+	}
 }
