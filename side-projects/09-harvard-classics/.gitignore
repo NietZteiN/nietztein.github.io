@@ -1,0 +1,5 @@
+# downloaded corpora and caches (recreate with fetch.py)
+data/raw/
+data/index.json
+data/tfidf.json
+__pycache__/

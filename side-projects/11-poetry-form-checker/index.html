@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Poetry form checker</title>
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    --bg: #14161c; --panel: #1c1f27; --panel2: #232733; --line: #2f3442;
+    --text: #e8e4da; --muted: #9a9788; --accent: #7fc8c0; --ok: #8fd18a;
+    --warn: #e6b45a; --bad: #e07a6b; --mark: #d9d2c1; --dim: #5c6270;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia,
+      "Noto Serif", "Noto Serif JP", "Hiragino Mincho ProN", "Yu Mincho", serif;
+    font-size: 16px; line-height: 1.5;
+  }
+  header { padding: 22px 28px 8px; border-bottom: 1px solid var(--line); }
+  header h1 { margin: 0; font-size: 22px; font-weight: 600; letter-spacing: 0.02em; }
+  header p { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
+  main { display: grid; grid-template-columns: minmax(300px, 2fr) 3fr; gap: 20px; padding: 18px 28px 40px; }
+  @media (max-width: 860px) { main { grid-template-columns: 1fr; } }
+  .controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 10px; }
+  select, input[type=text], textarea, button {
+    background: var(--panel2); color: var(--text); border: 1px solid var(--line);
+    border-radius: 6px; font: inherit; padding: 6px 8px;
+  }
+  select:focus, textarea:focus, input:focus { outline: 1px solid var(--accent); }
+  button { cursor: pointer; }
+  label.small { color: var(--muted); font-size: 13px; }
+  textarea#poem {
+    width: 100%; min-height: 320px; resize: vertical; line-height: 1.6; font-size: 16px; padding: 12px;
+  }
+  textarea#overrides { width: 100%; min-height: 70px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; }
+  details { margin-top: 12px; color: var(--muted); font-size: 13px; }
+  details summary { cursor: pointer; }
+  details p { margin: 6px 0; }
+  #dictStatus { font-size: 13px; color: var(--muted); margin-top: 8px; }
+  #dictStatus.warn { color: var(--warn); }
+  #picker { display: none; margin-top: 6px; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; }
+  .summary { border-bottom: 1px solid var(--line); padding-bottom: 10px; margin-bottom: 12px; }
+  .summary .headline { font-size: 18px; }
+  .summary .sub { color: var(--muted); font-size: 14px; margin-top: 2px; }
+  .lang-tag { display: inline-block; font-size: 12px; color: var(--accent); border: 1px solid var(--accent);
+    border-radius: 10px; padding: 0 8px; margin-left: 8px; vertical-align: middle; }
+  .line { display: grid; grid-template-columns: 2em 1fr auto; gap: 8px; align-items: end; padding: 4px 0; }
+  .line.blank { height: 14px; }
+  .num { color: var(--dim); font-size: 12px; text-align: right; padding-bottom: 3px; }
+  .words { display: flex; flex-wrap: wrap; gap: 0 0.55em; align-items: flex-end; }
+  .w { display: inline-flex; flex-direction: column; align-items: center; position: relative; }
+  .marks { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; line-height: 1;
+    color: var(--mark); letter-spacing: 0.15em; height: 14px; white-space: nowrap; }
+  .marks .dev { color: var(--warn); font-weight: 700; }
+  .marks .bar { color: var(--dim); letter-spacing: 0; margin: 0 0.1em; }
+  .marks .soft { color: var(--dim); }
+  .txt { white-space: nowrap; }
+  .w.guess .txt { text-decoration: underline dotted var(--muted); text-underline-offset: 3px; }
+  .w.override .txt { text-decoration: underline dotted var(--accent); text-underline-offset: 3px; }
+  .side { display: flex; gap: 10px; align-items: baseline; white-space: nowrap; font-size: 13px; }
+  .rhyme { font-family: ui-monospace, Menlo, Consolas, monospace; color: var(--accent); min-width: 1.4em; text-align: center; }
+  .count { font-family: ui-monospace, Menlo, Consolas, monospace; min-width: 2em; text-align: right; }
+  .count.ok { color: var(--ok); } .count.warn { color: var(--warn); } .count.bad { color: var(--bad); } .count.hi { color: var(--accent); }
+  .note { color: var(--muted); }
+  .jtext { font-size: 19px; letter-spacing: 0.05em; cursor: default; }
+  .jtext.needs { color: var(--bad); }
+  .reading { margin-left: 8px; font-size: 14px; width: 16em; }
+  .foot { color: var(--muted); font-size: 13px; margin-top: 14px; border-top: 1px solid var(--line); padding-top: 8px; }
+  /* Hover tooltips from data-tip */
+  [data-tip] { position: relative; }
+  [data-tip]:hover::after {
+    content: attr(data-tip); position: absolute; left: 0; bottom: calc(100% + 4px); z-index: 5;
+    background: #0e1014; color: var(--text); border: 1px solid var(--line); border-radius: 6px;
+    padding: 4px 8px; font-size: 12px; white-space: nowrap; font-family: ui-monospace, Menlo, Consolas, monospace;
+    letter-spacing: 0; line-height: 1.4;
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Poetry form checker</h1>
+  <p>Morae for Japanese, syllables and a rough metrical scan for English, syllables for German. Everything runs in this page.</p>
+</header>
+<main>
+  <section>
+    <div class="controls">
+      <label class="small">Sample
+        <select id="sample"><option value="">choose one</option></select>
+      </label>
+      <label class="small">Language
+        <select id="lang">
+          <option value="auto">auto detect</option>
+          <option value="en">English</option>
+          <option value="ja">Japanese</option>
+          <option value="de">German</option>
+        </select>
+      </label>
+    </div>
+    <textarea id="poem" spellcheck="false" placeholder="Paste a poem here, one line per verse line."></textarea>
+    <details id="overrideBox" open>
+      <summary>English word overrides</summary>
+      <p>One per line: <code>word = 3</code> (syllables) or <code>word = 010</code> (stress per syllable, 1 stressed, 0 unstressed, 2 either).</p>
+      <textarea id="overrides" spellcheck="false" placeholder="wander'st = 10"></textarea>
+    </details>
+    <div id="dictStatus">Loading pronunciation dictionary...</div>
+    <div id="picker">
+      <label class="small">Pick cmudict.min.json (or .gz) from this folder: <input type="file" id="dictFile" accept=".json,.gz"></label>
+    </div>
+    <details>
+      <summary>How to read the marks</summary>
+      <p>English: <code>˘</code> unstressed, <code>/</code> stressed, a thin bar between feet. Amber marks disagree with the best fitting meter. Dotted underline means the word was not in the dictionary and its syllables were guessed (or overridden, in teal). Letters at line ends are the rhyme scheme.</p>
+      <p>Japanese: the number is the mora count; hover a line to see the breakdown. ji-amari means too many, ji-tarazu too few. Lines with kanji need a reading: write it in the box that appears, or use 漢字《かんじ》 or 漢字（かんじ） in the text.</p>
+      <p>German: the number is a syllable estimate; the most common count is highlighted.</p>
+    </details>
+  </section>
+  <section class="panel" id="out"></section>
+</main>
+<script>
+'use strict';
+
+/* ---------- samples (all public domain) ---------- */
+const SAMPLES = [
+  { name: 'Shakespeare, Sonnet 18 (English)', lang: 'en', text:
+`Shall I compare thee to a summer's day?
+Thou art more lovely and more temperate:
+Rough winds do shake the darling buds of May,
+And summer's lease hath all too short a date;
+Sometime too hot the eye of heaven shines,
+And often is his gold complexion dimm'd;
+And every fair from fair sometime declines,
+By chance or nature's changing course untrimm'd;
+But thy eternal summer shall not fade,
+Nor lose possession of that fair thou ow'st;
+Nor shall Death brag thou wander'st in his shade,
+When in eternal lines to time thou grow'st:
+So long as men can breathe or eyes can see,
+So long lives this, and this gives life to thee.` },
+  { name: 'Blake, The Tyger, first stanza (English)', lang: 'en', text:
+`Tyger Tyger, burning bright,
+In the forests of the night;
+What immortal hand or eye,
+Could frame thy fearful symmetry?` },
+  { name: 'Basho, old pond, with readings (Japanese)', lang: 'ja', text:
+`古池《ふるいけ》や
+蛙《かわず》飛《と》び込《こ》む
+水《みず》の音《おと》` },
+  { name: 'Basho, old pond, kanji only (Japanese)', lang: 'ja', text:
+`古池や
+蛙飛び込む
+水の音` },
+  { name: 'Nakahara Chuya, Yogoretchimatta kanashimi ni, stanza 1 (Japanese)', lang: 'ja', text:
+`よごれっちまったかなしみに
+きょうもこゆきのふりかかる
+よごれっちまったかなしみに
+きょうもかぜさえふきすぎる` },
+  { name: 'Goethe, Wandrers Nachtlied (German)', lang: 'de', text:
+`Über allen Gipfeln
+Ist Ruh,
+In allen Wipfeln
+Spürest du
+Kaum einen Hauch;
+Die Vögelein schweigen im Walde.
+Warte nur, balde
+Ruhest du auch.` },
+];
+
+/* ---------- language detection ---------- */
+const RE_KANA_KANJI = /[ぁ-ヿ㐀-䶿一-鿿豈-﫿]/;
+const DE_FUNCTION = new Set(['der','die','das','und','ist','nicht','ein','eine','ich','du','wir','ihr','sie','mit','von','zu','auf','im','den','dem','des','sich','auch','nur','noch','wie','als','aus','bei','nach','über','für','ohne','ruh','allen']);
+function detectLanguage(text) {
+  if (RE_KANA_KANJI.test(text)) return 'ja';
+  if (/[äöüßÄÖÜ]/.test(text)) return 'de';
+  const words = text.toLowerCase().match(/[a-zäöüß]+/g) || [];
+  const hits = words.filter(w => DE_FUNCTION.has(w)).length;
+  return words.length && hits / words.length > 0.12 ? 'de' : 'en';
+}
+
+/* ---------- Japanese: morae ---------- */
+const KANJI = '\\u3005-\\u3007\\u3400-\\u4dbf\\u4e00-\\u9fff\\uf900-\\ufaff';
+const RE_KANJI = new RegExp('[' + KANJI + ']');
+const RE_READING_BAR = /｜([^《]+)《([^》]+)》/g;                         // ｜漢字まじり《よみ》
+const RE_READING_ANGLE = new RegExp('[' + KANJI + ']+《([^》]+)》', 'g');   // 漢字《よみ》
+const RE_READING_PAREN = new RegExp('[' + KANJI + ']+[（(]([\\u3041-\\u30fe]+)[)）]', 'g'); // 漢字（よみ）
+const SMALL_MERGE = new Set('ゃゅょぁぃぅぇぉゎャュョァィゥェォヮ');
+const RE_MORA_CHAR = /[ぁ-ゖゝゞァ-ヺーヽヾ]/;
+
+function applyReadings(line) {
+  return line.replace(RE_READING_BAR, '$2').replace(RE_READING_ANGLE, '$1').replace(RE_READING_PAREN, '$1');
+}
+/* Split kana text into morae. Small ya/yu/yo (and small vowels) merge with the
+   previous kana; small tsu, the long vowel mark and n each count as one. */
+function morae(text) {
+  const out = [];
+  for (const ch of text) {
+    if (SMALL_MERGE.has(ch) && out.length) out[out.length - 1] += ch;
+    else if (RE_MORA_CHAR.test(ch)) out.push(ch);
+    // anything else (punctuation, spaces, latin, kanji) is ignored
+  }
+  return out;
+}
+
+const readingOverrides = new Map(); // original line text -> kana reading typed by the user
+
+function analyzeJapanese(lines) {
+  let units = lines.map(l => l.trim()).filter(Boolean);
+  // A haiku written on one line with spaces between its parts.
+  if (units.length === 1 && /[\s　]/.test(units[0])) units = units[0].split(/[\s　]+/);
+  const rows = units.map(raw => {
+    const override = readingOverrides.get(raw);
+    let src = override || applyReadings(raw);
+    const needs = RE_KANJI.test(src);
+    const m = morae(src);
+    return { raw, morae: m, count: needs ? null : m.length, needs, override: override || '' };
+  });
+  const expected = rows.length === 3 ? [5, 7, 5] : rows.length === 5 ? [5, 7, 5, 7, 7] : null;
+  const formName = expected ? (rows.length === 3 ? 'haiku (5-7-5)' : 'tanka (5-7-5-7-7)') : 'free form';
+  rows.forEach((r, i) => {
+    if (r.count === null) { r.verdict = 'needs reading'; r.cls = 'bad'; return; }
+    if (!expected) { r.verdict = ''; r.cls = ''; return; }
+    const d = r.count - expected[i];
+    if (d === 0) { r.verdict = '✓'; r.cls = 'ok'; }
+    else if (d > 0) { r.verdict = 'ji-amari +' + d; r.cls = 'warn'; }
+    else { r.verdict = 'ji-tarazu ' + d; r.cls = 'warn'; }
+  });
+  const counted = rows.filter(r => r.count !== null);
+  let headline = formName, sub = '';
+  if (counted.length < rows.length) sub = (rows.length - counted.length) + ' line(s) still need a kana reading.';
+  else if (expected) {
+    const devs = rows.filter(r => r.cls === 'warn').length;
+    sub = devs ? devs + ' line(s) deviate from the pattern.' : 'Every line matches the pattern.';
+  } else if (counted.length && counted.every(r => r.count === 5 || r.count === 7)) {
+    sub = 'All lines are 5 or 7 morae (shichigocho rhythm).';
+  } else if (counted.length) {
+    sub = 'Mora counts: ' + counted.map(r => r.count).join(', ');
+  }
+  return { lang: 'ja', rows, headline, sub };
+}
+
+/* ---------- English: syllables, stress, meter, rhyme ---------- */
+const DICT = { table: null, label: 'no dictionary loaded, using the heuristic for every word' };
+
+// Monosyllables that are normally unstressed in a metrical line.
+const UNSTRESSED = new Set(('a an the and but or nor for so yet of to in on at by from with as into onto upon than till until unless ' +
+  'is am are was were be been do does did has have had will would shall should can could may might must if that this these those its ' +
+  'his her my your our their thy thine mine whose who whom which what when where how while o oh ye hath doth').split(' '));
+// Monosyllables that take stress or not depending on the line: treated as "either".
+const EITHER = new Set(('i me thee thou you he she we they them us him it not no all more most too some such each then there here now ' +
+  'up down out off over yes').split(' '));
+
+function guessSyllables(word) {
+  let w = word.toLowerCase().replace(/[^a-z]/g, '');
+  if (!w) return 0;
+  let extra = 0;
+  if (/[^aeiouy]le$/.test(w) && w.length > 3) { w = w.slice(0, -2); extra = 1; }          // table, little
+  else if (/[^aeiouy]les$/.test(w) && w.length > 4) { w = w.slice(0, -3); extra = 1; }    // tables
+  else if (/[^aeiouy]e$/.test(w)) w = w.slice(0, -1);                                      // silent e: make, love
+  else if (/[^sxzaeiouy]es$/.test(w) && !/[cs]hes$/.test(w)) w = w.slice(0, -2);           // makes (but buses, wishes)
+  else if (/[^aeiouytd]ed$/.test(w)) w = w.slice(0, -2);                                   // loved (but wanted)
+  w = w.replace(/^y/, '');
+  const groups = w.match(/[aeiouy]+/g) || [];
+  return Math.max(1, groups.length + extra);
+}
+function guessStress(n, word) {
+  if (n === 1) return UNSTRESSED.has(word) ? '0' : EITHER.has(word) ? '2' : '1';
+  if (n <= 3) return '1' + '0'.repeat(n - 1);
+  // longer unknown words: primary stress on the penultimate, alternating before it
+  let s = '10';
+  for (let i = 2; i < n; i++) s = (i % 2 === 0 ? '0' : '2') + s;
+  return s;
+}
+function stressFromCount(n) { return n === 1 ? '1' : '1' + '0'.repeat(n - 1); }
+
+let overrideMap = new Map();
+function parseOverrides(text) {
+  overrideMap = new Map();
+  for (const line of text.split('\n')) {
+    const m = line.match(/^\s*([^=:\s]+)\s*[=:]\s*(\d+)\s*$/);
+    if (!m) continue;
+    const v = m[2];
+    // Two or more digits of 0/1/2 are a stress pattern; a single number is a syllable count.
+    overrideMap.set(m[1].toLowerCase(), /^[012]{2,}$/.test(v) ? v : stressFromCount(Math.max(1, parseInt(v, 10))));
+  }
+}
+function lookupWord(raw) {
+  const word = raw.toLowerCase().replace(/’/g, "'").replace(/^'+|'+$/g, '');
+  if (!word) return null;
+  if (overrideMap.has(word)) {
+    return { word, stress: overrideMap.get(word), rhyme: '~' + word.slice(-2), source: 'override' };
+  }
+  const entry = DICT.table && DICT.table[word];
+  if (entry) {
+    const [st, rh] = entry.split(':');
+    let stress = st;
+    if (stress.length === 1) stress = UNSTRESSED.has(word) ? '0' : EITHER.has(word) ? '2' : '1';
+    return { word, stress, rhyme: rh || '~' + word.slice(-2), source: 'dictionary' };
+  }
+  const n = guessSyllables(word);
+  return { word, stress: guessStress(n, word), rhyme: '~' + word.slice(-2), source: 'guessed' };
+}
+
+const FEET = [
+  { name: 'iambic', pat: '01', rising: true },
+  { name: 'trochaic', pat: '10', rising: false },
+  { name: 'anapestic', pat: '001', rising: true },
+  { name: 'dactylic', pat: '100', rising: false },
+];
+const FEET_NAMES = { 3: 'trimeter', 4: 'tetrameter', 5: 'pentameter', 6: 'hexameter' };
+
+/* Compare the line's stress string against every foot type at 3 to 6 feet.
+   A rising meter may carry an extra unstressed syllable (feminine ending);
+   a falling meter may drop its final unstressed syllable(s) (catalexis). */
+function scanLine(stress) {
+  let best = null;
+  for (const foot of FEET) {
+    for (let feet = 3; feet <= 6; feet++) {
+      const base = foot.pat.repeat(feet);
+      const variants = [base];
+      if (foot.rising) variants.push(base + '0');
+      else { variants.push(base.slice(0, -1)); if (foot.pat.length === 3) variants.push(base.slice(0, -2)); }
+      for (const tmpl of variants) {
+        const L = Math.max(stress.length, tmpl.length);
+        let conflicts = 0; const devs = [];
+        for (let i = 0; i < L; i++) {
+          const s = stress[i], t = tmpl[i];
+          if (s === undefined || t === undefined) { conflicts++; if (s !== undefined) devs.push(i); continue; }
+          if (s === '2' || s === t) continue;
+          conflicts++; devs.push(i);
+        }
+        const score = L ? 1 - conflicts / L : 0;
+        const lenDiff = Math.abs(stress.length - tmpl.length);
+        if (!best || score > best.score + 1e-9 || (Math.abs(score - best.score) < 1e-9 && lenDiff < best.lenDiff)) {
+          best = { foot: foot.name, feet, footLen: foot.pat.length, score, devs, lenDiff, tmpl };
+        }
+      }
+    }
+  }
+  return best;
+}
+
+function analyzeEnglish(lines) {
+  const rows = lines.map(line => {
+    const chunks = line.split(/\s+/).filter(Boolean);
+    const tokens = chunks.map(chunk => {
+      const parts = chunk.match(/[A-Za-z'’]+/g) || [];
+      const infos = parts.map(lookupWord).filter(Boolean);
+      const stress = infos.map(i => i.stress).join('');
+      return { text: chunk, stress, infos };
+    });
+    const stress = tokens.map(t => t.stress).join('');
+    const lastInfo = [...tokens].reverse().flatMap(t => [...t.infos].reverse())[0];
+    const scan = stress.length >= 2 ? scanLine(stress) : null;
+    return { text: line, tokens, stress, syllables: stress.length, scan, rhymeKey: lastInfo ? lastInfo.rhyme : null, blank: !stress.length };
+  });
+  // Rhyme letters, assigned in order of first appearance.
+  const letters = new Map();
+  for (const r of rows) {
+    if (!r.rhymeKey) continue;
+    if (!letters.has(r.rhymeKey)) letters.set(r.rhymeKey, letters.size);
+    const n = letters.get(r.rhymeKey);
+    r.rhyme = n < 26 ? String.fromCharCode(65 + n) : String.fromCharCode(97 + (n % 26)) + Math.floor(n / 26);
+  }
+  // Poem-level meter: the most common (foot, feet) pair among scanned lines.
+  const scanned = rows.filter(r => r.scan);
+  const tally = new Map();
+  for (const r of scanned) {
+    const k = r.scan.foot + ' ' + FEET_NAMES[r.scan.feet];
+    tally.set(k, (tally.get(k) || 0) + 1);
+  }
+  let headline = 'English', sub = '';
+  if (scanned.length) {
+    const [meter, n] = [...tally.entries()].sort((a, b) => b[1] - a[1])[0];
+    const agreeing = scanned.filter(r => r.scan.foot + ' ' + FEET_NAMES[r.scan.feet] === meter);
+    const meanFit = Math.round(100 * agreeing.reduce((a, r) => a + r.scan.score, 0) / agreeing.length);
+    const scheme = rows.filter(r => r.rhyme).map(r => r.rhyme).join('');
+    if (n / scanned.length >= 0.5) headline = meter + ', ' + meanFit + ' percent';
+    else headline = 'no single meter (closest: ' + meter + ')';
+    sub = n + ' of ' + scanned.length + ' lines fit ' + meter + ' best. Rhyme scheme ' + scheme + '.';
+  }
+  return { lang: 'en', rows, headline, sub, meter: headline };
+}
+
+/* ---------- German: syllables and rhyme ---------- */
+const DE_DIPHTHONGS = new Set(['ei', 'ai', 'au', 'eu', 'äu', 'ie', 'ey', 'ay', 'aa', 'ee', 'oo', 'ui']);
+function germanSyllables(word) {
+  const w = word.toLowerCase().replace(/[^a-zäöüß]/g, '').replace(/qu/g, 'q');
+  const groups = w.match(/[aeiouyäöü]+/g) || [];
+  let n = 0;
+  for (const g of groups) {
+    let i = 0;
+    while (i < g.length) {
+      if (i + 1 < g.length && DE_DIPHTHONGS.has(g.slice(i, i + 2))) i += 2; else i += 1;
+      n++;
+    }
+  }
+  return w ? Math.max(1, n) : 0;
+}
+/* Rhyme key: from the last vowel group to the end (final h dropped, as in Ruh/du).
+   A final unstressed e-syllable (e, en, er, el, es, eln, ern) extends the key
+   to the previous vowel group, so Walde/balde and Gipfeln/Wipfeln match. */
+function germanRhymeKey(word) {
+  const w = word.toLowerCase().replace(/[^a-zäöüß]/g, '').replace(/h$/, '');
+  const groups = [...w.matchAll(/[aeiouyäöü]+/g)];
+  if (!groups.length) return null;
+  let start = groups[groups.length - 1].index;
+  const tail = w.slice(start);
+  if (/^e(n|r|l|s|m|ln|rn)?$/.test(tail) && groups.length > 1) start = groups[groups.length - 2].index;
+  return w.slice(start);
+}
+function analyzeGerman(lines) {
+  const rows = lines.map(line => {
+    const words = line.match(/[A-Za-zÄÖÜäöüß]+/g) || [];
+    const counts = words.map(germanSyllables);
+    const syllables = counts.reduce((a, b) => a + b, 0);
+    const last = words[words.length - 1];
+    return { text: line, words, counts, syllables, rhymeKey: last ? germanRhymeKey(last) : null, blank: !words.length };
+  });
+  const letters = new Map();
+  for (const r of rows) {
+    if (!r.rhymeKey) continue;
+    if (!letters.has(r.rhymeKey)) letters.set(r.rhymeKey, letters.size);
+    r.rhyme = String.fromCharCode(65 + (letters.get(r.rhymeKey) % 26));
+  }
+  const tally = new Map();
+  for (const r of rows) if (!r.blank) tally.set(r.syllables, (tally.get(r.syllables) || 0) + 1);
+  let headline = 'German', sub = '', mode = null;
+  if (tally.size) {
+    const [m, n] = [...tally.entries()].sort((a, b) => b[1] - a[1] || a[0] - b[0])[0];
+    mode = m;
+    headline = 'most common line length: ' + m + ' syllables';
+    sub = n + ' of ' + rows.filter(r => !r.blank).length + ' lines. Rhyme scheme ' + rows.filter(r => r.rhyme).map(r => r.rhyme).join('') + '.';
+  }
+  return { lang: 'de', rows, headline, sub, mode };
+}
+
+/* ---------- rendering ---------- */
+const $ = id => document.getElementById(id);
+const esc = s => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const LANG_NAMES = { en: 'English', ja: 'Japanese', de: 'German' };
+
+function renderSummary(result, detected) {
+  return `<div class="summary"><div class="headline">${esc(result.headline)}<span class="lang-tag">${LANG_NAMES[result.lang]}${detected ? ', auto' : ''}</span></div><div class="sub">${esc(result.sub)}</div></div>`;
+}
+
+function renderEnglish(result, detected) {
+  let html = renderSummary(result, detected);
+  result.rows.forEach((r, i) => {
+    if (r.blank) { html += '<div class="line blank"></div>'; return; }
+    const scan = r.scan;
+    const bounds = new Set();
+    if (scan) for (let k = scan.footLen; k < r.stress.length; k += scan.footLen) bounds.add(k);
+    const devs = new Set(scan ? scan.devs : []);
+    let idx = 0;
+    const words = r.tokens.map(t => {
+      let marks = '';
+      for (const s of t.stress) {
+        if (bounds.has(idx)) marks += '<span class="bar">|</span>';
+        const expected = scan && scan.tmpl[idx];
+        let glyph = s === '1' ? '/' : s === '0' ? '˘' : (expected === '1' ? '/' : '˘');
+        const cls = devs.has(idx) ? 'dev' : s === '2' ? 'soft' : '';
+        marks += `<span class="${cls}">${glyph}</span>`;
+        idx++;
+      }
+      const tip = t.infos.map(inf => `${inf.word} ${inf.stress} (${inf.source})`).join(', ');
+      const src = t.infos.some(inf => inf.source === 'override') ? 'override' : t.infos.some(inf => inf.source === 'guessed') ? 'guess' : '';
+      return `<span class="w ${src}" data-tip="${esc(tip)}"><span class="marks">${marks}</span><span class="txt">${esc(t.text)}</span></span>`;
+    }).join('');
+    const meta = scan ? `${r.syllables} syl · ${scan.foot} ${FEET_NAMES[scan.feet]} ${Math.round(scan.score * 100)}%` : `${r.syllables} syl`;
+    html += `<div class="line"><span class="num">${i + 1}</span><span class="words">${words}</span><span class="side"><span class="note">${meta}</span><span class="rhyme">${r.rhyme || ''}</span></span></div>`;
+  });
+  html += `<div class="foot">${esc(DICT.label)}</div>`;
+  return html;
+}
+
+function renderJapanese(result, detected) {
+  let html = renderSummary(result, detected);
+  result.rows.forEach((r, i) => {
+    const tip = r.needs ? 'contains kanji without a reading' : r.morae.join(' · ') + '  (' + r.count + ')';
+    const shown = r.override ? r.raw + '　' + r.override : r.raw;
+    let line = `<div class="line"><span class="num">${i + 1}</span><span><span class="jtext ${r.needs ? 'needs' : ''}" data-tip="${esc(tip)}">${esc(shown)}</span>`;
+    if (r.needs || r.override) {
+      line += `<input class="reading" type="text" data-key="${esc(r.raw)}" value="${esc(r.override)}" placeholder="reading in kana (ふりがな)">`;
+    }
+    line += `</span><span class="side"><span class="count ${r.cls}">${r.count === null ? '?' : r.count}</span><span class="note ${r.cls === 'ok' ? 'count ok' : ''}">${esc(r.verdict)}</span></span></div>`;
+    html += line;
+  });
+  return html;
+}
+
+function renderGerman(result, detected) {
+  let html = renderSummary(result, detected);
+  result.rows.forEach((r, i) => {
+    if (r.blank) { html += '<div class="line blank"></div>'; return; }
+    const tip = r.words.map((w, j) => w + ' ' + r.counts[j]).join(', ');
+    const hi = r.syllables === result.mode ? 'hi' : '';
+    html += `<div class="line"><span class="num">${i + 1}</span><span data-tip="${esc(tip)}">${esc(r.text)}</span><span class="side"><span class="count ${hi}">${r.syllables}</span><span class="rhyme">${r.rhyme || ''}</span></span></div>`;
+  });
+  return html;
+}
+
+function analyze() {
+  const text = $('poem').value;
+  const out = $('out');
+  if (!text.trim()) { out.innerHTML = '<div class="note">Paste a poem or choose a sample.</div>'; return; }
+  parseOverrides($('overrides').value);
+  const choice = $('lang').value;
+  const lang = choice === 'auto' ? detectLanguage(text) : choice;
+  const lines = text.replace(/\r/g, '').split('\n');
+  $('overrideBox').style.display = lang === 'en' ? '' : 'none';
+  let result;
+  if (lang === 'ja') { result = analyzeJapanese(lines); out.innerHTML = renderJapanese(result, choice === 'auto'); }
+  else if (lang === 'de') { result = analyzeGerman(lines); out.innerHTML = renderGerman(result, choice === 'auto'); }
+  else { result = analyzeEnglish(lines); out.innerHTML = renderEnglish(result, choice === 'auto'); }
+  window.lastResult = result; // handy for tests and the console
+}
+
+/* Furigana entry fields: update the reading map and re-render, keeping focus. */
+$('out').addEventListener('input', ev => {
+  const el = ev.target;
+  if (!el.classList.contains('reading')) return;
+  const key = el.dataset.key;
+  if (el.value.trim()) readingOverrides.set(key, el.value.trim()); else readingOverrides.delete(key);
+  const pos = el.selectionStart;
+  analyze();
+  const again = $('out').querySelector(`.reading[data-key="${CSS.escape(key)}"]`);
+  if (again) { again.focus(); again.setSelectionRange(pos, pos); }
+});
+
+/* ---------- dictionary loading ---------- */
+async function setDict(table, where) {
+  DICT.table = table;
+  DICT.label = 'CMUdict: ' + Object.keys(table).length.toLocaleString() + ' words loaded from ' + where + '. Dotted words were not found and were guessed.';
+  $('dictStatus').textContent = DICT.label;
+  $('dictStatus').classList.remove('warn');
+  $('picker').style.display = 'none';
+  analyze();
+}
+async function gunzipToText(stream) {
+  return new Response(stream.pipeThrough(new DecompressionStream('gzip'))).text();
+}
+function showPicker(msg) {
+  $('dictStatus').textContent = msg;
+  $('dictStatus').classList.add('warn');
+  $('picker').style.display = 'block';
+}
+async function loadDict() {
+  if (location.protocol === 'file:') {
+    showPicker('Opened from file://, so the dictionary cannot be fetched. Pick cmudict.min.json below, or serve the folder with python3 -m http.server.');
+    return;
+  }
+  try {
+    let r = await fetch('cmudict.min.json');
+    if (r.ok) { await setDict(await r.json(), 'cmudict.min.json'); return; }
+    r = await fetch('cmudict.min.json.gz');
+    if (r.ok) { await setDict(JSON.parse(await gunzipToText(r.body)), 'cmudict.min.json.gz'); return; }
+    showPicker('cmudict.min.json was not found next to this page. Run python3 build_dict.py, or pick the file below.');
+  } catch (err) {
+    showPicker('Could not fetch the dictionary (' + err.message + '). Pick the file below.');
+  }
+}
+$('dictFile').addEventListener('change', async ev => {
+  const file = ev.target.files[0];
+  if (!file) return;
+  try {
+    const text = file.name.endsWith('.gz') ? await gunzipToText(file.stream()) : await file.text();
+    await setDict(JSON.parse(text), file.name);
+  } catch (err) {
+    showPicker('Could not read ' + file.name + ': ' + err.message);
+  }
+});
+
+/* ---------- wiring ---------- */
+SAMPLES.forEach((s, i) => { const o = document.createElement('option'); o.value = i; o.textContent = s.name; $('sample').appendChild(o); });
+$('sample').addEventListener('change', ev => {
+  const s = SAMPLES[ev.target.value];
+  if (!s) return;
+  $('poem').value = s.text;
+  $('lang').value = 'auto';
+  analyze();
+});
+let timer = null;
+const schedule = () => { clearTimeout(timer); timer = setTimeout(analyze, 150); };
+$('poem').addEventListener('input', schedule);
+$('overrides').addEventListener('input', schedule);
+$('lang').addEventListener('change', analyze);
+
+$('sample').value = '0';
+$('poem').value = SAMPLES[0].text;
+analyze();
+loadDict();
+</script>
+</body>
+</html>

@@ -1,0 +1,55 @@
+Sparse Autoencoders Find Highly Interpretable Features in Language Models
+Scaling and Evaluating Sparse Autoencoders
+Interpretability in the Wild: a Circuit for Indirect Object Identification in GPT-2 small
+Steering Llama 2 via Contrastive Activation Addition
+Representation Engineering: A Top-Down Approach to AI Transparency
+Editing Models with Task Arithmetic
+TIES-Merging: Resolving Interference When Merging Models
+Language Models are Super Mario: Absorbing Abilities from Homologous Models as a Free Lunch
+Who's Harry Potter? Approximate Unlearning in LLMs
+TOFU: A Task of Fictitious Unlearning for LLMs
+The WMDP Benchmark: Measuring and Reducing Malicious Use With Unlearning
+A Watermark for Large Language Models
+Can Watermarks Survive Translation? On the Cross-lingual Consistency of Text Watermark for Large Language Models
+Refusal in Language Models Is Mediated by a Single Direction
+Gemma Scope: Open Sparse Autoencoders Everywhere All At Once on Gemma 2
+Attribution Patching Outperforms Automated Circuit Discovery
+Towards Automated Circuit Discovery for Mechanistic Interpretability
+Do Llamas Work in English? On the Latent Language of Multilingual Transformers
+Inference-Time Intervention: Eliciting Truthful Answers from a Language Model
+Model Stock: All we need is just a few fine-tuned models
+Large Language Models for Code: Security Hardening and Adversarial Testing
+Locating and Editing Factual Associations in GPT
+Toy Models of Superposition
+In-context Learning and Induction Heads
+Transcoders Find Interpretable LLM Feature Circuits
+Function Vectors in Large Language Models
+Rethinking Machine Unlearning for Large Language Models
+Negative Preference Optimization: From Catastrophic Collapse to Effective Unlearning
+Three Bricks to Consolidate Watermarks for Large Language Models
+Language Models Don't Always Say What They Think: Unfaithful Explanations in Chain-of-Thought Prompting
+Denoising Diffusion Probabilistic Models
+High-Resolution Image Synthesis with Latent Diffusion Models
+Segment Anything
+CodeBERT: A Pre-Trained Model for Programming and Natural Languages
+Evaluating Large Language Models Trained on Code
+Universal and Transferable Adversarial Attacks on Aligned Language Models
+Extracting Training Data from Large Language Models
+Are Emergent Abilities of Large Language Models a Mirage?
+Lost in the Middle: How Language Models Use Long Contexts
+Direct Preference Optimization: Your Language Model is Secretly a Reward Model
+LoRA: Low-Rank Adaptation of Large Language Models
+Chain-of-Thought Prompting Elicits Reasoning in Large Language Models
+The Curse of Recursion: Training on Generated Data Makes Models Forget
+Unsupervised Cross-lingual Representation Learning at Scale
+No Language Left Behind: Scaling Human-Centered Machine Translation
+SWE-bench: Can Language Models Resolve Real-World GitHub Issues?
+Model Editing Can Hurt General Abilities of Large Language Models
+Mechanistic Interpretability for AI Safety: A Review
+Not All Language Model Features Are Linear
+The Geometry of Truth: Emergent Linear Structure in Large Language Model Representations of True/False Datasets
+Deep Residual Learning for Image Recognition
+Textbooks Are All You Need
+Scaling Laws for Neural Language Models
+Language Models are Few-Shot Learners
+Poisoning Web-Scale Training Datasets is Practical

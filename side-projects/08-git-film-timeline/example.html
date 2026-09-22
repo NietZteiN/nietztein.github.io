@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>example-repo timeline</title>
+<style>
+  :root {
+    --bg: #15161a; --panel: #1d1f24; --panel-2: #23262c; --line: #2f333b;
+    --text: #e6e6e8; --muted: #8b909a; --accent: #ff4d4f; --accent-2: #4fc3f7;
+    --ok: #62c46b; --del: #e5646b; --header-w: 168px;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font: 13px/1.45 -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    display: flex; flex-direction: column; overflow: hidden; user-select: none;
+  }
+  button, select, input {
+    font: inherit; color: var(--text); background: var(--panel-2);
+    border: 1px solid var(--line); border-radius: 5px; padding: 5px 10px; cursor: pointer;
+  }
+  button:hover { background: #2c3038; }
+  button.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button.active-2 { background: #2b4a58; border-color: var(--accent-2); }
+  input[type=number] { width: 60px; cursor: text; }
+
+  /* ---- top bar ---- */
+  #bar {
+    display: flex; align-items: center; gap: 8px; padding: 8px 14px;
+    background: var(--panel); border-bottom: 1px solid var(--line); flex-wrap: wrap;
+  }
+  #bar h1 { font-size: 15px; font-weight: 600; margin: 0 12px 0 0; letter-spacing: .01em; }
+  #bar h1 small { color: var(--muted); font-weight: 400; margin-left: 8px; }
+  #bar .group { display: flex; gap: 4px; align-items: center; }
+  #bar .sep { width: 1px; height: 22px; background: var(--line); margin: 0 6px; }
+  #bar label { color: var(--muted); font-size: 12px; }
+  #stats { margin-left: auto; color: var(--muted); font-size: 12px; white-space: nowrap; }
+
+  /* ---- program monitor ---- */
+  #monitor-row { display: flex; gap: 14px; padding: 14px; background: var(--bg); min-height: 0; }
+  #monitor {
+    position: relative; flex: 0 0 auto; width: min(58vw, 720px); aspect-ratio: 16 / 9;
+    max-height: 34vh; background: #000; border: 1px solid var(--line); border-radius: 6px;
+    overflow: hidden; font-family: inherit;
+  }
+  #monitor .vignette {
+    position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,.55) 100%);
+  }
+  #screen { position: absolute; inset: 0; padding: 22px 26px; display: flex; flex-direction: column; justify-content: center; }
+  #screen .msg { font-size: clamp(15px, 2vw, 22px); font-weight: 600; line-height: 1.3; word-break: break-word; }
+  #screen .meta { margin-top: 10px; color: #c9ccd3; font-size: 13px; }
+  #screen .meta b { color: #fff; font-weight: 600; }
+  #screen .meta .dot { color: var(--muted); margin: 0 6px; }
+  #screen .swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; vertical-align: -1px; margin-right: 5px; }
+  #screen .files { margin-top: 8px; color: var(--muted); font-size: 12px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  #screen .ins { color: var(--ok); } #screen .del { color: var(--del); }
+  #screen .tags span { display: inline-block; margin: 8px 6px 0 0; padding: 1px 7px; border-radius: 3px; font-size: 11px; background: #2b4a58; color: #bfe9ff; }
+  #screen .tags span.out { background: #5a3d1c; color: #ffd9a8; }
+  #timecode {
+    position: absolute; right: 14px; bottom: 10px; color: #fff; font-size: 13px; letter-spacing: .08em;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    background: rgba(0,0,0,.55); padding: 2px 8px; border-radius: 3px;
+  }
+  #monitor .corner { position: absolute; left: 14px; bottom: 10px; color: var(--muted); font-size: 11px; letter-spacing: .1em; font-family: ui-monospace, Menlo, Consolas, monospace; }
+  #monitor .rec { position: absolute; left: 14px; top: 10px; color: var(--muted); font-size: 11px; letter-spacing: .1em; font-family: ui-monospace, Menlo, Consolas, monospace; }
+  #monitor .rec i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); margin-right: 6px; vertical-align: 0; opacity: .25; }
+  #monitor.playing .rec i { opacity: 1; animation: blink 1s steps(2) infinite; }
+  @keyframes blink { 50% { opacity: .2; } }
+  #flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; }
+  #flash.on { animation: flash .28s ease-out; }
+  @keyframes flash { from { opacity: .35; } to { opacity: 0; } }
+  #card {
+    position: absolute; inset: 0; background: #000; display: none; flex-direction: column;
+    align-items: center; justify-content: center; text-align: center; padding: 20px;
+  }
+  #card.show { display: flex; animation: fadein 1.2s ease-out; }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  #card .t { font-size: clamp(20px, 3vw, 34px); font-weight: 700; letter-spacing: .04em; }
+  #card .s { margin-top: 10px; color: #c9ccd3; font-size: 13px; letter-spacing: .12em; text-transform: uppercase; }
+  #card .n { margin-top: 18px; display: flex; gap: 28px; }
+  #card .n div { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; }
+  #card .n div b { display: block; font-size: 22px; color: #fff; letter-spacing: 0; margin-bottom: 2px; }
+  #card .d { margin-top: 16px; color: var(--muted); font-size: 12px; font-family: ui-monospace, Menlo, Consolas, monospace; }
+
+  /* ---- legend ---- */
+  #legend { flex: 1 1 auto; min-width: 0; overflow: auto; align-self: stretch; padding: 4px 0; }
+  #legend h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); margin: 0 0 8px; font-weight: 600; }
+  #legend .chip {
+    display: inline-flex; align-items: center; gap: 6px; margin: 0 6px 6px 0; padding: 3px 9px 3px 6px;
+    border: 1px solid var(--line); border-radius: 14px; background: var(--panel); cursor: pointer; font-size: 12px;
+  }
+  #legend .chip i { width: 10px; height: 10px; border-radius: 50%; }
+  #legend .chip small { color: var(--muted); }
+  #legend .chip.dim { opacity: .35; }
+  #legend .chip.on { border-color: #fff; }
+  #legend p { color: var(--muted); font-size: 12px; margin: 10px 0 0; max-width: 60ch; }
+  #legend kbd { background: var(--panel-2); border: 1px solid var(--line); border-radius: 3px; padding: 0 5px; font-size: 11px; font-family: inherit; }
+
+  /* ---- timeline ---- */
+  #timeline { flex: 1 1 auto; min-height: 220px; display: flex; overflow: hidden; border-top: 1px solid var(--line); background: var(--panel); position: relative; }
+  #scroller { flex: 1 1 auto; overflow: auto; display: flex; }
+  #headers { flex: 0 0 var(--header-w); position: sticky; left: 0; z-index: 2; background: var(--panel); border-right: 1px solid var(--line); }
+  #headers .h {
+    display: flex; align-items: center; padding: 0 10px 0 12px; border-bottom: 1px solid var(--line);
+    color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  #headers .h.ruler { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; }
+  #headers .h.track { color: var(--text); flex-direction: column; align-items: flex-start; justify-content: center; }
+  #headers .h.track small { color: var(--muted); font-size: 10px; font-family: ui-monospace, Menlo, Consolas, monospace; }
+  #headers .h.track .nm { max-width: 100%; overflow: hidden; text-overflow: ellipsis; font-weight: 500; }
+  #canvas-wrap { flex: 1 1 auto; position: relative; }
+  canvas { display: block; }
+  #tip {
+    position: absolute; z-index: 3; pointer-events: none; display: none; max-width: 340px;
+    background: #0c0d10; border: 1px solid var(--line); border-radius: 5px; padding: 6px 9px; font-size: 12px; box-shadow: 0 6px 20px rgba(0,0,0,.5);
+  }
+  #tip .m { font-weight: 600; margin-bottom: 2px; }
+  #tip .s { color: var(--muted); font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11px; }
+  #empty { padding: 30px; color: var(--muted); }
+  @media (max-width: 900px) {
+    #monitor-row { flex-direction: column; }
+    #monitor { width: 100%; max-height: none; }
+  }
+</style>
+</head>
+<body>
+<div id="bar">
+  <h1 id="title">Git timeline</h1>
+  <div class="group">
+    <button id="btn-play" title="Space">Play</button>
+    <button id="btn-trailer" title="T">Trailer</button>
+    <label>seconds</label><input id="trailer-seconds" type="number" min="3" max="600" step="1">
+  </div>
+  <div class="sep"></div>
+  <div class="group">
+    <button id="btn-seq" class="active-2" title="Clips placed back to back in commit order">Sequence</button>
+    <button id="btn-time" title="Clips placed by commit date">Time</button>
+  </div>
+  <div class="sep"></div>
+  <button id="btn-fit" title="F">Fit</button>
+  <div id="stats"></div>
+</div>
+
+<div id="monitor-row">
+  <div id="monitor">
+    <div id="screen"></div>
+    <div class="vignette"></div>
+    <div class="rec"><i></i>PROGRAM</div>
+    <div class="corner" id="corner"></div>
+    <div id="timecode">00:00:00:00</div>
+    <div id="flash"></div>
+    <div id="card"></div>
+  </div>
+  <div id="legend"></div>
+</div>
+
+<div id="timeline">
+  <div id="scroller">
+    <div id="headers"></div>
+    <div id="canvas-wrap"><canvas id="canvas"></canvas></div>
+  </div>
+  <div id="tip"></div>
+</div>
+
+<script>
+'use strict';
+const DATA = {"repo":"example-repo","generated":"2026-09-22T03:46:10+00:00","depth":"dir","branches":"all","trailerSeconds":30,"laneCount":2,"tracks":[{"name":"src","lines":1252,"commits":19},{"name":"tests","lines":1070,"commits":11},{"name":"assets","lines":425,"commits":7},{"name":"README.md","lines":181,"commits":7},{"name":"docs","lines":14,"commits":3}],"authors":[{"name":"Ada Lovelace","color":"#4f5de0"},{"name":"Linus T.","color":"#44bbde"},{"name":"Grace Hopper","color":"#db47cb"}],"commits":[{"h":"4ebea1f","p":[],"a":0,"d":"2024-01-02T10:00:00+00:00","t":1704189600.0,"m":"Add parser skeleton (1)","f":2,"i":153,"x":0,"lane":0,"plane":[],"merge":false,"refs":[],"out":[],"owner":"main","per":{"0":[150,0,1],"1":[3,0,1]}},{"h":"0a1b183","p":["4ebea1f"],"a":0,"d":"2024-01-03T11:00:00+00:00","t":1704279600.0,"m":"Speed up layout pass (2)","f":1,"i":3,"x":8,"lane":0,"plane":[0],"merge":false,"refs":[],"out":[],"owner":"main","per":{"0":[3,8,1]}},{"h":"9b36cc8","p":["0a1b183"],"a":1,"d":"2024-01-04T12:00:00+00:00","t":1704369600.0,"m":"Speed up layout pass (3)","f":1,"i":20,"x":3,"lane":0,"plane":[0],"merge":false,"refs":[],"out":[],"owner":"main","per":{"1":[20,3,1]}},{"h":"d638e09","p":["9b36cc8"],"a":2,"d":"2024-01-05T13:00:00+00:00","t":1704459600.0,"m":"Drop unused helper (4)","f":3,"i":161,"x":7,"lane":0,"plane":[0],"merge":false,"refs":[],"out":[],"owner":"main","per":{"0":[11,7,2],"1":[150,0,1]}},{"h":"3b49f08","p":["d638e09"],"a":2,"d":"2024-01-06T14:00:00+00:00","t":1704549600.0,"m":"Fix off-by-one in tokenizer (5)","f":2,"i":158,"x":1,"lane":0,"plane":[0],"merge":false,"refs":[],"out":["feature/parser"],"owner":"main","per":{"2":[8,0,1],"1":[150,1,1]}},{"h":"2561022","p":["3b49f08"],"a":0,"d":"2024-01-07T15:00:00+00:00","t":1704639600.0,"m":"Handle empty input (6)","f":2,"i":151,"x":1,"lane":1,"plane":[0],"merge":false,"refs":[],"out":[],"owner":"feature/parser","per":{"0":[1,0,1],"1":[150,1,1]}},{"h":"802e1e8","p":["2561022"],"a":0,"d":"2024-01-08T16:00:00+00:00","t":1704729600.0,"m":"Support file depth (7)","f":3,"i":140,"x":2,"lane":1,"plane":[1],"merge":false,"refs":[],"out":[],"owner":"feature/parser","per":{"0":[120,2,2],"1":[20,0,1]}},{"h":"ed00b52","p":["802e1e8"],"a":0,"d":"2024-01-09T17:00:00+00:00","t":1704819600.0,"m":"Rename config keys (8)","f":1,"i":150,"x":7,"lane":1,"plane":[1],"merge":false,"refs":[],"out":[],"owner":"feature/parser","per":{"1":[150,7,1]}},{"h":"996c515","p":["ed00b52"],"a":2,"d":"2024-01-10T09:00:00+00:00","t":1704877200.0,"m":"Fix off-by-one in tokenizer (9)","f":2,"i":63,"x":8,"lane":1,"plane":[1],"merge":false,"refs":[],"out":[],"owner":"feature/parser","per":{"0":[60,2,1],"1":[3,6,1]}},{"h":"483be1a","p":["3b49f08"],"a":1,"d":"2024-01-11T10:00:00+00:00","t":1704967200.0,"m":"Refactor renderer (10)","f":3,"i":71,"x":8,"lane":0,"plane":[0],"merge":false,"refs":[],"out":[],"owner":"main","per":{"3":[8,0,1],"2":[60,8,1],"4":[3,0,1]}},{"h":"d716e3b","p":["483be1a"],"a":2,"d":"2024-01-12T11:00:00+00:00","t":1705057200.0,"m":"Tune palette (11)","f":3,"i":14,"x":7,"lane":0,"plane":[0],"merge":false,"refs":[],"out":[],"owner":"main","per":{"3":[8,0,1],"2":[3,5,1],"4":[3,2,1]}},{"h":"b69c0b2","p":["d716e3b"],"a":0,"d":"2024-01-13T12:00:00+00:00","t":1705147200.0,"m":"Polish README (12)","f":2,"i":153,"x":7,"lane":0,"plane":[0],"merge":false,"refs":[],"out":[],"owner":"main","per":{"2":[150,4,1],"4":[3,3,1]}},{"h":"4e69fdb","p":["b69c0b2","996c515"],"a":0,"d":"2024-01-14T12:00:00+00:00","t":1705233600.0,"m":"Merge branch 'feature/parser'","f":3,"i":502,"x":16,"lane":0,"plane":[0,1],"merge":true,"refs":[],"out":[],"owner":"main","per":{"0":[179,2,2],"1":[323,14,1]}},{"h":"46adbd8","p":["4e69fdb"],"a":2,"d":"2024-01-14T13:00:00+00:00","t":1705237200.0,"m":"Refactor renderer (13)","f":1,"i":3,"x":0,"lane":0,"plane":[0],"merge":false,"refs":[],"out":[],"owner":"main","per":{"0":[3,0,1]}},{"h":"dcf1284","p":["46adbd8"],"a":2,"d":"2024-01-15T14:00:00+00:00","t":1705327200.0,"m":"Refactor renderer (14)","f":1,"i":8,"x":6,"lane":0,"plane":[0],"merge":false,"refs":[],"out":[],"owner":"main","per":{"0":[8,6,1]}},{"h":"0333465","p":["dcf1284"],"a":1,"d":"2024-01-16T15:00:00+00:00","t":1705417200.0,"m":"Speed up layout pass (15)","f":2,"i":80,"x":13,"lane":0,"plane":[0],"merge":false,"refs":[],"out":["docs"],"owner":"main","per":{"0":[80,13,2]}},{"h":"4a851fd","p":["0333465"],"a":0,"d":"2024-01-17T16:00:00+00:00","t":1705507200.0,"m":"Fix off-by-one in tokenizer (16)","f":1,"i":1,"x":1,"lane":1,"plane":[0],"merge":false,"refs":[],"out":[],"owner":"docs","per":{"3":[1,1,1]}},{"h":"8b3102d","p":["4a851fd"],"a":1,"d":"2024-01-18T17:00:00+00:00","t":1705597200.0,"m":"Add tests for merges (17)","f":1,"i":60,"x":2,"lane":1,"plane":[1],"merge":false,"refs":["docs"],"out":[],"owner":"docs","per":{"3":[60,2,1]}},{"h":"52f19c0","p":["0333465"],"a":1,"d":"2024-01-19T09:00:00+00:00","t":1705654800.0,"m":"Refactor renderer (18)","f":1,"i":1,"x":3,"lane":0,"plane":[0],"merge":false,"refs":[],"out":[],"owner":"main","per":{"0":[1,3,1]}},{"h":"15d4524","p":["52f19c0"],"a":2,"d":"2024-01-20T10:00:00+00:00","t":1705744800.0,"m":"Polish README (19)","f":2,"i":9,"x":10,"lane":0,"plane":[0],"merge":false,"refs":[],"out":[],"owner":"main","per":{"0":[9,10,2]}},{"h":"bfcf7b4","p":["15d4524","8b3102d"],"a":0,"d":"2024-01-22T12:00:00+00:00","t":1705924800.0,"m":"Merge branch 'docs'","f":1,"i":61,"x":3,"lane":0,"plane":[0,1],"merge":true,"refs":["v0.1"],"out":[],"owner":"main","per":{"3":[61,3,1]}},{"h":"0c3657e","p":["bfcf7b4"],"a":2,"d":"2024-01-21T11:00:00+00:00","t":1705834800.0,"m":"Refactor renderer (20)","f":1,"i":60,"x":0,"lane":0,"plane":[0],"merge":false,"refs":[],"out":[],"owner":"main","per":{"0":[60,0,1]}},{"h":"bbf2b18","p":["0c3657e"],"a":0,"d":"2024-01-22T12:00:00+00:00","t":1705924800.0,"m":"Write docs for CLI (21)","f":2,"i":61,"x":4,"lane":0,"plane":[0],"merge":false,"refs":[],"out":["experiment"],"owner":"main","per":{"0":[60,3,1],"1":[1,1,1]}},{"h":"25d755a","p":["bbf2b18"],"a":2,"d":"2024-01-23T13:00:00+00:00","t":1706014800.0,"m":"Support file depth (22)","f":2,"i":61,"x":7,"lane":1,"plane":[0],"merge":false,"refs":[],"out":[],"owner":"experiment","per":{"0":[61,7,2]}},{"h":"3c4b9fa","p":["25d755a"],"a":2,"d":"2024-01-24T14:00:00+00:00","t":1706104800.0,"m":"Speed up layout pass (23)","f":3,"i":360,"x":16,"lane":1,"plane":[1],"merge":false,"refs":[],"out":[],"owner":"experiment","per":{"2":[150,1,1],"0":[150,8,1],"1":[60,7,1]}},{"h":"8a314be","p":["3c4b9fa"],"a":2,"d":"2024-01-25T15:00:00+00:00","t":1706194800.0,"m":"Fix off-by-one in tokenizer (24)","f":2,"i":2,"x":10,"lane":1,"plane":[1],"merge":false,"refs":["experiment"],"out":[],"owner":"experiment","per":{"0":[2,10,2]}},{"h":"1426f31","p":["bbf2b18"],"a":0,"d":"2024-01-26T16:00:00+00:00","t":1706284800.0,"m":"Support file depth (25)","f":3,"i":171,"x":13,"lane":0,"plane":[0],"merge":false,"refs":[],"out":[],"owner":"main","per":{"3":[1,8,1],"2":[20,5,1],"0":[150,0,1]}},{"h":"0bcf584","p":["1426f31"],"a":1,"d":"2024-01-27T17:00:00+00:00","t":1706374800.0,"m":"Support file depth (26)","f":3,"i":88,"x":14,"lane":0,"plane":[0],"merge":false,"refs":["main"],"out":[],"owner":"main","per":{"3":[20,8,1],"2":[8,3,1],"0":[60,3,1]}}]};
+
+if (!DATA) {
+  document.body.innerHTML = '<div id="empty">This is the empty template. Run git_timeline.py to produce a timeline.</div>';
+} else {
+  init(DATA);
+}
+
+function init(D) {
+  const C = D.commits, N = C.length, T = D.tracks;
+  const $ = id => document.getElementById(id);
+
+  // ------------------------------------------------------------ constants
+  const RULER_H = 26;
+  const LANE_H = 16;
+  const STRIP_H = D.laneCount * LANE_H + 30;      // lanes plus one row for cut labels
+  const TRACK_H = 44;
+  const MIN_W = 10, GAP = 2, LOG_K = 9;          // clip width = max(MIN_W, LOG_K * log2(1 + lines))
+  const FPS = 24;                                // burn-in timecode: one commit = one frame
+  const PLAY_RATE = 3;                           // commits per second in plain play mode
+
+  // ------------------------------------------------------------ layout in "world" units
+  const width = C.map(c => Math.max(MIN_W, LOG_K * Math.log2(1 + c.i + c.x)));
+  const seqX = [];
+  let acc = 0;
+  for (let i = 0; i < N; i++) { seqX.push(acc); acc += width[i] + GAP; }
+  const WORLD_W = acc;
+  const t0 = Math.min(...C.map(c => c.t)), t1 = Math.max(...C.map(c => c.t));
+  const span = Math.max(1, t1 - t0);
+  const timeX = C.map(c => (c.t - t0) / span * (WORLD_W - width[N - 1]));
+  const maxTrackLines = Math.max(1, ...C.flatMap(c => Object.values(c.per).map(v => v[0] + v[1])));
+
+  const state = {
+    mode: 'seq',          // 'seq' or 'time'
+    scale: 1, ox: 0,      // world -> screen: sx = (wx - ox) * scale
+    pos: N - 1,           // fractional commit index of the playhead
+    playing: false, trailer: null, lastFrame: 0,
+    hover: -1, focusAuthor: -1, shownIndex: -1,
+    view: { w: 0, h: 0 },
+  };
+  const x0 = i => state.mode === 'seq' ? seqX[i] : timeX[i];
+  const cx = i => x0(i) + width[i] / 2;
+  const toScreen = wx => (wx - state.ox) * state.scale;
+  const toWorld = sx => sx / state.scale + state.ox;
+
+  // ------------------------------------------------------------ DOM setup
+  document.title = D.repo + ' timeline';
+  $('title').innerHTML = escapeHtml(D.repo) + ' <small>git history as a timeline</small>';
+  $('stats').textContent = N + ' commits, ' + T.length + ' tracks, ' + D.authors.length +
+    (D.authors.length === 1 ? ' author, ' : ' authors, ') + (D.branches === 'all' ? 'all branches' : 'current branch') +
+    ', ' + (D.depth === 'dir' ? 'directory' : 'file') + ' tracks';
+  $('trailer-seconds').value = D.trailerSeconds;
+  $('corner').textContent = D.repo.toUpperCase();
+
+  const headers = $('headers');
+  headers.innerHTML = '<div class="h ruler" style="height:' + RULER_H + 'px">Timeline</div>' +
+    '<div class="h ruler" style="height:' + STRIP_H + 'px">Branches</div>' +
+    T.map(t => '<div class="h track" style="height:' + TRACK_H + 'px" title="' + escapeHtml(t.name) + '">' +
+      '<span class="nm">' + escapeHtml(t.name) + '</span><small>' + t.commits + ' commits, ' + fmtNum(t.lines) + ' lines</small></div>').join('');
+
+  const legend = $('legend');
+  const counts = new Array(D.authors.length).fill(0);
+  C.forEach(c => counts[c.a]++);
+  legend.innerHTML = '<h2>Clip color by author</h2>' +
+    D.authors.map((a, i) => '<span class="chip" data-i="' + i + '"><i style="background:' + a.color + '"></i>' +
+      escapeHtml(a.name) + ' <small>' + counts[i] + '</small></span>').join('') +
+    '<p>Drag the playhead or click the ruler to scrub. <kbd>&larr;</kbd> <kbd>&rarr;</kbd> step commits (<kbd>Shift</kbd> for 10), ' +
+    '<kbd>Space</kbd> plays, <kbd>T</kbd> runs the trailer, <kbd>F</kbd> fits the window. Wheel zooms, drag the tracks to pan. ' +
+    'Wide clips mean many lines changed. Dashed cuts mark where a branch leaves, hatched clips are merges.</p>';
+  legend.addEventListener('click', e => {
+    const chip = e.target.closest('.chip');
+    if (!chip) return;
+    const i = +chip.dataset.i;
+    state.focusAuthor = state.focusAuthor === i ? -1 : i;
+    legend.querySelectorAll('.chip').forEach(ch => {
+      const on = state.focusAuthor === +ch.dataset.i;
+      ch.classList.toggle('on', on);
+      ch.classList.toggle('dim', state.focusAuthor >= 0 && !on);
+    });
+    draw();
+  });
+
+  // ------------------------------------------------------------ canvas
+  const canvas = $('canvas'), ctx = canvas.getContext('2d');
+  const wrap = $('canvas-wrap');
+  const contentH = RULER_H + STRIP_H + T.length * TRACK_H;
+
+  function resize() {
+    const dpr = window.devicePixelRatio || 1;
+    const w = Math.max(50, $('scroller').clientWidth - headers.offsetWidth);
+    const h = Math.max(contentH, $('scroller').clientHeight);
+    canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
+    canvas.style.width = w + 'px'; canvas.style.height = h + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    state.view.w = w; state.view.h = h;
+  }
+
+  function fit() {
+    resize();
+    state.scale = state.view.w / (WORLD_W + 20);
+    state.ox = -10;
+    draw();
+  }
+
+  function clampView() {
+    const minScale = state.view.w / (WORLD_W + 20) * 0.5;
+    state.scale = Math.min(60, Math.max(minScale, state.scale));
+    const visible = state.view.w / state.scale;
+    state.ox = Math.min(WORLD_W - visible * 0.2, Math.max(-visible * 0.8, state.ox));
+  }
+
+  function playheadX() {
+    const i = Math.floor(state.pos), f = state.pos - i;
+    if (i >= N - 1) return cx(N - 1);
+    return cx(i) + (cx(i + 1) - cx(i)) * f;
+  }
+
+  // ------------------------------------------------------------ drawing
+  function draw() {
+    const W = state.view.w, H = state.view.h;
+    ctx.clearRect(0, 0, W, H);
+    const first = visibleRange();
+
+    drawTracks(first, W);
+    drawStrip(first, W);
+    drawRuler(W);
+    drawCuts(first, W, H);
+    drawPlayhead(H);
+  }
+
+  function visibleRange() {
+    // indices of commits whose slot intersects the viewport (sequence order is monotonic; time is not, so scan)
+    const wl = toWorld(0), wr = toWorld(state.view.w);
+    const out = [];
+    for (let i = 0; i < N; i++) {
+      const a = x0(i) - (C[i].merge ? width[i] : 0), b = x0(i) + width[i];
+      if (b >= wl && a <= wr) out.push(i);
+    }
+    return out;
+  }
+
+  function clipRect(i, k) {
+    // screen rectangle of commit i on track k; merges spill left over their predecessor (the overlap)
+    let a = toScreen(x0(i)), b = toScreen(x0(i) + width[i]);
+    if (C[i].merge && i > 0) a -= Math.min(b - a, toScreen(x0(i - 1) + width[i - 1]) - toScreen(x0(i - 1))) * 0.5;
+    const per = C[i].per[k];
+    const lines = per[0] + per[1];
+    const share = Math.max(0.35, Math.log2(1 + lines) / Math.log2(1 + maxTrackLines));
+    const top = RULER_H + STRIP_H + k * TRACK_H;
+    const h = (TRACK_H - 10) * share;
+    return { x: a, y: top + TRACK_H - 5 - h, w: Math.max(1, b - a), h: h, bottom: top + TRACK_H - 5 };
+  }
+
+  function drawTracks(indices, W) {
+    // track backgrounds
+    for (let k = 0; k < T.length; k++) {
+      const y = RULER_H + STRIP_H + k * TRACK_H;
+      ctx.fillStyle = k % 2 ? '#1b1d22' : '#191b20';
+      ctx.fillRect(0, y, W, TRACK_H);
+      ctx.fillStyle = '#2a2d34';
+      ctx.fillRect(0, y + TRACK_H - 1, W, 1);
+    }
+    // clips
+    for (const i of indices) {
+      const c = C[i];
+      const color = D.authors[c.a].color;
+      const dim = state.focusAuthor >= 0 && state.focusAuthor !== c.a;
+      for (const k in c.per) {
+        const r = clipRect(i, +k);
+        ctx.globalAlpha = dim ? 0.15 : 0.9;
+        ctx.fillStyle = color;
+        roundRect(r.x, r.y, r.w, r.h, Math.min(3, r.w / 2));
+        ctx.fill();
+        if (c.merge) {
+          // cross-dissolve: hatch the clip and mark the overlap with an X
+          ctx.save();
+          ctx.clip();
+          ctx.strokeStyle = 'rgba(0,0,0,.45)'; ctx.lineWidth = 1;
+          for (let s = r.x - r.h; s < r.x + r.w; s += 6) {
+            ctx.beginPath(); ctx.moveTo(s, r.bottom); ctx.lineTo(s + r.h, r.y); ctx.stroke();
+          }
+          ctx.restore();
+          if (r.w > 8) {
+            ctx.strokeStyle = 'rgba(255,255,255,.75)'; ctx.lineWidth = 1;
+            const ov = Math.min(r.w / 3, 14);
+            ctx.beginPath();
+            ctx.moveTo(r.x, r.bottom); ctx.lineTo(r.x + ov, r.y);
+            ctx.moveTo(r.x, r.y); ctx.lineTo(r.x + ov, r.bottom);
+            ctx.stroke();
+          }
+        }
+        if (r.w > 44) {
+          ctx.globalAlpha = dim ? 0.3 : 0.95;
+          ctx.fillStyle = '#0b0c0f';
+          ctx.font = '10px ui-monospace, Menlo, Consolas, monospace';
+          ctx.textBaseline = 'top';
+          ctx.fillText(c.h, r.x + 4, r.y + 3, r.w - 8);
+          if (r.w > 90 && r.h > 22) {
+            const p = c.per[k];
+            ctx.fillText('+' + p[0] + ' -' + p[1], r.x + 4, r.y + 14, r.w - 8);
+          }
+        }
+        if (i === state.hover || i === Math.round(state.pos)) {
+          ctx.globalAlpha = 1;
+          ctx.strokeStyle = i === state.hover ? '#fff' : '#ffd166';
+          ctx.lineWidth = 1.5;
+          roundRect(r.x + 0.5, r.y + 0.5, r.w - 1, r.h - 1, 3);
+          ctx.stroke();
+        }
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function laneY(l) { return RULER_H + 8 + l * LANE_H + LANE_H / 2; }
+
+  function drawStrip(indices, W) {
+    ctx.fillStyle = '#131418';
+    ctx.fillRect(0, RULER_H, W, STRIP_H);
+    ctx.fillStyle = '#2a2d34';
+    ctx.fillRect(0, RULER_H + STRIP_H - 1, W, 1);
+
+    const shown = new Set(indices);
+    const lineFor = (i, p, second) => {
+      // connect commit i to parent index p; second parents are merge links (dashed)
+      const ax = toScreen(cx(p)), ay = laneY(C[p].lane);
+      const bx = toScreen(cx(i)), by = laneY(C[i].lane);
+      ctx.beginPath();
+      ctx.setLineDash(second ? [3, 3] : []);
+      ctx.strokeStyle = second ? '#ffd166' : (ay === by ? '#4d525c' : '#7a8190');
+      ctx.lineWidth = second ? 1.2 : 1.4;
+      ctx.moveTo(ax, ay);
+      if (ay === by) ctx.lineTo(bx, by);
+      else { const mx = (ax + bx) / 2; ctx.bezierCurveTo(mx, ay, mx, by, bx, by); }
+      ctx.stroke();
+      ctx.setLineDash([]);
+    };
+    const index = new Map(C.map((c, i) => [c.h, i]));
+    // links: draw for visible commits and their parents, even if the parent is off screen
+    for (const i of indices) {
+      C[i].p.forEach((ph, n) => { const p = index.get(ph); if (p !== undefined) lineFor(i, p, n > 0); });
+    }
+    // also links coming from off-screen children into visible parents
+    for (let i = 0; i < N; i++) {
+      if (shown.has(i)) continue;
+      C[i].p.forEach((ph, n) => { const p = index.get(ph); if (p !== undefined && shown.has(p)) lineFor(i, p, n > 0); });
+    }
+    // nodes
+    for (const i of indices) {
+      const c = C[i], x = toScreen(cx(i)), y = laneY(c.lane);
+      ctx.fillStyle = D.authors[c.a].color;
+      ctx.beginPath();
+      if (c.merge) {
+        // cross-dissolve mark: an X between the two parent lanes
+        ctx.strokeStyle = '#ffd166'; ctx.lineWidth = 1.5;
+        ctx.moveTo(x - 4, y - 4); ctx.lineTo(x + 4, y + 4); ctx.moveTo(x - 4, y + 4); ctx.lineTo(x + 4, y - 4);
+        ctx.stroke();
+      } else {
+        ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill();
+      }
+      if (c.refs.length && state.scale * width[i] > 3) {
+        tag(x + 7, y, c.refs.join(', '), '#2b4a58', '#bfe9ff');
+      }
+    }
+  }
+
+  function tag(x, y, text, bg, fg) {
+    ctx.font = '10px ui-monospace, Menlo, Consolas, monospace';
+    const w = ctx.measureText(text).width + 8;
+    ctx.fillStyle = bg;
+    roundRect(x, y - 7, w, 14, 3); ctx.fill();
+    ctx.fillStyle = fg; ctx.textBaseline = 'middle';
+    ctx.fillText(text, x + 4, y + 0.5);
+  }
+
+  function drawCuts(indices, W, H) {
+    // branch points: a dashed cut across all tracks at the end of the clip, labelled with the leaving branch
+    for (const i of indices) {
+      const c = C[i];
+      if (!c.out.length) continue;
+      const x = Math.round(toScreen(x0(i) + width[i]) + 1) + 0.5;
+      ctx.setLineDash([4, 4]);
+      ctx.strokeStyle = '#ffb454'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(x, RULER_H); ctx.lineTo(x, H); ctx.stroke();
+      ctx.setLineDash([]);
+      tag(x + 3, RULER_H + STRIP_H - 9, '✂ ' + c.out.join(', '), '#5a3d1c', '#ffd9a8');
+    }
+  }
+
+  function drawRuler(W) {
+    ctx.fillStyle = '#101115';
+    ctx.fillRect(0, 0, W, RULER_H);
+    ctx.fillStyle = '#2a2d34';
+    ctx.fillRect(0, RULER_H - 1, W, 1);
+    ctx.font = '10px ui-monospace, Menlo, Consolas, monospace';
+    ctx.fillStyle = '#8b909a'; ctx.textBaseline = 'top';
+    ctx.strokeStyle = '#3a3e47'; ctx.lineWidth = 1;
+
+    if (state.mode === 'seq') {
+      // label every k-th commit so labels are at least ~110px apart
+      const pxPerCommit = state.scale * WORLD_W / N;
+      const step = Math.max(1, Math.ceil(110 / pxPerCommit));
+      let lastLabel = -Infinity;
+      for (let i = 0; i < N; i += step) {
+        const x = toScreen(x0(i));
+        if (x > W) break;
+        if (x < -80 || x - lastLabel < 120) continue;   // clip widths vary, so skip labels that would collide
+        lastLabel = x;
+        ctx.beginPath(); ctx.moveTo(Math.round(x) + 0.5, RULER_H - 8); ctx.lineTo(Math.round(x) + 0.5, RULER_H); ctx.stroke();
+        ctx.fillText(C[i].d.slice(0, 10) + '  #' + i, x + 3, 4);
+      }
+    } else {
+      const steps = [3600, 6 * 3600, 86400, 7 * 86400, 30 * 86400, 91 * 86400, 365 * 86400, 5 * 365 * 86400];
+      const secPerPx = span / ((WORLD_W - width[N - 1]) * state.scale);
+      const step = steps.find(s => s / secPerPx >= 110) || steps[steps.length - 1];
+      const tl = t0 + toWorld(0) / (WORLD_W - width[N - 1]) * span;
+      for (let t = Math.floor(tl / step) * step; ; t += step) {
+        const x = toScreen((t - t0) / span * (WORLD_W - width[N - 1]));
+        if (x > W) break;
+        ctx.beginPath(); ctx.moveTo(Math.round(x) + 0.5, RULER_H - 8); ctx.lineTo(Math.round(x) + 0.5, RULER_H); ctx.stroke();
+        const d = new Date(t * 1000);
+        ctx.fillText(step < 86400 ? d.toISOString().slice(0, 16).replace('T', ' ') : d.toISOString().slice(0, 10), x + 3, 4);
+      }
+    }
+  }
+
+  function drawPlayhead(H) {
+    const x = Math.round(toScreen(playheadX())) + 0.5;
+    ctx.strokeStyle = '#ff4d4f'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+    ctx.fillStyle = '#ff4d4f';
+    ctx.beginPath();
+    ctx.moveTo(x - 7, 0); ctx.lineTo(x + 7, 0); ctx.lineTo(x + 7, 9); ctx.lineTo(x, 16); ctx.lineTo(x - 7, 9);
+    ctx.closePath(); ctx.fill();
+  }
+
+  function roundRect(x, y, w, h, r) {
+    r = Math.max(0, Math.min(r, w / 2, h / 2));
+    ctx.beginPath();
+    ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y); ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r); ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+  }
+
+  // ------------------------------------------------------------ program monitor
+  function timecode(pos) {
+    const frames = Math.round(pos);
+    const s = Math.floor(frames / FPS), f = frames % FPS;
+    const pad = n => String(n).padStart(2, '0');
+    return pad(Math.floor(s / 3600)) + ':' + pad(Math.floor(s / 60) % 60) + ':' + pad(s % 60) + ':' + pad(f);
+  }
+
+  function updateMonitor() {
+    const i = Math.max(0, Math.min(N - 1, Math.round(state.pos)));
+    $('timecode').textContent = timecode(state.pos);
+    if (i === state.shownIndex) return;
+    const changed = state.shownIndex !== -1;
+    state.shownIndex = i;
+    const c = C[i], a = D.authors[c.a];
+    const tags = c.refs.map(r => '<span>' + escapeHtml(r) + '</span>').join('') +
+      c.out.map(r => '<span class="out">✂ ' + escapeHtml(r) + '</span>').join('') +
+      (c.merge ? '<span class="out">merge</span>' : '');
+    $('screen').innerHTML =
+      '<div class="msg">' + escapeHtml(c.m) + '</div>' +
+      '<div class="meta"><span class="swatch" style="background:' + a.color + '"></span><b>' + escapeHtml(a.name) + '</b>' +
+      '<span class="dot">&middot;</span>' + c.h + '<span class="dot">&middot;</span>' + escapeHtml(c.d.replace('T', ' ')) +
+      (c.owner ? '<span class="dot">&middot;</span>' + escapeHtml(c.owner) : '') + '</div>' +
+      '<div class="files">' + c.f + (c.f === 1 ? ' file' : ' files') + ' changed, <span class="ins">+' + c.i + '</span> <span class="del">-' + c.x + '</span>' +
+      ' &nbsp; commit ' + (i + 1) + ' of ' + N + '</div>' +
+      (tags ? '<div class="tags">' + tags + '</div>' : '');
+    if (changed && (state.trailer || state.playing)) {
+      const fl = $('flash');
+      fl.classList.remove('on'); void fl.offsetWidth; fl.classList.add('on');
+    }
+  }
+
+  function showCard(show) {
+    const card = $('card');
+    if (!show) { card.classList.remove('show'); return; }
+    card.innerHTML = '<div class="t">' + escapeHtml(D.repo) + '</div>' +
+      '<div class="s">a git history</div>' +
+      '<div class="n"><div><b>' + N + '</b>commits</div><div><b>' + D.authors.length + '</b>' +
+      (D.authors.length === 1 ? 'contributor' : 'contributors') + '</div><div><b>' + T.length + '</b>tracks</div></div>' +
+      '<div class="d">' + C[0].d.slice(0, 10) + ' &rarr; ' + C[N - 1].d.slice(0, 10) + '</div>';
+    card.classList.add('show');
+  }
+
+  // ------------------------------------------------------------ playback
+  function setPos(p, follow) {
+    state.pos = Math.max(0, Math.min(N - 1, p));
+    if (follow) {
+      // keep the playhead inside the middle 60% of the view
+      const sx = toScreen(playheadX()), W = state.view.w;
+      if (sx < W * 0.2 || sx > W * 0.8) state.ox = playheadX() - (W * 0.5) / state.scale;
+    }
+    updateMonitor();
+    draw();
+  }
+
+  function togglePlay() {
+    if (state.trailer) stopTrailer();
+    state.playing = !state.playing;
+    if (state.playing && state.pos >= N - 1) state.pos = 0;
+    $('btn-play').textContent = state.playing ? 'Pause' : 'Play';
+    $('btn-play').classList.toggle('active', state.playing);
+    $('monitor').classList.toggle('playing', state.playing);
+    showCard(false);
+    if (state.playing) { state.lastFrame = performance.now(); requestAnimationFrame(tick); }
+  }
+
+  function startTrailer() {
+    if (state.playing) togglePlay();
+    const seconds = Math.max(1, parseFloat($('trailer-seconds').value) || D.trailerSeconds);
+    showCard(false);
+    // zoom so about 60 commits fill the window (never closer than the fit level), then follow
+    resize();
+    const fitScale = state.view.w / (WORLD_W + 20);
+    state.scale = Math.max(fitScale, state.view.w / (WORLD_W / N * Math.min(N, 60)));
+    state.trailer = { start: performance.now(), seconds: seconds, fitScale: fitScale };
+    state.pos = 0; state.shownIndex = -1;
+    state.ox = -10;
+    $('btn-trailer').classList.add('active');
+    $('monitor').classList.add('playing');
+    updateMonitor(); draw();
+    requestAnimationFrame(tick);
+  }
+
+  function stopTrailer() {
+    state.trailer = null;
+    $('btn-trailer').classList.remove('active');
+    $('monitor').classList.remove('playing');
+  }
+
+  const easeInOut = u => u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2;
+
+  function tick(now) {
+    if (state.trailer) {
+      const tr = state.trailer;
+      const u = Math.min(1, (now - tr.start) / (tr.seconds * 1000));
+      setPos(easeInOut(u) * (N - 1), true);
+      if (u >= 1) {
+        stopTrailer();
+        // pull back to the whole history and roll the title card
+        state.scale = tr.fitScale; state.ox = -10; draw();
+        showCard(true);
+        return;
+      }
+      requestAnimationFrame(tick);
+    } else if (state.playing) {
+      const dt = (now - state.lastFrame) / 1000;
+      state.lastFrame = now;
+      setPos(state.pos + dt * PLAY_RATE, true);
+      if (state.pos >= N - 1) togglePlay(); else requestAnimationFrame(tick);
+    }
+  }
+
+  // ------------------------------------------------------------ interaction
+  function posAtScreenX(sx) {
+    // fractional index whose playhead position is nearest to screen x
+    const wx = toWorld(sx);
+    let best = 0, bd = Infinity;
+    for (let i = 0; i < N; i++) { const d = Math.abs(cx(i) - wx); if (d < bd) { bd = d; best = i; } }
+    if (state.mode === 'time') return best;
+    const j = wx > cx(best) ? best + 1 : best - 1;
+    if (j < 0 || j >= N) return best;
+    const f = (wx - cx(best)) / (cx(j) - cx(best));
+    return best + (j - best) * Math.max(0, Math.min(1, f));
+  }
+
+  function commitAt(sx, sy) {
+    if (sy < RULER_H + STRIP_H) return -1;
+    const k = Math.floor((sy - RULER_H - STRIP_H) / TRACK_H);
+    if (k >= T.length) return -1;
+    for (const i of visibleRange()) {
+      if (!C[i].per[k]) continue;
+      const r = clipRect(i, k);
+      if (sx >= r.x && sx <= r.x + r.w && sy >= r.y) return i;
+    }
+    return -1;
+  }
+
+  let drag = null;
+  canvas.addEventListener('pointerdown', e => {
+    const r = canvas.getBoundingClientRect();
+    const sx = e.clientX - r.left, sy = e.clientY - r.top;
+    const nearHead = Math.abs(sx - toScreen(playheadX())) < 8;
+    if (state.trailer) stopTrailer();
+    if (sy < RULER_H || nearHead) {
+      drag = { kind: 'scrub' };
+      setPos(posAtScreenX(sx), false);
+    } else {
+      const i = commitAt(sx, sy);
+      if (i >= 0) { setPos(i, false); return; }
+      drag = { kind: 'pan', x: sx, ox: state.ox };
+    }
+    canvas.setPointerCapture(e.pointerId);
+  });
+  canvas.addEventListener('pointermove', e => {
+    const r = canvas.getBoundingClientRect();
+    const sx = e.clientX - r.left, sy = e.clientY - r.top;
+    if (drag && drag.kind === 'scrub') { setPos(posAtScreenX(sx), false); return; }
+    if (drag && drag.kind === 'pan') { state.ox = drag.ox - (sx - drag.x) / state.scale; clampView(); draw(); return; }
+    const i = commitAt(sx, sy);
+    const tip = $('tip');
+    if (i !== state.hover) { state.hover = i; draw(); }
+    canvas.style.cursor = i >= 0 ? 'pointer' : (sy < RULER_H ? 'ew-resize' : 'grab');
+    if (i >= 0) {
+      const c = C[i];
+      tip.innerHTML = '<div class="m">' + escapeHtml(c.m) + '</div><div class="s">' + c.h + ' · ' +
+        escapeHtml(D.authors[c.a].name) + ' · ' + c.d.slice(0, 10) + ' · +' + c.i + ' -' + c.x + '</div>';
+      tip.style.display = 'block';
+      const tl = $('timeline').getBoundingClientRect();
+      tip.style.left = Math.min(tl.width - 350, e.clientX - tl.left + 14) + 'px';
+      tip.style.top = (e.clientY - tl.top + 14) + 'px';
+    } else tip.style.display = 'none';
+  });
+  const endDrag = () => { drag = null; };
+  canvas.addEventListener('pointerup', endDrag);
+  canvas.addEventListener('pointercancel', endDrag);
+  canvas.addEventListener('pointerleave', () => { $('tip').style.display = 'none'; if (state.hover >= 0) { state.hover = -1; draw(); } });
+
+  canvas.addEventListener('wheel', e => {
+    e.preventDefault();
+    const r = canvas.getBoundingClientRect();
+    const sx = e.clientX - r.left;
+    if (e.shiftKey || Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+      state.ox += (e.deltaX || e.deltaY) / state.scale;
+    } else {
+      const wx = toWorld(sx);
+      state.scale *= Math.exp(-e.deltaY * 0.0015);
+      clampView();
+      state.ox = wx - sx / state.scale;      // keep the world point under the cursor fixed
+    }
+    clampView(); draw();
+  }, { passive: false });
+
+  window.addEventListener('keydown', e => {
+    if (e.target.tagName === 'INPUT') return;
+    const step = e.shiftKey ? 10 : 1;
+    if (e.key === 'ArrowRight') { if (state.trailer) stopTrailer(); setPos(Math.round(state.pos) + step, true); }
+    else if (e.key === 'ArrowLeft') { if (state.trailer) stopTrailer(); setPos(Math.round(state.pos) - step, true); }
+    else if (e.key === 'Home') setPos(0, true);
+    else if (e.key === 'End') setPos(N - 1, true);
+    else if (e.key === ' ') togglePlay();
+    else if (e.key === 't' || e.key === 'T') startTrailer();
+    else if (e.key === 'f' || e.key === 'F') fit();
+    else if (e.key === 'Escape') { if (state.trailer) stopTrailer(); showCard(false); }
+    else return;
+    e.preventDefault();
+  });
+
+  $('btn-play').addEventListener('click', togglePlay);
+  $('btn-trailer').addEventListener('click', () => state.trailer ? stopTrailer() : startTrailer());
+  $('btn-fit').addEventListener('click', fit);
+  $('btn-seq').addEventListener('click', () => setMode('seq'));
+  $('btn-time').addEventListener('click', () => setMode('time'));
+  function setMode(m) {
+    state.mode = m;
+    $('btn-seq').classList.toggle('active-2', m === 'seq');
+    $('btn-time').classList.toggle('active-2', m === 'time');
+    fit();
+  }
+  $('card').addEventListener('click', () => showCard(false));
+  window.addEventListener('resize', () => { resize(); clampView(); draw(); });
+
+  // expose a little handle for scripted checks
+  window.timeline = { state: state, setPos: setPos, startTrailer: startTrailer, fit: fit, data: D, playheadScreenX: () => toScreen(playheadX()) };
+
+  fit();
+  updateMonitor();
+
+  function fmtNum(n) { return n >= 10000 ? (n / 1000).toFixed(1) + 'k' : String(n); }
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+  }
+}
+</script>
+</body>
+</html>

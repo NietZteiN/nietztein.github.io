@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bookshelf poster</title>
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    --bg: #e6e3dc;
+    --panel: #f8f6f1;
+    --ink: #2b2825;
+    --muted: #6f6961;
+    --line: #d5d0c6;
+    --accent: #7a4b6e;
+    --accent-ink: #fff;
+    --sidebar: 300px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    display: flex; min-height: 100vh;
+    background: var(--bg); color: var(--ink);
+    font: 14px/1.45 -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+  }
+
+  /* Sidebar */
+  aside {
+    width: var(--sidebar); flex: none; background: var(--panel);
+    border-right: 1px solid var(--line); padding: 18px 20px 28px;
+    overflow-y: auto; height: 100vh; position: sticky; top: 0;
+  }
+  aside h1 { font-size: 18px; margin: 0 0 2px; font-weight: 600; }
+  aside .lead { color: var(--muted); font-size: 12.5px; margin: 0 0 16px; }
+  fieldset { border: 0; padding: 0; margin: 0 0 16px; }
+  legend { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; padding: 0; }
+  label.field { display: block; font-size: 12.5px; margin-bottom: 8px; }
+  label.field span { display: block; color: var(--muted); margin-bottom: 2px; }
+  input[type=text], input[type=number], select {
+    width: 100%; padding: 6px 8px; font: inherit; color: var(--ink);
+    background: #fff; border: 1px solid var(--line); border-radius: 5px;
+  }
+  input[type=number] { width: 100%; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .check { display: flex; align-items: center; gap: 8px; font-size: 13px; margin: 4px 0; }
+  .check input { margin: 0; }
+  .seed { display: flex; gap: 6px; align-items: end; }
+  .seed label { flex: 1; }
+  button {
+    font: inherit; padding: 7px 12px; border-radius: 6px; cursor: pointer;
+    border: 1px solid var(--line); background: #fff; color: var(--ink);
+  }
+  button:hover { border-color: #b9b2a6; }
+  button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  button.primary:hover { filter: brightness(1.08); }
+  .actions { display: grid; gap: 8px; }
+  #status { font-size: 12px; color: var(--muted); min-height: 2.6em; margin-top: 10px; }
+  #catalog { font-size: 12.5px; color: var(--muted); margin-bottom: 8px; }
+  input[type=file] { font-size: 12px; width: 100%; }
+  #custom-size[hidden] { display: none; }
+  details.help { font-size: 12px; color: var(--muted); margin-top: 14px; }
+  details.help summary { cursor: pointer; }
+  details.help p { margin: 6px 0; }
+
+  /* Preview */
+  main { flex: 1; padding: 28px; display: flex; justify-content: center; align-items: flex-start; }
+  #poster { width: 100%; max-width: 1100px; }
+  #poster svg { width: 100%; height: auto; display: block; box-shadow: 0 12px 40px rgba(0,0,0,0.22), 0 1px 3px rgba(0,0,0,0.2); }
+  #poster .empty { color: var(--muted); text-align: center; padding: 80px 20px; }
+
+  /* Printing: only the poster, at physical size. The @page rule with the
+     chosen paper size is written by the script into #print-style. */
+  @media print {
+    body { display: block; background: #fff; }
+    aside { display: none; }
+    main { padding: 0; margin: 0; display: block; }
+    #poster { max-width: none; }
+    #poster svg { box-shadow: none; }
+  }
+</style>
+<style id="print-style"></style>
+</head>
+<body>
+
+<aside>
+  <h1>Bookshelf poster</h1>
+  <p class="lead">The whole collection as spines, in shelf order, fitted to one sheet.</p>
+
+  <fieldset>
+    <legend>Catalog</legend>
+    <div id="catalog">Loading the catalog.</div>
+    <input type="file" id="file" accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values" title="Load another CSV export">
+  </fieldset>
+
+  <fieldset>
+    <legend>Paper</legend>
+    <label class="field"><span>Size</span>
+      <select id="paper"></select>
+    </label>
+    <div id="custom-size" class="two" hidden>
+      <label class="field"><span>Width (mm)</span><input type="number" id="custom-w" min="100" max="3000" step="1" value="500"></label>
+      <label class="field"><span>Height (mm)</span><input type="number" id="custom-h" min="100" max="3000" step="1" value="700"></label>
+    </div>
+    <label class="field"><span>Orientation</span>
+      <select id="orientation">
+        <option value="portrait">Portrait</option>
+        <option value="landscape">Landscape</option>
+      </select>
+    </label>
+  </fieldset>
+
+  <fieldset>
+    <legend>Text</legend>
+    <label class="field"><span>Title</span><input type="text" id="title" value="A Library"></label>
+    <label class="field"><span>Subtitle</span><input type="text" id="subtitle" value="Arranged in shelf order"></label>
+    <label class="field"><span>Font</span><select id="font"></select></label>
+  </fieldset>
+
+  <fieldset>
+    <legend>Color</legend>
+    <label class="field"><span>Color spines by</span>
+      <select id="color-by">
+        <option value="genre">Genre</option>
+        <option value="type">Type</option>
+        <option value="language">Language</option>
+      </select>
+    </label>
+    <label class="field"><span>Palette</span><select id="palette"></select></label>
+  </fieldset>
+
+  <fieldset>
+    <legend>Details</legend>
+    <label class="check"><input type="checkbox" id="show-authors" checked> Show authors when they fit</label>
+    <label class="check"><input type="checkbox" id="show-tags" checked> Show pink shelf tags</label>
+    <label class="check"><input type="checkbox" id="show-units" checked> Show unit labels</label>
+    <div class="seed">
+      <label class="field"><span>Wobble seed</span><input type="number" id="seed" value="7" step="1" min="0"></label>
+      <button type="button" id="reseed" title="Pick another seed">Shuffle</button>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Export</legend>
+    <div class="actions">
+      <button type="button" class="primary" id="download-svg">Download SVG</button>
+      <button type="button" id="print">Print</button>
+      <button type="button" id="copy-png">Copy as PNG (150 dpi)</button>
+    </div>
+    <div id="status"></div>
+  </fieldset>
+
+  <details class="help">
+    <summary>About the file</summary>
+    <p>The SVG has its size in millimetres and a matching viewBox, so it opens at scale in Inkscape, Illustrator or a print shop's viewer. Fonts are named, not embedded; a viewer substitutes if a font is missing.</p>
+    <p>Printing uses the browser's print dialog with the page size set to the chosen paper. Choose "Save as PDF" there for a file to send to a printer.</p>
+  </details>
+</aside>
+
+<main>
+  <div id="poster"><div class="empty">Loading.</div></div>
+</main>
+
+<script src="../01-virtual-library/library.js"></script>
+<script src="poster.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  // The real export (data/my-library.csv, gitignored) first, then the sample.
+  var CSV_URLS = Library.catalogUrls('../01-virtual-library/');
+  var PNG_DPI = 150;
+
+  function $(sel) { return document.querySelector(sel); }
+  var books = [];
+  var currentSvg = null;
+
+  /* Fill the selects from Poster's tables. */
+  function fillSelect(select, table) {
+    Object.keys(table).forEach(function (key) {
+      var opt = document.createElement('option');
+      opt.value = key;
+      opt.textContent = table[key].label;
+      select.appendChild(opt);
+    });
+  }
+  fillSelect($('#paper'), Poster.PAPERS);
+  fillSelect($('#font'), Poster.FONTS);
+  fillSelect($('#palette'), Poster.PALETTES);
+
+  /* Read the sidebar into an options object. */
+  function paperSize() {
+    var key = $('#paper').value;
+    var w, h;
+    if (key === 'custom') {
+      w = Number($('#custom-w').value) || 500;
+      h = Number($('#custom-h').value) || 700;
+    } else {
+      w = Poster.PAPERS[key].width;
+      h = Poster.PAPERS[key].height;
+    }
+    if ($('#orientation').value === 'landscape') { var t = w; w = h; h = t; }
+    return { key: key, width: w, height: h };
+  }
+
+  function options() {
+    return {
+      paper: paperSize(),
+      title: $('#title').value,
+      subtitle: $('#subtitle').value,
+      font: $('#font').value,
+      colorBy: $('#color-by').value,
+      palette: $('#palette').value,
+      showAuthors: $('#show-authors').checked,
+      showTags: $('#show-tags').checked,
+      showUnits: $('#show-units').checked,
+      seed: parseInt($('#seed').value, 10) || 0
+    };
+  }
+
+  /* Render (coalesced to one per frame while typing). */
+  var pending = false;
+  function scheduleRender() {
+    if (pending) return;
+    pending = true;
+    requestAnimationFrame(function () { pending = false; renderNow(); });
+  }
+
+  function renderNow() {
+    var holder = $('#poster');
+    if (!books.length) {
+      holder.innerHTML = '<div class="empty">No books loaded. Pick a CSV in the sidebar.</div>';
+      return;
+    }
+    var opts = options();
+    currentSvg = Poster.render(books, opts);
+    holder.innerHTML = '';
+    holder.appendChild(currentSvg);
+    var w = opts.paper.width, h = opts.paper.height;
+    $('#print-style').textContent =
+      '@page { size: ' + w + 'mm ' + h + 'mm; margin: 0; }\n' +
+      '@media print { #poster svg { width: ' + w + 'mm; height: ' + h + 'mm; } }';
+  }
+
+  /* Catalog loading: fetch first, file picker as the fallback. */
+  function setBooks(list, sourceName) {
+    books = list;
+    var objects = list.filter(function (b) { return b.isObject; }).length;
+    $('#catalog').textContent = (list.length - objects) + ' books from ' + sourceName +
+      (objects ? ' (' + objects + ' objects left out).' : '.');
+    scheduleRender();
+  }
+
+  $('#file').addEventListener('change', function (ev) {
+    var f = ev.target.files[0];
+    if (!f) return;
+    var reader = new FileReader();
+    reader.onload = function () {
+      var rows = Library.parseCSV(reader.result);
+      if (!rows.length) { setStatus('No rows found in ' + f.name + '. The first line must be a header row.'); return; }
+      setBooks(Library.normalizeRows(rows), f.name);
+    };
+    reader.readAsText(f, 'utf-8');
+  });
+
+  Library.loadFirstCatalog(CSV_URLS).then(function (result) {
+    setBooks(result.books, result.url.replace('../01-virtual-library/', ''));
+  }).catch(function (err) {
+    // Usual on a file:// origin, where fetch is blocked.
+    $('#catalog').textContent = 'The page could not read ' + CSV_URLS.join(' or ') + ' by itself (' + err.message +
+      '). Pick the CSV export here; nothing leaves this page.';
+    $('#poster').innerHTML = '<div class="empty">Pick a CSV in the sidebar to draw the poster.</div>';
+  });
+
+  /* Controls. */
+  ['#paper', '#orientation', '#font', '#color-by', '#palette', '#show-authors', '#show-tags', '#show-units'].forEach(function (sel) {
+    $(sel).addEventListener('change', scheduleRender);
+  });
+  ['#title', '#subtitle', '#seed', '#custom-w', '#custom-h'].forEach(function (sel) {
+    $(sel).addEventListener('input', scheduleRender);
+  });
+  $('#paper').addEventListener('change', function () {
+    $('#custom-size').hidden = $('#paper').value !== 'custom';
+  });
+  $('#reseed').addEventListener('click', function () {
+    $('#seed').value = Math.floor(Math.random() * 100000);
+    scheduleRender();
+  });
+
+  /* Export. */
+  function setStatus(msg) { $('#status').textContent = msg; }
+
+  function fileStem() {
+    var slug = ($('#title').value || 'poster').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'poster';
+    var p = paperSize();
+    var size = p.key === 'custom' ? Math.round(p.width) + 'x' + Math.round(p.height) + 'mm' : p.key;
+    return slug + '-' + size;
+  }
+
+  function downloadBlob(blob, name) {
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+  }
+
+  $('#download-svg').addEventListener('click', function () {
+    if (!currentSvg) return;
+    var text = Poster.serialize(currentSvg);
+    downloadBlob(new Blob([text], { type: 'image/svg+xml;charset=utf-8' }), fileStem() + '.svg');
+    setStatus('Saved ' + fileStem() + '.svg (' + Math.round(text.length / 1024) + ' KB).');
+  });
+
+  $('#print').addEventListener('click', function () {
+    if (!currentSvg) return;
+    window.print();
+  });
+
+  $('#copy-png').addEventListener('click', function () {
+    if (!currentSvg) return;
+    var p = paperSize();
+    setStatus('Rendering ' + Math.round(p.width / 25.4 * PNG_DPI) + ' x ' + Math.round(p.height / 25.4 * PNG_DPI) + ' pixels.');
+    Poster.toPNG(currentSvg, PNG_DPI).then(function (png) {
+      var size = png.width + ' x ' + png.height + ' pixels';
+      if (navigator.clipboard && window.ClipboardItem) {
+        return navigator.clipboard.write([new ClipboardItem({ 'image/png': png.blob })]).then(function () {
+          setStatus('Copied a PNG of ' + size + ' to the clipboard.');
+        }, function (err) {
+          downloadBlob(png.blob, fileStem() + '.png');
+          setStatus('The clipboard refused the image (' + err.message + '), so the PNG (' + size + ') was downloaded instead.');
+        });
+      }
+      downloadBlob(png.blob, fileStem() + '.png');
+      setStatus('This browser cannot copy images, so the PNG (' + size + ') was downloaded instead.');
+    }).catch(function (err) {
+      setStatus('Could not render the PNG: ' + err.message + ' Try a smaller paper size.');
+    });
+  });
+})();
+</script>
+</body>
+</html>

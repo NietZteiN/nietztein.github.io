@@ -1,0 +1,36 @@
+application_id,recommender,requested_on,submitted_on,notes
+1,Recommender A,2026-08-20,2026-09-01,Advisor letter for the travel grant.
+2,Recommender A,2026-09-01,2026-09-18,
+2,Recommender B,2026-09-01,,Reminder sent 2026-09-20.
+2,Recommender C,2026-09-05,,
+3,Recommender A,2026-09-01,2026-09-18,Same letter as GRFP with minor edits.
+3,Recommender B,2026-09-01,,
+3,Recommender D,2026-09-10,,Needs the essay draft first.
+4,Recommender A,2026-08-15,2026-09-10,
+4,Recommender B,2026-08-15,2026-09-12,
+5,Recommender A,,,Ask after the GRFP letter is in.
+5,Recommender C,,,
+6,Recommender B,,,
+6,Recommender C,,,
+7,Recommender A,2026-09-01,2026-09-18,
+7,Recommender B,2026-09-01,2026-09-20,
+7,Recommender D,2026-09-10,,
+8,Recommender A,2026-09-15,,
+8,Recommender B,2026-09-15,,
+8,Recommender C,2026-09-15,,
+9,Recommender A,,,
+9,Recommender B,,,
+9,Recommender C,,,
+10,Recommender A,2026-09-15,,
+10,Recommender B,2026-09-15,,
+10,Recommender D,2026-09-15,,
+11,Recommender A,,,
+11,Recommender B,,,
+11,Recommender C,,,
+12,Recommender A,,,
+12,Recommender B,,,
+12,Recommender D,,,
+13,Recommender A,,,
+13,Recommender C,,,
+14,Recommender C,,,
+14,Recommender D,,,

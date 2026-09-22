@@ -1,0 +1,6 @@
+# Memory of shown ids is per machine; regenerate with a run or --reset.
+seen.json
+__pycache__/
+# Daily digests pile up; the example digest is force-added on purpose.
+digests/*.md
+!digests/2026-09-22.md

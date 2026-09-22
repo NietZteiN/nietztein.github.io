@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Obfuscation Playground</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ctext y='13' font-size='13'%3E%F0%9F%AA%9C%3C/text%3E%3C/svg%3E">
+
+<style>
+  :root {
+    --bg: #0f1117;
+    --panel: #171a21;
+    --panel-2: #1e222b;
+    --border: #2a2f3a;
+    --text: #d7dbe0;
+    --muted: #8a93a3;
+    --accent: #4cc9c0;
+    --accent-dim: #2f6f6a;
+    --add-fg: #7ee787;
+    --add-bg: #10251a;
+    --del-fg: #ff9a9a;
+    --del-bg: #2a1517;
+    --mono: "SF Mono", "JetBrains Mono", "Fira Code", Consolas, "Liberation Mono", monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 14px;
+    line-height: 1.45;
+  }
+  header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--border);
+    background: var(--panel);
+    position: sticky;
+    top: 0;
+    z-index: 5;
+  }
+  header h1 { font-size: 16px; margin: 0; font-weight: 600; letter-spacing: 0.2px; }
+  header .sub { color: var(--muted); font-size: 12px; }
+  header .spacer { flex: 1; }
+  .layout {
+    display: grid;
+    grid-template-columns: 320px 320px 1fr;
+    gap: 0;
+    min-height: calc(100vh - 49px);
+  }
+  .panel { padding: 16px; border-right: 1px solid var(--border); overflow-y: auto; }
+  .panel:last-child { border-right: none; }
+  .panel h2 {
+    font-size: 12px; text-transform: uppercase; letter-spacing: 0.6px;
+    color: var(--muted); margin: 0 0 10px; font-weight: 600;
+  }
+  label { display: block; font-size: 12px; color: var(--muted); margin: 10px 0 4px; }
+  select, input[type="number"], input[type="text"] {
+    width: 100%; background: var(--panel-2); color: var(--text);
+    border: 1px solid var(--border); border-radius: 6px; padding: 7px 8px;
+    font-size: 13px; font-family: inherit;
+  }
+  textarea {
+    width: 100%; height: 340px; background: var(--panel-2); color: var(--text);
+    border: 1px solid var(--border); border-radius: 6px; padding: 10px;
+    font-family: var(--mono); font-size: 12.5px; line-height: 1.5; resize: vertical;
+    tab-size: 4;
+  }
+  button {
+    background: var(--panel-2); color: var(--text); border: 1px solid var(--border);
+    border-radius: 6px; padding: 6px 10px; font-size: 12.5px; cursor: pointer;
+    font-family: inherit;
+  }
+  button:hover { border-color: var(--accent-dim); }
+  button.primary {
+    background: var(--accent); color: #06231f; border-color: var(--accent);
+    font-weight: 600;
+  }
+  button.primary:hover { filter: brightness(1.08); }
+  button.tiny { padding: 3px 7px; font-size: 11px; }
+
+  .tf-list { display: flex; flex-direction: column; gap: 8px; }
+  .tf {
+    border: 1px solid var(--border); border-radius: 8px; background: var(--panel-2);
+    padding: 10px;
+  }
+  .tf-head { display: flex; align-items: center; gap: 8px; }
+  .tf-head .name { font-weight: 600; font-size: 13px; flex: 1; }
+  .tf-head input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent); }
+  .tf .desc { color: var(--muted); font-size: 11.5px; margin: 6px 0 0; }
+  .tf .opts { margin-top: 8px; display: none; }
+  .tf.on .opts { display: block; }
+  .tf .opts.empty { display: none !important; }
+  .tf .opts label { margin-top: 6px; }
+  .tf .opts .row { display: flex; align-items: center; gap: 8px; }
+  .tf .opts .row label { margin: 0; color: var(--text); }
+  .move { display: flex; flex-direction: column; gap: 2px; }
+  .seed-row { display: flex; gap: 8px; align-items: flex-end; }
+  .seed-row > div { flex: 1; }
+
+  .ladder-head {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 12px;
+  }
+  .ladder-head h2 { margin: 0; }
+  .cards { display: flex; flex-direction: column; gap: 14px; }
+  .card {
+    border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+    background: var(--panel);
+  }
+  .card-head {
+    display: flex; align-items: center; gap: 10px; padding: 9px 12px;
+    background: var(--panel-2); border-bottom: 1px solid var(--border);
+  }
+  .card-head .step {
+    font-size: 11px; color: #06231f; background: var(--accent);
+    border-radius: 20px; padding: 2px 9px; font-weight: 700;
+  }
+  .card-head .title { font-weight: 600; font-size: 13px; flex: 1; }
+  pre.code, pre.diff {
+    margin: 0; padding: 12px 14px; overflow-x: auto; font-family: var(--mono);
+    font-size: 12.5px; line-height: 1.5; white-space: pre; tab-size: 4;
+  }
+  pre.diff .add { color: var(--add-fg); background: var(--add-bg); display: block; }
+  pre.diff .del { color: var(--del-fg); background: var(--del-bg); display: block; }
+  pre.diff .ctx { color: var(--muted); display: block; }
+  pre.diff .hunk { color: var(--accent); display: block; margin-top: 4px; }
+  .empty-note { color: var(--muted); font-size: 13px; padding: 20px 0; }
+  .error {
+    color: var(--del-fg); background: var(--del-bg); border: 1px solid #5a2a2e;
+    border-radius: 8px; padding: 10px 12px; font-family: var(--mono); font-size: 12px;
+    white-space: pre-wrap;
+  }
+
+  /* Figure mode: hide chrome so the ladder can be screenshotted cleanly. */
+  body.figure .panel.left, body.figure .panel.mid { display: none; }
+  body.figure .layout { grid-template-columns: 1fr; }
+  body.figure header .controls-hide { display: none; }
+  body.figure .card-head button { display: none; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Obfuscation Playground</h1>
+  <span class="sub">clean code to obfuscated, one rung at a time</span>
+  <span class="spacer"></span>
+  <label style="margin:0;display:flex;align-items:center;gap:6px;color:var(--text)">
+    <input type="checkbox" id="figureToggle"> as figure
+  </label>
+</header>
+
+<div class="layout">
+  <!-- LEFT: source -->
+  <section class="panel left">
+    <h2>Source</h2>
+    <label for="language">Language</label>
+    <select id="language">
+      <option value="python">Python (runs on the local server)</option>
+      <option value="js">JavaScript (runs in the browser)</option>
+    </select>
+    <label for="example">Load an example</label>
+    <select id="example"></select>
+    <label for="source">Code</label>
+    <textarea id="source" spellcheck="false"></textarea>
+  </section>
+
+  <!-- MIDDLE: transforms -->
+  <section class="panel mid">
+    <h2>Transforms</h2>
+    <p style="color:var(--muted);font-size:11.5px;margin:0 0 10px">
+      Check the transforms to apply, reorder them, then build the ladder.
+      They are applied top to bottom, each on the result of the last.
+    </p>
+    <div class="tf-list" id="tfList"></div>
+
+    <div class="seed-row" style="margin-top:14px">
+      <div>
+        <label for="seed">Seed</label>
+        <input type="number" id="seed" value="1" step="1">
+      </div>
+      <button class="primary" id="build" style="height:34px">Build ladder</button>
+    </div>
+  </section>
+
+  <!-- RIGHT: ladder -->
+  <section class="panel right">
+    <div class="ladder-head">
+      <h2>Ladder</h2>
+      <span class="spacer" style="flex:1"></span>
+      <button class="tiny controls-hide" id="exportMd">Export as Markdown</button>
+    </div>
+    <div class="cards" id="cards">
+      <div class="empty-note">Pick a language and an example on the left, choose
+      transforms in the middle, and press Build ladder.</div>
+    </div>
+  </section>
+</div>
+
+<!-- Vendored, MIT-licensed, single-file browser builds. -->
+<script src="../vendor/acorn.js"></script>
+<script src="../vendor/walk.js"></script>
+<script src="../vendor/astring.min.js"></script>
+<script src="js_transforms.js"></script>
+<script src="examples.js"></script>
+<script>
+"use strict";
+
+// --- Transform definitions for the UI (mirrors the Python REGISTRY) -------- //
+const TRANSFORMS = [
+  {
+    name: "rename_identifiers", label: "Rename identifiers",
+    desc: "Uninformative names (a1, b2 or l/I/O lookalikes) or adversarial names that suggest the wrong meaning.",
+    opts: [
+      { key: "mode", type: "select", values: ["uninformative", "adversarial"], def: "uninformative" },
+      { key: "style", type: "select", values: ["sequential", "lookalike"], def: "sequential" },
+    ],
+  },
+  {
+    name: "control_flow_flatten", label: "Control-flow flatten",
+    desc: "Rewrite each function body as a while loop with a state variable and if/elif dispatch.",
+    opts: [],
+  },
+  {
+    name: "dead_code_insertion", label: "Dead-code insertion",
+    desc: "Opaque always-false predicates guarding junk, plus unused variables.",
+    opts: [
+      { key: "density", type: "number", def: 0.5, min: 0, max: 1, step: 0.1 },
+    ],
+  },
+  {
+    name: "string_encoding", label: "String encoding",
+    desc: "Replace string literals with decode calls (base64 or reversible XOR) and inject a helper.",
+    opts: [
+      { key: "method", type: "select", values: ["base64", "xor"], def: "base64" },
+    ],
+  },
+  {
+    name: "expression_rewriting", label: "Expression rewriting",
+    desc: "Obfuscate small integer constants, n*2 into n<<1, x+1 into x-(-1) (Python), and boolean identities.",
+    opts: [
+      { key: "constants", type: "bool", def: true },
+      { key: "add_sub", type: "bool", def: true, pyOnly: true },
+      { key: "mul", type: "bool", def: true },
+      { key: "bool", type: "bool", def: true },
+    ],
+  },
+];
+
+// Live order + state of the transform rows.
+let order = TRANSFORMS.map((t) => t.name);
+const state = {};
+TRANSFORMS.forEach((t) => {
+  const opts = {};
+  t.opts.forEach((o) => { opts[o.key] = o.def; });
+  state[t.name] = { checked: false, options: opts };
+});
+
+const el = (id) => document.getElementById(id);
+
+function renderTransforms() {
+  const list = el("tfList");
+  list.innerHTML = "";
+  order.forEach((name, idx) => {
+    const def = TRANSFORMS.find((t) => t.name === name);
+    const st = state[name];
+    const div = document.createElement("div");
+    div.className = "tf" + (st.checked ? " on" : "");
+
+    const head = document.createElement("div");
+    head.className = "tf-head";
+    const cb = document.createElement("input");
+    cb.type = "checkbox"; cb.checked = st.checked;
+    cb.onchange = () => { st.checked = cb.checked; renderTransforms(); };
+    const nm = document.createElement("span");
+    nm.className = "name"; nm.textContent = def.label;
+    const move = document.createElement("div");
+    move.className = "move";
+    const up = document.createElement("button");
+    up.className = "tiny"; up.textContent = "↑"; up.title = "move up";
+    up.onclick = () => { if (idx > 0) { [order[idx-1], order[idx]] = [order[idx], order[idx-1]]; renderTransforms(); } };
+    const down = document.createElement("button");
+    down.className = "tiny"; down.textContent = "↓"; down.title = "move down";
+    down.onclick = () => { if (idx < order.length-1) { [order[idx+1], order[idx]] = [order[idx], order[idx+1]]; renderTransforms(); } };
+    move.appendChild(up); move.appendChild(down);
+    head.appendChild(cb); head.appendChild(nm); head.appendChild(move);
+    div.appendChild(head);
+
+    const desc = document.createElement("div");
+    desc.className = "desc"; desc.textContent = def.desc;
+    div.appendChild(desc);
+
+    const opts = document.createElement("div");
+    opts.className = "opts" + (def.opts.length ? "" : " empty");
+    const lang = el("language").value;
+    def.opts.forEach((o) => {
+      if (o.pyOnly && lang !== "python") return;
+      if (o.type === "select") {
+        const lab = document.createElement("label");
+        lab.textContent = o.key;
+        const sel = document.createElement("select");
+        o.values.forEach((v) => {
+          const op = document.createElement("option");
+          op.value = v; op.textContent = v;
+          if (st.options[o.key] === v) op.selected = true;
+          sel.appendChild(op);
+        });
+        sel.onchange = () => { st.options[o.key] = sel.value; };
+        opts.appendChild(lab); opts.appendChild(sel);
+      } else if (o.type === "number") {
+        const lab = document.createElement("label");
+        lab.textContent = o.key;
+        const inp = document.createElement("input");
+        inp.type = "number"; inp.value = st.options[o.key];
+        if (o.min != null) inp.min = o.min;
+        if (o.max != null) inp.max = o.max;
+        if (o.step != null) inp.step = o.step;
+        inp.onchange = () => { st.options[o.key] = parseFloat(inp.value); };
+        opts.appendChild(lab); opts.appendChild(inp);
+      } else if (o.type === "bool") {
+        const row = document.createElement("div");
+        row.className = "row";
+        const inp = document.createElement("input");
+        inp.type = "checkbox"; inp.checked = !!st.options[o.key];
+        inp.id = "opt_" + name + "_" + o.key;
+        inp.onchange = () => { st.options[o.key] = inp.checked; };
+        const lab = document.createElement("label");
+        lab.setAttribute("for", inp.id); lab.textContent = o.key;
+        row.appendChild(inp); row.appendChild(lab);
+        opts.appendChild(row);
+      }
+    });
+    div.appendChild(opts);
+    list.appendChild(div);
+  });
+}
+
+// --- Examples -------------------------------------------------------------- //
+function refreshExamples() {
+  const lang = el("language").value;
+  const sel = el("example");
+  sel.innerHTML = "";
+  const bank = (window.OBF_EXAMPLES && window.OBF_EXAMPLES[lang]) || {};
+  Object.keys(bank).forEach((k, i) => {
+    const op = document.createElement("option");
+    op.value = k; op.textContent = k;
+    sel.appendChild(op);
+  });
+  const first = Object.keys(bank)[0];
+  if (first) { el("source").value = bank[first]; }
+}
+
+// --- LCS line diff (shared renderer for Python and JS) --------------------- //
+function diffLines(aText, bText) {
+  const a = aText.split("\n");
+  const b = bText.split("\n");
+  const n = a.length, m = b.length;
+  // LCS table.
+  const dp = Array.from({ length: n + 1 }, () => new Int32Array(m + 1));
+  for (let i = n - 1; i >= 0; i--) {
+    for (let j = m - 1; j >= 0; j--) {
+      dp[i][j] = a[i] === b[j] ? dp[i+1][j+1] + 1 : Math.max(dp[i+1][j], dp[i][j+1]);
+    }
+  }
+  const out = [];
+  let i = 0, j = 0;
+  while (i < n && j < m) {
+    if (a[i] === b[j]) { out.push({ t: "ctx", s: a[i] }); i++; j++; }
+    else if (dp[i+1][j] >= dp[i][j+1]) { out.push({ t: "del", s: a[i] }); i++; }
+    else { out.push({ t: "add", s: b[j] }); j++; }
+  }
+  while (i < n) { out.push({ t: "del", s: a[i] }); i++; }
+  while (j < m) { out.push({ t: "add", s: b[j] }); j++; }
+  return out;
+}
+
+function renderDiff(prevCode, code) {
+  const rows = diffLines(prevCode, code);
+  const frag = document.createDocumentFragment();
+  rows.forEach((r) => {
+    const span = document.createElement("span");
+    span.className = r.t;
+    const prefix = r.t === "add" ? "+ " : r.t === "del" ? "- " : "  ";
+    span.textContent = prefix + r.s;
+    frag.appendChild(span);
+  });
+  return frag;
+}
+
+// --- Ladder build + render ------------------------------------------------- //
+let currentRungs = [];
+
+function collectSpecs() {
+  const specs = [];
+  order.forEach((name) => {
+    if (!state[name].checked) return;
+    specs.push({ name: name, options: Object.assign({}, state[name].options) });
+  });
+  return specs;
+}
+
+async function buildLadder() {
+  const lang = el("language").value;
+  const source = el("source").value;
+  const seed = parseInt(el("seed").value, 10) || 0;
+  const specs = collectSpecs();
+  const cards = el("cards");
+
+  if (specs.length === 0) {
+    cards.innerHTML = '<div class="empty-note">No transforms selected. Check at least one on the left.</div>';
+    return;
+  }
+
+  let rungs;
+  try {
+    if (lang === "js") {
+      rungs = window.JSObf.ladderJS(source, specs, seed);
+    } else {
+      const resp = await fetch("/api/ladder", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ language: "python", source, transforms: specs, seed }),
+      });
+      const data = await resp.json();
+      if (data.error) { showError(data.error); return; }
+      rungs = data.rungs;
+    }
+  } catch (err) {
+    if (lang === "python") {
+      showError("Could not reach the Python server.\nStart it with: python3 serve.py\nThen open http://127.0.0.1:8000/\n\n(" + err.message + ")");
+    } else {
+      showError("JavaScript parse or transform error:\n" + err.message);
+    }
+    return;
+  }
+
+  currentRungs = rungs;
+  renderRungs(rungs);
+}
+
+function showError(msg) {
+  const cards = el("cards");
+  cards.innerHTML = "";
+  const div = document.createElement("div");
+  div.className = "error";
+  div.textContent = msg;
+  cards.appendChild(div);
+}
+
+function renderRungs(rungs) {
+  const lang = el("language").value;
+  const cards = el("cards");
+  cards.innerHTML = "";
+  rungs.forEach((rung, i) => {
+    const card = document.createElement("div");
+    card.className = "card";
+
+    const head = document.createElement("div");
+    head.className = "card-head";
+    const step = document.createElement("span");
+    step.className = "step"; step.textContent = i;
+    const title = document.createElement("span");
+    title.className = "title"; title.textContent = rung.name;
+    head.appendChild(step); head.appendChild(title);
+
+    const body = document.createElement("div");
+
+    const showCode = () => {
+      body.innerHTML = "";
+      const pre = document.createElement("pre");
+      pre.className = "code " + (lang === "js" ? "language-js" : "language-python");
+      pre.textContent = rung.code;
+      body.appendChild(pre);
+    };
+    const showDiff = () => {
+      body.innerHTML = "";
+      const pre = document.createElement("pre");
+      pre.className = "diff";
+      pre.appendChild(renderDiff(rungs[i-1].code, rung.code));
+      body.appendChild(pre);
+    };
+
+    if (i > 0) {
+      const toggle = document.createElement("button");
+      toggle.className = "tiny";
+      let showingDiff = true;
+      toggle.textContent = "Show code";
+      toggle.onclick = () => {
+        showingDiff = !showingDiff;
+        if (showingDiff) { showDiff(); toggle.textContent = "Show code"; }
+        else { showCode(); toggle.textContent = "Show diff"; }
+      };
+      head.appendChild(toggle);
+    }
+
+    const copy = document.createElement("button");
+    copy.className = "tiny"; copy.textContent = "Copy";
+    copy.onclick = () => copyText(rung.code, copy);
+    head.appendChild(copy);
+
+    card.appendChild(head);
+    card.appendChild(body);
+    cards.appendChild(card);
+
+    // Default view: diff for transformed rungs, code for the original.
+    if (i > 0) showDiff(); else showCode();
+  });
+}
+
+function copyText(text, btn) {
+  const done = () => { if (btn) { const t = btn.textContent; btn.textContent = "Copied"; setTimeout(() => btn.textContent = t, 1200); } };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done, () => fallbackCopy(text, done));
+  } else { fallbackCopy(text, done); }
+}
+function fallbackCopy(text, done) {
+  const ta = document.createElement("textarea");
+  ta.value = text; document.body.appendChild(ta); ta.select();
+  try { document.execCommand("copy"); } catch (e) {}
+  document.body.removeChild(ta); done();
+}
+
+function exportMarkdown() {
+  if (!currentRungs.length) return;
+  const lang = el("language").value;
+  const fence = lang === "js" ? "javascript" : "python";
+  const lines = ["# Obfuscation ladder", "", "Seed: " + (parseInt(el("seed").value, 10) || 0), ""];
+  currentRungs.forEach((rung, i) => {
+    lines.push("## Rung " + i + ": " + rung.name, "");
+    lines.push("```" + fence, rung.code, "```", "");
+    if (i > 0) {
+      const rows = diffLines(currentRungs[i-1].code, rung.code);
+      const diff = rows.map((r) => (r.t === "add" ? "+ " : r.t === "del" ? "- " : "  ") + r.s).join("\n");
+      lines.push("Diff against previous rung:", "", "```diff", diff, "```", "");
+    }
+  });
+  const blob = new Blob([lines.join("\n")], { type: "text/markdown" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "obfuscation-ladder.md";
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// --- Wiring ---------------------------------------------------------------- //
+el("language").onchange = () => { refreshExamples(); renderTransforms(); };
+el("example").onchange = () => {
+  const lang = el("language").value;
+  const bank = (window.OBF_EXAMPLES && window.OBF_EXAMPLES[lang]) || {};
+  el("source").value = bank[el("example").value] || "";
+};
+el("build").onclick = buildLadder;
+el("exportMd").onclick = exportMarkdown;
+el("figureToggle").onchange = (e) => {
+  document.body.classList.toggle("figure", e.target.checked);
+};
+
+// Preselect a couple of transforms so the first build is interesting.
+state["rename_identifiers"].checked = true;
+state["rename_identifiers"].options.mode = "adversarial";
+state["string_encoding"].checked = true;
+
+refreshExamples();
+renderTransforms();
+</script>
+</body>
+</html>

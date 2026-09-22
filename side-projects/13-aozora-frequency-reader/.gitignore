@@ -1,0 +1,3 @@
+# Downloaded corpora are recreated with: python3 aozora.py fetch --author NAME --general
+cache/
+__pycache__/

@@ -1,0 +1,1680 @@
+{
+ "description": "whole_volume marks a text that covers the whole Collier volume or is its only work. Index of the 51 volumes of the Collier Harvard Classics (Five-Foot Shelf) with Project Gutenberg ebook ids where known. id_status: verified = title and id checked against the GITenberg catalog of Project Gutenberg texts; unverified = from memory, not checked; null id = no reliable id known. mirror_repo and mirror_files name the GITenberg GitHub mirror used when gutenberg.org is unreachable.",
+ "volumes": [
+  {
+   "volume": 1,
+   "title": "Franklin, Woolman, Penn",
+   "works": [
+    {
+     "title": "The Autobiography of Benjamin Franklin",
+     "author": "Benjamin Franklin",
+     "gutenberg_id": 148,
+     "id_status": "verified",
+     "gutenberg_title": "The Autobiography of Benjamin Franklin",
+     "mirror_repo": "The-Autobiography-of-Benjamin-Franklin_148",
+     "mirror_files": [
+      "148.txt"
+     ]
+    },
+    {
+     "title": "The Journal of John Woolman",
+     "author": "John Woolman",
+     "gutenberg_id": 37311,
+     "id_status": "verified",
+     "gutenberg_title": "The Journal, with Other Writings of John Woolman",
+     "mirror_repo": "John-Woolman-s-Journal_37311",
+     "mirror_files": [
+      "37311.txt",
+      "37311-8.txt"
+     ],
+     "note": "Gutenberg text is 'The Journal, with Other Writings of John Woolman'"
+    },
+    {
+     "title": "Some Fruits of Solitude",
+     "author": "William Penn",
+     "gutenberg_id": null,
+     "id_status": null
+    }
+   ]
+  },
+  {
+   "volume": 2,
+   "title": "Plato, Epictetus, Marcus Aurelius",
+   "works": [
+    {
+     "title": "Apology",
+     "author": "Plato",
+     "gutenberg_id": 1656,
+     "id_status": "verified",
+     "gutenberg_title": "Apology",
+     "mirror_repo": "Apology_1656",
+     "mirror_files": [
+      "1656.txt"
+     ],
+     "note": "Jowett translation"
+    },
+    {
+     "title": "Crito",
+     "author": "Plato",
+     "gutenberg_id": 13726,
+     "id_status": "verified",
+     "gutenberg_title": "Apology, Crito, and Phaedo of Socrates",
+     "mirror_repo": "Apology-Crito-and-Phaedo-of-Socrates_13726",
+     "mirror_files": [
+      "13726.txt",
+      "13726-8.txt"
+     ],
+     "note": "Gutenberg text is 'Apology, Crito, and Phaedo of Socrates' (Cary translation), all three in one file"
+    },
+    {
+     "title": "Phaedo",
+     "author": "Plato",
+     "gutenberg_id": 1658,
+     "id_status": "verified",
+     "gutenberg_title": "Phaedo",
+     "mirror_repo": "Phaedo_1658",
+     "mirror_files": [
+      "1658.txt"
+     ],
+     "note": "Jowett translation"
+    },
+    {
+     "title": "The Golden Sayings of Epictetus",
+     "author": "Epictetus",
+     "gutenberg_id": 871,
+     "id_status": "verified",
+     "gutenberg_title": "The Golden Sayings of Epictetus, with the Hymn of Cleanthes",
+     "mirror_repo": "The-Golden-Sayings-of-Epictetus-with-the-Hymn-of-Cleanthes_871",
+     "mirror_files": [
+      "871.txt",
+      "871-8.txt"
+     ]
+    },
+    {
+     "title": "Meditations",
+     "author": "Marcus Aurelius",
+     "gutenberg_id": 2680,
+     "id_status": "verified",
+     "gutenberg_title": "Meditations",
+     "mirror_repo": "Meditations_2680",
+     "mirror_files": [
+      "2680.txt",
+      "2680-8.txt"
+     ],
+     "note": "Long translation"
+    }
+   ]
+  },
+  {
+   "volume": 3,
+   "title": "Bacon, Milton's Prose, Thomas Browne",
+   "works": [
+    {
+     "title": "Essays, Civil and Moral",
+     "author": "Francis Bacon",
+     "gutenberg_id": 575,
+     "id_status": "verified",
+     "gutenberg_title": "The Essays or Counsels, Civil and Moral",
+     "mirror_repo": "The-Essays-or-Counsels-Civil-and-Moral_575",
+     "mirror_files": [
+      "575.txt"
+     ]
+    },
+    {
+     "title": "The New Atlantis",
+     "author": "Francis Bacon",
+     "gutenberg_id": 2434,
+     "id_status": "verified",
+     "gutenberg_title": "New Atlantis",
+     "mirror_repo": "New-Atlantis_2434",
+     "mirror_files": [
+      "2434.txt"
+     ]
+    },
+    {
+     "title": "Areopagitica",
+     "author": "John Milton",
+     "gutenberg_id": 608,
+     "id_status": "verified",
+     "gutenberg_title": "Areopagitica A Speech for the Liberty of Unlicensed Printing to the Parliament of England",
+     "mirror_repo": "Areopagitica--13-A-Speech-for-the-Liberty-of-Unlicensed-Printing-to-the-Parliament-of-England_608",
+     "mirror_files": [
+      "608.txt"
+     ]
+    },
+    {
+     "title": "Tractate on Education",
+     "author": "John Milton",
+     "gutenberg_id": null,
+     "id_status": null
+    },
+    {
+     "title": "Religio Medici",
+     "author": "Sir Thomas Browne",
+     "gutenberg_id": null,
+     "id_status": null
+    }
+   ]
+  },
+  {
+   "volume": 4,
+   "title": "Complete Poems in English, Milton",
+   "works": [
+    {
+     "title": "The Poetical Works of John Milton",
+     "author": "John Milton",
+     "gutenberg_id": 1745,
+     "id_status": "verified",
+     "gutenberg_title": "The Poetical Works of John Milton",
+     "mirror_repo": "The-Poetical-Works-of-John-Milton_1745",
+     "mirror_files": [
+      "1745.txt"
+     ],
+     "whole_volume": true
+    },
+    {
+     "title": "Paradise Lost",
+     "author": "John Milton",
+     "gutenberg_id": 20,
+     "id_status": "verified",
+     "gutenberg_title": "Paradise Lost",
+     "mirror_repo": "Paradise-Lost_20",
+     "mirror_files": [
+      "20.txt"
+     ]
+    }
+   ]
+  },
+  {
+   "volume": 5,
+   "title": "Essays and English Traits, Emerson",
+   "works": [
+    {
+     "title": "Essays, First Series",
+     "author": "Ralph Waldo Emerson",
+     "gutenberg_id": 2944,
+     "id_status": "verified",
+     "gutenberg_title": "Essays - First Series",
+     "mirror_repo": "Essays---First-Series_2944",
+     "mirror_files": [
+      "2944.txt"
+     ]
+    },
+    {
+     "title": "Essays, Second Series",
+     "author": "Ralph Waldo Emerson",
+     "gutenberg_id": 2945,
+     "id_status": "verified",
+     "gutenberg_title": "Essays - Second Series",
+     "mirror_repo": "Essays---Second-Series_2945",
+     "mirror_files": [
+      "2945.txt"
+     ]
+    },
+    {
+     "title": "English Traits",
+     "author": "Ralph Waldo Emerson",
+     "gutenberg_id": 39862,
+     "id_status": "verified",
+     "gutenberg_title": "English Traits",
+     "mirror_repo": "English-Traits_39862",
+     "mirror_files": [
+      "39862-0.txt",
+      "39862.txt",
+      "39862-8.txt"
+     ]
+    }
+   ]
+  },
+  {
+   "volume": 6,
+   "title": "Poems and Songs, Burns",
+   "works": [
+    {
+     "title": "Poems and Songs of Robert Burns",
+     "author": "Robert Burns",
+     "gutenberg_id": 1279,
+     "id_status": "verified",
+     "gutenberg_title": "Poems and Songs of Robert Burns",
+     "mirror_repo": "Poems-and-Songs-of-Robert-Burns_1279",
+     "mirror_files": [
+      "1279.txt"
+     ],
+     "whole_volume": true
+    }
+   ]
+  },
+  {
+   "volume": 7,
+   "title": "Confessions of St. Augustine, Imitation of Christ",
+   "works": [
+    {
+     "title": "The Confessions of St. Augustine",
+     "author": "Saint Augustine",
+     "gutenberg_id": 3296,
+     "id_status": "verified",
+     "gutenberg_title": "The Confessions of St. Augustine",
+     "mirror_repo": "The-Confessions-of-St.-Augustine_3296",
+     "mirror_files": [
+      "3296.txt"
+     ]
+    },
+    {
+     "title": "The Imitation of Christ",
+     "author": "Thomas a Kempis",
+     "gutenberg_id": 1653,
+     "id_status": "unverified"
+    }
+   ]
+  },
+  {
+   "volume": 8,
+   "title": "Nine Greek Dramas",
+   "works": [
+    {
+     "title": "Agamemnon",
+     "author": "Aeschylus",
+     "gutenberg_id": 14417,
+     "id_status": "verified",
+     "gutenberg_title": "The Agamemnon of Aeschylus Translated into English Rhyming Verse with Explanatory Notes",
+     "mirror_repo": "The-Agamemnon-of-Aeschylus--13-Translated-into-English-Rhyming-Verse-with-Explanatory-Notes_14417",
+     "mirror_files": [
+      "14417.txt",
+      "14417-8.txt"
+     ],
+     "note": "Gilbert Murray's verse translation, not the one in the Collier set"
+    },
+    {
+     "title": "The Libation-Bearers",
+     "author": "Aeschylus",
+     "gutenberg_id": null,
+     "id_status": null
+    },
+    {
+     "title": "The Furies",
+     "author": "Aeschylus",
+     "gutenberg_id": null,
+     "id_status": null
+    },
+    {
+     "title": "Prometheus Bound",
+     "author": "Aeschylus",
+     "gutenberg_id": 27458,
+     "id_status": "verified",
+     "gutenberg_title": "Aeschylus' Prometheus Bound and the Seven Against Thebes",
+     "mirror_repo": "Aeschylus-Prometheus-Bound-and-the-Seven-Against-Thebes_27458",
+     "mirror_files": [
+      "27458-8.txt",
+      "27458.txt"
+     ],
+     "note": "Gutenberg text also contains The Seven Against Thebes"
+    },
+    {
+     "title": "Oedipus the King",
+     "author": "Sophocles",
+     "gutenberg_id": 31,
+     "id_status": "verified",
+     "gutenberg_title": "Plays of Sophocles: Oedipus the King; Oedipus at Colonus; Antigone",
+     "mirror_repo": "Oedipus-Trilogy_31",
+     "mirror_files": [
+      "31.txt"
+     ],
+     "note": "Gutenberg text 'Plays of Sophocles' holds Oedipus the King, Oedipus at Colonus and Antigone"
+    },
+    {
+     "title": "Antigone",
+     "author": "Sophocles",
+     "gutenberg_id": 31,
+     "id_status": "verified",
+     "gutenberg_title": "Plays of Sophocles: Oedipus the King; Oedipus at Colonus; Antigone",
+     "mirror_repo": "Oedipus-Trilogy_31",
+     "mirror_files": [
+      "31.txt"
+     ],
+     "note": "same file as Oedipus the King"
+    },
+    {
+     "title": "Hippolytus",
+     "author": "Euripides",
+     "gutenberg_id": 8418,
+     "id_status": "verified",
+     "gutenberg_title": "Hippolytus; The Bacchae",
+     "mirror_repo": "Hippolytus--The-Bacchae_8418",
+     "mirror_files": [
+      "8418.txt",
+      "8418-8.txt"
+     ],
+     "note": "Gutenberg text holds Hippolytus and The Bacchae"
+    },
+    {
+     "title": "The Bacchae",
+     "author": "Euripides",
+     "gutenberg_id": 35173,
+     "id_status": "verified",
+     "gutenberg_title": "The Bacchae of Euripides",
+     "mirror_repo": "The-Bacchae-of-Euripides_35173",
+     "mirror_files": [
+      "35173-8.txt",
+      "35173.txt"
+     ],
+     "note": "Gilbert Murray's translation"
+    },
+    {
+     "title": "The Frogs",
+     "author": "Aristophanes",
+     "gutenberg_id": 7998,
+     "id_status": "verified",
+     "gutenberg_title": "The Frogs",
+     "mirror_repo": "The-Frogs_7998",
+     "mirror_files": [
+      "7998-8.txt",
+      "7998.txt"
+     ]
+    }
+   ]
+  },
+  {
+   "volume": 9,
+   "title": "Letters and Treatises of Cicero and Pliny",
+   "works": [
+    {
+     "title": "On Friendship and On Old Age",
+     "author": "Cicero",
+     "gutenberg_id": 2808,
+     "id_status": "verified",
+     "gutenberg_title": "Treatises on Friendship and Old Age",
+     "mirror_repo": "Treatises-on-Friendship-and-Old-Age_2808",
+     "mirror_files": [
+      "2808.txt"
+     ],
+     "note": "Gutenberg text 'Treatises on Friendship and Old Age'"
+    },
+    {
+     "title": "Letters",
+     "author": "Cicero",
+     "gutenberg_id": null,
+     "id_status": null
+    },
+    {
+     "title": "Letters",
+     "author": "Pliny the Younger",
+     "gutenberg_id": 2811,
+     "id_status": "verified",
+     "gutenberg_title": "Letters of Pliny",
+     "mirror_repo": "Letters-of-Pliny_2811",
+     "mirror_files": [
+      "2811.txt",
+      "2811-8.txt"
+     ]
+    }
+   ]
+  },
+  {
+   "volume": 10,
+   "title": "Wealth of Nations, Adam Smith",
+   "works": [
+    {
+     "title": "An Inquiry into the Nature and Causes of the Wealth of Nations",
+     "author": "Adam Smith",
+     "gutenberg_id": 3300,
+     "id_status": "verified",
+     "gutenberg_title": "An Inquiry into the Nature and Causes of the Wealth of Nations",
+     "mirror_repo": "An-Inquiry-into-the-Nature-and-Causes-of-the-Wealth-of-Nations_3300",
+     "mirror_files": [
+      "3300-8.txt"
+     ],
+     "whole_volume": true
+    }
+   ]
+  },
+  {
+   "volume": 11,
+   "title": "Origin of Species, Darwin",
+   "works": [
+    {
+     "title": "The Origin of Species",
+     "author": "Charles Darwin",
+     "gutenberg_id": 2009,
+     "id_status": "verified",
+     "gutenberg_title": "The Origin of Species by Means of Natural Selection Or, the Preservation of Favoured Races in the Struggle for Life, 6th Edition",
+     "mirror_repo": "The-Origin-of-Species-by-Means-of-Natural-Selection--13-Or-the-Preservation-of-Favoured-Races-__2009",
+     "mirror_files": [
+      "2009.txt"
+     ],
+     "whole_volume": true,
+     "note": "sixth edition, the one the Collier set reprints"
+    }
+   ]
+  },
+  {
+   "volume": 12,
+   "title": "Plutarch's Lives",
+   "works": [
+    {
+     "title": "Plutarch's Lives, Volume I",
+     "author": "Plutarch",
+     "gutenberg_id": 14033,
+     "id_status": "verified",
+     "gutenberg_title": "Plutarch's Lives, Volume I",
+     "mirror_repo": "Plutarch-s-Lives-Volume-I_14033",
+     "mirror_files": [
+      "14033.txt",
+      "14033-8.txt"
+     ],
+     "note": "Dryden translation revised by Clough; the Collier set prints nine of the lives"
+    },
+    {
+     "title": "Plutarch's Lives, Volume II",
+     "author": "Plutarch",
+     "gutenberg_id": 14114,
+     "id_status": "verified",
+     "gutenberg_title": "Plutarch's Lives, Volume II",
+     "mirror_repo": "Plutarch-s-Lives-Volume-II_14114",
+     "mirror_files": [
+      "14114.txt",
+      "14114-0.txt",
+      "14114-8.txt"
+     ]
+    },
+    {
+     "title": "Plutarch's Lives, Volume III",
+     "author": "Plutarch",
+     "gutenberg_id": 14140,
+     "id_status": "verified",
+     "gutenberg_title": "Plutarch's Lives Volume III.",
+     "mirror_repo": "Plutarch-s-Lives-Volume-III._14140",
+     "mirror_files": [
+      "14140-0.txt",
+      "14140-8.txt",
+      "14140.txt"
+     ]
+    }
+   ]
+  },
+  {
+   "volume": 13,
+   "title": "Aeneid, Virgil",
+   "works": [
+    {
+     "title": "The Aeneid",
+     "author": "Virgil",
+     "gutenberg_id": 228,
+     "id_status": "verified",
+     "gutenberg_title": "The Aeneid",
+     "mirror_repo": "The-Aeneid-English_228",
+     "mirror_files": [
+      "228.txt"
+     ],
+     "whole_volume": true,
+     "note": "Dryden translation"
+    }
+   ]
+  },
+  {
+   "volume": 14,
+   "title": "Don Quixote, Part 1, Cervantes",
+   "works": [
+    {
+     "title": "Don Quixote",
+     "author": "Miguel de Cervantes",
+     "gutenberg_id": 996,
+     "id_status": "verified",
+     "gutenberg_title": "Don Quixote",
+     "mirror_repo": "Don-Quixote_996",
+     "mirror_files": [
+      "996.txt"
+     ],
+     "whole_volume": true,
+     "note": "Ormsby translation, both parts"
+    }
+   ]
+  },
+  {
+   "volume": 15,
+   "title": "Pilgrim's Progress, Donne and Herbert, Bunyan, Walton",
+   "works": [
+    {
+     "title": "The Pilgrim's Progress",
+     "author": "John Bunyan",
+     "gutenberg_id": 131,
+     "id_status": "verified",
+     "gutenberg_title": "The Pilgrim's Progress from this world to that which is to come Delivered under the similitude of a dream, by John Bunyan",
+     "mirror_repo": "The-Pilgrim-s-Progress-from-this-world-to-that-which-is-to-come--13-Delivered-under-the-similit__131",
+     "mirror_files": [
+      "131.txt"
+     ]
+    },
+    {
+     "title": "The Lives of Donne and Herbert",
+     "author": "Izaak Walton",
+     "gutenberg_id": null,
+     "id_status": null
+    }
+   ]
+  },
+  {
+   "volume": 16,
+   "title": "The Thousand and One Nights",
+   "works": [
+    {
+     "title": "The Thousand and One Nights, Vol. I",
+     "author": "Anonymous (Lane translation)",
+     "gutenberg_id": 34206,
+     "id_status": "verified",
+     "gutenberg_title": "The Thousand and One Nights, Vol. I. Commonly Called the Arabian Nights' Entertainments",
+     "mirror_repo": "The-Thousand-and-One-Nights-Vol.-I.Commonly-Called-the-Arabian-Nights-Entertainments_34206",
+     "mirror_files": [
+      "34206-0.txt",
+      "34206.txt",
+      "34206-8.txt"
+     ],
+     "note": "Lane translation, first volume only"
+    }
+   ]
+  },
+  {
+   "volume": 17,
+   "title": "Folklore and Fable, Aesop, Grimm, Andersen",
+   "works": [
+    {
+     "title": "Aesop's Fables",
+     "author": "Aesop",
+     "gutenberg_id": 21,
+     "id_status": "verified",
+     "gutenberg_title": "Aesop's Fables Translated by George Fyler Townsend",
+     "mirror_repo": "Aesop-s-Fables-Translated-by-George-Fyler-Townsend_21",
+     "mirror_files": [
+      "21.txt",
+      "bnote-21.txt",
+      "aesop.zip.info.txt"
+     ],
+     "note": "Townsend translation"
+    },
+    {
+     "title": "Grimms' Fairy Tales",
+     "author": "Jacob and Wilhelm Grimm",
+     "gutenberg_id": 2591,
+     "id_status": "verified",
+     "gutenberg_title": "Grimms' Fairy Tales",
+     "mirror_repo": "Grimms-Fairy-Tales_2591",
+     "mirror_files": [
+      "2591.txt"
+     ]
+    },
+    {
+     "title": "Andersen's Fairy Tales",
+     "author": "Hans Christian Andersen",
+     "gutenberg_id": 1597,
+     "id_status": "verified",
+     "gutenberg_title": "Andersen's Fairy Tales",
+     "mirror_repo": "Andersen-s-Fairy-Tales_1597",
+     "mirror_files": [
+      "1597.txt"
+     ]
+    }
+   ]
+  },
+  {
+   "volume": 18,
+   "title": "Modern English Drama",
+   "works": [
+    {
+     "title": "All for Love",
+     "author": "John Dryden",
+     "gutenberg_id": 2062,
+     "id_status": "verified",
+     "gutenberg_title": "All for Love; Or, The World Well Lost: A Tragedy",
+     "mirror_repo": "All-for-Love--Or-The-World-Well-Lost--A-Tragedy_2062",
+     "mirror_files": [
+      "2062.txt"
+     ]
+    },
+    {
+     "title": "The School for Scandal",
+     "author": "Richard Brinsley Sheridan",
+     "gutenberg_id": 1929,
+     "id_status": "verified",
+     "gutenberg_title": "The School for Scandal",
+     "mirror_repo": "The-School-for-Scandal_1929",
+     "mirror_files": [
+      "1929.txt"
+     ]
+    },
+    {
+     "title": "She Stoops to Conquer",
+     "author": "Oliver Goldsmith",
+     "gutenberg_id": 383,
+     "id_status": "verified",
+     "gutenberg_title": "She Stoops to Conquer; Or, The Mistakes of a Night: A Comedy",
+     "mirror_repo": "She-Stoops-to-Conquer--Or-The-Mistakes-of-a-Night--A-Comedy_383",
+     "mirror_files": [
+      "383.txt"
+     ]
+    },
+    {
+     "title": "The Cenci",
+     "author": "Percy Bysshe Shelley",
+     "gutenberg_id": null,
+     "id_status": null
+    },
+    {
+     "title": "A Blot in the 'Scutcheon",
+     "author": "Robert Browning",
+     "gutenberg_id": 2880,
+     "id_status": "verified",
+     "gutenberg_title": "A Blot in the 'Scutcheon",
+     "mirror_repo": "A-Blot-in-the-Scutcheon_2880",
+     "mirror_files": [
+      "2880.txt"
+     ]
+    },
+    {
+     "title": "Manfred",
+     "author": "Lord Byron",
+     "gutenberg_id": null,
+     "id_status": null
+    }
+   ]
+  },
+  {
+   "volume": 19,
+   "title": "Faust, Egmont, etc., Goethe, Doctor Faustus, Marlowe",
+   "works": [
+    {
+     "title": "Faust, Part I",
+     "author": "Johann Wolfgang von Goethe",
+     "gutenberg_id": 14591,
+     "id_status": "verified",
+     "gutenberg_title": "Faust",
+     "mirror_repo": "Faust_14591",
+     "mirror_files": [
+      "14591.txt",
+      "14591-8.txt"
+     ],
+     "note": "Bayard Taylor's translation"
+    },
+    {
+     "title": "Egmont",
+     "author": "Johann Wolfgang von Goethe",
+     "gutenberg_id": 1945,
+     "id_status": "verified",
+     "gutenberg_title": "Egmont",
+     "mirror_repo": "Egmont_1945",
+     "mirror_files": [
+      "1945.txt"
+     ]
+    },
+    {
+     "title": "Hermann and Dorothea",
+     "author": "Johann Wolfgang von Goethe",
+     "gutenberg_id": 1958,
+     "id_status": "verified",
+     "gutenberg_title": "Hermann and Dorothea",
+     "mirror_repo": "Hermann-and-Dorothea_1958",
+     "mirror_files": [
+      "1958.txt"
+     ]
+    },
+    {
+     "title": "The Tragical History of Doctor Faustus",
+     "author": "Christopher Marlowe",
+     "gutenberg_id": 779,
+     "id_status": "verified",
+     "gutenberg_title": "The Tragical History of Doctor Faustus From the Quarto of 1604",
+     "mirror_repo": "The-Tragical-History-of-Doctor-Faustus--13-From-the-Quarto-of-1604_779",
+     "mirror_files": [
+      "779.txt",
+      "779-8.txt"
+     ],
+     "note": "1604 quarto"
+    }
+   ]
+  },
+  {
+   "volume": 20,
+   "title": "The Divine Comedy, Dante",
+   "works": [
+    {
+     "title": "The Divine Comedy",
+     "author": "Dante Alighieri",
+     "gutenberg_id": 8800,
+     "id_status": "verified",
+     "gutenberg_title": "The Divine Comedy by Dante, Illustrated",
+     "mirror_repo": "The-Divine-Comedy-by-Dante-Illustrated_8800",
+     "mirror_files": [
+      "8800.txt"
+     ],
+     "whole_volume": true,
+     "note": "Cary translation, the one the Collier set uses"
+    }
+   ]
+  },
+  {
+   "volume": 21,
+   "title": "I Promessi Sposi, Manzoni",
+   "works": [
+    {
+     "title": "The Betrothed (I Promessi Sposi)",
+     "author": "Alessandro Manzoni",
+     "gutenberg_id": 35155,
+     "id_status": "verified",
+     "gutenberg_title": "The Betrothed From the Italian of Alessandro Manzoni",
+     "mirror_repo": "The-BetrothedFrom-the-Italian-of-Alessandro-Manzoni_35155",
+     "mirror_files": [
+      "35155.txt",
+      "35155-8.txt"
+     ],
+     "whole_volume": true
+    }
+   ]
+  },
+  {
+   "volume": 22,
+   "title": "The Odyssey, Homer",
+   "works": [
+    {
+     "title": "The Odyssey",
+     "author": "Homer",
+     "gutenberg_id": 1727,
+     "id_status": "verified",
+     "gutenberg_title": "The Odyssey Rendered into English prose for the use of those who cannot read the original",
+     "mirror_repo": "The-Odyssey--13-Rendered-into-English-prose-for-the-use-of-those-who-cannot-read-the-original_1727",
+     "mirror_files": [
+      "1727.txt"
+     ],
+     "whole_volume": true,
+     "note": "Butler's prose translation; the Collier set uses Butcher and Lang"
+    }
+   ]
+  },
+  {
+   "volume": 23,
+   "title": "Two Years Before the Mast, Dana",
+   "works": [
+    {
+     "title": "Two Years Before the Mast",
+     "author": "Richard Henry Dana, Jr.",
+     "gutenberg_id": 2055,
+     "id_status": "verified",
+     "gutenberg_title": "Two Years Before the Mast",
+     "mirror_repo": "Two-Years-Before-the-Mast_2055",
+     "mirror_files": [
+      "2055-8.txt",
+      "2055.txt"
+     ],
+     "whole_volume": true
+    }
+   ]
+  },
+  {
+   "volume": 24,
+   "title": "On the Sublime, French Revolution, etc., Burke",
+   "works": [
+    {
+     "title": "On the Sublime and Beautiful",
+     "author": "Edmund Burke",
+     "gutenberg_id": 15043,
+     "id_status": "verified",
+     "gutenberg_title": "The Works of the Right Honourable Edmund Burke, Vol. 01 (of 12)",
+     "mirror_repo": "The-Works-of-the-Right-Honourable-Edmund-Burke-Vol.-01--of-12-_15043",
+     "mirror_files": [
+      "15043-8.txt",
+      "15043.txt"
+     ],
+     "note": "Gutenberg text is 'The Works of Edmund Burke, Vol. 1', which contains it"
+    },
+    {
+     "title": "Reflections on the Revolution in France",
+     "author": "Edmund Burke",
+     "gutenberg_id": 15679,
+     "id_status": "verified",
+     "gutenberg_title": "The Works of the Right Honourable Edmund Burke, Vol. 03 (of 12)",
+     "mirror_repo": "The-Works-of-the-Right-Honourable-Edmund-Burke-Vol.-03--of-12-_15679",
+     "mirror_files": [
+      "15679.txt",
+      "15679-8.txt",
+      "15679-0.txt"
+     ],
+     "note": "Gutenberg text is 'The Works of Edmund Burke, Vol. 3', which contains it"
+    },
+    {
+     "title": "A Letter to a Noble Lord",
+     "author": "Edmund Burke",
+     "gutenberg_id": null,
+     "id_status": null
+    }
+   ]
+  },
+  {
+   "volume": 25,
+   "title": "Autobiography, etc., J. S. Mill, Essays and Addresses, Carlyle",
+   "works": [
+    {
+     "title": "Autobiography",
+     "author": "John Stuart Mill",
+     "gutenberg_id": 10378,
+     "id_status": "verified",
+     "gutenberg_title": "Autobiography",
+     "mirror_repo": "Autobiography_10378",
+     "mirror_files": [
+      "10378.txt",
+      "10378-8.txt"
+     ]
+    },
+    {
+     "title": "On Liberty",
+     "author": "John Stuart Mill",
+     "gutenberg_id": 34901,
+     "id_status": "verified",
+     "gutenberg_title": "On Liberty",
+     "mirror_repo": "On-Liberty_34901",
+     "mirror_files": [
+      "34901-8.txt",
+      "34901.txt"
+     ]
+    },
+    {
+     "title": "Characteristics",
+     "author": "Thomas Carlyle",
+     "gutenberg_id": null,
+     "id_status": null
+    },
+    {
+     "title": "Inaugural Address at Edinburgh",
+     "author": "Thomas Carlyle",
+     "gutenberg_id": null,
+     "id_status": null
+    },
+    {
+     "title": "Essay on Burns",
+     "author": "Thomas Carlyle",
+     "gutenberg_id": null,
+     "id_status": null
+    }
+   ]
+  },
+  {
+   "volume": 26,
+   "title": "Continental Drama",
+   "works": [
+    {
+     "title": "Life Is a Dream",
+     "author": "Pedro Calderon de la Barca",
+     "gutenberg_id": 2587,
+     "id_status": "verified",
+     "gutenberg_title": "Life Is a Dream",
+     "mirror_repo": "Life-Is-a-Dream_2587",
+     "mirror_files": [
+      "2587.txt"
+     ]
+    },
+    {
+     "title": "Polyeucte",
+     "author": "Pierre Corneille",
+     "gutenberg_id": 2543,
+     "id_status": "verified",
+     "gutenberg_title": "Polyeucte",
+     "mirror_repo": "Polyeucte_2543",
+     "mirror_files": [
+      "2543.txt"
+     ]
+    },
+    {
+     "title": "Phaedra",
+     "author": "Jean Racine",
+     "gutenberg_id": 1977,
+     "id_status": "verified",
+     "gutenberg_title": "Phaedra",
+     "mirror_repo": "Phaedra_1977",
+     "mirror_files": [
+      "1977.txt"
+     ]
+    },
+    {
+     "title": "Tartuffe",
+     "author": "Moliere",
+     "gutenberg_id": 2027,
+     "id_status": "verified",
+     "gutenberg_title": "Tartuffe; Or, The Hypocrite",
+     "mirror_repo": "Tartuffe--Or-The-Hypocrite_2027",
+     "mirror_files": [
+      "2027.txt"
+     ]
+    },
+    {
+     "title": "Minna von Barnhelm",
+     "author": "Gotthold Ephraim Lessing",
+     "gutenberg_id": 2663,
+     "id_status": "verified",
+     "gutenberg_title": "Minna Von Barnhelm",
+     "mirror_repo": "Minna-Von-Barnhelm_2663",
+     "mirror_files": [
+      "2663.txt"
+     ]
+    },
+    {
+     "title": "Wilhelm Tell",
+     "author": "Friedrich Schiller",
+     "gutenberg_id": null,
+     "id_status": null,
+     "note": "Gutenberg 6788 is the German original, no verified English id"
+    }
+   ]
+  },
+  {
+   "volume": 27,
+   "title": "English Essays, Sidney to Macaulay",
+   "works": []
+  },
+  {
+   "volume": 28,
+   "title": "Essays, English and American",
+   "works": [
+    {
+     "title": "Harvard Classics Volume 28: Essays, English and American",
+     "author": "Various",
+     "gutenberg_id": 21962,
+     "id_status": "verified",
+     "gutenberg_title": "Harvard Classics Volume 28 Essays English and American",
+     "mirror_repo": "Harvard-Classics-Volume-28Essays-English-and-American_21962",
+     "mirror_files": [
+      "21962.txt",
+      "21962-8.txt"
+     ],
+     "whole_volume": true,
+     "note": "the Collier volume itself is on Gutenberg"
+    }
+   ]
+  },
+  {
+   "volume": 29,
+   "title": "Voyage of the Beagle, Darwin",
+   "works": [
+    {
+     "title": "The Voyage of the Beagle",
+     "author": "Charles Darwin",
+     "gutenberg_id": 944,
+     "id_status": "verified",
+     "gutenberg_title": "The Voyage of the Beagle",
+     "mirror_repo": "The-Voyage-of-the-Beagle_944",
+     "mirror_files": [
+      "944.txt"
+     ],
+     "whole_volume": true
+    }
+   ]
+  },
+  {
+   "volume": 30,
+   "title": "Scientific Papers, Faraday, Helmholtz, Kelvin, Newcomb, Geikie",
+   "works": [
+    {
+     "title": "The Chemical History of a Candle",
+     "author": "Michael Faraday",
+     "gutenberg_id": 14474,
+     "id_status": "verified",
+     "gutenberg_title": "The Chemical History of a Candle",
+     "mirror_repo": "The-Chemical-History-of-a-Candle_14474",
+     "mirror_files": [
+      "14474-8.txt",
+      "14474.txt"
+     ]
+    },
+    {
+     "title": "The Forces of Matter",
+     "author": "Michael Faraday",
+     "gutenberg_id": null,
+     "id_status": null
+    },
+    {
+     "title": "On the Conservation of Force",
+     "author": "Hermann von Helmholtz",
+     "gutenberg_id": null,
+     "id_status": null
+    }
+   ]
+  },
+  {
+   "volume": 31,
+   "title": "Autobiography of Benvenuto Cellini",
+   "works": [
+    {
+     "title": "The Autobiography of Benvenuto Cellini",
+     "author": "Benvenuto Cellini",
+     "gutenberg_id": 4028,
+     "id_status": "unverified",
+     "whole_volume": true
+    }
+   ]
+  },
+  {
+   "volume": 32,
+   "title": "Literary and Philosophical Essays",
+   "works": [
+    {
+     "title": "Essays (selection)",
+     "author": "Michel de Montaigne",
+     "gutenberg_id": 3600,
+     "id_status": "verified",
+     "gutenberg_title": "Essays of Michel de Montaigne - Complete",
+     "mirror_repo": "Essays-of-Michel-de-Montaigne---Complete_3600",
+     "mirror_files": [
+      "3600.txt"
+     ],
+     "note": "complete Cotton translation; the Collier volume prints a selection"
+    },
+    {
+     "title": "What Is a Classic?",
+     "author": "Charles Augustin Sainte-Beuve",
+     "gutenberg_id": null,
+     "id_status": null
+    },
+    {
+     "title": "Byron and Goethe",
+     "author": "Giuseppe Mazzini",
+     "gutenberg_id": null,
+     "id_status": null
+    }
+   ]
+  },
+  {
+   "volume": 33,
+   "title": "Voyages and Travels, Ancient and Modern",
+   "works": [
+    {
+     "title": "An Account of Egypt",
+     "author": "Herodotus",
+     "gutenberg_id": 2131,
+     "id_status": "verified",
+     "gutenberg_title": "An Account of Egypt",
+     "mirror_repo": "An-Account-of-Egypt_2131",
+     "mirror_files": [
+      "2131.txt"
+     ]
+    },
+    {
+     "title": "Germany (Germania)",
+     "author": "Tacitus",
+     "gutenberg_id": 7524,
+     "id_status": "verified",
+     "gutenberg_title": "The Germany and the Agricola of Tacitus",
+     "mirror_repo": "The-Germany-and-the-Agricola-of-Tacitus_7524",
+     "mirror_files": [
+      "7524.txt",
+      "7524-8.txt"
+     ],
+     "note": "Gutenberg text 'The Germany and the Agricola of Tacitus'"
+    },
+    {
+     "title": "Sir Francis Drake Revived",
+     "author": "Philip Nichols",
+     "gutenberg_id": 2854,
+     "id_status": "verified",
+     "gutenberg_title": "Sir Francis Drake Revived",
+     "mirror_repo": "Sir-Francis-Drake-Revived_2854",
+     "mirror_files": [
+      "2854.txt"
+     ]
+    },
+    {
+     "title": "Sir Francis Drake's Famous Voyage Round the World",
+     "author": "Francis Pretty",
+     "gutenberg_id": 2991,
+     "id_status": "verified",
+     "gutenberg_title": "Sir Francis Drake's Famous Voyage Round the World",
+     "mirror_repo": "Sir-Francis-Drake-s-Famous-Voyage-Round-the-World_2991",
+     "mirror_files": [
+      "2991.txt"
+     ]
+    },
+    {
+     "title": "Drake's Great Armada",
+     "author": "Walter Bigges",
+     "gutenberg_id": 3334,
+     "id_status": "verified",
+     "gutenberg_title": "Drake's Great Armada",
+     "mirror_repo": "Drake-s-Great-Armada_3334",
+     "mirror_files": [
+      "3334.txt"
+     ]
+    },
+    {
+     "title": "Sir Humphrey Gilbert's Voyage to Newfoundland",
+     "author": "Edward Haies",
+     "gutenberg_id": 3338,
+     "id_status": "verified",
+     "gutenberg_title": "Sir Humphrey Gilbert's Voyage to Newfoundland",
+     "mirror_repo": "Sir-Humphrey-Gilbert-s-Voyage-to-Newfoundland_3338",
+     "mirror_files": [
+      "3338.txt"
+     ]
+    },
+    {
+     "title": "The Discovery of Guiana",
+     "author": "Sir Walter Raleigh",
+     "gutenberg_id": 2272,
+     "id_status": "verified",
+     "gutenberg_title": "The Discovery of Guiana",
+     "mirror_repo": "The-Discovery-of-Guiana_2272",
+     "mirror_files": [
+      "2272.txt"
+     ]
+    }
+   ]
+  },
+  {
+   "volume": 34,
+   "title": "French and English Philosophers",
+   "works": [
+    {
+     "title": "Discourse on the Method",
+     "author": "Rene Descartes",
+     "gutenberg_id": 59,
+     "id_status": "verified",
+     "gutenberg_title": "Discourse on the Method of Rightly Conducting One's Reason and of Seeking Truth in the Sciences",
+     "mirror_repo": "Discourse-on-the-Method-of-Rightly-Conducting-One-s-Reason-and-of-Seeking-Truth-in-the-Sciences_59",
+     "mirror_files": [
+      "59.txt"
+     ]
+    },
+    {
+     "title": "Letters on the English",
+     "author": "Voltaire",
+     "gutenberg_id": 2445,
+     "id_status": "verified",
+     "gutenberg_title": "Letters on England",
+     "mirror_repo": "Letters-on-England_2445",
+     "mirror_files": [
+      "2445.txt"
+     ],
+     "note": "Gutenberg title 'Letters on England'"
+    },
+    {
+     "title": "A Discourse upon the Origin of Inequality",
+     "author": "Jean Jacques Rousseau",
+     "gutenberg_id": 11136,
+     "id_status": "verified",
+     "gutenberg_title": "A Discourse Upon the Origin and the Foundation of the Inequality Among Mankind",
+     "mirror_repo": "A-Discourse-Upon-the-Origin-and-the-Foundation-of-the-Inequality-Among-Mankind_11136",
+     "mirror_files": [
+      "11136.txt"
+     ]
+    },
+    {
+     "title": "Profession of Faith of a Savoyard Vicar",
+     "author": "Jean Jacques Rousseau",
+     "gutenberg_id": null,
+     "id_status": null
+    },
+    {
+     "title": "Leviathan (Part I)",
+     "author": "Thomas Hobbes",
+     "gutenberg_id": 3207,
+     "id_status": "verified",
+     "gutenberg_title": "Leviathan",
+     "mirror_repo": "Leviathan_3207",
+     "mirror_files": [
+      "3207.txt"
+     ],
+     "note": "complete Leviathan; the Collier volume prints Part I"
+    }
+   ]
+  },
+  {
+   "volume": 35,
+   "title": "Chronicle and Romance, Froissart, Malory, Holinshed",
+   "works": [
+    {
+     "title": "Chronicle and Romance (Froissart, Malory, Holinshed)",
+     "author": "Various",
+     "gutenberg_id": 13674,
+     "id_status": "verified",
+     "gutenberg_title": "Chronicle and Romance Froissart, Malory, Holinshed (The Harvard Classics Series)",
+     "mirror_repo": "Chronicle-and-Romance--13-Froissart-Malory-Holinshed--The-Harvard-Classics-Series-_13674",
+     "mirror_files": [
+      "13674.txt",
+      "13674-8.txt"
+     ],
+     "whole_volume": true,
+     "note": "the Collier volume itself is on Gutenberg"
+    }
+   ]
+  },
+  {
+   "volume": 36,
+   "title": "Machiavelli, More, Luther",
+   "works": [
+    {
+     "title": "The Prince",
+     "author": "Niccolo Machiavelli",
+     "gutenberg_id": 1232,
+     "id_status": "verified",
+     "gutenberg_title": "The Prince",
+     "mirror_repo": "The-Prince_1232",
+     "mirror_files": [
+      "1232.txt"
+     ]
+    },
+    {
+     "title": "Utopia",
+     "author": "Sir Thomas More",
+     "gutenberg_id": 2130,
+     "id_status": "verified",
+     "gutenberg_title": "Utopia",
+     "mirror_repo": "Utopia_2130",
+     "mirror_files": [
+      "2130.txt"
+     ]
+    },
+    {
+     "title": "The Ninety-Five Theses",
+     "author": "Martin Luther",
+     "gutenberg_id": 274,
+     "id_status": "verified",
+     "gutenberg_title": "Disputation of Doctor Martin Luther on the Power and Efficacy of Indulgences",
+     "mirror_repo": "Martin-Luther-s-95-Theses_274",
+     "mirror_files": [
+      "274.txt"
+     ],
+     "note": "Gutenberg title 'Disputation on the Power and Efficacy of Indulgences'"
+    },
+    {
+     "title": "Concerning Christian Liberty",
+     "author": "Martin Luther",
+     "gutenberg_id": 1911,
+     "id_status": "verified",
+     "gutenberg_title": "Concerning Christian Liberty; with Letter of Martin Luther to Pope Leo X.",
+     "mirror_repo": "Concerning-Christian-Liberty--with-Letter-of-Martin-Luther-to-Pope-Leo-X._1911",
+     "mirror_files": [
+      "1911.txt"
+     ],
+     "note": "with the letter to Pope Leo X"
+    }
+   ]
+  },
+  {
+   "volume": 37,
+   "title": "Locke, Berkeley, Hume",
+   "works": [
+    {
+     "title": "Some Thoughts Concerning Education",
+     "author": "John Locke",
+     "gutenberg_id": null,
+     "id_status": null
+    },
+    {
+     "title": "Three Dialogues Between Hylas and Philonous",
+     "author": "George Berkeley",
+     "gutenberg_id": 4724,
+     "id_status": "verified",
+     "gutenberg_title": "Three Dialogues Between Hylas and Philonous in Opposition to Sceptics and Atheists",
+     "mirror_repo": "Three-Dialogues-Between-Hylas-and-Philonous-in-Opposition-to-Sceptics-and-Atheists_4724",
+     "mirror_files": [
+      "4724.txt"
+     ]
+    },
+    {
+     "title": "An Enquiry Concerning Human Understanding",
+     "author": "David Hume",
+     "gutenberg_id": 9662,
+     "id_status": "verified",
+     "gutenberg_title": "An Enquiry Concerning Human Understanding",
+     "mirror_repo": "An-Enquiry-Concerning-Human-Understanding_9662",
+     "mirror_files": [
+      "9662-8.txt",
+      "9662.txt"
+     ]
+    }
+   ]
+  },
+  {
+   "volume": 38,
+   "title": "Scientific Papers, Harvey, Jenner, Lister, Pasteur",
+   "works": [
+    {
+     "title": "Harvard Classics Volume 38: Scientific Papers (Physiology, Medicine, Surgery, Geology)",
+     "author": "Various",
+     "gutenberg_id": 5694,
+     "id_status": "verified",
+     "gutenberg_title": "The Harvard Classics Volume 38 Scientific Papers (Physiology, Medicine, Surgery, Geology)",
+     "mirror_repo": "The-Harvard-Classics-Volume-38--13-Scientific-Papers--Physiology-Medicine-Surgery-Geology-_5694",
+     "mirror_files": [
+      "5694.txt"
+     ],
+     "whole_volume": true,
+     "note": "the Collier volume itself is on Gutenberg"
+    },
+    {
+     "title": "An Inquiry into the Causes and Effects of the Variolae Vaccinae",
+     "author": "Edward Jenner",
+     "gutenberg_id": 29414,
+     "id_status": "verified",
+     "gutenberg_title": "An Inquiry into the Causes and Effects of the Variolae Vaccinae A Disease Discovered in Some of the Western Counties of England, Particularly Gloucestershire, and Known by the Name of the Cow Pox",
+     "mirror_repo": "An-Inquiry-into-the-Causes-and-Effects-of-the-Variolae-VaccinaeA-Disease-Discovered-in-Some-o__29414",
+     "mirror_files": [
+      "29414.txt",
+      "29414-8.txt"
+     ]
+    }
+   ]
+  },
+  {
+   "volume": 39,
+   "title": "Famous Prefaces",
+   "works": [
+    {
+     "title": "Prefaces and Prologues to Famous Books",
+     "author": "Various",
+     "gutenberg_id": 13182,
+     "id_status": "verified",
+     "gutenberg_title": "Prefaces and Prologues to Famous Books with Introductions, Notes and Illustrations",
+     "mirror_repo": "Prefaces-and-Prologues-to-Famous-Bookswith-Introductions-Notes-and-Illustrations_13182",
+     "mirror_files": [
+      "13182-8.txt",
+      "13182.txt"
+     ],
+     "whole_volume": true,
+     "note": "the Collier volume itself is on Gutenberg"
+    }
+   ]
+  },
+  {
+   "volume": 40,
+   "title": "English Poetry 1: Chaucer to Gray",
+   "works": []
+  },
+  {
+   "volume": 41,
+   "title": "English Poetry 2: Collins to Fitzgerald",
+   "works": []
+  },
+  {
+   "volume": 42,
+   "title": "English Poetry 3: Tennyson to Whitman",
+   "works": []
+  },
+  {
+   "volume": 43,
+   "title": "American Historical Documents, 1000-1904",
+   "works": [
+    {
+     "title": "The Federalist Papers (selection)",
+     "author": "Hamilton, Madison, Jay",
+     "gutenberg_id": 1404,
+     "id_status": "verified",
+     "gutenberg_title": "The Federalist Papers",
+     "mirror_repo": "The-Federalist-Papers_1404",
+     "mirror_files": [
+      "1404.txt",
+      "1404-8.txt"
+     ],
+     "note": "complete Federalist; the Collier volume prints a selection"
+    }
+   ]
+  },
+  {
+   "volume": 44,
+   "title": "Sacred Writings 1: Confucian, Hebrew, Christian",
+   "works": [
+    {
+     "title": "Confucian Analects",
+     "author": "Confucius",
+     "gutenberg_id": 4094,
+     "id_status": "verified",
+     "gutenberg_title": "The Chinese Classics - Volume 1: Confucian Analects",
+     "mirror_repo": "The-Chinese-Classics---Volume-1--Confucian-Analects_4094",
+     "mirror_files": [
+      "4094-0.txt"
+     ],
+     "note": "Legge translation, 'The Chinese Classics, Volume 1'"
+    },
+    {
+     "title": "The Bible (selections: Job, Psalms, Ecclesiastes, Isaiah, Luke, Acts)",
+     "author": "Various",
+     "gutenberg_id": 10,
+     "id_status": "verified",
+     "gutenberg_title": "The King James Version of the Bible",
+     "mirror_repo": "The-Bible--Old-and-New-Testaments--King-James-Version_10",
+     "mirror_files": [
+      "10.txt"
+     ],
+     "note": "complete King James Version; a large file"
+    }
+   ]
+  },
+  {
+   "volume": 45,
+   "title": "Sacred Writings 2: Christian, Buddhist, Hindu, Mohammedan",
+   "works": [
+    {
+     "title": "The Song Celestial (Bhagavad-Gita)",
+     "author": "Edwin Arnold (translator)",
+     "gutenberg_id": 2388,
+     "id_status": "verified",
+     "gutenberg_title": "The Song Celestial; Or, Bhagavad-Gîtâ (from the Mahâbhârata) Being a discourse between Arjuna, Prince of India, and the Supreme Being under the form of Krishna",
+     "mirror_repo": "The-Song-Celestial--Or-Bhagavad-G-t---from-the-Mah-bh-rata---13-Being-a-discourse-between-Arju__2388",
+     "mirror_files": [
+      "2388.txt"
+     ]
+    },
+    {
+     "title": "Buddhist Writings",
+     "author": "Various",
+     "gutenberg_id": null,
+     "id_status": null
+    },
+    {
+     "title": "Chapters from the Koran",
+     "author": "Various",
+     "gutenberg_id": null,
+     "id_status": null
+    }
+   ]
+  },
+  {
+   "volume": 46,
+   "title": "Elizabethan Drama 1: Marlowe, Shakespeare",
+   "works": [
+    {
+     "title": "Edward the Second",
+     "author": "Christopher Marlowe",
+     "gutenberg_id": 20288,
+     "id_status": "verified",
+     "gutenberg_title": "Edward the Second",
+     "mirror_repo": "Edward-the-Second_20288",
+     "mirror_files": [
+      "20288-8.txt",
+      "20288.txt"
+     ]
+    },
+    {
+     "title": "Hamlet",
+     "author": "William Shakespeare",
+     "gutenberg_id": 1122,
+     "id_status": "verified",
+     "gutenberg_title": "The Tragedy of Hamlet, Prince of Denmark",
+     "mirror_repo": "Hamlet-Prince-of-Denmark_1122",
+     "mirror_files": [
+      "1122.txt"
+     ]
+    },
+    {
+     "title": "King Lear",
+     "author": "William Shakespeare",
+     "gutenberg_id": 1128,
+     "id_status": "verified",
+     "gutenberg_title": "The Tragedy of King Lear",
+     "mirror_repo": "King-Lear_1128",
+     "mirror_files": [
+      "1128.txt"
+     ]
+    },
+    {
+     "title": "Macbeth",
+     "author": "William Shakespeare",
+     "gutenberg_id": 1129,
+     "id_status": "verified",
+     "gutenberg_title": "The Tragedy of Macbeth",
+     "mirror_repo": "The-Tragedy-of-Macbeth_1129",
+     "mirror_files": [
+      "1129.txt"
+     ]
+    },
+    {
+     "title": "The Tempest",
+     "author": "William Shakespeare",
+     "gutenberg_id": 1135,
+     "id_status": "verified",
+     "gutenberg_title": "The Tempest",
+     "mirror_repo": "The-Tempest_1135",
+     "mirror_files": [
+      "1135.txt"
+     ]
+    }
+   ]
+  },
+  {
+   "volume": 47,
+   "title": "Elizabethan Drama 2: Dekker, Jonson, Beaumont and Fletcher, Webster, Massinger",
+   "works": [
+    {
+     "title": "The Shoemaker's Holiday",
+     "author": "Thomas Dekker",
+     "gutenberg_id": null,
+     "id_status": null
+    },
+    {
+     "title": "The Alchemist",
+     "author": "Ben Jonson",
+     "gutenberg_id": 4081,
+     "id_status": "verified",
+     "gutenberg_title": "The Alchemist",
+     "mirror_repo": "The-Alchemist_4081",
+     "mirror_files": [
+      "4081.txt"
+     ]
+    },
+    {
+     "title": "Philaster",
+     "author": "Francis Beaumont and John Fletcher",
+     "gutenberg_id": 10850,
+     "id_status": "verified",
+     "gutenberg_title": "Philaster; Or, Love Lies a Bleeding",
+     "mirror_repo": "Philaster--13-Or-Love-Lies-a-Bleeding_10850",
+     "mirror_files": [
+      "10850-8.txt",
+      "10850.txt"
+     ]
+    },
+    {
+     "title": "The Duchess of Malfi",
+     "author": "John Webster",
+     "gutenberg_id": 2232,
+     "id_status": "verified",
+     "gutenberg_title": "The Duchess of Malfi",
+     "mirror_repo": "The-Duchess-of-Malfi_2232",
+     "mirror_files": [
+      "2232.txt"
+     ]
+    },
+    {
+     "title": "A New Way to Pay Old Debts",
+     "author": "Philip Massinger",
+     "gutenberg_id": null,
+     "id_status": null
+    }
+   ]
+  },
+  {
+   "volume": 48,
+   "title": "Thoughts, Letters, Minor Works, Pascal",
+   "works": [
+    {
+     "title": "Pensees (Thoughts)",
+     "author": "Blaise Pascal",
+     "gutenberg_id": 18269,
+     "id_status": "verified",
+     "gutenberg_title": "Pascal's Pensées",
+     "mirror_repo": "Pascal-s-Pens-es_18269",
+     "mirror_files": [
+      "18269.txt",
+      "18269-0.txt",
+      "18269-8.txt"
+     ]
+    },
+    {
+     "title": "Letters and Minor Works",
+     "author": "Blaise Pascal",
+     "gutenberg_id": null,
+     "id_status": null
+    }
+   ]
+  },
+  {
+   "volume": 49,
+   "title": "Epic and Saga",
+   "works": [
+    {
+     "title": "Harvard Classics Volume 49: Epic and Saga",
+     "author": "Various",
+     "gutenberg_id": 14019,
+     "id_status": "verified",
+     "gutenberg_title": "The Harvard Classics, Volume 49, Epic and Saga With Introductions And Notes",
+     "mirror_repo": "The-Harvard-Classics-Volume-49-Epic-and-SagaWith-Introductions-And-Notes_14019",
+     "mirror_files": [
+      "14019.txt",
+      "14019-8.txt"
+     ],
+     "whole_volume": true,
+     "note": "the Collier volume itself is on Gutenberg"
+    },
+    {
+     "title": "Beowulf",
+     "author": "Anonymous",
+     "gutenberg_id": 16328,
+     "id_status": "verified",
+     "gutenberg_title": "Beowulf An Anglo-Saxon Epic Poem",
+     "mirror_repo": "Beowulf--13-An-Anglo-Saxon-Epic-Poem_16328",
+     "mirror_files": [
+      "16328-8.txt",
+      "16328.txt"
+     ],
+     "note": "Gummere translation, the one the Collier set uses"
+    },
+    {
+     "title": "The Song of Roland",
+     "author": "Anonymous",
+     "gutenberg_id": 391,
+     "id_status": "verified",
+     "gutenberg_title": "The Song of Roland",
+     "mirror_repo": "The-Song-of-Roland_391",
+     "mirror_files": [
+      "391.txt"
+     ]
+    },
+    {
+     "title": "The Story of the Volsungs",
+     "author": "Anonymous",
+     "gutenberg_id": 1152,
+     "id_status": "verified",
+     "gutenberg_title": "The Story of the Volsungs (Volsunga Saga); with Excerpts from the Poetic Edda",
+     "mirror_repo": "The-Story-of-the-Volsungs--Volsunga-Saga---with-Excerpts-from-the-Poetic-Edda_1152",
+     "mirror_files": [
+      "1152.txt"
+     ],
+     "note": "Magnusson and Morris translation"
+    }
+   ]
+  },
+  {
+   "volume": 50,
+   "title": "Introduction, Reader's Guide, Indexes",
+   "works": []
+  },
+  {
+   "volume": 51,
+   "title": "Lectures on the Harvard Classics",
+   "works": []
+  }
+ ]
+}

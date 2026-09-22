@@ -1,0 +1,757 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss xmlns:arxiv="http://arxiv.org/schemas/atom" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+  <channel>
+    <title>cs.CL updates on arXiv.org</title>
+    <link>http://rss.arxiv.org/rss/cs.CL</link>
+    <description>cs.CL updates on the arXiv.org e-print archive.</description>
+    <atom:link href="http://rss.arxiv.org/rss/cs.CL" rel="self" type="application/rss+xml"/>
+    <docs>http://www.rssboard.org/rss-specification</docs>
+    <language>en-us</language>
+    <lastBuildDate>Mon, 22 Sep 2026 00:00:00 -0400</lastBuildDate>
+    <managingEditor>rss-help@arxiv.org</managingEditor>
+    <pubDate>Mon, 22 Sep 2026 00:00:00 -0400</pubDate>
+    <skipDays>
+      <day>Saturday</day>
+      <day>Sunday</day>
+    </skipDays>
+    <item>
+      <title>Sparse Autoencoders Find Highly Interpretable Features in Language Models</title>
+      <link>https://arxiv.org/abs/2609.00001</link>
+      <description>arXiv:2609.00001v1 Announce Type: new 
+Abstract: Neural networks store many concepts in superposition, which makes single neurons hard to read. We train sparse autoencoders on residual stream activations and find that the learned dictionary features are far more interpretable than neurons, as judged by automatic and human evaluation. We also show that the features can be used to localize and edit the behavior of a circuit responsible for indirect object identification.</description>
+      <guid isPermaLink="false">oai:arXiv.org:2609.00001v1</guid>
+      <category>cs.LG</category>
+      <category>cs.CL</category>
+      <pubDate>Mon, 22 Sep 2026 00:00:00 -0400</pubDate>
+      <arxiv:announce_type>new</arxiv:announce_type>
+      <dc:rights>http://creativecommons.org/licenses/by/4.0/</dc:rights>
+      <dc:creator>Hoagy Cunningham, Aidan Ewart, Logan Riggs, Robert Huben, Lee Sharkey</dc:creator>
+    </item>
+    <item>
+      <title>Scaling and Evaluating Sparse Autoencoders</title>
+      <link>https://arxiv.org/abs/2609.00002</link>
+      <description>arXiv:2609.00002v1 Announce Type: new 
+Abstract: We study how sparse autoencoder quality scales with dictionary size and training compute. A k-sparse activation removes the need for an L1 penalty and gives a clean tradeoff between reconstruction and sparsity. We propose several metrics for feature quality and release a 16 million latent autoencoder trained on GPT-4 activations.</description>
+      <guid isPermaLink="false">oai:arXiv.org:2609.00002v1</guid>
+      <category>cs.LG</category>
+      <category>cs.CL</category>
+      <pubDate>Mon, 22 Sep 2026 00:00:00 -0400</pubDate>
+      <arxiv:announce_type>new</arxiv:announce_type>
+      <dc:rights>http://creativecommons.org/licenses/by/4.0/</dc:rights>
+      <dc:creator>Leo Gao, Tom Dupre la Tour, Henk Tillman, Gabriel Goh, Rajan Troll, Alec Radford, Ilya Sutskever, Jan Leike, Jeffrey Wu</dc:creator>
+    </item>
+    <item>
+      <title>Interpretability in the Wild: a Circuit for Indirect Object Identification in GPT-2 small</title>
+      <link>https://arxiv.org/abs/2609.00003</link>
+      <description>arXiv:2609.00003v1 Announce Type: cross 
+Abstract: We reverse engineer the mechanism GPT-2 small uses to complete sentences such as &#x27;When Mary and John went to the store, John gave a drink to&#x27;. The circuit involves 26 attention heads grouped into seven classes, discovered with causal interventions such as path patching. We propose faithfulness, completeness and minimality as criteria for evaluating a mechanistic explanation.</description>
+      <guid isPermaLink="false">oai:arXiv.org:2609.00003v1</guid>
+      <category>cs.LG</category>
+      <category>cs.CL</category>
+      <pubDate>Mon, 22 Sep 2026 00:00:00 -0400</pubDate>
+      <arxiv:announce_type>cross</arxiv:announce_type>
+      <dc:rights>http://creativecommons.org/licenses/by/4.0/</dc:rights>
+      <dc:creator>Kevin Wang, Alexandre Variengien, Arthur Conmy, Buck Shlegeris, Jacob Steinhardt</dc:creator>
+    </item>
+    <item>
+      <title>Steering Llama 2 via Contrastive Activation Addition</title>
+      <link>https://arxiv.org/abs/2609.00004</link>
+      <description>arXiv:2609.00004v1 Announce Type: new 
+Abstract: We introduce contrastive activation addition, a method for steering language models by adding a vector to the residual stream at inference time. Steering vectors are computed from the difference in activations between positive and negative examples of a behavior. The approach modulates sycophancy, hallucination and refusal in Llama 2 with little loss of capability.</description>
+      <guid isPermaLink="false">oai:arXiv.org:2609.00004v1</guid>
+      <category>cs.CL</category>
+      <category>cs.AI</category>
+      <category>cs.LG</category>
+      <pubDate>Mon, 22 Sep 2026 00:00:00 -0400</pubDate>
+      <arxiv:announce_type>new</arxiv:announce_type>
+      <dc:rights>http://creativecommons.org/licenses/by/4.0/</dc:rights>
+      <dc:creator>Nina Rimsky, Nick Gabrieli, Julia Schulz, Meg Tong, Evan Hubinger, Alexander Matt Turner</dc:creator>
+    </item>
+    <item>
+      <title>Representation Engineering: A Top-Down Approach to AI Transparency</title>
+      <link>https://arxiv.org/abs/2609.00005</link>
+      <description>arXiv:2609.00005v1 Announce Type: new 
+Abstract: We describe representation engineering, which places population-level representations rather than neurons or circuits at the center of analysis. Reading and controlling these representations gives traction on honesty, harmlessness and power seeking, and provides a complement to bottom-up mechanistic interpretability.</description>
+      <guid isPermaLink="false">oai:arXiv.org:2609.00005v1</guid>
+      <category>cs.LG</category>
+      <category>cs.AI</category>
+      <category>cs.CL</category>
+      <pubDate>Mon, 22 Sep 2026 00:00:00 -0400</pubDate>
+      <arxiv:announce_type>new</arxiv:announce_type>
+      <dc:rights>http://creativecommons.org/licenses/by/4.0/</dc:rights>
+      <dc:creator>Andy Zou, Long Phan, Sarah Chen, James Campbell, Phillip Guo, Richard Ren, Alexander Pan, Xuwang Yin, Mantas Mazeika, Ann-Kathrin Dombrowski</dc:creator>
+    </item>
+    <item>
+      <title>Editing Models with Task Arithmetic</title>
+      <link>https://arxiv.org/abs/2609.00006</link>
+      <description>arXiv:2609.00006v1 Announce Type: new 
+Abstract: A task vector is the difference between the weights of a fine-tuned model and its pre-trained base. We show that task vectors can be negated to forget a behavior, added to merge abilities from several fine-tuned models, and combined by analogy. Task arithmetic is a cheap and effective way to edit models without further training.</description>
+      <guid isPermaLink="false">oai:arXiv.org:2609.00006v1</guid>
+      <category>cs.LG</category>
+      <category>cs.CL</category>
+      <category>cs.CV</category>
+      <pubDate>Mon, 22 Sep 2026 00:00:00 -0400</pubDate>
+      <arxiv:announce_type>new</arxiv:announce_type>
+      <dc:rights>http://creativecommons.org/licenses/by/4.0/</dc:rights>
+      <dc:creator>Gabriel Ilharco, Marco Tulio Ribeiro, Mitchell Wortsman, Suchin Gururangan, Ludwig Schmidt, Hannaneh Hajishirzi, Ali Farhadi</dc:creator>
+    </item>
+    <item>
+      <title>TIES-Merging: Resolving Interference When Merging Models</title>
+      <link>https://arxiv.org/abs/2609.00007</link>
+      <description>arXiv:2609.00007v1 Announce Type: new 
+Abstract: Model merging combines several task-specific fine-tuned models into one multitask model without retraining. We identify two sources of interference, redundant parameter values and sign disagreement, and propose TIES-Merging, which trims parameters, elects a sign and merges only agreeing values. The method outperforms prior merging methods across modalities and model sizes.</description>
+      <guid isPermaLink="false">oai:arXiv.org:2609.00007v1</guid>
+      <category>cs.LG</category>
+      <category>cs.CL</category>
+      <pubDate>Mon, 22 Sep 2026 00:00:00 -0400</pubDate>
+      <arxiv:announce_type>new</arxiv:announce_type>
+      <dc:rights>http://creativecommons.org/licenses/by/4.0/</dc:rights>
+      <dc:creator>Prateek Yadav, Derek Tam, Leshem Choshen, Colin Raffel, Mohit Bansal</dc:creator>
+    </item>
+    <item>
+      <title>Language Models are Super Mario: Absorbing Abilities from Homologous Models as a Free Lunch</title>
+      <link>https://arxiv.org/abs/2609.00008</link>
+      <description>arXiv:2609.00008v1 Announce Type: replace 
+Abstract: We show that most delta parameters of a fine-tuned language model can be dropped without hurting performance. Drop And REscale (DARE) randomly sets delta parameters to zero and rescales the rest, which makes it possible to merge several fine-tuned models into one model that absorbs their abilities.</description>
+      <guid isPermaLink="false">oai:arXiv.org:2609.00008v1</guid>
+      <category>cs.CL</category>
+      <pubDate>Mon, 22 Sep 2026 00:00:00 -0400</pubDate>
+      <arxiv:announce_type>replace</arxiv:announce_type>
+      <dc:rights>http://creativecommons.org/licenses/by/4.0/</dc:rights>
+      <dc:creator>Le Yu, Bowen Yu, Haiyang Yu, Fei Huang, Yongbin Li</dc:creator>
+    </item>
+    <item>
+      <title>Who&#x27;s Harry Potter? Approximate Unlearning in LLMs</title>
+      <link>https://arxiv.org/abs/2609.00009</link>
+      <description>arXiv:2609.00009v1 Announce Type: new 
+Abstract: We present a technique for unlearning a subset of the training data from a large language model without retraining from scratch. Fine-tuning Llama2-7b for about one GPU hour removes its ability to generate or recall Harry Potter related content while keeping performance on common benchmarks. We discuss the difficulty of evaluating machine unlearning.</description>
+      <guid isPermaLink="false">oai:arXiv.org:2609.00009v1</guid>
+      <category>cs.CL</category>
+      <category>cs.AI</category>
+      <pubDate>Mon, 22 Sep 2026 00:00:00 -0400</pubDate>
+      <arxiv:announce_type>new</arxiv:announce_type>
+      <dc:rights>http://creativecommons.org/licenses/by/4.0/</dc:rights>
+      <dc:creator>Ronen Eldan, Mark Russinovich</dc:creator>
+    </item>
+    <item>
+      <title>TOFU: A Task of Fictitious Unlearning for LLMs</title>
+      <link>https://arxiv.org/abs/2609.00010</link>
+      <description>arXiv:2609.00010v1 Announce Type: new 
+Abstract: We propose TOFU, a benchmark for machine unlearning built from fictitious author profiles that no model has seen during pretraining. The benchmark measures forget quality and model utility after unlearning. Existing unlearning methods fail to match a model retrained without the forget set.</description>
+      <guid isPermaLink="false">oai:arXiv.org:2609.00010v1</guid>
+      <category>cs.LG</category>
+      <category>cs.CL</category>
+      <pubDate>Mon, 22 Sep 2026 00:00:00 -0400</pubDate>
+      <arxiv:announce_type>new</arxiv:announce_type>
+      <dc:rights>http://creativecommons.org/licenses/by/4.0/</dc:rights>
+      <dc:creator>Pratyush Maini, Zhili Feng, Avi Schwarzschild, Zachary C. Lipton, J. Zico Kolter</dc:creator>
+    </item>
+    <item>
+      <title>The WMDP Benchmark: Measuring and Reducing Malicious Use With Unlearning</title>
+      <link>https://arxiv.org/abs/2609.00011</link>
+      <description>arXiv:2609.00011v1 Announce Type: cross 
+Abstract: We release the Weapons of Mass Destruction Proxy benchmark, a set of multiple-choice questions that serve as a proxy for hazardous knowledge in biosecurity, cybersecurity and chemistry. We also introduce RMU, an unlearning method based on steering model representations, which reduces hazardous knowledge while preserving general capabilities.</description>
+      <guid isPermaLink="false">oai:arXiv.org:2609.00011v1</guid>
+      <category>cs.LG</category>
+      <category>cs.AI</category>
+      <category>cs.CL</category>
+      <category>cs.CY</category>
+      <pubDate>Mon, 22 Sep 2026 00:00:00 -0400</pubDate>
+      <arxiv:announce_type>cross</arxiv:announce_type>
+      <dc:rights>http://creativecommons.org/licenses/by/4.0/</dc:rights>
+      <dc:creator>Nathaniel Li, Alexander Pan, Anjali Gopal, Summer Yue, Daniel Berrios, Alice Gatti, Justin D. Li, Ann-Kathrin Dombrowski, Shashwat Goel, Long Phan</dc:creator>
+    </item>
+    <item>
+      <title>A Watermark for Large Language Models</title>
+      <link>https://arxiv.org/abs/2609.00012</link>
+      <description>arXiv:2609.00012v1 Announce Type: new 
+Abstract: We propose a watermarking framework for proprietary language models that embeds an invisible signal in generated text. The watermark selects a randomized set of green tokens before each word is sampled and softly promotes them. Detection needs no access to the model and works from a short span of tokens, with a statistical test and interpretable p-values.</description>
+      <guid isPermaLink="false">oai:arXiv.org:2609.00012v1</guid>
+      <category>cs.LG</category>
+      <category>cs.CL</category>
+      <category>cs.CR</category>
+      <pubDate>Mon, 22 Sep 2026 00:00:00 -0400</pubDate>
+      <arxiv:announce_type>new</arxiv:announce_type>
+      <dc:rights>http://creativecommons.org/licenses/by/4.0/</dc:rights>
+      <dc:creator>John Kirchenbauer, Jonas Geiping, Yuxin Wen, Jonathan Katz, Ian Miers, Tom Goldstein</dc:creator>
+    </item>
+    <item>
+      <title>Can Watermarks Survive Translation? On the Cross-lingual Consistency of Text Watermark for Large Language Models</title>
+      <link>https://arxiv.org/abs/2609.00013</link>
+      <description>arXiv:2609.00013v1 Announce Type: new 
+Abstract: Text watermarks for large language models are usually evaluated in one language. We introduce cross-lingual consistency, the ability of a watermark to remain detectable after the text is translated into another language, and find that current watermarking methods lose almost all of their strength under translation. We propose a cross-lingual watermark removal attack and a defense that shares watermark keys across semantically equivalent tokens in multiple languages.</description>
+      <guid isPermaLink="false">oai:arXiv.org:2609.00013v1</guid>
+      <category>cs.CL</category>
+      <category>cs.CR</category>
+      <pubDate>Mon, 22 Sep 2026 00:00:00 -0400</pubDate>
+      <arxiv:announce_type>new</arxiv:announce_type>
+      <dc:rights>http://creativecommons.org/licenses/by/4.0/</dc:rights>
+      <dc:creator>Zhiwei He, Binglin Zhou, Hongkun Hao, Aiwei Liu, Xing Wang, Zhaopeng Tu, Zhuosheng Zhang, Rui Wang</dc:creator>
+    </item>
+    <item>
+      <title>Refusal in Language Models Is Mediated by a Single Direction</title>
+      <link>https://arxiv.org/abs/2609.00014</link>
+      <description>arXiv:2609.00014v1 Announce Type: new 
+Abstract: Across 13 open chat models we find that refusal is mediated by a single one-dimensional subspace of the residual stream. Ablating this direction removes refusal, and adding it induces refusal on harmless requests. We use the finding for a white-box jailbreak that edits weights and discuss implications for the robustness of safety fine-tuning.</description>
+      <guid isPermaLink="false">oai:arXiv.org:2609.00014v1</guid>
+      <category>cs.LG</category>
+      <category>cs.AI</category>
+      <category>cs.CL</category>
+      <pubDate>Mon, 22 Sep 2026 00:00:00 -0400</pubDate>
+      <arxiv:announce_type>new</arxiv:announce_type>
+      <dc:rights>http://creativecommons.org/licenses/by/4.0/</dc:rights>
+      <dc:creator>Andy Arditi, Oscar Obeso, Aaquib Syed, Daniel Paleka, Nina Panickssery, Wes Gurnee, Neel Nanda</dc:creator>
+    </item>
+    <item>
+      <title>Gemma Scope: Open Sparse Autoencoders Everywhere All At Once on Gemma 2</title>
+      <link>https://arxiv.org/abs/2609.00015</link>
+      <description>arXiv:2609.00015v1 Announce Type: new 
+Abstract: Sparse autoencoders are an unsupervised method for learning a sparse decomposition of the latent representations of a neural network. Training a comprehensive suite of them is expensive, so we release Gemma Scope, JumpReLU sparse autoencoders trained on every layer and sublayer of the Gemma 2 2B and 9B models, to accelerate interpretability research.</description>
+      <guid isPermaLink="false">oai:arXiv.org:2609.00015v1</guid>
+      <category>cs.LG</category>
+      <category>cs.CL</category>
+      <pubDate>Mon, 22 Sep 2026 00:00:00 -0400</pubDate>
+      <arxiv:announce_type>new</arxiv:announce_type>
+      <dc:rights>http://creativecommons.org/licenses/by/4.0/</dc:rights>
+      <dc:creator>Tom Lieberum, Senthooran Rajamanoharan, Arthur Conmy, Lewis Smith, Nicolas Sonnerat, Vikrant Varma, Janos Kramar, Anca Dragan, Rohin Shah, Neel Nanda</dc:creator>
+    </item>
+    <item>
+      <title>Attribution Patching Outperforms Automated Circuit Discovery</title>
+      <link>https://arxiv.org/abs/2609.00016</link>
+      <description>arXiv:2609.00016v1 Announce Type: new 
+Abstract: Automated circuit discovery methods such as ACDC are slow because they require a forward pass per edge. We show that a linear approximation, attribution patching, estimates edge importance with a single backward pass and recovers circuits at least as faithful as those from ACDC on standard tasks at a fraction of the cost.</description>
+      <guid isPermaLink="false">oai:arXiv.org:2609.00016v1</guid>
+      <category>cs.LG</category>
+      <category>cs.CL</category>
+      <pubDate>Mon, 22 Sep 2026 00:00:00 -0400</pubDate>
+      <arxiv:announce_type>new</arxiv:announce_type>
+      <dc:rights>http://creativecommons.org/licenses/by/4.0/</dc:rights>
+      <dc:creator>Aaquib Syed, Can Rager, Arthur Conmy</dc:creator>
+    </item>
+    <item>
+      <title>Towards Automated Circuit Discovery for Mechanistic Interpretability</title>
+      <link>https://arxiv.org/abs/2609.00017</link>
+      <description>arXiv:2609.00017v1 Announce Type: cross 
+Abstract: Mechanistic interpretability work follows a workflow of choosing a task, a metric and a granularity, then pruning the model to find the subgraph that implements the behavior. We automate the pruning step with ACDC, an algorithm that recovers previously published circuits in GPT-2 small, including the indirect object identification circuit.</description>
+      <guid isPermaLink="false">oai:arXiv.org:2609.00017v1</guid>
+      <category>cs.LG</category>
+      <category>cs.AI</category>
+      <category>cs.CL</category>
+      <pubDate>Mon, 22 Sep 2026 00:00:00 -0400</pubDate>
+      <arxiv:announce_type>cross</arxiv:announce_type>
+      <dc:rights>http://creativecommons.org/licenses/by/4.0/</dc:rights>
+      <dc:creator>Arthur Conmy, Augustine N. Mavor-Parker, Aengus Lynch, Stefan Heimersheim, Adria Garriga-Alonso</dc:creator>
+    </item>
+    <item>
+      <title>Do Llamas Work in English? On the Latent Language of Multilingual Transformers</title>
+      <link>https://arxiv.org/abs/2609.00018</link>
+      <description>arXiv:2609.00018v1 Announce Type: new 
+Abstract: We ask whether multilingual language models use English as an internal pivot language. Applying the logit lens to Llama 2 on translation and cloze prompts in several languages, we find that intermediate layers assign high probability to the English version of the next token before the final layers commit to the target language. We discuss what this means for cross-lingual bias.</description>
+      <guid isPermaLink="false">oai:arXiv.org:2609.00018v1</guid>
+      <category>cs.CL</category>
+      <category>cs.LG</category>
+      <pubDate>Mon, 22 Sep 2026 00:00:00 -0400</pubDate>
+      <arxiv:announce_type>new</arxiv:announce_type>
+      <dc:rights>http://creativecommons.org/licenses/by/4.0/</dc:rights>
+      <dc:creator>Chris Wendler, Veniamin Veselovsky, Giovanni Monea, Robert West</dc:creator>
+    </item>
+    <item>
+      <title>Inference-Time Intervention: Eliciting Truthful Answers from a Language Model</title>
+      <link>https://arxiv.org/abs/2609.00019</link>
+      <description>arXiv:2609.00019v1 Announce Type: new 
+Abstract: We introduce inference-time intervention, which shifts activations along truth-related directions in a small number of attention heads during decoding. The method raises the truthfulness of Llama on TruthfulQA from 32.5 to 65.1 percent with only a few hundred labeled examples, and is a form of activation steering that is cheap to apply.</description>
+      <guid isPermaLink="false">oai:arXiv.org:2609.00019v1</guid>
+      <category>cs.LG</category>
+      <category>cs.AI</category>
+      <category>cs.CL</category>
+      <pubDate>Mon, 22 Sep 2026 00:00:00 -0400</pubDate>
+      <arxiv:announce_type>new</arxiv:announce_type>
+      <dc:rights>http://creativecommons.org/licenses/by/4.0/</dc:rights>
+      <dc:creator>Kenneth Li, Oam Patel, Fernanda Viegas, Hanspeter Pfister, Martin Wattenberg</dc:creator>
+    </item>
+    <item>
+      <title>Model Stock: All we need is just a few fine-tuned models</title>
+      <link>https://arxiv.org/abs/2609.00020</link>
+      <description>arXiv:2609.00020v1 Announce Type: cross 
+Abstract: We observe that fine-tuned weights from different random seeds lie close to a thin shell around a center, and that performance improves as weights approach that center. Model Stock estimates the center from only two fine-tuned models and the pretrained model, which gives a merging method with negligible cost.</description>
+      <guid isPermaLink="false">oai:arXiv.org:2609.00020v1</guid>
+      <category>cs.LG</category>
+      <category>cs.CV</category>
+      <pubDate>Mon, 22 Sep 2026 00:00:00 -0400</pubDate>
+      <arxiv:announce_type>cross</arxiv:announce_type>
+      <dc:rights>http://creativecommons.org/licenses/by/4.0/</dc:rights>
+      <dc:creator>Dong-Hwan Jang, Sangdoo Yun, Dongyoon Han</dc:creator>
+    </item>
+    <item>
+      <title>Large Language Models for Code: Security Hardening and Adversarial Testing</title>
+      <link>https://arxiv.org/abs/2609.00021</link>
+      <description>arXiv:2609.00021v1 Announce Type: cross 
+Abstract: Code language models often generate insecure code. We propose controlled code generation, in which a property prefix steers the model toward secure or, for adversarial testing, vulnerable code, and implement it with a learned prefix that does not modify the model weights.</description>
+      <guid isPermaLink="false">oai:arXiv.org:2609.00021v1</guid>
+      <category>cs.CR</category>
+      <category>cs.LG</category>
+      <category>cs.PL</category>
+      <category>cs.SE</category>
+      <pubDate>Mon, 22 Sep 2026 00:00:00 -0400</pubDate>
+      <arxiv:announce_type>cross</arxiv:announce_type>
+      <dc:rights>http://creativecommons.org/licenses/by/4.0/</dc:rights>
+      <dc:creator>Jingxuan He, Martin Vechev</dc:creator>
+    </item>
+    <item>
+      <title>Locating and Editing Factual Associations in GPT</title>
+      <link>https://arxiv.org/abs/2609.00022</link>
+      <description>arXiv:2609.00022v1 Announce Type: new 
+Abstract: We analyze how factual associations are stored in GPT models using causal tracing, and find that mid-layer feed-forward modules at the subject token play a decisive role. Rank-One Model Editing (ROME) changes a single fact by modifying one such module, which we evaluate on a new counterfactual dataset.</description>
+      <guid isPermaLink="false">oai:arXiv.org:2609.00022v1</guid>
+      <category>cs.CL</category>
+      <category>cs.AI</category>
+      <category>cs.LG</category>
+      <pubDate>Mon, 22 Sep 2026 00:00:00 -0400</pubDate>
+      <arxiv:announce_type>new</arxiv:announce_type>
+      <dc:rights>http://creativecommons.org/licenses/by/4.0/</dc:rights>
+      <dc:creator>Kevin Meng, David Bau, Alex Andonian, Yonatan Belinkov</dc:creator>
+    </item>
+    <item>
+      <title>Toy Models of Superposition</title>
+      <link>https://arxiv.org/abs/2609.00023</link>
+      <description>arXiv:2609.00023v1 Announce Type: cross 
+Abstract: Neural networks often represent more features than they have dimensions by storing them in superposition. We study small toy models where this is fully understood, show that superposition depends on feature sparsity and importance, and connect the geometry of the learned representations to the difficulty of mechanistic interpretability.</description>
+      <guid isPermaLink="false">oai:arXiv.org:2609.00023v1</guid>
+      <category>cs.LG</category>
+      <category>cs.AI</category>
+      <pubDate>Mon, 22 Sep 2026 00:00:00 -0400</pubDate>
+      <arxiv:announce_type>cross</arxiv:announce_type>
+      <dc:rights>http://creativecommons.org/licenses/by/4.0/</dc:rights>
+      <dc:creator>Nelson Elhage, Tristan Hume, Catherine Olsson, Nicholas Schiefer, Tom Henighan, Shauna Kravec, Zac Hatfield-Dodds, Robert Lasenby, Dawn Drain, Carol Chen</dc:creator>
+    </item>
+    <item>
+      <title>In-context Learning and Induction Heads</title>
+      <link>https://arxiv.org/abs/2609.00024</link>
+      <description>arXiv:2609.00024v1 Announce Type: cross 
+Abstract: Induction heads are attention heads that implement a copy-and-complete pattern. We present evidence that the formation of induction heads during training accounts for most in-context learning in small transformers, and give weaker circumstantial evidence for the same claim in large models.</description>
+      <guid isPermaLink="false">oai:arXiv.org:2609.00024v1</guid>
+      <category>cs.LG</category>
+      <category>cs.CL</category>
+      <pubDate>Mon, 22 Sep 2026 00:00:00 -0400</pubDate>
+      <arxiv:announce_type>cross</arxiv:announce_type>
+      <dc:rights>http://creativecommons.org/licenses/by/4.0/</dc:rights>
+      <dc:creator>Catherine Olsson, Nelson Elhage, Neel Nanda, Nicholas Joseph, Nova DasSarma, Tom Henighan, Ben Mann, Amanda Askell, Yuntao Bai, Anna Chen</dc:creator>
+    </item>
+    <item>
+      <title>Transcoders Find Interpretable LLM Feature Circuits</title>
+      <link>https://arxiv.org/abs/2609.00025</link>
+      <description>arXiv:2609.00025v1 Announce Type: new 
+Abstract: Circuit analysis through MLP sublayers is hard because they are dense and nonlinear. Transcoders approximate an MLP with a wider, sparse layer whose features are interpretable, which lets us do weights-based circuit analysis and recover the greater-than circuit in GPT-2 small without input-dependent approximations.</description>
+      <guid isPermaLink="false">oai:arXiv.org:2609.00025v1</guid>
+      <category>cs.LG</category>
+      <category>cs.CL</category>
+      <pubDate>Mon, 22 Sep 2026 00:00:00 -0400</pubDate>
+      <arxiv:announce_type>new</arxiv:announce_type>
+      <dc:rights>http://creativecommons.org/licenses/by/4.0/</dc:rights>
+      <dc:creator>Jacob Dunefsky, Philippe Chlenski, Neel Nanda</dc:creator>
+    </item>
+    <item>
+      <title>Function Vectors in Large Language Models</title>
+      <link>https://arxiv.org/abs/2609.00026</link>
+      <description>arXiv:2609.00026v1 Announce Type: new 
+Abstract: We find that a small set of attention heads carries a compact representation of the task demonstrated in an in-context prompt. Averaging their outputs gives a function vector that triggers the task in a zero-shot setting, and function vectors can be added together to compose tasks.</description>
+      <guid isPermaLink="false">oai:arXiv.org:2609.00026v1</guid>
+      <category>cs.CL</category>
+      <category>cs.LG</category>
+      <pubDate>Mon, 22 Sep 2026 00:00:00 -0400</pubDate>
+      <arxiv:announce_type>new</arxiv:announce_type>
+      <dc:rights>http://creativecommons.org/licenses/by/4.0/</dc:rights>
+      <dc:creator>Eric Todd, Millicent L. Li, Arnab Sen Sharma, Aaron Mueller, Byron C. Wallace, David Bau</dc:creator>
+    </item>
+    <item>
+      <title>Rethinking Machine Unlearning for Large Language Models</title>
+      <link>https://arxiv.org/abs/2609.00027</link>
+      <description>arXiv:2609.00027v1 Announce Type: new 
+Abstract: We survey machine unlearning for large language models, where the goal is to remove the influence of unwanted data or capabilities while keeping everything else. We connect unlearning to model editing, influence functions and adversarial training, discuss evaluation, and list open problems such as the tension between forgetting and utility.</description>
+      <guid isPermaLink="false">oai:arXiv.org:2609.00027v1</guid>
+      <category>cs.LG</category>
+      <category>cs.AI</category>
+      <category>cs.CL</category>
+      <pubDate>Mon, 22 Sep 2026 00:00:00 -0400</pubDate>
+      <arxiv:announce_type>new</arxiv:announce_type>
+      <dc:rights>http://creativecommons.org/licenses/by/4.0/</dc:rights>
+      <dc:creator>Sijia Liu, Yuanshun Yao, Jinghan Jia, Stephen Casper, Nathalie Baracaldo, Peter Hase, Yuguang Yao, Chris Yuhao Liu, Xiaojun Xu, Hang Li</dc:creator>
+    </item>
+    <item>
+      <title>Negative Preference Optimization: From Catastrophic Collapse to Effective Unlearning</title>
+      <link>https://arxiv.org/abs/2609.00028</link>
+      <description>arXiv:2609.00028v1 Announce Type: new 
+Abstract: Gradient ascent on the forget set collapses model utility. We propose negative preference optimization, a loss inspired by preference optimization that uses only negative examples, and show it unlearns TOFU authors far more effectively while preserving utility on the retain set.</description>
+      <guid isPermaLink="false">oai:arXiv.org:2609.00028v1</guid>
+      <category>cs.LG</category>
+      <category>cs.AI</category>
+      <category>cs.CL</category>
+      <pubDate>Mon, 22 Sep 2026 00:00:00 -0400</pubDate>
+      <arxiv:announce_type>new</arxiv:announce_type>
+      <dc:rights>http://creativecommons.org/licenses/by/4.0/</dc:rights>
+      <dc:creator>Ruiqi Zhang, Licong Lin, Yu Bai, Song Mei</dc:creator>
+    </item>
+    <item>
+      <title>Three Bricks to Consolidate Watermarks for Large Language Models</title>
+      <link>https://arxiv.org/abs/2609.00029</link>
+      <description>arXiv:2609.00029v1 Announce Type: cross 
+Abstract: We consolidate watermarking for language models with three contributions: statistical tests with guaranteed false positive rates, evaluation on natural language and code generation tasks, and a multi-bit variant that identifies the model or the user who produced the text.</description>
+      <guid isPermaLink="false">oai:arXiv.org:2609.00029v1</guid>
+      <category>cs.CR</category>
+      <category>cs.CL</category>
+      <pubDate>Mon, 22 Sep 2026 00:00:00 -0400</pubDate>
+      <arxiv:announce_type>cross</arxiv:announce_type>
+      <dc:rights>http://creativecommons.org/licenses/by/4.0/</dc:rights>
+      <dc:creator>Pierre Fernandez, Antoine Chaffin, Karim Tit, Vivien Chappelier, Teddy Furon</dc:creator>
+    </item>
+    <item>
+      <title>Language Models Don&#x27;t Always Say What They Think: Unfaithful Explanations in Chain-of-Thought Prompting</title>
+      <link>https://arxiv.org/abs/2609.00030</link>
+      <description>arXiv:2609.00030v1 Announce Type: replace 
+Abstract: Chain-of-thought explanations can misrepresent the true reason for a prediction. We bias inputs, for example by always placing the correct answer as option A in few-shot demonstrations, and find that models rationalize the biased answer without mentioning the bias.</description>
+      <guid isPermaLink="false">oai:arXiv.org:2609.00030v1</guid>
+      <category>cs.CL</category>
+      <category>cs.AI</category>
+      <category>cs.LG</category>
+      <pubDate>Mon, 22 Sep 2026 00:00:00 -0400</pubDate>
+      <arxiv:announce_type>replace</arxiv:announce_type>
+      <dc:rights>http://creativecommons.org/licenses/by/4.0/</dc:rights>
+      <dc:creator>Miles Turpin, Julian Michael, Ethan Perez, Samuel R. Bowman</dc:creator>
+    </item>
+    <item>
+      <title>Denoising Diffusion Probabilistic Models</title>
+      <link>https://arxiv.org/abs/2609.00031</link>
+      <description>arXiv:2609.00031v1 Announce Type: cross 
+Abstract: We present high quality image synthesis with diffusion probabilistic models, a class of latent variable models inspired by nonequilibrium thermodynamics. Training uses a weighted variational bound that connects diffusion models to denoising score matching and Langevin dynamics, and yields strong results on CIFAR10 and LSUN.</description>
+      <guid isPermaLink="false">oai:arXiv.org:2609.00031v1</guid>
+      <category>cs.LG</category>
+      <category>stat.ML</category>
+      <pubDate>Mon, 22 Sep 2026 00:00:00 -0400</pubDate>
+      <arxiv:announce_type>cross</arxiv:announce_type>
+      <dc:rights>http://creativecommons.org/licenses/by/4.0/</dc:rights>
+      <dc:creator>Jonathan Ho, Ajay Jain, Pieter Abbeel</dc:creator>
+    </item>
+    <item>
+      <title>High-Resolution Image Synthesis with Latent Diffusion Models</title>
+      <link>https://arxiv.org/abs/2609.00032</link>
+      <description>arXiv:2609.00032v1 Announce Type: cross 
+Abstract: By running diffusion in the latent space of a pretrained autoencoder we reach a near-optimal point between complexity reduction and detail preservation, which lowers the compute needed for training and sampling. Cross-attention layers turn the model into a flexible conditional generator for text-to-image and inpainting.</description>
+      <guid isPermaLink="false">oai:arXiv.org:2609.00032v1</guid>
+      <category>cs.CV</category>
+      <category>cs.LG</category>
+      <pubDate>Mon, 22 Sep 2026 00:00:00 -0400</pubDate>
+      <arxiv:announce_type>cross</arxiv:announce_type>
+      <dc:rights>http://creativecommons.org/licenses/by/4.0/</dc:rights>
+      <dc:creator>Robin Rombach, Andreas Blattmann, Dominik Lorenz, Patrick Esser, Bjorn Ommer</dc:creator>
+    </item>
+    <item>
+      <title>Segment Anything</title>
+      <link>https://arxiv.org/abs/2609.00033</link>
+      <description>arXiv:2609.00033v1 Announce Type: cross 
+Abstract: We introduce a promptable image segmentation model, a dataset of more than one billion masks on 11 million images, and a data engine that produced it. The model transfers zero-shot to new image distributions and tasks.</description>
+      <guid isPermaLink="false">oai:arXiv.org:2609.00033v1</guid>
+      <category>cs.CV</category>
+      <category>cs.AI</category>
+      <category>cs.LG</category>
+      <pubDate>Mon, 22 Sep 2026 00:00:00 -0400</pubDate>
+      <arxiv:announce_type>cross</arxiv:announce_type>
+      <dc:rights>http://creativecommons.org/licenses/by/4.0/</dc:rights>
+      <dc:creator>Alexander Kirillov, Eric Mintun, Nikhila Ravi, Hanzi Mao, Chloe Rolland, Laura Gustafson, Tete Xiao, Spencer Whitehead, Alexander C. Berg, Wan-Yen Lo</dc:creator>
+    </item>
+    <item>
+      <title>CodeBERT: A Pre-Trained Model for Programming and Natural Languages</title>
+      <link>https://arxiv.org/abs/2609.00034</link>
+      <description>arXiv:2609.00034v1 Announce Type: new 
+Abstract: CodeBERT is a bimodal pre-trained model for programming language and natural language, trained with masked language modeling and replaced token detection on NL-PL pairs. It reaches strong results on natural language code search and code documentation generation and is a useful base for program comprehension research.</description>
+      <guid isPermaLink="false">oai:arXiv.org:2609.00034v1</guid>
+      <category>cs.CL</category>
+      <category>cs.PL</category>
+      <pubDate>Mon, 22 Sep 2026 00:00:00 -0400</pubDate>
+      <arxiv:announce_type>new</arxiv:announce_type>
+      <dc:rights>http://creativecommons.org/licenses/by/4.0/</dc:rights>
+      <dc:creator>Zhangyin Feng, Daya Guo, Duyu Tang, Nan Duan, Xiaocheng Feng, Ming Gong, Linjun Shou, Bing Qin, Ting Liu, Daxin Jiang</dc:creator>
+    </item>
+    <item>
+      <title>Evaluating Large Language Models Trained on Code</title>
+      <link>https://arxiv.org/abs/2609.00035</link>
+      <description>arXiv:2609.00035v1 Announce Type: cross 
+Abstract: We introduce Codex, a GPT model fine-tuned on public code, and HumanEval, a set of hand-written programming problems that measure functional correctness. We discuss limitations such as difficulty with long chains of operations, and the safety and economic implications of code generation.</description>
+      <guid isPermaLink="false">oai:arXiv.org:2609.00035v1</guid>
+      <category>cs.LG</category>
+      <pubDate>Mon, 22 Sep 2026 00:00:00 -0400</pubDate>
+      <arxiv:announce_type>cross</arxiv:announce_type>
+      <dc:rights>http://creativecommons.org/licenses/by/4.0/</dc:rights>
+      <dc:creator>Mark Chen, Jerry Tworek, Heewoo Jun, Qiming Yuan, Henrique Ponde de Oliveira Pinto, Jared Kaplan, Harri Edwards, Yuri Burda, Nicholas Joseph, Greg Brockman</dc:creator>
+    </item>
+    <item>
+      <title>Universal and Transferable Adversarial Attacks on Aligned Language Models</title>
+      <link>https://arxiv.org/abs/2609.00036</link>
+      <description>arXiv:2609.00036v1 Announce Type: cross 
+Abstract: We find an adversarial suffix that, appended to a range of queries, makes aligned language models produce objectionable content. The suffix is found by greedy and gradient-based search and transfers from open models to black-box commercial chat models.</description>
+      <guid isPermaLink="false">oai:arXiv.org:2609.00036v1</guid>
+      <category>cs.CL</category>
+      <category>cs.AI</category>
+      <category>cs.CR</category>
+      <category>cs.LG</category>
+      <pubDate>Mon, 22 Sep 2026 00:00:00 -0400</pubDate>
+      <arxiv:announce_type>cross</arxiv:announce_type>
+      <dc:rights>http://creativecommons.org/licenses/by/4.0/</dc:rights>
+      <dc:creator>Andy Zou, Zifan Wang, Nicholas Carlini, Milad Nasr, J. Zico Kolter, Matt Fredrikson</dc:creator>
+    </item>
+    <item>
+      <title>Extracting Training Data from Large Language Models</title>
+      <link>https://arxiv.org/abs/2609.00037</link>
+      <description>arXiv:2609.00037v1 Announce Type: cross 
+Abstract: We demonstrate a training data extraction attack that recovers verbatim sequences from the training set of GPT-2, including personal information, by querying the model. Larger models are more vulnerable, and we discuss possible mitigations.</description>
+      <guid isPermaLink="false">oai:arXiv.org:2609.00037v1</guid>
+      <category>cs.CR</category>
+      <category>cs.CL</category>
+      <category>cs.LG</category>
+      <pubDate>Mon, 22 Sep 2026 00:00:00 -0400</pubDate>
+      <arxiv:announce_type>cross</arxiv:announce_type>
+      <dc:rights>http://creativecommons.org/licenses/by/4.0/</dc:rights>
+      <dc:creator>Nicholas Carlini, Florian Tramer, Eric Wallace, Matthew Jagielski, Ariel Herbert-Voss, Katherine Lee, Adam Roberts, Tom Brown, Dawn Song, Ulfar Erlingsson</dc:creator>
+    </item>
+    <item>
+      <title>Are Emergent Abilities of Large Language Models a Mirage?</title>
+      <link>https://arxiv.org/abs/2609.00038</link>
+      <description>arXiv:2609.00038v1 Announce Type: cross 
+Abstract: Claimed emergent abilities may be artifacts of nonlinear or discontinuous metrics rather than fundamental changes in model behavior. We show that with linear or continuous metrics the same models display smooth, predictable improvements with scale.</description>
+      <guid isPermaLink="false">oai:arXiv.org:2609.00038v1</guid>
+      <category>cs.AI</category>
+      <category>cs.CL</category>
+      <category>cs.LG</category>
+      <pubDate>Mon, 22 Sep 2026 00:00:00 -0400</pubDate>
+      <arxiv:announce_type>cross</arxiv:announce_type>
+      <dc:rights>http://creativecommons.org/licenses/by/4.0/</dc:rights>
+      <dc:creator>Rylan Schaeffer, Brando Miranda, Sanmi Koyejo</dc:creator>
+    </item>
+    <item>
+      <title>Lost in the Middle: How Language Models Use Long Contexts</title>
+      <link>https://arxiv.org/abs/2609.00039</link>
+      <description>arXiv:2609.00039v1 Announce Type: new 
+Abstract: We analyze performance on multi-document question answering and key-value retrieval as the position of relevant information varies. Performance is highest when relevant information is at the beginning or end of the context and drops significantly in the middle, even for models designed for long contexts.</description>
+      <guid isPermaLink="false">oai:arXiv.org:2609.00039v1</guid>
+      <category>cs.CL</category>
+      <pubDate>Mon, 22 Sep 2026 00:00:00 -0400</pubDate>
+      <arxiv:announce_type>new</arxiv:announce_type>
+      <dc:rights>http://creativecommons.org/licenses/by/4.0/</dc:rights>
+      <dc:creator>Nelson F. Liu, Kevin Lin, John Hewitt, Ashwin Paranjape, Michele Bevilacqua, Fabio Petroni, Percy Liang</dc:creator>
+    </item>
+    <item>
+      <title>Direct Preference Optimization: Your Language Model is Secretly a Reward Model</title>
+      <link>https://arxiv.org/abs/2609.00040</link>
+      <description>arXiv:2609.00040v1 Announce Type: cross 
+Abstract: We derive a closed form for the optimal policy under the RLHF objective, which turns preference learning into a simple classification loss on the language model itself. DPO is stable, lightweight and matches or exceeds PPO-based RLHF on sentiment control, summarization and dialogue.</description>
+      <guid isPermaLink="false">oai:arXiv.org:2609.00040v1</guid>
+      <category>cs.LG</category>
+      <category>cs.AI</category>
+      <category>cs.CL</category>
+      <pubDate>Mon, 22 Sep 2026 00:00:00 -0400</pubDate>
+      <arxiv:announce_type>cross</arxiv:announce_type>
+      <dc:rights>http://creativecommons.org/licenses/by/4.0/</dc:rights>
+      <dc:creator>Rafael Rafailov, Archit Sharma, Eric Mitchell, Stefano Ermon, Christopher D. Manning, Chelsea Finn</dc:creator>
+    </item>
+    <item>
+      <title>LoRA: Low-Rank Adaptation of Large Language Models</title>
+      <link>https://arxiv.org/abs/2609.00041</link>
+      <description>arXiv:2609.00041v1 Announce Type: replace 
+Abstract: We freeze pretrained weights and inject trainable rank decomposition matrices into each layer of the transformer. LoRA reduces trainable parameters by 10,000 times and GPU memory by three times compared to full fine-tuning while matching quality on GPT-3.</description>
+      <guid isPermaLink="false">oai:arXiv.org:2609.00041v1</guid>
+      <category>cs.CL</category>
+      <category>cs.AI</category>
+      <category>cs.LG</category>
+      <pubDate>Mon, 22 Sep 2026 00:00:00 -0400</pubDate>
+      <arxiv:announce_type>replace</arxiv:announce_type>
+      <dc:rights>http://creativecommons.org/licenses/by/4.0/</dc:rights>
+      <dc:creator>Edward J. Hu, Yelong Shen, Phillip Wallis, Zeyuan Allen-Zhu, Yuanzhi Li, Shean Wang, Lu Wang, Weizhu Chen</dc:creator>
+    </item>
+    <item>
+      <title>Chain-of-Thought Prompting Elicits Reasoning in Large Language Models</title>
+      <link>https://arxiv.org/abs/2609.00042</link>
+      <description>arXiv:2609.00042v1 Announce Type: new 
+Abstract: Providing a few chain of thought demonstrations as exemplars in prompting improves the ability of large language models to perform arithmetic, commonsense and symbolic reasoning. Gains are largest for the largest models and appear to be an emergent property of scale.</description>
+      <guid isPermaLink="false">oai:arXiv.org:2609.00042v1</guid>
+      <category>cs.CL</category>
+      <category>cs.AI</category>
+      <pubDate>Mon, 22 Sep 2026 00:00:00 -0400</pubDate>
+      <arxiv:announce_type>new</arxiv:announce_type>
+      <dc:rights>http://creativecommons.org/licenses/by/4.0/</dc:rights>
+      <dc:creator>Jason Wei, Xuezhi Wang, Dale Schuurmans, Maarten Bosma, Brian Ichter, Fei Xia, Ed Chi, Quoc Le, Denny Zhou</dc:creator>
+    </item>
+    <item>
+      <title>The Curse of Recursion: Training on Generated Data Makes Models Forget</title>
+      <link>https://arxiv.org/abs/2609.00043</link>
+      <description>arXiv:2609.00043v1 Announce Type: cross 
+Abstract: We show that training on model-generated data causes irreversible defects in the resulting models, which we call model collapse. The tails of the original content distribution disappear, and we show the effect in language models, variational autoencoders and Gaussian mixture models.</description>
+      <guid isPermaLink="false">oai:arXiv.org:2609.00043v1</guid>
+      <category>cs.LG</category>
+      <category>cs.AI</category>
+      <category>cs.CL</category>
+      <category>cs.CR</category>
+      <pubDate>Mon, 22 Sep 2026 00:00:00 -0400</pubDate>
+      <arxiv:announce_type>cross</arxiv:announce_type>
+      <dc:rights>http://creativecommons.org/licenses/by/4.0/</dc:rights>
+      <dc:creator>Ilia Shumailov, Zakhar Shumaylov, Yiren Zhao, Yarin Gal, Nicolas Papernot, Ross Anderson</dc:creator>
+    </item>
+    <item>
+      <title>Unsupervised Cross-lingual Representation Learning at Scale</title>
+      <link>https://arxiv.org/abs/2609.00044</link>
+      <description>arXiv:2609.00044v1 Announce Type: new 
+Abstract: We train a transformer-based masked language model on one hundred languages using more than two terabytes of filtered CommonCrawl data. XLM-R improves over multilingual BERT on cross-lingual classification, sequence labeling and question answering, and we analyze the curse of multilinguality.</description>
+      <guid isPermaLink="false">oai:arXiv.org:2609.00044v1</guid>
+      <category>cs.CL</category>
+      <pubDate>Mon, 22 Sep 2026 00:00:00 -0400</pubDate>
+      <arxiv:announce_type>new</arxiv:announce_type>
+      <dc:rights>http://creativecommons.org/licenses/by/4.0/</dc:rights>
+      <dc:creator>Alexis Conneau, Kartikay Khandelwal, Naman Goyal, Vishrav Chaudhary, Guillaume Wenzek, Francisco Guzman, Edouard Grave, Myle Ott, Luke Zettlemoyer, Veselin Stoyanov</dc:creator>
+    </item>
+    <item>
+      <title>No Language Left Behind: Scaling Human-Centered Machine Translation</title>
+      <link>https://arxiv.org/abs/2609.00045</link>
+      <description>arXiv:2609.00045v1 Announce Type: cross 
+Abstract: We build a conditional compute model based on a sparsely gated mixture of experts, trained on data obtained with novel mining techniques for low-resource languages, and evaluate translation across 40,000 directions with a human-translated benchmark, FLORES-200.</description>
+      <guid isPermaLink="false">oai:arXiv.org:2609.00045v1</guid>
+      <category>cs.CL</category>
+      <category>cs.AI</category>
+      <category>cs.LG</category>
+      <pubDate>Mon, 22 Sep 2026 00:00:00 -0400</pubDate>
+      <arxiv:announce_type>cross</arxiv:announce_type>
+      <dc:rights>http://creativecommons.org/licenses/by/4.0/</dc:rights>
+      <dc:creator>NLLB Team, Marta R. Costa-jussa, James Cross, Onur Celebi, Maha Elbayad, Kenneth Heafield, Kevin Heffernan, Elahe Kalbassi, Janice Lam, Daniel Licht</dc:creator>
+    </item>
+    <item>
+      <title>SWE-bench: Can Language Models Resolve Real-World GitHub Issues?</title>
+      <link>https://arxiv.org/abs/2609.00046</link>
+      <description>arXiv:2609.00046v1 Announce Type: cross 
+Abstract: SWE-bench contains 2,294 software engineering problems drawn from real GitHub issues and pull requests across twelve Python repositories. Given a codebase and an issue description, a model must produce a patch that passes the tests. The best models resolve only a small fraction of the tasks.</description>
+      <guid isPermaLink="false">oai:arXiv.org:2609.00046v1</guid>
+      <category>cs.CL</category>
+      <category>cs.AI</category>
+      <category>cs.SE</category>
+      <pubDate>Mon, 22 Sep 2026 00:00:00 -0400</pubDate>
+      <arxiv:announce_type>cross</arxiv:announce_type>
+      <dc:rights>http://creativecommons.org/licenses/by/4.0/</dc:rights>
+      <dc:creator>Carlos E. Jimenez, John Yang, Alexander Wettig, Shunyu Yao, Kexin Pei, Ofir Press, Karthik Narasimhan</dc:creator>
+    </item>
+    <item>
+      <title>Model Editing Can Hurt General Abilities of Large Language Models</title>
+      <link>https://arxiv.org/abs/2609.00047</link>
+      <description>arXiv:2609.00047v1 Announce Type: new 
+Abstract: We evaluate models after factual editing on reasoning, question answering, code generation and other general tasks, and find that many editing methods degrade these abilities, especially as the number of sequential edits grows.</description>
+      <guid isPermaLink="false">oai:arXiv.org:2609.00047v1</guid>
+      <category>cs.CL</category>
+      <category>cs.AI</category>
+      <pubDate>Mon, 22 Sep 2026 00:00:00 -0400</pubDate>
+      <arxiv:announce_type>new</arxiv:announce_type>
+      <dc:rights>http://creativecommons.org/licenses/by/4.0/</dc:rights>
+      <dc:creator>Jia-Chen Gu, Hao-Xiang Xu, Jun-Yu Ma, Pan Lu, Zhen-Hua Ling, Kai-Wei Chang, Nanyun Peng</dc:creator>
+    </item>
+    <item>
+      <title>Mechanistic Interpretability for AI Safety: A Review</title>
+      <link>https://arxiv.org/abs/2609.00048</link>
+      <description>arXiv:2609.00048v1 Announce Type: cross 
+Abstract: We review mechanistic interpretability, the project of reverse engineering the computational mechanisms of neural networks into human-understandable algorithms. We cover features, circuits, superposition, probing, sparse autoencoders and causal methods, and discuss how the field relates to AI safety.</description>
+      <guid isPermaLink="false">oai:arXiv.org:2609.00048v1</guid>
+      <category>cs.AI</category>
+      <category>cs.LG</category>
+      <pubDate>Mon, 22 Sep 2026 00:00:00 -0400</pubDate>
+      <arxiv:announce_type>cross</arxiv:announce_type>
+      <dc:rights>http://creativecommons.org/licenses/by/4.0/</dc:rights>
+      <dc:creator>Leonard Bereska, Efstratios Gavves</dc:creator>
+    </item>
+    <item>
+      <title>Not All Language Model Features Are Linear</title>
+      <link>https://arxiv.org/abs/2609.00049</link>
+      <description>arXiv:2609.00049v1 Announce Type: new 
+Abstract: The linear representation hypothesis proposes that features are one-dimensional directions. We use sparse autoencoders to find multi-dimensional features in GPT-2 and Mistral 7B, including circular representations of days of the week and months of the year, and show with intervention experiments that the model uses them for modular arithmetic.</description>
+      <guid isPermaLink="false">oai:arXiv.org:2609.00049v1</guid>
+      <category>cs.LG</category>
+      <category>cs.AI</category>
+      <category>cs.CL</category>
+      <pubDate>Mon, 22 Sep 2026 00:00:00 -0400</pubDate>
+      <arxiv:announce_type>new</arxiv:announce_type>
+      <dc:rights>http://creativecommons.org/licenses/by/4.0/</dc:rights>
+      <dc:creator>Joshua Engels, Eric J. Michaud, Isaac Liao, Wes Gurnee, Max Tegmark</dc:creator>
+    </item>
+    <item>
+      <title>The Geometry of Truth: Emergent Linear Structure in Large Language Model Representations of True/False Datasets</title>
+      <link>https://arxiv.org/abs/2609.00050</link>
+      <description>arXiv:2609.00050v1 Announce Type: new 
+Abstract: We curate datasets of simple true and false statements and show that language model representations of them have linear structure. Probes trained on one dataset generalize to others, and the truth direction can be used to causally steer the model toward treating false statements as true.</description>
+      <guid isPermaLink="false">oai:arXiv.org:2609.00050v1</guid>
+      <category>cs.AI</category>
+      <category>cs.CL</category>
+      <category>cs.LG</category>
+      <pubDate>Mon, 22 Sep 2026 00:00:00 -0400</pubDate>
+      <arxiv:announce_type>new</arxiv:announce_type>
+      <dc:rights>http://creativecommons.org/licenses/by/4.0/</dc:rights>
+      <dc:creator>Samuel Marks, Max Tegmark</dc:creator>
+    </item>
+    <item>
+      <title>Deep Residual Learning for Image Recognition</title>
+      <link>https://arxiv.org/abs/2609.00051</link>
+      <description>arXiv:2609.00051v1 Announce Type: cross 
+Abstract: We present a residual learning framework that eases the training of networks that are much deeper than before. Layers learn residual functions with reference to the layer inputs, and on ImageNet we evaluate residual nets with a depth of up to 152 layers.</description>
+      <guid isPermaLink="false">oai:arXiv.org:2609.00051v1</guid>
+      <category>cs.CV</category>
+      <pubDate>Mon, 22 Sep 2026 00:00:00 -0400</pubDate>
+      <arxiv:announce_type>cross</arxiv:announce_type>
+      <dc:rights>http://creativecommons.org/licenses/by/4.0/</dc:rights>
+      <dc:creator>Kaiming He, Xiangyu Zhang, Shaoqing Ren, Jian Sun</dc:creator>
+    </item>
+    <item>
+      <title>Textbooks Are All You Need</title>
+      <link>https://arxiv.org/abs/2609.00052</link>
+      <description>arXiv:2609.00052v1 Announce Type: new 
+Abstract: We introduce phi-1, a 1.3 billion parameter code language model trained on textbook quality data from the web and synthetically generated textbooks and exercises. Despite its small size it reaches strong pass@1 accuracy on HumanEval and MBPP.</description>
+      <guid isPermaLink="false">oai:arXiv.org:2609.00052v1</guid>
+      <category>cs.CL</category>
+      <category>cs.AI</category>
+      <category>cs.LG</category>
+      <pubDate>Mon, 22 Sep 2026 00:00:00 -0400</pubDate>
+      <arxiv:announce_type>new</arxiv:announce_type>
+      <dc:rights>http://creativecommons.org/licenses/by/4.0/</dc:rights>
+      <dc:creator>Suriya Gunasekar, Yi Zhang, Jyoti Aneja, Caio Cesar Teodoro Mendes, Allie Del Giorno, Sivakanth Gopi, Mojan Javaheripi, Piero Kauffmann, Gustavo de Rosa, Olli Saarikivi</dc:creator>
+    </item>
+    <item>
+      <title>Scaling Laws for Neural Language Models</title>
+      <link>https://arxiv.org/abs/2609.00053</link>
+      <description>arXiv:2609.00053v1 Announce Type: cross 
+Abstract: We study empirical scaling laws for language model performance on the cross-entropy loss. Loss scales as a power law with model size, dataset size and compute, with trends spanning more than seven orders of magnitude, and larger models are significantly more sample efficient.</description>
+      <guid isPermaLink="false">oai:arXiv.org:2609.00053v1</guid>
+      <category>cs.LG</category>
+      <category>cs.CL</category>
+      <category>stat.ML</category>
+      <pubDate>Mon, 22 Sep 2026 00:00:00 -0400</pubDate>
+      <arxiv:announce_type>cross</arxiv:announce_type>
+      <dc:rights>http://creativecommons.org/licenses/by/4.0/</dc:rights>
+      <dc:creator>Jared Kaplan, Sam McCandlish, Tom Henighan, Tom B. Brown, Benjamin Chess, Rewon Child, Scott Gray, Alec Radford, Jeffrey Wu, Dario Amodei</dc:creator>
+    </item>
+    <item>
+      <title>Language Models are Few-Shot Learners</title>
+      <link>https://arxiv.org/abs/2609.00054</link>
+      <description>arXiv:2609.00054v1 Announce Type: new 
+Abstract: We train GPT-3, an autoregressive language model with 175 billion parameters, and test its performance in the few-shot setting. GPT-3 achieves strong performance on many NLP datasets, including translation, question answering and cloze tasks, without gradient updates or fine-tuning.</description>
+      <guid isPermaLink="false">oai:arXiv.org:2609.00054v1</guid>
+      <category>cs.CL</category>
+      <pubDate>Mon, 22 Sep 2026 00:00:00 -0400</pubDate>
+      <arxiv:announce_type>new</arxiv:announce_type>
+      <dc:rights>http://creativecommons.org/licenses/by/4.0/</dc:rights>
+      <dc:creator>Tom B. Brown, Benjamin Mann, Nick Ryder, Melanie Subbiah, Jared Kaplan, Prafulla Dhariwal, Arvind Neelakantan, Pranav Shyam, Girish Sastry, Amanda Askell</dc:creator>
+    </item>
+    <item>
+      <title>Poisoning Web-Scale Training Datasets is Practical</title>
+      <link>https://arxiv.org/abs/2609.00055</link>
+      <description>arXiv:2609.00055v1 Announce Type: cross 
+Abstract: We introduce two attacks that guarantee malicious examples land in web-scale datasets: split-view poisoning, which exploits the mutable content behind published URLs, and frontrunning poisoning, which targets datasets that snapshot crowd-sourced content such as Wikipedia.</description>
+      <guid isPermaLink="false">oai:arXiv.org:2609.00055v1</guid>
+      <category>cs.CR</category>
+      <category>cs.LG</category>
+      <pubDate>Mon, 22 Sep 2026 00:00:00 -0400</pubDate>
+      <arxiv:announce_type>cross</arxiv:announce_type>
+      <dc:rights>http://creativecommons.org/licenses/by/4.0/</dc:rights>
+      <dc:creator>Nicholas Carlini, Matthew Jagielski, Christopher A. Choquette-Choo, Daniel Paleka, Will Pearce, Hyrum Anderson, Andreas Terzis, Kurt Thomas, Florian Tramer</dc:creator>
+    </item>
+  </channel>
+</rss>

@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Harvard Classics Oracle</title>
+<link rel="icon" href="data:,">
+<script src="data/sample_index.js"></script>
+<script src="data/calendar.js"></script>
+<style>
+  :root {
+    --bg: #17130f; --panel: #221c16; --ink: #ece4d6; --muted: #a2957f;
+    --accent: #d9a45b; --rule: #3a3127;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: Georgia, "Times New Roman", serif; line-height: 1.55;
+  }
+  main { max-width: 760px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1 { font-weight: normal; font-size: 1.9rem; margin: 0 0 4px; letter-spacing: 0.02em; }
+  .sub { color: var(--muted); margin: 0 0 24px; font-size: 0.95rem; }
+  nav { display: flex; gap: 8px; margin-bottom: 20px; }
+  nav button {
+    background: none; border: 1px solid var(--rule); color: var(--muted);
+    padding: 8px 14px; font: inherit; cursor: pointer; border-radius: 4px;
+  }
+  nav button.active { color: var(--accent); border-color: var(--accent); }
+  form { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+  input[type=text], input[type=date] {
+    flex: 1 1 260px; background: var(--panel); border: 1px solid var(--rule); color: var(--ink);
+    padding: 10px 12px; font: inherit; border-radius: 4px;
+  }
+  input:focus { outline: 1px solid var(--accent); }
+  button.go {
+    background: var(--accent); border: none; color: #1a1408; padding: 10px 18px;
+    font: inherit; cursor: pointer; border-radius: 4px;
+  }
+  button.quiet { background: none; border: 1px solid var(--rule); color: var(--muted);
+    padding: 10px 14px; font: inherit; cursor: pointer; border-radius: 4px; }
+  article { background: var(--panel); border-left: 3px solid var(--accent);
+    padding: 18px 20px; margin-bottom: 18px; border-radius: 0 4px 4px 0; }
+  article p { margin: 0 0 12px; white-space: pre-wrap; }
+  article p:last-of-type { margin-bottom: 0; }
+  .source { color: var(--muted); font-size: 0.9rem; margin-top: 12px; }
+  .source b { color: var(--accent); font-weight: normal; }
+  .note { color: var(--muted); font-size: 0.9rem; }
+  .hidden { display: none; }
+  .assign { margin-bottom: 16px; }
+  .assign div { margin: 2px 0; }
+  .assign span { color: var(--muted); display: inline-block; width: 6em; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Harvard Classics</h1>
+  <p class="sub">An oracle over the Five-Foot Shelf, and the Fifteen Minutes a Day calendar. Runs entirely in this page over the bundled sample of <span id="count">0</span> passages.</p>
+
+  <nav>
+    <button id="tab-oracle" class="active">Oracle</button>
+    <button id="tab-daily">Fifteen Minutes a Day</button>
+  </nav>
+
+  <section id="oracle">
+    <form id="ask">
+      <input type="text" id="q" placeholder="a question, a mood, a few words" autocomplete="off">
+      <button class="go" type="submit">Ask</button>
+      <button class="quiet" type="button" id="random">Random</button>
+    </form>
+    <div id="results"></div>
+  </section>
+
+  <section id="daily" class="hidden">
+    <form id="pick">
+      <input type="date" id="date">
+      <button class="go" type="submit">Show</button>
+    </form>
+    <div id="assignment"></div>
+  </section>
+
+  <p class="note" id="status"></p>
+</main>
+
+<script>
+// The same tokenising, stemming, lexicon and TF-IDF scoring as oracle.py,
+// written in plain JS over the sample index bundled in data/sample_index.js.
+// The calendar comes from data/calendar.js, a script copy of data/calendar.json,
+// so the page also works when opened straight from the file system.
+
+const STOPWORDS = new Set(`a an and are as at be been but by for from had has have he her his i if in into
+is it its me my no nor not of on or our she so than that the their them then
+there these they this those thou thy thee to too was we were what when which who
+whom will with would you your ye yet upon shall unto also very any all can
+could did do does done how more most much such some only than`.split(/\s+/));
+
+const LEXICON = {
+  courage: ["brave","valor","valour","bold","fear","danger","heart","fortitude"],
+  brave: ["courage","valor","bold","fear","danger"],
+  fear: ["afraid","terror","dread","courage","danger","trembling"],
+  grief: ["sorrow","mourn","loss","tears","weep","lament","death"],
+  sorrow: ["grief","mourn","loss","tears","weep","sad","affliction"],
+  sad: ["sorrow","grief","melancholy","weep","heavy"],
+  loss: ["grief","sorrow","mourn","death","gone"],
+  death: ["die","mortal","grave","dead","soul","immortal","end"],
+  love: ["beloved","affection","heart","passion","tender","dear","friendship"],
+  friend: ["friendship","companion","faithful","affection","trust"],
+  friendship: ["friend","companion","affection","faithful","virtue"],
+  anger: ["wrath","rage","passion","temper","fury","resentment","patience"],
+  patience: ["endure","bear","suffer","wait","calm","steadfast"],
+  hope: ["expect","future","trust","promise","faith","despair"],
+  despair: ["hope","misery","wretched","hopeless","sorrow"],
+  wisdom: ["wise","prudence","knowledge","understanding","counsel","philosophy"],
+  knowledge: ["learning","understanding","wisdom","truth","study","science"],
+  truth: ["true","false","honest","knowledge","reason"],
+  restless: ["unquiet","wander","anxious","peace","rest","quiet","calm","still","trouble"],
+  anxious: ["anxiety","care","worry","fear","trouble","restless","peace"],
+  calm: ["quiet","peace","tranquil","rest","still","serene","content"],
+  peace: ["calm","quiet","rest","tranquil","war","content"],
+  happy: ["happiness","joy","content","pleasure","cheerful","delight"],
+  joy: ["happy","delight","pleasure","gladness","rejoice","cheerful"],
+  money: ["wealth","riches","gold","poverty","gain","fortune","expense"],
+  wealth: ["money","riches","gold","poverty","fortune","gain"],
+  poverty: ["poor","wealth","riches","want","need"],
+  work: ["labor","labour","toil","industry","diligence","idle","business"],
+  lazy: ["idle","sloth","indolence","diligence","industry","work"],
+  time: ["hour","day","year","age","haste","delay","moment"],
+  nature: ["earth","sea","sky","field","wood","river","mountain","wild"],
+  solitude: ["alone","lonely","retire","quiet","silence","company"],
+  lonely: ["alone","solitude","solitary","company","friend"],
+  study: ["learning","book","read","knowledge","student","school"],
+  ambition: ["glory","honor","honour","fame","power","greatness","pride"],
+  pride: ["proud","vanity","humility","humble","ambition"],
+  humble: ["humility","modest","lowly","pride","meek"],
+  doubt: ["uncertain","question","belief","faith","skeptic","reason"],
+  faith: ["belief","believe","god","trust","religion","doubt"],
+  god: ["divine","heaven","lord","providence","prayer","faith"],
+  virtue: ["good","honest","just","vice","temperance","moral"],
+  justice: ["just","law","right","wrong","injustice","equal"],
+  liberty: ["freedom","free","tyranny","slavery","independence"],
+  freedom: ["liberty","free","tyranny","slavery","independence"],
+  war: ["battle","army","soldier","enemy","peace","sword","victory"],
+  beauty: ["beautiful","fair","lovely","grace","sublime","delight"],
+  old: ["age","aged","years","youth","elder"],
+  youth: ["young","old","age","years"],
+  sleep: ["dream","rest","night","wake","slumber"],
+  dream: ["sleep","vision","night","fancy","imagination"],
+  travel: ["journey","voyage","wander","road","sea","country"],
+  sea: ["ocean","ship","wave","sail","voyage","shore"],
+  change: ["fortune","chance","alter","new","vary"],
+  habit: ["custom","practice","use","manner","discipline"],
+  advice: ["counsel","advise","wisdom","warn","instruct"],
+  decision: ["choose","choice","resolve","judgment","counsel"],
+  purpose: ["end","aim","design","intent","resolve","meaning"],
+  meaning: ["purpose","sense","end","life","understand"],
+  tired: ["weary","rest","sleep","labor","fatigue"],
+  sick: ["illness","disease","health","physician","body","pain"],
+  pain: ["suffer","grief","ache","hurt","endure"],
+  food: ["eat","drink","feast","hunger","appetite","temperance"],
+};
+const EXPANSION_WEIGHT = 0.35;
+
+const SUFFIXES = [["iness",""],["ness",""],["ments",""],["ment",""],["fully",""],["ingly",""],
+  ["ing",""],["edly",""],["ies","y"],["ied","y"],["eth",""],["est",""],["ers",""],["er",""],
+  ["ed",""],["es",""],["ly",""],["s",""]];
+
+function stem(w) {
+  if (w.length <= 3) return w;
+  for (const [suf, keep] of SUFFIXES) {
+    if (w.endsWith(suf) && w.length - suf.length >= 3) {
+      let base = w.slice(0, w.length - suf.length) + keep;
+      if (base.endsWith("e") && base.length > 3) base = base.slice(0, -1);
+      return base;
+    }
+  }
+  if (w.endsWith("e") && w.length > 4) return w.slice(0, -1);
+  return w;
+}
+
+function tokenize(text) {
+  const out = [];
+  for (const w of (text.toLowerCase().match(/[a-z]+/g) || [])) {
+    if (w.length < 3 || STOPWORDS.has(w)) continue;
+    out.push(stem(w));
+  }
+  return out;
+}
+
+// --- model -----------------------------------------------------------------
+const INDEX = window.SAMPLE_INDEX || [];
+const MODEL = buildModel(INDEX);
+
+function buildModel(index) {
+  const docs = index.map(e => {
+    const c = new Map();
+    for (const t of tokenize(e.text)) c.set(t, (c.get(t) || 0) + 1);
+    return c;
+  });
+  const df = new Map();
+  for (const d of docs) for (const t of d.keys()) df.set(t, (df.get(t) || 0) + 1);
+  const n = docs.length;
+  const idf = new Map();
+  for (const [t, c] of df) idf.set(t, Math.log((n + 1) / (c + 1)) + 1);
+  const vectors = docs.map(d => {
+    const v = new Map();
+    let norm = 0;
+    for (const [t, c] of d) { const x = (1 + Math.log(c)) * idf.get(t); v.set(t, x); norm += x * x; }
+    norm = Math.sqrt(norm) || 1;
+    for (const [t, x] of v) v.set(t, x / norm);
+    return v;
+  });
+  return { idf, vectors };
+}
+
+const LEX_STEMMED = new Map(Object.entries(LEXICON).map(([k, v]) => [stem(k), v]));
+
+function expandQuery(q) {
+  const w = new Map();
+  for (const t of tokenize(q)) w.set(t, (w.get(t) || 0) + 1);
+  for (const t of [...w.keys()]) {
+    for (const word of (LEX_STEMMED.get(t) || [])) {
+      const s = stem(word);
+      if (s !== t) w.set(s, (w.get(s) || 0) + EXPANSION_WEIGHT);
+    }
+  }
+  return w;
+}
+
+function search(q, n) {
+  const qv = new Map();
+  let qnorm = 0;
+  for (const [t, wgt] of expandQuery(q)) {
+    if (MODEL.idf.has(t)) { const x = wgt * MODEL.idf.get(t); qv.set(t, x); qnorm += x * x; }
+  }
+  if (!qv.size) return [];
+  qnorm = Math.sqrt(qnorm);
+  const typed = [...new Set(tokenize(q))].filter(t => MODEL.idf.has(t));
+  const scored = [];
+  MODEL.vectors.forEach((vec, i) => {
+    let s = 0;
+    for (const [t, x] of qv) if (vec.has(t)) s += x * vec.get(t);
+    if (s > 0) {
+      // cosine similarity plus a bonus for covering more of the typed words
+      const coverage = typed.length ? typed.filter(t => vec.has(t)).length / typed.length : 0;
+      scored.push([s / qnorm * (1 + coverage), i]);
+    }
+  });
+  scored.sort((a, b) => b[0] - a[0]);
+  return scored.slice(0, n).map(([s, i]) => [s, INDEX[i]]);
+}
+
+// --- rendering ---------------------------------------------------------------
+const $ = id => document.getElementById(id);
+
+function render(entry, score) {
+  const art = document.createElement("article");
+  for (const para of entry.text.split("\n\n")) {
+    const p = document.createElement("p"); p.textContent = para; art.appendChild(p);
+  }
+  const src = document.createElement("div");
+  src.className = "source";
+  src.innerHTML = `<b>${esc(entry.author)}</b>, ${esc(entry.work)} (Harvard Classics vol. ${entry.volume}, ${esc(entry.volume_title)})` +
+    (score !== undefined ? ` · relevance ${score.toFixed(2)}` : "");
+  art.appendChild(src);
+  return art;
+}
+function esc(s) { return String(s).replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])); }
+
+$("count").textContent = INDEX.length;
+if (!INDEX.length) $("status").textContent = "The sample index did not load. Run: python3 fetch.py --sample";
+
+$("ask").addEventListener("submit", ev => {
+  ev.preventDefault();
+  const q = $("q").value.trim();
+  const box = $("results"); box.innerHTML = "";
+  if (!q) return;
+  const hits = search(q, 3);
+  if (!hits.length) { box.innerHTML = '<p class="note">Nothing matches those words. Try others, or Random.</p>'; return; }
+  for (const [s, e] of hits) box.appendChild(render(e, s));
+});
+$("random").addEventListener("click", () => {
+  const box = $("results"); box.innerHTML = "";
+  if (INDEX.length) box.appendChild(render(INDEX[Math.floor(Math.random() * INDEX.length)]));
+});
+
+// --- daily -------------------------------------------------------------------
+const CALENDAR = window.CALENDAR || null;
+function switchTab(name) {
+  for (const t of ["oracle", "daily"]) {
+    $(t).classList.toggle("hidden", t !== name);
+    $("tab-" + t).classList.toggle("active", t === name);
+  }
+  if (name === "daily") showDay();
+}
+$("tab-oracle").addEventListener("click", () => switchTab("oracle"));
+$("tab-daily").addEventListener("click", () => switchTab("daily"));
+
+function hashDate(iso) {  // small deterministic hash so a day always shows the same passage
+  let h = 2166136261;
+  for (const c of iso) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619) >>> 0; }
+  return h;
+}
+
+function showDay() {
+  const box = $("assignment"); box.innerHTML = "";
+  if (!CALENDAR) { box.innerHTML = '<p class="note">data/calendar.js is missing. Run: python3 build_calendar.py</p>'; return; }
+  const d = $("date").value ? new Date($("date").value + "T00:00:00") : new Date();
+  const month = d.getMonth() + 1, day = d.getDate();
+  const entry = CALENDAR.days.find(e => e.month === month && e.day === day);
+  if (!entry) { box.innerHTML = '<p class="note">No entry for that day.</p>'; return; }
+  const head = document.createElement("div"); head.className = "assign";
+  const where = `Harvard Classics vol. ${entry.volume}` + (entry.pages ? `, pp. ${entry.pages}` : "");
+  head.innerHTML = `<div><span>Date</span>${d.toLocaleDateString(undefined, {month: "long", day: "numeric"})}</div>` +
+    `<div><span>Reading</span>${esc(entry.reading)}</div><div><span>Where</span>${esc(where)}</div>` +
+    (entry.teaser ? `<div><span>Guide</span>${esc(entry.teaser)}</div>` : "");
+  box.appendChild(head);
+  const cands = INDEX.filter(e => e.volume === entry.volume && e.work === entry.work);
+  if (cands.length) {
+    box.appendChild(render(cands[hashDate(d.toISOString().slice(0, 10)) % cands.length]));
+  } else {
+    box.innerHTML += '<p class="note">The bundled sample has no text for this work. The command line tool can fetch it: python3 fetch.py --volume ' + entry.volume + '</p>';
+  }
+}
+$("pick").addEventListener("submit", ev => { ev.preventDefault(); showDay(); });
+</script>
+</body>
+</html>

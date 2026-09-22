@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Haiku Clock</title>
+<meta name="description" content="The current time as a haiku in English, Japanese, German and Vietnamese, with a seasonal word for the month.">
+<style>
+  :root {
+    --ink: #f4efe6;
+    --ink-soft: rgba(244, 239, 230, 0.62);
+    --ink-faint: rgba(244, 239, 230, 0.28);
+    --chip: rgba(255, 255, 255, 0.10);
+    --chip-on: rgba(255, 255, 255, 0.26);
+    --bg-top: #0b1026;
+    --bg-bottom: #1b1f3b;
+    --serif: "Noto Serif", "Noto Serif JP", "Noto Serif CJK JP", "Source Han Serif", "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", "IPAMincho", Georgia, "Times New Roman", serif;
+  }
+  :root[data-ink="dark"] {
+    --ink: #1f1c18;
+    --ink-soft: rgba(31, 28, 24, 0.62);
+    --ink-faint: rgba(31, 28, 24, 0.30);
+    --chip: rgba(0, 0, 0, 0.07);
+    --chip-on: rgba(0, 0, 0, 0.18);
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    font-family: var(--serif);
+    color: var(--ink);
+    background: linear-gradient(180deg, var(--bg-top) 0%, var(--bg-bottom) 100%);
+    background-attachment: fixed;
+    transition: color 1.5s ease;
+    display: flex; flex-direction: column;
+    min-height: 100vh; overflow-x: hidden;
+  }
+  a { color: inherit; }
+
+  /* corners */
+  .corner { position: fixed; font-variant-numeric: tabular-nums; font-size: 0.95rem; letter-spacing: 0.06em; color: var(--ink-soft); user-select: none; }
+  #clock { top: 18px; right: 22px; }
+  #clock .sec { font-size: 0.7em; color: var(--ink-faint); margin-left: 0.25em; }
+  #meta { top: 18px; left: 22px; font-size: 0.85rem; }
+  #meta .lock { margin-left: 0.5em; color: var(--ink-faint); }
+
+  /* rotation progress */
+  #progress { position: fixed; top: 0; left: 0; height: 2px; width: 0; background: var(--ink-faint); transition: width 0.25s linear; }
+
+  /* verse */
+  main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 72px 16px 120px; }
+  .verse { text-align: center; line-height: 1.6; font-size: clamp(1.6rem, 4.2vw, 3.1rem); cursor: pointer; max-width: 92vw; }
+  .verse .line { position: relative; display: block; white-space: nowrap; }
+  .verse .count { position: absolute; font-size: 0.38em; color: var(--ink-faint); top: 0.55em; right: -1.9em; opacity: 0; transition: opacity 0.25s; font-family: var(--serif); }
+  .verse .line:hover .count, body.show-counts .verse .count { opacity: 1; }
+  .verse .romaji { display: block; font-size: 0.42em; color: var(--ink-soft); letter-spacing: 0.02em; line-height: 1.3; margin-top: -0.2em; font-style: italic; }
+  rt { font-size: 0.42em; color: var(--ink-soft); }
+  .verse:lang(ja) { font-size: clamp(1.7rem, 4.6vw, 3.4rem); line-height: 1.9; letter-spacing: 0.08em; }
+  /* vertical writing: each line becomes a column, columns run right to left and step down like a hanging scroll */
+  .verse:lang(ja).vertical { writing-mode: vertical-rl; text-orientation: mixed; line-height: 2.2; text-align: start; }
+  .verse:lang(ja).vertical .line { display: block; margin-left: 0.6em; }
+  .verse:lang(ja).vertical .line:nth-of-type(2) { padding-top: 1.6em; }
+  .verse:lang(ja).vertical .line:nth-of-type(3) { padding-top: 3.2em; }
+  .verse:lang(ja).vertical .count { top: auto; bottom: -1.2em; right: auto; left: 50%; transform: translateX(-50%); }
+  .verse:lang(ja).vertical .romaji { display: none; }
+  body:not(.ready) { transition: none; }
+
+  .translation { margin-top: 1.6rem; text-align: center; font-size: clamp(0.95rem, 1.6vw, 1.2rem); color: var(--ink-soft); line-height: 1.6; font-style: italic; max-width: 40em; }
+  .translation .kigo { display: block; margin-top: 0.6em; font-style: normal; font-size: 0.85em; color: var(--ink-faint); letter-spacing: 0.04em; }
+  .hidden { display: none !important; }
+
+  /* controls */
+  #controls { position: fixed; left: 0; right: 0; bottom: 0; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; padding: 14px 16px 18px; font-size: 0.82rem; }
+  .group { display: flex; gap: 4px; align-items: center; background: var(--chip); border-radius: 999px; padding: 3px; }
+  button { font: inherit; color: var(--ink); background: transparent; border: 0; border-radius: 999px; padding: 6px 12px; cursor: pointer; opacity: 0.8; letter-spacing: 0.03em; }
+  button:hover { opacity: 1; }
+  button.on { background: var(--chip-on); opacity: 1; }
+  button:focus-visible { outline: 1px solid var(--ink-soft); }
+  .ja-only { display: none; }
+  body[data-lang="ja"] .ja-only { display: flex; }
+  @media (max-width: 640px) {
+    #meta { display: none; }
+    main { padding-bottom: 150px; }
+    .verse .count { right: -1.5em; }
+  }
+  @media (prefers-reduced-motion: reduce) { body, #progress { transition: none; } }
+</style>
+</head>
+<body>
+<div id="progress"></div>
+<div id="meta" class="corner"><span id="lang-name"></span><span id="season"></span><span class="lock" id="lock-mark" title="language locked"></span></div>
+<div id="clock" class="corner"><span id="hm">00:00</span><span class="sec" id="ss">00</span></div>
+
+<main>
+  <div class="verse" id="verse" title="click for the next language"></div>
+  <div class="translation hidden" id="translation"></div>
+</main>
+
+<div id="controls">
+  <div class="group" id="langs"></div>
+  <div class="group">
+    <button id="btn-lock" title="stop rotating languages (L)">lock</button>
+    <button id="btn-new" title="another verse for this minute (N or space)">new verse</button>
+  </div>
+  <div class="group">
+    <button id="btn-tr" title="English translation (T)">translation</button>
+    <button id="btn-counts" title="morae or syllables per line (C)">counts</button>
+  </div>
+  <div class="group ja-only" id="reading">
+    <button data-reading="none">kanji</button>
+    <button data-reading="furigana">furigana</button>
+    <button data-reading="romaji">romaji</button>
+  </div>
+  <div class="group ja-only">
+    <button id="btn-vertical" title="vertical writing (V)">vertical</button>
+  </div>
+</div>
+
+<script src="haiku_data.js"></script>
+<script>
+(function () {
+  'use strict';
+  const ROTATE_MS = 20000;   // language rotation interval
+  const LANGS = HAIKU.LANG_ORDER;
+  const NATIVE = { en: 'English', ja: '日本語', de: 'Deutsch', vi: 'Tiếng Việt' };
+  const MONTH_JA = ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月'];
+
+  // ---- settings (per browser; nothing leaves the page)
+  const defaults = { lang: 0, locked: false, translation: false, counts: false, reading: 'furigana', vertical: false };
+  let settings = Object.assign({}, defaults);
+  try { Object.assign(settings, JSON.parse(localStorage.getItem('haiku-clock') || '{}')); } catch (e) { /* private mode etc. */ }
+  function save() { try { localStorage.setItem('haiku-clock', JSON.stringify(settings)); } catch (e) { /* ignore */ } }
+
+  // ---- state
+  let shuffle = 0;            // "new verse" counter for the current minute
+  let minuteKey = '';         // yyyy-m-d-h-m of the verses currently cached
+  let verses = {};            // lang code -> generated haiku
+  let lastRotate = Date.now();
+
+  const $ = id => document.getElementById(id);
+
+  // ---- verses
+  function regenerate(now) {
+    const date = { month: now.getMonth(), h: now.getHours(), m: now.getMinutes() };
+    const seed = HAIKU.seedFor(now, shuffle);
+    verses = {};
+    for (const code of LANGS) verses[code] = HAIKU.generate(code, date, seed);
+  }
+
+  function esc(s) { return s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+
+  function render() {
+    const code = LANGS[settings.lang];
+    const v = verses[code];
+    const lang = HAIKU.LANGS[code];
+    const verse = $('verse');
+    verse.setAttribute('lang', code);
+    verse.classList.toggle('vertical', code === 'ja' && settings.vertical);
+    document.body.dataset.lang = code;
+
+    verse.innerHTML = v.lines.map(line => {
+      let text;
+      if (code === 'ja' && settings.reading === 'furigana') {
+        text = line.items.map(it => /[一-鿿]/.test(it.e.t) ? '<ruby>' + esc(it.e.t) + '<rt>' + esc(it.e.r) + '</rt></ruby>' : esc(it.e.t)).join('');
+      } else text = esc(line.text);
+      const romaji = code === 'ja' && settings.reading === 'romaji' ? '<span class="romaji">' + esc(line.romaji) + '</span>' : '';
+      return '<span class="line" title="' + line.n + ' ' + lang.unit + '">' + text + '<span class="count">' + line.n + '</span></span>' + romaji;
+    }).join('');
+
+    const tr = $('translation');
+    tr.classList.toggle('hidden', !settings.translation);
+    const kigoLabel = code === 'ja' ? '季語 ' + esc(v.kigo.t) + '（' + esc(v.kigo.r) + '）' : 'season word: ' + esc(v.kigo.t);
+    tr.innerHTML = (code === 'en' ? '<span>' + esc(v.time) + '</span>' : v.translation.map(esc).join('<br>')) +
+      '<span class="kigo">' + kigoLabel + ' · ' + esc(v.kigo.g) + '</span>';
+
+    $('lang-name').textContent = NATIVE[code];
+    const now = new Date();
+    $('season').textContent = ' · ' + (code === 'ja' ? MONTH_JA[now.getMonth()] : now.toLocaleString(code, { month: 'long' }));
+    $('lock-mark').textContent = settings.locked ? '·  locked' : '';
+    document.body.classList.toggle('show-counts', settings.counts);
+    for (const b of $('langs').children) b.classList.toggle('on', +b.dataset.index === settings.lang);
+    $('btn-lock').classList.toggle('on', settings.locked);
+    $('btn-tr').classList.toggle('on', settings.translation);
+    $('btn-counts').classList.toggle('on', settings.counts);
+    $('btn-vertical').classList.toggle('on', settings.vertical);
+    for (const b of $('reading').children) b.classList.toggle('on', b.dataset.reading === settings.reading);
+  }
+
+  // ---- background: gradient keyframes by hour, interpolated
+  const KEYS = [
+    [0, '#0b1026', '#1b1f3b'], [4, '#141a3a', '#3a2f4f'], [6, '#e9955c', '#6d5b8e'], [8, '#bfe0f5', '#f6efe0'],
+    [12, '#9ccff0', '#eef6fb'], [16, '#f4d58d', '#a9c9e8'], [18, '#e08a5a', '#4a3b6b'], [20, '#2b2550', '#101433'], [24, '#0b1026', '#1b1f3b']
+  ];
+  const hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+  const mix = (a, b, t) => a.map((x, i) => Math.round(x + (b[i] - x) * t));
+  const css = c => 'rgb(' + c.join(',') + ')';
+  function paint(now) {
+    const hour = now.getHours() + now.getMinutes() / 60;
+    let i = 0;
+    while (KEYS[i + 1][0] <= hour) i++;
+    const t = (hour - KEYS[i][0]) / (KEYS[i + 1][0] - KEYS[i][0]);
+    const top = mix(hex(KEYS[i][1]), hex(KEYS[i + 1][1]), t);
+    const bottom = mix(hex(KEYS[i][2]), hex(KEYS[i + 1][2]), t);
+    document.documentElement.style.setProperty('--bg-top', css(top));
+    document.documentElement.style.setProperty('--bg-bottom', css(bottom));
+    const lum = c => (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]) / 255;
+    document.documentElement.dataset.ink = (lum(top) + lum(bottom)) / 2 > 0.55 ? 'dark' : 'light';
+  }
+
+  // ---- clock loop
+  function tick() {
+    const now = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    $('hm').textContent = pad(now.getHours()) + ':' + pad(now.getMinutes());
+    $('ss').textContent = pad(now.getSeconds());
+    const key = [now.getFullYear(), now.getMonth(), now.getDate(), now.getHours(), now.getMinutes()].join('-');
+    if (key !== minuteKey) {
+      minuteKey = key;
+      shuffle = 0;
+      regenerate(now);
+      paint(now);
+      render();
+    }
+    if (!settings.locked && Date.now() - lastRotate >= ROTATE_MS) nextLang();
+    $('progress').style.width = settings.locked ? '0' : (100 * (Date.now() - lastRotate) / ROTATE_MS) + '%';
+  }
+
+  function nextLang(step) {
+    settings.lang = (settings.lang + (step || 1) + LANGS.length) % LANGS.length;
+    lastRotate = Date.now();
+    save(); render();
+  }
+
+  // ---- controls
+  LANGS.forEach((code, i) => {
+    const b = document.createElement('button');
+    b.textContent = NATIVE[code];
+    b.dataset.index = i;
+    b.setAttribute('lang', code);
+    b.addEventListener('click', () => { settings.lang = i; lastRotate = Date.now(); save(); render(); });
+    $('langs').appendChild(b);
+  });
+  $('verse').addEventListener('click', () => nextLang(1));
+  $('btn-lock').addEventListener('click', () => { settings.locked = !settings.locked; lastRotate = Date.now(); save(); render(); });
+  $('btn-new').addEventListener('click', () => { shuffle++; regenerate(new Date()); render(); });
+  $('btn-tr').addEventListener('click', () => { settings.translation = !settings.translation; save(); render(); });
+  $('btn-counts').addEventListener('click', () => { settings.counts = !settings.counts; save(); render(); });
+  $('btn-vertical').addEventListener('click', () => { settings.vertical = !settings.vertical; save(); render(); });
+  for (const b of $('reading').children) b.addEventListener('click', () => { settings.reading = b.dataset.reading; save(); render(); });
+
+  document.addEventListener('keydown', e => {
+    if (e.target.tagName === 'INPUT' || e.metaKey || e.ctrlKey || e.altKey) return;
+    const k = e.key.toLowerCase();
+    if (k === ' ' || k === 'n') { e.preventDefault(); $('btn-new').click(); }
+    else if (k === 't') $('btn-tr').click();
+    else if (k === 'c') $('btn-counts').click();
+    else if (k === 'l') $('btn-lock').click();
+    else if (k === 'v') $('btn-vertical').click();
+    else if (k === 'arrowright') nextLang(1);
+    else if (k === 'arrowleft') nextLang(-1);
+  });
+
+  // ---- sanity check of the Japanese and Vietnamese banks against the counters (warn only)
+  for (const code of ['ja', 'vi']) {
+    const lang = HAIKU.LANGS[code];
+    for (const e of HAIKU.allEntries(lang)) {
+      const c = lang.count(e);
+      if (c !== e.n) console.warn('count mismatch', code, e.t, e.r || '', 'stored', e.n, 'counted', c);
+    }
+  }
+
+  tick();
+  setInterval(tick, 250);
+  requestAnimationFrame(() => document.body.classList.add('ready')); // color transitions only after the first paint
+})();
+</script>
+</body>
+</html>

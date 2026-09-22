@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Application Tracker</title>
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    --bg: #f6f6f3;
+    --panel: #ffffff;
+    --ink: #1f2933;
+    --muted: #6b7280;
+    --faint: #9aa3ad;
+    --line: #e2e4e8;
+    --accent: #2f6f9f;
+    --soon-bg: #fff3dc;
+    --soon-ink: #8a4b00;
+    --soon-line: #f2c98a;
+    --past-ink: #a0a7b0;
+    --dot-green: #2e9e5b;
+    --dot-amber: #e0a020;
+    --dot-gray: #c4c9cf;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    padding: 20px 16px 48px;
+  }
+  a { color: var(--accent); }
+  .wrap { max-width: 1240px; margin: 0 auto; }
+
+  /* Header */
+  header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 24px; margin-bottom: 16px; }
+  header h1 { font-size: 20px; font-weight: 600; margin: 0; letter-spacing: 0.01em; }
+  header .today { color: var(--muted); }
+  header .summary { width: 100%; color: var(--muted); font-size: 13px; display: flex; gap: 16px; flex-wrap: wrap; }
+  header .summary b { color: var(--ink); font-weight: 600; }
+
+  /* Buttons and inputs */
+  button, select, input[type="file"] { font: inherit; }
+  button {
+    background: var(--panel); color: var(--ink); border: 1px solid var(--line);
+    border-radius: 6px; padding: 4px 10px; cursor: pointer;
+  }
+  button:hover { border-color: var(--faint); }
+  button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  select { padding: 4px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--ink); }
+  label.ctl { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 13px; }
+
+  /* Loader (shown when the CSVs cannot be fetched) */
+  #loader { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 16px; margin-bottom: 20px; }
+  #loader p { margin: 0 0 12px; }
+  #loader .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+  #loader h3 { margin: 0 0 6px; font-size: 14px; font-weight: 600; }
+  #loader textarea { width: 100%; height: 120px; margin-top: 8px; font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; border: 1px solid var(--line); border-radius: 6px; padding: 6px; resize: vertical; }
+  #loader .actions { margin-top: 12px; display: flex; align-items: center; gap: 12px; }
+  #loader .msg { color: var(--muted); font-size: 13px; }
+  #loader .msg.error { color: #a3352b; }
+
+  /* Next up strip */
+  #nextup { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; }
+  .card.soon { background: var(--soon-bg); border-color: var(--soon-line); }
+  .card .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+  .card .name { font-weight: 600; margin: 2px 0 0; }
+  .card .inst { color: var(--muted); font-size: 13px; }
+  .card .count { font-size: 22px; font-weight: 600; margin-top: 8px; font-variant-numeric: tabular-nums; }
+  .card.soon .count { color: var(--soon-ink); }
+  .card .when { color: var(--muted); font-size: 12px; }
+  .card.empty { color: var(--muted); }
+
+  /* Controls */
+  #controls { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; margin-bottom: 12px; }
+
+  /* Main layout */
+  main { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 20px; align-items: start; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+
+  /* Table */
+  .tablewrap { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 600; white-space: nowrap; background: #fafaf8; }
+  tr:last-child td { border-bottom: 0; }
+  tr.past td { color: var(--past-ink); }
+  tr.past .pill { opacity: 0.55; }
+  td.deadline { white-space: nowrap; font-variant-numeric: tabular-nums; }
+  td.deadline .rel { display: block; font-size: 12px; color: var(--muted); }
+  td.deadline .rel.soon { color: var(--soon-ink); font-weight: 600; }
+  td .name { font-weight: 600; }
+  td a.name { text-decoration: none; }
+  td a.name:hover { text-decoration: underline; }
+  td .inst { display: block; color: var(--muted); font-size: 12px; }
+  td .notes { color: var(--muted); font-size: 12px; max-width: 320px; }
+  td.type { text-transform: capitalize; color: var(--muted); white-space: nowrap; }
+  td.empty { text-align: center; color: var(--muted); padding: 24px; }
+
+  /* Status pills */
+  .pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 500; white-space: nowrap; border: 1px solid transparent; }
+  .pill.not_started { background: #eef0f2; color: #4b5563; }
+  .pill.in_progress { background: #e3eef8; color: #1f5a8a; }
+  .pill.submitted { background: #e0f2ec; color: #1d6b4a; }
+  .pill.interview { background: #ede6f8; color: #5b3d99; }
+  .pill.accepted { background: #d9f0d6; color: #256b1f; }
+  .pill.rejected { background: #f9e1de; color: #9b2c22; }
+  .pill.declined { background: #f1ede7; color: #6d5a3f; }
+
+  /* Materials progress */
+  .mat { white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .bar { display: inline-block; width: 56px; height: 6px; background: #eceef1; border-radius: 3px; vertical-align: middle; margin-right: 6px; overflow: hidden; }
+  .bar i { display: block; height: 100%; background: var(--accent); }
+  .bar.full i { background: var(--dot-green); }
+
+  /* Recommender dots */
+  .dots { display: inline-flex; gap: 5px; align-items: center; }
+  .dot { width: 11px; height: 11px; border-radius: 50%; background: var(--dot-gray); display: inline-block; cursor: default; }
+  .dot.submitted { background: var(--dot-green); }
+  .dot.requested { background: var(--dot-amber); }
+  .nodots { color: var(--faint); font-size: 12px; }
+
+  /* Tooltips: any element with a data-tip attribute */
+  [data-tip] { position: relative; }
+  [data-tip]:hover::after, [data-tip]:focus::after {
+    content: attr(data-tip); position: absolute; left: 50%; bottom: calc(100% + 6px); transform: translateX(-50%);
+    background: var(--ink); color: #fff; font-size: 12px; line-height: 1.35; padding: 5px 8px; border-radius: 5px;
+    white-space: pre; z-index: 10; pointer-events: none; text-align: left; font-weight: 400;
+  }
+
+  /* Recommender panel */
+  aside h2 { font-size: 14px; font-weight: 600; margin: 0 0 8px; }
+  .rec { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; margin-bottom: 10px; }
+  .rec h3 { margin: 0; font-size: 13px; font-weight: 600; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .rec h3 small { color: var(--muted); font-weight: 400; font-size: 12px; white-space: nowrap; }
+  .rec ul { list-style: none; margin: 8px 0 0; padding: 0; font-size: 13px; }
+  .rec li { display: flex; gap: 8px; align-items: baseline; padding: 3px 0; border-top: 1px solid var(--line); }
+  .rec li.past { color: var(--past-ink); }
+  .rec li .dot { flex: none; position: relative; top: 1px; }
+  .rec li .app { flex: 1; min-width: 0; }
+  .rec li .app small { display: block; color: var(--muted); font-size: 12px; }
+  .rec li .due { white-space: nowrap; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .rec li .due.soon { color: var(--soon-ink); font-weight: 600; }
+  .rec .none { color: var(--muted); font-size: 13px; margin: 6px 0 0; }
+
+  footer { margin-top: 24px; color: var(--faint); font-size: 12px; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Fellowship and PhD tracker</h1>
+    <span class="today" id="today"></span>
+    <div class="summary" id="summary"></div>
+  </header>
+
+  <section id="loader" hidden>
+    <p id="loader-why"></p>
+    <div class="grid">
+      <div>
+        <h3>applications.csv</h3>
+        <input type="file" id="apps-file" accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values,text/plain">
+        <textarea id="apps-text" placeholder="or paste the contents of applications.csv here" spellcheck="false"></textarea>
+      </div>
+      <div>
+        <h3>recommenders.csv (optional)</h3>
+        <input type="file" id="recs-file" accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values,text/plain">
+        <textarea id="recs-text" placeholder="or paste the contents of recommenders.csv here" spellcheck="false"></textarea>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="primary" id="load-btn">Load</button>
+      <span class="msg" id="loader-msg">Nothing leaves this browser. Files are read locally.</span>
+    </div>
+  </section>
+
+  <section id="nextup" aria-label="Next up"></section>
+
+  <section id="controls" hidden>
+    <label class="ctl">Type
+      <select id="f-type">
+        <option value="all">All</option>
+        <option value="fellowship">Fellowship</option>
+        <option value="phd">PhD</option>
+      </select>
+    </label>
+    <label class="ctl">Status
+      <select id="f-status"><option value="all">All</option></select>
+    </label>
+    <label class="ctl"><input type="checkbox" id="f-hidepast"> Hide past deadlines</label>
+    <span class="ctl" id="row-count"></span>
+    <button id="open-loader" style="margin-left:auto">Load other data</button>
+  </section>
+
+  <main hidden>
+    <div class="tablewrap">
+      <table id="apps">
+        <thead>
+          <tr>
+            <th>Deadline</th>
+            <th>Application</th>
+            <th>Type</th>
+            <th>Status</th>
+            <th>Materials</th>
+            <th>Letters</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <aside>
+      <h2>Recommenders</h2>
+      <div id="recs"></div>
+    </aside>
+  </main>
+
+  <footer>Deadlines count down to <span id="cutoff-time"></span> local time on the deadline date. Countdowns refresh every minute. Data stays on this machine.</footer>
+</div>
+
+<script>
+'use strict';
+
+// ---- Configuration (edit freely) ------------------------------------------
+const CONFIG = {
+  appsFile: 'applications.csv',
+  recsFile: 'recommenders.csv',
+  deadlineHour: 23,    // countdowns run to this local time on the deadline date
+  deadlineMinute: 59,
+  nextUpCount: 3,      // cards in the "Next up" strip
+  soonDays: 7,         // deadlines closer than this are highlighted
+};
+
+const STATUS_LABEL = {
+  not_started: 'Not started',
+  in_progress: 'In progress',
+  submitted: 'Submitted',
+  interview: 'Interview',
+  accepted: 'Accepted',
+  rejected: 'Rejected',
+  declined: 'Declined',
+};
+// Statuses where Jack still has work to do before the deadline.
+const OPEN_STATUSES = new Set(['not_started', 'in_progress']);
+
+// ---- CSV parsing -----------------------------------------------------------
+// Minimal RFC 4180 parser: quoted fields, doubled quotes, newlines inside quotes.
+function parseDelimited(text, delimiter) {
+  const rows = [];
+  let row = [], field = '', inQuotes = false;
+  text = text.replace(/^﻿/, '');
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQuotes) {
+      if (c === '"') {
+        if (text[i + 1] === '"') { field += '"'; i++; } else { inQuotes = false; }
+      } else {
+        field += c;
+      }
+    } else if (c === '"') {
+      inQuotes = true;
+    } else if (c === delimiter) {
+      row.push(field); field = '';
+    } else if (c === '\n' || c === '\r') {
+      if (c === '\r' && text[i + 1] === '\n') i++;
+      row.push(field); field = '';
+      rows.push(row); row = [];
+    } else {
+      field += c;
+    }
+  }
+  if (field !== '' || row.length) { row.push(field); rows.push(row); }
+  return rows.filter(r => r.some(f => f.trim() !== ''));
+}
+
+// Returns an array of objects keyed by the header row. Tab or comma is
+// detected from the header line; ?tsv in the URL forces tab.
+function parseTable(text) {
+  const forceTsv = new URLSearchParams(location.search).has('tsv');
+  const header = text.split(/\r?\n/, 1)[0] || '';
+  const delimiter = forceTsv || (header.includes('\t') && !header.includes(',')) ? '\t' : ',';
+  const rows = parseDelimited(text, delimiter);
+  if (!rows.length) return [];
+  const keys = rows[0].map(k => k.trim().toLowerCase());
+  return rows.slice(1).map(r => {
+    const obj = {};
+    keys.forEach((k, i) => { obj[k] = (r[i] || '').trim(); });
+    return obj;
+  });
+}
+
+// ---- Data shaping ----------------------------------------------------------
+function parseDate(iso) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
+  if (!m) return null;
+  const d = new Date(+m[1], +m[2] - 1, +m[3], CONFIG.deadlineHour, CONFIG.deadlineMinute, 0, 0);
+  return isNaN(d) ? null : d;
+}
+
+function splitList(s) {
+  return (s || '').split(';').map(x => x.trim()).filter(Boolean);
+}
+
+function buildModel(appRows, recRows) {
+  const recsByApp = new Map();
+  const recs = recRows.map(r => ({
+    appId: r.application_id,
+    name: r.recommender || 'Unnamed recommender',
+    requestedOn: r.requested_on || '',
+    submittedOn: r.submitted_on || '',
+    notes: r.notes || '',
+    // state drives the dot color
+    state: r.submitted_on ? 'submitted' : (r.requested_on ? 'requested' : 'not_requested'),
+  }));
+  recs.forEach(r => {
+    if (!recsByApp.has(r.appId)) recsByApp.set(r.appId, []);
+    recsByApp.get(r.appId).push(r);
+  });
+
+  const apps = appRows.map(r => {
+    const required = splitList(r.materials_required);
+    const doneSet = new Set(splitList(r.materials_done).map(x => x.toLowerCase()));
+    const missing = required.filter(m => !doneSet.has(m.toLowerCase()));
+    const status = STATUS_LABEL[r.status] ? r.status : 'not_started';
+    return {
+      id: r.id,
+      name: r.name || '(unnamed)',
+      type: (r.type || '').toLowerCase() === 'phd' ? 'phd' : 'fellowship',
+      institution: r.institution || '',
+      deadline: parseDate(r.deadline),
+      deadlineRaw: r.deadline || '',
+      status,
+      required,
+      doneCount: required.length - missing.length,
+      missing,
+      notes: r.notes || '',
+      url: /^https?:\/\//i.test(r.url || '') ? r.url : '',
+      recs: recsByApp.get(r.id) || [],
+    };
+  });
+  // Sort by deadline; rows without a valid deadline go last.
+  apps.sort((a, b) => (a.deadline ? a.deadline : Infinity) - (b.deadline ? b.deadline : Infinity));
+  recs.forEach(r => { r.app = apps.find(a => a.id === r.appId) || null; });
+  return { apps, recs };
+}
+
+// ---- Formatting ------------------------------------------------------------
+const MIN = 60000, HOUR = 60 * MIN, DAY = 24 * HOUR;
+
+function fmtDate(d) {
+  return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+}
+function fmtToday(d) {
+  return d.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+}
+function fmtShort(d) {
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
+// Days, hours, minutes until a date. Negative once passed.
+function countdown(d, now) {
+  const ms = d - now;
+  const abs = Math.abs(ms);
+  const days = Math.floor(abs / DAY);
+  const hours = Math.floor((abs % DAY) / HOUR);
+  const minutes = Math.floor((abs % HOUR) / MIN);
+  return { ms, days, hours, minutes, past: ms < 0, soon: ms >= 0 && ms < CONFIG.soonDays * DAY };
+}
+
+function fmtCountdown(c) {
+  const parts = [];
+  if (c.days) parts.push(c.days + 'd');
+  parts.push(c.hours + 'h', c.minutes + 'm');
+  return parts.join(' ');
+}
+
+// Relative wording for the table: "in 12 days", "today", "3 days ago".
+function fmtRelative(c) {
+  if (c.past) return c.days === 0 ? 'passed today' : c.days === 1 ? '1 day ago' : c.days + ' days ago';
+  if (c.days === 0) return 'today';
+  if (c.days === 1) return 'tomorrow';
+  return 'in ' + c.days + ' days';
+}
+
+// ---- DOM helpers -----------------------------------------------------------
+// Everything from the CSV goes through textContent or attributes, never innerHTML.
+function el(tag, attrs, ...children) {
+  const node = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (v === null || v === undefined || v === false) continue;
+    if (k === 'class') node.className = v;
+    else if (k === 'text') node.textContent = v;
+    else node.setAttribute(k, v);
+  }
+  for (const c of children) {
+    if (c === null || c === undefined) continue;
+    node.appendChild(typeof c === 'string' ? document.createTextNode(c) : c);
+  }
+  return node;
+}
+function clear(node) { while (node.firstChild) node.removeChild(node.firstChild); }
+
+function recTip(r) {
+  const when = r.state === 'submitted' ? 'submitted ' + r.submittedOn
+    : r.state === 'requested' ? 'requested ' + r.requestedOn + ', not yet submitted'
+    : 'not yet requested';
+  return r.name + ': ' + when + (r.notes ? '\n' + r.notes : '');
+}
+
+// ---- Rendering -------------------------------------------------------------
+const state = { apps: [], recs: [] };
+const $ = id => document.getElementById(id);
+
+function renderAll() {
+  const now = new Date();
+  $('today').textContent = fmtToday(now);
+  renderSummary(now);
+  renderNextUp(now);
+  renderTable(now);
+  renderRecommenders(now);
+}
+
+function renderSummary(now) {
+  const apps = state.apps;
+  const upcoming = apps.filter(a => a.deadline && a.deadline >= now);
+  const soon = upcoming.filter(a => OPEN_STATUSES.has(a.status) && countdown(a.deadline, now).soon);
+  const open = apps.filter(a => OPEN_STATUSES.has(a.status));
+  const lettersPending = state.recs.filter(r => r.state !== 'submitted' && r.app && (!r.app.deadline || r.app.deadline >= now)).length;
+  const box = $('summary');
+  clear(box);
+  const item = (n, label) => el('span', null, el('b', { text: String(n) }), ' ' + label);
+  box.append(
+    item(apps.length, 'applications'),
+    item(open.length, 'still open'),
+    item(upcoming.length, 'upcoming deadlines'),
+    item(soon.length, 'due within ' + CONFIG.soonDays + ' days'),
+    item(lettersPending, 'letters outstanding'),
+  );
+}
+
+function renderNextUp(now) {
+  const box = $('nextup');
+  clear(box);
+  const next = state.apps
+    .filter(a => a.deadline && a.deadline >= now && OPEN_STATUSES.has(a.status))
+    .slice(0, CONFIG.nextUpCount);
+  if (!next.length) {
+    box.appendChild(el('div', { class: 'card empty', text: state.apps.length ? 'No open applications with upcoming deadlines.' : 'No data loaded yet.' }));
+    return;
+  }
+  next.forEach((a, i) => {
+    const c = countdown(a.deadline, now);
+    box.appendChild(el('div', { class: 'card' + (c.soon ? ' soon' : '') },
+      el('div', { class: 'label', text: i === 0 ? 'Next up' : 'Then' }),
+      el('div', { class: 'name', text: a.name }),
+      el('div', { class: 'inst', text: a.institution }),
+      el('div', { class: 'count', text: fmtCountdown(c) }),
+      el('div', { class: 'when', text: fmtDate(a.deadline) + ' · ' + a.doneCount + '/' + a.required.length + ' materials' }),
+    ));
+  });
+}
+
+function currentFilters() {
+  return {
+    type: $('f-type').value,
+    status: $('f-status').value,
+    hidePast: $('f-hidepast').checked,
+  };
+}
+
+function renderTable(now) {
+  const f = currentFilters();
+  const tbody = $('apps').querySelector('tbody');
+  clear(tbody);
+  const rows = state.apps.filter(a =>
+    (f.type === 'all' || a.type === f.type) &&
+    (f.status === 'all' || a.status === f.status) &&
+    !(f.hidePast && a.deadline && a.deadline < now)
+  );
+  $('row-count').textContent = rows.length + ' of ' + state.apps.length + ' shown';
+  if (!rows.length) {
+    tbody.appendChild(el('tr', null, el('td', { class: 'empty', colspan: '7', text: 'No applications match these filters.' })));
+    return;
+  }
+  for (const a of rows) {
+    const c = a.deadline ? countdown(a.deadline, now) : null;
+    const past = c ? c.past : false;
+
+    const deadlineCell = el('td', { class: 'deadline' });
+    if (c) {
+      deadlineCell.append(fmtDate(a.deadline), el('span', { class: 'rel' + (c.soon ? ' soon' : ''), text: fmtRelative(c) + (c.past ? '' : ' · ' + fmtCountdown(c)) }));
+    } else {
+      deadlineCell.append(a.deadlineRaw || 'no deadline', el('span', { class: 'rel', text: 'date not recognized' }));
+    }
+
+    const nameNode = a.url ? el('a', { class: 'name', href: a.url, target: '_blank', rel: 'noopener', text: a.name }) : el('span', { class: 'name', text: a.name });
+    const appCell = el('td', null, nameNode, el('span', { class: 'inst', text: a.institution }));
+
+    const matCell = el('td', { class: 'mat', 'data-tip': a.missing.length ? 'Missing: ' + a.missing.join(', ') : (a.required.length ? 'All materials done' : 'No materials listed') });
+    const pct = a.required.length ? Math.round(100 * a.doneCount / a.required.length) : 0;
+    const bar = el('span', { class: 'bar' + (a.required.length && a.doneCount === a.required.length ? ' full' : '') }, el('i', { style: 'width:' + pct + '%' }));
+    matCell.append(bar, a.doneCount + '/' + a.required.length);
+
+    const dots = el('span', { class: 'dots' });
+    if (a.recs.length) {
+      a.recs.forEach(r => dots.appendChild(el('span', { class: 'dot ' + r.state, 'data-tip': recTip(r), tabindex: '0', 'aria-label': recTip(r) })));
+    } else {
+      dots.appendChild(el('span', { class: 'nodots', text: 'none listed' }));
+    }
+
+    tbody.appendChild(el('tr', { class: past ? 'past' : null, 'data-id': a.id },
+      deadlineCell,
+      appCell,
+      el('td', { class: 'type', text: a.type === 'phd' ? 'PhD' : a.type }),
+      el('td', null, el('span', { class: 'pill ' + a.status, text: STATUS_LABEL[a.status] })),
+      matCell,
+      el('td', null, dots),
+      el('td', null, el('div', { class: 'notes', text: a.notes })),
+    ));
+  }
+}
+
+function renderRecommenders(now) {
+  const box = $('recs');
+  clear(box);
+  const byName = new Map();
+  state.recs.forEach(r => {
+    if (!byName.has(r.name)) byName.set(r.name, []);
+    byName.get(r.name).push(r);
+  });
+  if (!byName.size) {
+    box.appendChild(el('div', { class: 'rec none', text: 'No recommender data loaded.' }));
+    return;
+  }
+  const names = [...byName.keys()].sort((a, b) => a.localeCompare(b));
+  for (const name of names) {
+    const list = byName.get(name);
+    const submitted = list.filter(r => r.state === 'submitted').length;
+    const owed = list.filter(r => r.state !== 'submitted')
+      .sort((a, b) => ((a.app && a.app.deadline) || Infinity) - ((b.app && b.app.deadline) || Infinity));
+    const panel = el('div', { class: 'rec' },
+      el('h3', null, name, el('small', { text: submitted + ' submitted · ' + owed.length + ' owed' })));
+    if (!owed.length) {
+      panel.appendChild(el('p', { class: 'none', text: 'Nothing outstanding.' }));
+    } else {
+      const ul = el('ul');
+      for (const r of owed) {
+        const app = r.app;
+        const c = app && app.deadline ? countdown(app.deadline, now) : null;
+        const detail = r.state === 'requested' ? 'requested ' + r.requestedOn : 'not yet requested';
+        ul.appendChild(el('li', { class: c && c.past ? 'past' : null },
+          el('span', { class: 'dot ' + r.state, 'data-tip': recTip(r) }),
+          el('span', { class: 'app' },
+            app ? app.name : 'Application #' + r.appId + ' (not in applications.csv)',
+            el('small', { text: [app && app.institution, detail, r.notes].filter(Boolean).join(' · ') })),
+          c ? el('span', { class: 'due' + (c.soon ? ' soon' : ''), text: c.past ? 'passed' : fmtShort(app.deadline) }) : null,
+        ));
+      }
+      panel.appendChild(ul);
+    }
+    box.appendChild(panel);
+  }
+}
+
+// ---- Loading ---------------------------------------------------------------
+function applyData(appsText, recsText) {
+  const appRows = parseTable(appsText);
+  if (!appRows.length || !('deadline' in appRows[0]) || !('name' in appRows[0])) {
+    throw new Error('applications data needs at least the columns name and deadline');
+  }
+  const recRows = recsText.trim() ? parseTable(recsText) : [];
+  Object.assign(state, buildModel(appRows, recRows));
+  $('loader').hidden = true;
+  $('controls').hidden = false;
+  document.querySelector('main').hidden = false;
+  renderAll();
+}
+
+function showLoader(why) {
+  $('loader-why').textContent = why;
+  $('loader').hidden = false;
+}
+
+async function fetchText(name) {
+  const res = await fetch(name, { cache: 'no-store' });
+  if (!res.ok) throw new Error(name + ': HTTP ' + res.status);
+  return res.text();
+}
+
+async function loadFromFolder() {
+  // fetch() cannot read file:// URLs, so skip straight to the pickers there.
+  if (location.protocol === 'file:') {
+    showLoader('This page was opened as a file, so it cannot read ' + CONFIG.appsFile + ' on its own. Pick the two files or paste their contents. To skip this step, serve the folder with: python3 -m http.server');
+    return;
+  }
+  try {
+    const appsText = await fetchText(CONFIG.appsFile);
+    // Recommenders are optional; a missing file just means no dots.
+    const recsText = await fetchText(CONFIG.recsFile).catch(() => '');
+    applyData(appsText, recsText);
+  } catch (err) {
+    showLoader('Could not read ' + CONFIG.appsFile + ' next to this page (' + err.message + '). Pick the files or paste their contents below.');
+  }
+}
+
+function wireLoader() {
+  const readInto = (input, textarea) => {
+    input.addEventListener('change', () => {
+      const file = input.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => { textarea.value = reader.result; };
+      reader.readAsText(file);
+    });
+  };
+  readInto($('apps-file'), $('apps-text'));
+  readInto($('recs-file'), $('recs-text'));
+  $('load-btn').addEventListener('click', () => {
+    const msg = $('loader-msg');
+    try {
+      applyData($('apps-text').value, $('recs-text').value);
+      msg.className = 'msg';
+      msg.textContent = 'Loaded.';
+    } catch (err) {
+      msg.className = 'msg error';
+      msg.textContent = 'Could not load: ' + err.message;
+    }
+  });
+  $('open-loader').addEventListener('click', () => {
+    showLoader('Pick different files or paste their contents. The current data stays until you press Load.');
+    $('loader').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+}
+
+function wireControls() {
+  const statusSel = $('f-status');
+  for (const [key, label] of Object.entries(STATUS_LABEL)) {
+    statusSel.appendChild(el('option', { value: key, text: label }));
+  }
+  ['f-type', 'f-status', 'f-hidepast'].forEach(id => $(id).addEventListener('change', renderAll));
+}
+
+// Re-render on the minute so countdowns stay honest.
+function startClock() {
+  const tick = () => { if (state.apps.length) renderAll(); else $('today').textContent = fmtToday(new Date()); };
+  const untilNextMinute = MIN - (Date.now() % MIN);
+  setTimeout(() => { tick(); setInterval(tick, MIN); }, untilNextMinute);
+}
+
+$('cutoff-time').textContent = String(CONFIG.deadlineHour).padStart(2, '0') + ':' + String(CONFIG.deadlineMinute).padStart(2, '0');
+$('today').textContent = fmtToday(new Date());
+wireControls();
+wireLoader();
+startClock();
+loadFromFolder();
+</script>
+</body>
+</html>

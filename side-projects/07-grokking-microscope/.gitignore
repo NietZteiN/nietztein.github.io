@@ -1,0 +1,3 @@
+# Model checkpoints and the training log are recreated by train.py.
+checkpoints/
+__pycache__/

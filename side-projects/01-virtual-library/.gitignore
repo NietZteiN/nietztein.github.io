@@ -1,0 +1,3 @@
+# The real catalog carries personal notes and is never committed.
+# Run import_xlsx.py to recreate it from the workbook.
+data/my-library.csv

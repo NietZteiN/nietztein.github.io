@@ -1,0 +1,3665 @@
+{
+ "source": "transcription of the 1930 Collier guide (daily assignments only, no teasers)",
+ "days": [
+  {
+   "month": 1,
+   "day": 1,
+   "reading": "Franklin's Autobiography",
+   "volume": 1,
+   "pages": "79-85",
+   "teaser": null,
+   "work": "The Autobiography of Benjamin Franklin",
+   "gutenberg_id": 148
+  },
+  {
+   "month": 1,
+   "day": 2,
+   "reading": "Milton's Poems",
+   "volume": 4,
+   "pages": "7-18",
+   "teaser": null,
+   "work": "The Poetical Works of John Milton",
+   "gutenberg_id": 1745
+  },
+  {
+   "month": 1,
+   "day": 3,
+   "reading": "Cicero on Friendship",
+   "volume": 9,
+   "pages": "16-26",
+   "teaser": null,
+   "work": "On Friendship and On Old Age",
+   "gutenberg_id": 2808
+  },
+  {
+   "month": 1,
+   "day": 4,
+   "reading": "Grimm's Fairy Tales",
+   "volume": 17,
+   "pages": "83-90",
+   "teaser": null,
+   "work": "Grimms' Fairy Tales",
+   "gutenberg_id": 2591
+  },
+  {
+   "month": 1,
+   "day": 5,
+   "reading": "Mazzini's Byron and Goethe",
+   "volume": 32,
+   "pages": "377-396",
+   "teaser": null,
+   "work": "Byron and Goethe",
+   "gutenberg_id": null
+  },
+  {
+   "month": 1,
+   "day": 6,
+   "reading": "Virgil's Aeneid",
+   "volume": 13,
+   "pages": "109-127",
+   "teaser": null,
+   "work": "The Aeneid",
+   "gutenberg_id": 228
+  },
+  {
+   "month": 1,
+   "day": 7,
+   "reading": "The Thousand and One Nights",
+   "volume": 16,
+   "pages": "5-13",
+   "teaser": null,
+   "work": "The Thousand and One Nights, Vol. I",
+   "gutenberg_id": 34206
+  },
+  {
+   "month": 1,
+   "day": 8,
+   "reading": "The Book of Job",
+   "volume": 44,
+   "pages": "71-87",
+   "teaser": null,
+   "work": "The Bible (selections: Job, Psalms, Ecclesiastes, Isaiah, Luke, Acts)",
+   "gutenberg_id": 10
+  },
+  {
+   "month": 1,
+   "day": 9,
+   "reading": "Nichol's Sir Francis Drake Revived",
+   "volume": 33,
+   "pages": "135-145",
+   "teaser": null,
+   "work": "Sir Francis Drake Revived",
+   "gutenberg_id": 2854
+  },
+  {
+   "month": 1,
+   "day": 10,
+   "reading": "Euripides' the Bacchae",
+   "volume": 8,
+   "pages": "368-372",
+   "teaser": null,
+   "work": "The Bacchae",
+   "gutenberg_id": 35173
+  },
+  {
+   "month": 1,
+   "day": 11,
+   "reading": "The Federalist",
+   "volume": 43,
+   "pages": "199-207",
+   "teaser": null,
+   "work": "The Federalist Papers (selection)",
+   "gutenberg_id": 1404
+  },
+  {
+   "month": 1,
+   "day": 12,
+   "reading": "Burke on Taste",
+   "volume": 24,
+   "pages": "11-26",
+   "teaser": null,
+   "work": "On the Sublime and Beautiful",
+   "gutenberg_id": 15043
+  },
+  {
+   "month": 1,
+   "day": 13,
+   "reading": "Rousseau's Inquiry on Inequality",
+   "volume": 34,
+   "pages": "215-228",
+   "teaser": null,
+   "work": "A Discourse upon the Origin of Inequality",
+   "gutenberg_id": 11136
+  },
+  {
+   "month": 1,
+   "day": 14,
+   "reading": "The Fundamental Orders of Connecticut",
+   "volume": 43,
+   "pages": "60-65",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 1,
+   "day": 15,
+   "reading": "The Rubaiyat of Omar Khayyam",
+   "volume": 41,
+   "pages": "943-953",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 1,
+   "day": 16,
+   "reading": "Aesop's Fables",
+   "volume": 17,
+   "pages": "43-44; also pp. 31-43",
+   "teaser": null,
+   "work": "Aesop's Fables",
+   "gutenberg_id": 21
+  },
+  {
+   "month": 1,
+   "day": 17,
+   "reading": "Franklin's Autobiography",
+   "volume": 1,
+   "pages": ", pp. 5-15",
+   "teaser": null,
+   "work": "The Autobiography of Benjamin Franklin",
+   "gutenberg_id": 148
+  },
+  {
+   "month": 1,
+   "day": 18,
+   "reading": "Aristophanes' the Frogs",
+   "volume": 8,
+   "pages": "439-449",
+   "teaser": null,
+   "work": "The Frogs",
+   "gutenberg_id": 7998
+  },
+  {
+   "month": 1,
+   "day": 19,
+   "reading": "Poe's The Poetic Principle",
+   "volume": 28,
+   "pages": "371-380",
+   "teaser": null,
+   "work": "Harvard Classics Volume 28: Essays, English and American",
+   "gutenberg_id": 21962
+  },
+  {
+   "month": 1,
+   "day": 20,
+   "reading": "Keats' Eve of St. Agnes",
+   "volume": 41,
+   "pages": "883-893",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 1,
+   "day": 21,
+   "reading": "Andersen's Tales",
+   "volume": 17,
+   "pages": "301-310",
+   "teaser": null,
+   "work": "Andersen's Fairy Tales",
+   "gutenberg_id": 1597
+  },
+  {
+   "month": 1,
+   "day": 22,
+   "reading": "Corneille's Polyeucte",
+   "volume": 26,
+   "pages": "77-87",
+   "teaser": null,
+   "work": "Polyeucte",
+   "gutenberg_id": 2543
+  },
+  {
+   "month": 1,
+   "day": 23,
+   "reading": "Pascal's The Art of Persuasion",
+   "volume": 48,
+   "pages": "400-411",
+   "teaser": null,
+   "work": "Pensees (Thoughts)",
+   "gutenberg_id": 18269
+  },
+  {
+   "month": 1,
+   "day": 24,
+   "reading": "Homer's Odyssey",
+   "volume": 22,
+   "pages": "165-173",
+   "teaser": null,
+   "work": "The Odyssey",
+   "gutenberg_id": 1727
+  },
+  {
+   "month": 1,
+   "day": 25,
+   "reading": "To a Mouse and Burns' other poems",
+   "volume": 6,
+   "pages": "119-120, 388-394",
+   "teaser": null,
+   "work": "Poems and Songs of Robert Burns",
+   "gutenberg_id": 1279
+  },
+  {
+   "month": 1,
+   "day": 26,
+   "reading": "Herodotus' An Account of Egypt",
+   "volume": 33,
+   "pages": "65-75",
+   "teaser": null,
+   "work": "An Account of Egypt",
+   "gutenberg_id": 2131
+  },
+  {
+   "month": 1,
+   "day": 27,
+   "reading": "Dante's Divine Comedy",
+   "volume": 20,
+   "pages": "267-279",
+   "teaser": null,
+   "work": "The Divine Comedy",
+   "gutenberg_id": 8800
+  },
+  {
+   "month": 1,
+   "day": 28,
+   "reading": "Thomas a Kempis",
+   "volume": 7,
+   "pages": "242-249",
+   "teaser": null,
+   "work": "The Imitation of Christ",
+   "gutenberg_id": 1653
+  },
+  {
+   "month": 1,
+   "day": 29,
+   "reading": "Darwin's Voyage of the Beagle",
+   "volume": 29,
+   "pages": "209-221",
+   "teaser": null,
+   "work": "The Voyage of the Beagle",
+   "gutenberg_id": 944
+  },
+  {
+   "month": 1,
+   "day": 30,
+   "reading": "Sophocles' Antigone",
+   "volume": 8,
+   "pages": "255-266",
+   "teaser": null,
+   "work": "Antigone",
+   "gutenberg_id": 31
+  },
+  {
+   "month": 1,
+   "day": 31,
+   "reading": "Don Quixote",
+   "volume": 14,
+   "pages": "60-67",
+   "teaser": null,
+   "work": "Don Quixote",
+   "gutenberg_id": 996
+  },
+  {
+   "month": 2,
+   "day": 1,
+   "reading": "Malory's The Holy Grail",
+   "volume": 35,
+   "pages": "112-123",
+   "teaser": null,
+   "work": "Chronicle and Romance (Froissart, Malory, Holinshed)",
+   "gutenberg_id": 13674
+  },
+  {
+   "month": 2,
+   "day": 2,
+   "reading": "Shakespeare's Hamlet",
+   "volume": 46,
+   "pages": "107-120",
+   "teaser": null,
+   "work": "Hamlet",
+   "gutenberg_id": 1122
+  },
+  {
+   "month": 2,
+   "day": 3,
+   "reading": "Jonson's The Alchemist",
+   "volume": 47,
+   "pages": "543-558",
+   "teaser": null,
+   "work": "The Alchemist",
+   "gutenberg_id": 4081
+  },
+  {
+   "month": 2,
+   "day": 4,
+   "reading": "Carlyle's Characteristics",
+   "volume": 25,
+   "pages": "319-327",
+   "teaser": null,
+   "work": "Characteristics",
+   "gutenberg_id": null
+  },
+  {
+   "month": 2,
+   "day": 5,
+   "reading": "The Thousand and One Nights",
+   "volume": 16,
+   "pages": "243-250",
+   "teaser": null,
+   "work": "The Thousand and One Nights, Vol. I",
+   "gutenberg_id": 34206
+  },
+  {
+   "month": 2,
+   "day": 6,
+   "reading": "Marlowe's Edward the Second",
+   "volume": 46,
+   "pages": "73-89",
+   "teaser": null,
+   "work": "Edward the Second",
+   "gutenberg_id": 20288
+  },
+  {
+   "month": 2,
+   "day": 7,
+   "reading": "Letter to Lord Chesterfield",
+   "volume": 39,
+   "pages": "206-207",
+   "teaser": null,
+   "work": "Prefaces and Prologues to Famous Books",
+   "gutenberg_id": 13182
+  },
+  {
+   "month": 2,
+   "day": 8,
+   "reading": "Burns' Poems",
+   "volume": 6,
+   "pages": "396-406",
+   "teaser": null,
+   "work": "Poems and Songs of Robert Burns",
+   "gutenberg_id": 1279
+  },
+  {
+   "month": 2,
+   "day": 9,
+   "reading": "Tacitus on Germany",
+   "volume": 33,
+   "pages": "93-102",
+   "teaser": null,
+   "work": "Germany (Germania)",
+   "gutenberg_id": 7524
+  },
+  {
+   "month": 2,
+   "day": 10,
+   "reading": "Voltaire's Letters on the English",
+   "volume": 34,
+   "pages": "130-140",
+   "teaser": null,
+   "work": "Letters on the English",
+   "gutenberg_id": 2445
+  },
+  {
+   "month": 2,
+   "day": 11,
+   "reading": "Descartes' Discourse on Method",
+   "volume": 34,
+   "pages": "5-20",
+   "teaser": null,
+   "work": "Discourse on the Method",
+   "gutenberg_id": 59
+  },
+  {
+   "month": 2,
+   "day": 12,
+   "reading": "Lincoln's Writings",
+   "volume": 43,
+   "pages": "415-420",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 2,
+   "day": 13,
+   "reading": "Cellini's Autobiography",
+   "volume": 31,
+   "pages": "68-80",
+   "teaser": null,
+   "work": "The Autobiography of Benvenuto Cellini",
+   "gutenberg_id": 4028
+  },
+  {
+   "month": 2,
+   "day": 14,
+   "reading": "Pascal's Discourse on the Passion of Love",
+   "volume": 48,
+   "pages": "411-421",
+   "teaser": null,
+   "work": "Pensees (Thoughts)",
+   "gutenberg_id": 18269
+  },
+  {
+   "month": 2,
+   "day": 15,
+   "reading": "Dryden's All for Love",
+   "volume": 18,
+   "pages": "53-69",
+   "teaser": null,
+   "work": "All for Love",
+   "gutenberg_id": 2062
+  },
+  {
+   "month": 2,
+   "day": 16,
+   "reading": "Darwin's Origin of Species",
+   "volume": 11,
+   "pages": "264-268",
+   "teaser": null,
+   "work": "The Origin of Species",
+   "gutenberg_id": 2009
+  },
+  {
+   "month": 2,
+   "day": 17,
+   "reading": "Moliere's Tartuffe",
+   "volume": 26,
+   "pages": "199-217",
+   "teaser": null,
+   "work": "Tartuffe",
+   "gutenberg_id": 2027
+  },
+  {
+   "month": 2,
+   "day": 18,
+   "reading": "Treaty with Great Britain",
+   "volume": 43,
+   "pages": "255-264",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 2,
+   "day": 19,
+   "reading": "Buddhist Writings",
+   "volume": 45,
+   "pages": "693-701",
+   "teaser": null,
+   "work": "Buddhist Writings",
+   "gutenberg_id": null
+  },
+  {
+   "month": 2,
+   "day": 20,
+   "reading": "Voltaire's Letters on the English",
+   "volume": 34,
+   "pages": "65-78",
+   "teaser": null,
+   "work": "Letters on the English",
+   "gutenberg_id": 2445
+  },
+  {
+   "month": 2,
+   "day": 21,
+   "reading": "Newman's The Idea of a University",
+   "volume": 28,
+   "pages": "31-39",
+   "teaser": null,
+   "work": "Harvard Classics Volume 28: Essays, English and American",
+   "gutenberg_id": 21962
+  },
+  {
+   "month": 2,
+   "day": 22,
+   "reading": "Burns' Poems",
+   "volume": 6,
+   "pages": "492-494",
+   "teaser": null,
+   "work": "Poems and Songs of Robert Burns",
+   "gutenberg_id": 1279
+  },
+  {
+   "month": 2,
+   "day": 23,
+   "reading": "Stevenson's Samuel Pepys",
+   "volume": 28,
+   "pages": "285-292",
+   "teaser": null,
+   "work": "Harvard Classics Volume 28: Essays, English and American",
+   "gutenberg_id": 21962
+  },
+  {
+   "month": 2,
+   "day": 24,
+   "reading": "Milton's Poems",
+   "volume": 4,
+   "pages": "30-38",
+   "teaser": null,
+   "work": "The Poetical Works of John Milton",
+   "gutenberg_id": 1745
+  },
+  {
+   "month": 2,
+   "day": 25,
+   "reading": "The Shortest Way with Dissenters",
+   "volume": 27,
+   "pages": "133-147",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 2,
+   "day": 26,
+   "reading": "Hugo's Preface to Cromwell",
+   "volume": 39,
+   "pages": "337-349",
+   "teaser": null,
+   "work": "Prefaces and Prologues to Famous Books",
+   "gutenberg_id": 13182
+  },
+  {
+   "month": 2,
+   "day": 27,
+   "reading": "Longfellow's Poems",
+   "volume": 42,
+   "pages": "1264-1280",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 2,
+   "day": 28,
+   "reading": "Montaigne's Essays",
+   "volume": 32,
+   "pages": "29-40",
+   "teaser": null,
+   "work": "Essays (selection)",
+   "gutenberg_id": 3600
+  },
+  {
+   "month": 2,
+   "day": 29,
+   "reading": "Hermann and Dorothea",
+   "volume": 19,
+   "pages": "337; also pp. 395-410",
+   "teaser": null,
+   "work": "Hermann and Dorothea",
+   "gutenberg_id": 1958
+  },
+  {
+   "month": 3,
+   "day": 1,
+   "reading": "The Spectator Club",
+   "volume": 27,
+   "pages": "83-87",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 3,
+   "day": 2,
+   "reading": "Dana's Two Years Before the Mast",
+   "volume": 23,
+   "pages": "112-119",
+   "teaser": null,
+   "work": "Two Years Before the Mast",
+   "gutenberg_id": 2055
+  },
+  {
+   "month": 3,
+   "day": 3,
+   "reading": "Walton's Life of George Herbert",
+   "volume": 15,
+   "pages": "373-382",
+   "teaser": null,
+   "work": "The Lives of Donne and Herbert",
+   "gutenberg_id": null
+  },
+  {
+   "month": 3,
+   "day": 4,
+   "reading": "Penn's Some Fruits of Solitude",
+   "volume": 1,
+   "pages": "321-330",
+   "teaser": null,
+   "work": "Some Fruits of Solitude",
+   "gutenberg_id": null
+  },
+  {
+   "month": 3,
+   "day": 5,
+   "reading": "Cellini's Autobiography",
+   "volume": 31,
+   "pages": "214-224",
+   "teaser": null,
+   "work": "The Autobiography of Benvenuto Cellini",
+   "gutenberg_id": 4028
+  },
+  {
+   "month": 3,
+   "day": 6,
+   "reading": "Poe's The Raven",
+   "volume": 42,
+   "pages": "1227-1230",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 3,
+   "day": 7,
+   "reading": "Bacon's Of Judicature",
+   "volume": 3,
+   "pages": "130-134",
+   "teaser": null,
+   "work": "Essays, Civil and Moral",
+   "gutenberg_id": 575
+  },
+  {
+   "month": 3,
+   "day": 8,
+   "reading": "Cervantes' Don Quixote",
+   "volume": 14,
+   "pages": "307-319",
+   "teaser": null,
+   "work": "Don Quixote",
+   "gutenberg_id": 996
+  },
+  {
+   "month": 3,
+   "day": 9,
+   "reading": "Treatise on Good Manners",
+   "volume": 27,
+   "pages": "99-103",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 3,
+   "day": 10,
+   "reading": "Philaster",
+   "volume": 47,
+   "pages": "667-677",
+   "teaser": null,
+   "work": "Philaster",
+   "gutenberg_id": 10850
+  },
+  {
+   "month": 3,
+   "day": 11,
+   "reading": "Emerson's Compensation",
+   "volume": 5,
+   "pages": "85-92",
+   "teaser": null,
+   "work": "Essays, First Series",
+   "gutenberg_id": 2944
+  },
+  {
+   "month": 3,
+   "day": 12,
+   "reading": "Berkeley's Three Dialogues",
+   "volume": 37,
+   "pages": "228-238",
+   "teaser": null,
+   "work": "Three Dialogues Between Hylas and Philonous",
+   "gutenberg_id": 4724
+  },
+  {
+   "month": 3,
+   "day": 13,
+   "reading": "Manzoni's I Promessi Sposi",
+   "volume": 21,
+   "pages": "318-332",
+   "teaser": null,
+   "work": "The Betrothed (I Promessi Sposi)",
+   "gutenberg_id": 35155
+  },
+  {
+   "month": 3,
+   "day": 14,
+   "reading": "The Holy Grail",
+   "volume": 35,
+   "pages": "194-200",
+   "teaser": null,
+   "work": "Chronicle and Romance (Froissart, Malory, Holinshed)",
+   "gutenberg_id": 13674
+  },
+  {
+   "month": 3,
+   "day": 15,
+   "reading": "Plutarch's Caesar",
+   "volume": 12,
+   "pages": "315-321",
+   "teaser": null,
+   "work": "Plutarch's Lives, Volume I",
+   "gutenberg_id": 14033
+  },
+  {
+   "month": 3,
+   "day": 16,
+   "reading": "Darwin's Voyage of the Beagle",
+   "volume": 29,
+   "pages": "466-475",
+   "teaser": null,
+   "work": "The Voyage of the Beagle",
+   "gutenberg_id": 944
+  },
+  {
+   "month": 3,
+   "day": 17,
+   "reading": "The Poetry of the Celtic Races",
+   "volume": 32,
+   "pages": "174-182",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 3,
+   "day": 18,
+   "reading": "A New Way to Pay Old Debts",
+   "volume": 47,
+   "pages": "859-870",
+   "teaser": null,
+   "work": "A New Way to Pay Old Debts",
+   "gutenberg_id": null
+  },
+  {
+   "month": 3,
+   "day": 19,
+   "reading": "Herodotus' An Account of Egypt",
+   "volume": 33,
+   "pages": "72-84",
+   "teaser": null,
+   "work": "An Account of Egypt",
+   "gutenberg_id": 2131
+  },
+  {
+   "month": 3,
+   "day": 20,
+   "reading": "Voltaire's Letters on the English",
+   "volume": 34,
+   "pages": "113-124",
+   "teaser": null,
+   "work": "Letters on the English",
+   "gutenberg_id": 2445
+  },
+  {
+   "month": 3,
+   "day": 21,
+   "reading": "Virgil's Aeneid",
+   "volume": 13,
+   "pages": "280-292",
+   "teaser": null,
+   "work": "The Aeneid",
+   "gutenberg_id": 228
+  },
+  {
+   "month": 3,
+   "day": 22,
+   "reading": "Goethe's Faust",
+   "volume": 19,
+   "pages": "23-36",
+   "teaser": null,
+   "work": "Faust, Part I",
+   "gutenberg_id": 14591
+  },
+  {
+   "month": 3,
+   "day": 23,
+   "reading": "The Thousand and One Nights",
+   "volume": 16,
+   "pages": "15-24",
+   "teaser": null,
+   "work": "The Thousand and One Nights, Vol. I",
+   "gutenberg_id": 34206
+  },
+  {
+   "month": 3,
+   "day": 24,
+   "reading": "Morris' Defense of Guenevere",
+   "volume": 42,
+   "pages": "1183-1193",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 3,
+   "day": 25,
+   "reading": "Shakespeare's Hamlet",
+   "volume": 46,
+   "pages": "144-158",
+   "teaser": null,
+   "work": "Hamlet",
+   "gutenberg_id": 1122
+  },
+  {
+   "month": 3,
+   "day": 26,
+   "reading": "Aesop&rsquo;s Fables",
+   "volume": 17,
+   "pages": "21-30",
+   "teaser": null,
+   "work": "Aesop's Fables",
+   "gutenberg_id": 21
+  },
+  {
+   "month": 3,
+   "day": 27,
+   "reading": "Stevenson's Truth of Intercourse",
+   "volume": 28,
+   "pages": "277-284",
+   "teaser": null,
+   "work": "Harvard Classics Volume 28: Essays, English and American",
+   "gutenberg_id": 21962
+  },
+  {
+   "month": 3,
+   "day": 28,
+   "reading": "Adam Smith's Wealth of Nations",
+   "volume": 10,
+   "pages": "9-17",
+   "teaser": null,
+   "work": "An Inquiry into the Nature and Causes of the Wealth of Nations",
+   "gutenberg_id": 3300
+  },
+  {
+   "month": 3,
+   "day": 29,
+   "reading": "Epic and Saga",
+   "volume": 49,
+   "pages": "307-317",
+   "teaser": null,
+   "work": "Harvard Classics Volume 49: Epic and Saga",
+   "gutenberg_id": 14019
+  },
+  {
+   "month": 3,
+   "day": 30,
+   "reading": "Manzoni's I Promessi Sposi",
+   "volume": 21,
+   "pages": "500-512",
+   "teaser": null,
+   "work": "The Betrothed (I Promessi Sposi)",
+   "gutenberg_id": 35155
+  },
+  {
+   "month": 3,
+   "day": 31,
+   "reading": "Walton's Life of Dr. Donne",
+   "volume": 15,
+   "pages": "364-369",
+   "teaser": null,
+   "work": "The Lives of Donne and Herbert",
+   "gutenberg_id": null
+  },
+  {
+   "month": 4,
+   "day": 1,
+   "reading": "Browning's Poems",
+   "volume": 42,
+   "pages": "1068-1074",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 4,
+   "day": 2,
+   "reading": "Darwin's Voyage of the Beagle",
+   "volume": 29,
+   "pages": "462-471",
+   "teaser": null,
+   "work": "The Voyage of the Beagle",
+   "gutenberg_id": 944
+  },
+  {
+   "month": 4,
+   "day": 3,
+   "reading": "Walton's Life of George Herbert",
+   "volume": 15,
+   "pages": "392-404",
+   "teaser": null,
+   "work": "The Lives of Donne and Herbert",
+   "gutenberg_id": null
+  },
+  {
+   "month": 4,
+   "day": 4,
+   "reading": "She Stoops to Conquer",
+   "volume": 18,
+   "pages": "205-215",
+   "teaser": null,
+   "work": "She Stoops to Conquer",
+   "gutenberg_id": 383
+  },
+  {
+   "month": 4,
+   "day": 5,
+   "reading": "Hobbes' Leviathan",
+   "volume": 34,
+   "pages": "313-322",
+   "teaser": null,
+   "work": "Leviathan (Part I)",
+   "gutenberg_id": 3207
+  },
+  {
+   "month": 4,
+   "day": 6,
+   "reading": "Marcus Aurelius' Meditations",
+   "volume": 2,
+   "pages": "243-253",
+   "teaser": null,
+   "work": "Meditations",
+   "gutenberg_id": 2680
+  },
+  {
+   "month": 4,
+   "day": 7,
+   "reading": "Wordsworth's Poems",
+   "volume": 41,
+   "pages": "639-651",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 4,
+   "day": 8,
+   "reading": "Aeschylus' the Libation Bearers",
+   "volume": 8,
+   "pages": "111-121",
+   "teaser": null,
+   "work": "The Libation-Bearers",
+   "gutenberg_id": null
+  },
+  {
+   "month": 4,
+   "day": 9,
+   "reading": "Bacon's New Atlantis",
+   "volume": 3,
+   "pages": "145-155",
+   "teaser": null,
+   "work": "The New Atlantis",
+   "gutenberg_id": 2434
+  },
+  {
+   "month": 4,
+   "day": 10,
+   "reading": "First Charter of Virginia",
+   "volume": 43,
+   "pages": "49-58",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 4,
+   "day": 11,
+   "reading": "Goethe's Faust",
+   "volume": 19,
+   "pages": "115-131",
+   "teaser": null,
+   "work": "Faust, Part I",
+   "gutenberg_id": 14591
+  },
+  {
+   "month": 4,
+   "day": 12,
+   "reading": "Berkeley's Three Dialogues",
+   "volume": 37,
+   "pages": "230-240",
+   "teaser": null,
+   "work": "Three Dialogues Between Hylas and Philonous",
+   "gutenberg_id": 4724
+  },
+  {
+   "month": 4,
+   "day": 13,
+   "reading": "Cellini's Autobiography",
+   "volume": 31,
+   "pages": "23-35",
+   "teaser": null,
+   "work": "The Autobiography of Benvenuto Cellini",
+   "gutenberg_id": 4028
+  },
+  {
+   "month": 4,
+   "day": 14,
+   "reading": "Biggs' Drake's Great Armada",
+   "volume": 33,
+   "pages": "229-242",
+   "teaser": null,
+   "work": "Drake's Great Armada",
+   "gutenberg_id": 3334
+  },
+  {
+   "month": 4,
+   "day": 15,
+   "reading": "Whitman's Poems",
+   "volume": 42,
+   "pages": "1412-1420",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 4,
+   "day": 16,
+   "reading": "Dante's Divine Comedy",
+   "volume": 20,
+   "pages": "32-39",
+   "teaser": null,
+   "work": "The Divine Comedy",
+   "gutenberg_id": 8800
+  },
+  {
+   "month": 4,
+   "day": 17,
+   "reading": "Franklin's Autobiography",
+   "volume": 1,
+   "pages": "66-77",
+   "teaser": null,
+   "work": "The Autobiography of Benjamin Franklin",
+   "gutenberg_id": 148
+  },
+  {
+   "month": 4,
+   "day": 18,
+   "reading": "Cervantes' Don Quixote",
+   "volume": 14,
+   "pages": "17-28",
+   "teaser": null,
+   "work": "Don Quixote",
+   "gutenberg_id": 996
+  },
+  {
+   "month": 4,
+   "day": 19,
+   "reading": "Emerson's Concord Hymn",
+   "volume": 42,
+   "pages": "1245-1246",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 4,
+   "day": 20,
+   "reading": "Byron's Poems",
+   "volume": 41,
+   "pages": "801-815",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 4,
+   "day": 21,
+   "reading": "Introduction to English Literature",
+   "volume": 39,
+   "pages": "410-418",
+   "teaser": null,
+   "work": "Prefaces and Prologues to Famous Books",
+   "gutenberg_id": 13182
+  },
+  {
+   "month": 4,
+   "day": 22,
+   "reading": "Fundamental Principles of Morals",
+   "volume": 32,
+   "pages": "310-317",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 4,
+   "day": 23,
+   "reading": "Shakespeare's King Lear",
+   "volume": 46,
+   "pages": "293-303",
+   "teaser": null,
+   "work": "King Lear",
+   "gutenberg_id": 1128
+  },
+  {
+   "month": 4,
+   "day": 24,
+   "reading": "Darwin's Origin of Species",
+   "volume": 11,
+   "pages": "74-86",
+   "teaser": null,
+   "work": "The Origin of Species",
+   "gutenberg_id": 2009
+  },
+  {
+   "month": 4,
+   "day": 25,
+   "reading": "Tacitus' on Germany",
+   "volume": 33,
+   "pages": "106-120",
+   "teaser": null,
+   "work": "Germany (Germania)",
+   "gutenberg_id": 7524
+  },
+  {
+   "month": 4,
+   "day": 26,
+   "reading": "Hume on Miracles",
+   "volume": 37,
+   "pages": "375-385",
+   "teaser": null,
+   "work": "An Enquiry Concerning Human Understanding",
+   "gutenberg_id": 9662
+  },
+  {
+   "month": 4,
+   "day": 27,
+   "reading": "Emerson's Beauty",
+   "volume": 5,
+   "pages": "297-310",
+   "teaser": null,
+   "work": "Essays, First Series",
+   "gutenberg_id": 2944
+  },
+  {
+   "month": 4,
+   "day": 28,
+   "reading": "The Book of Ecclesiastes",
+   "volume": 44,
+   "pages": "335-341",
+   "teaser": null,
+   "work": "The Bible (selections: Job, Psalms, Ecclesiastes, Isaiah, Luke, Acts)",
+   "gutenberg_id": 10
+  },
+  {
+   "month": 4,
+   "day": 29,
+   "reading": "The Thousand and One Nights",
+   "volume": 16,
+   "pages": "231-242",
+   "teaser": null,
+   "work": "The Thousand and One Nights, Vol. I",
+   "gutenberg_id": 34206
+  },
+  {
+   "month": 4,
+   "day": 30,
+   "reading": "Washington's First Inaugural Address",
+   "volume": 43,
+   "pages": "225-228",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 5,
+   "day": 1,
+   "reading": "Persons One Would Wish to Have Seen",
+   "volume": 27,
+   "pages": "270-283",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 5,
+   "day": 2,
+   "reading": "Faraday's MAGNETISM&mdash;ELECTRICITY",
+   "volume": 30,
+   "pages": "61-72",
+   "teaser": null,
+   "work": "The Chemical History of a Candle",
+   "gutenberg_id": 14474
+  },
+  {
+   "month": 5,
+   "day": 3,
+   "reading": "Machiavelli's The Prince",
+   "volume": 36,
+   "pages": "7-17",
+   "teaser": null,
+   "work": "The Prince",
+   "gutenberg_id": 1232
+  },
+  {
+   "month": 5,
+   "day": 4,
+   "reading": "Science and Culture",
+   "volume": 28,
+   "pages": "209-319",
+   "teaser": null,
+   "work": "Harvard Classics Volume 28: Essays, English and American",
+   "gutenberg_id": 21962
+  },
+  {
+   "month": 5,
+   "day": 5,
+   "reading": "Calderon's Life Is a Dream",
+   "volume": 26,
+   "pages": "7-21",
+   "teaser": null,
+   "work": "Life Is a Dream",
+   "gutenberg_id": 2587
+  },
+  {
+   "month": 5,
+   "day": 6,
+   "reading": "Cellini's Autobiography",
+   "volume": 31,
+   "pages": "373-384",
+   "teaser": null,
+   "work": "The Autobiography of Benvenuto Cellini",
+   "gutenberg_id": 4028
+  },
+  {
+   "month": 5,
+   "day": 7,
+   "reading": "Browning's Poems",
+   "volume": 42,
+   "pages": "1074-1078",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 5,
+   "day": 8,
+   "reading": "Sheridan's School for Scandal",
+   "volume": 18,
+   "pages": "164-176",
+   "teaser": null,
+   "work": "The School for Scandal",
+   "gutenberg_id": 1929
+  },
+  {
+   "month": 5,
+   "day": 9,
+   "reading": "Schiller's On Aesthetic Education",
+   "volume": 32,
+   "pages": "209-217",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 5,
+   "day": 10,
+   "reading": "Raleigh's Discovery of Guiana",
+   "volume": 33,
+   "pages": "326-341",
+   "teaser": null,
+   "work": "The Discovery of Guiana",
+   "gutenberg_id": 2272
+  },
+  {
+   "month": 5,
+   "day": 11,
+   "reading": "Webster's The Duchess of Malfi",
+   "volume": 47,
+   "pages": "721-737",
+   "teaser": null,
+   "work": "The Duchess of Malfi",
+   "gutenberg_id": 2232
+  },
+  {
+   "month": 5,
+   "day": 12,
+   "reading": "Rossetti's Poems",
+   "volume": 42,
+   "pages": "1149-1153, 1178-1181",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 5,
+   "day": 13,
+   "reading": "Burns' the Twa Dogs",
+   "volume": 6,
+   "pages": "151-157",
+   "teaser": null,
+   "work": "Poems and Songs of Robert Burns",
+   "gutenberg_id": 1279
+  },
+  {
+   "month": 5,
+   "day": 14,
+   "reading": "Vaccination Against Smallpox",
+   "volume": 38,
+   "pages": "145-154",
+   "teaser": null,
+   "work": "Harvard Classics Volume 38: Scientific Papers (Physiology, Medicine, Surgery, Geology)",
+   "gutenberg_id": 5694
+  },
+  {
+   "month": 5,
+   "day": 15,
+   "reading": "Dante's Divine Comedy",
+   "volume": 20,
+   "pages": "102-114",
+   "teaser": null,
+   "work": "The Divine Comedy",
+   "gutenberg_id": 8800
+  },
+  {
+   "month": 5,
+   "day": 16,
+   "reading": "The Poetry of the Celtic Races",
+   "volume": 32,
+   "pages": "145-155",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 5,
+   "day": 17,
+   "reading": "Plato's Apology of Socrates",
+   "volume": 2,
+   "pages": "24-30",
+   "teaser": null,
+   "work": "Apology",
+   "gutenberg_id": 1656
+  },
+  {
+   "month": 5,
+   "day": 18,
+   "reading": "Andersen's Tales",
+   "volume": 17,
+   "pages": "334-341",
+   "teaser": null,
+   "work": "Andersen's Fairy Tales",
+   "gutenberg_id": 1597
+  },
+  {
+   "month": 5,
+   "day": 19,
+   "reading": "Epictetus' Golden Sayings",
+   "volume": 2,
+   "pages": "128-138",
+   "teaser": null,
+   "work": "The Golden Sayings of Epictetus",
+   "gutenberg_id": 871
+  },
+  {
+   "month": 5,
+   "day": 20,
+   "reading": "Shakespeare's Sonnets",
+   "volume": 40,
+   "pages": "270-276",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 5,
+   "day": 21,
+   "reading": "Pope's Essay on Man",
+   "volume": 40,
+   "pages": "430-440",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 5,
+   "day": 22,
+   "reading": "Manzoni's I Promessi Sposi",
+   "volume": 21,
+   "pages": "7-24",
+   "teaser": null,
+   "work": "The Betrothed (I Promessi Sposi)",
+   "gutenberg_id": 35155
+  },
+  {
+   "month": 5,
+   "day": 23,
+   "reading": "Hood's Poems",
+   "volume": 41,
+   "pages": "907-911",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 5,
+   "day": 24,
+   "reading": "Adam Smith's Wealth of Nations",
+   "volume": 10,
+   "pages": "22-33",
+   "teaser": null,
+   "work": "An Inquiry into the Nature and Causes of the Wealth of Nations",
+   "gutenberg_id": 3300
+  },
+  {
+   "month": 5,
+   "day": 25,
+   "reading": "Emerson's Heroism",
+   "volume": 5,
+   "pages": "121-131",
+   "teaser": null,
+   "work": "Essays, First Series",
+   "gutenberg_id": 2944
+  },
+  {
+   "month": 5,
+   "day": 26,
+   "reading": "Shakespeare's King Lear",
+   "volume": 46,
+   "pages": "215-225",
+   "teaser": null,
+   "work": "King Lear",
+   "gutenberg_id": 1128
+  },
+  {
+   "month": 5,
+   "day": 27,
+   "reading": "The Education of the Human Race",
+   "volume": 32,
+   "pages": "185-195",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 5,
+   "day": 28,
+   "reading": "Moore's Poems",
+   "volume": 41,
+   "pages": "816-822",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 5,
+   "day": 29,
+   "reading": "The Thousand and One Nights",
+   "volume": 16,
+   "pages": "177-184",
+   "teaser": null,
+   "work": "The Thousand and One Nights, Vol. I",
+   "gutenberg_id": 34206
+  },
+  {
+   "month": 5,
+   "day": 30,
+   "reading": "Longfellow's The Building of the Ship",
+   "volume": 42,
+   "pages": "1280-1290",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 5,
+   "day": 31,
+   "reading": "Whitman's Preface to Leaves of Grass",
+   "volume": 39,
+   "pages": "388-398",
+   "teaser": null,
+   "work": "Prefaces and Prologues to Famous Books",
+   "gutenberg_id": 13182
+  },
+  {
+   "month": 6,
+   "day": 1,
+   "reading": "Marlowe's Dr. Faustus",
+   "volume": 19,
+   "pages": "241-250",
+   "teaser": null,
+   "work": "The Tragical History of Doctor Faustus",
+   "gutenberg_id": 779
+  },
+  {
+   "month": 6,
+   "day": 2,
+   "reading": "Rousseau's A Savoyard Vicar",
+   "volume": 34,
+   "pages": "239-249",
+   "teaser": null,
+   "work": "Profession of Faith of a Savoyard Vicar",
+   "gutenberg_id": null
+  },
+  {
+   "month": 6,
+   "day": 3,
+   "reading": "Motion of the Heart and Blood",
+   "volume": 38,
+   "pages": "75-86",
+   "teaser": null,
+   "work": "Harvard Classics Volume 38: Scientific Papers (Physiology, Medicine, Surgery, Geology)",
+   "gutenberg_id": 5694
+  },
+  {
+   "month": 6,
+   "day": 4,
+   "reading": "Goethe's Egmont",
+   "volume": 19,
+   "pages": "253-259",
+   "teaser": null,
+   "work": "Egmont",
+   "gutenberg_id": 1945
+  },
+  {
+   "month": 6,
+   "day": 5,
+   "reading": "Adam Smith's Wealth of Nations",
+   "volume": 10,
+   "pages": "149-157",
+   "teaser": null,
+   "work": "An Inquiry into the Nature and Causes of the Wealth of Nations",
+   "gutenberg_id": 3300
+  },
+  {
+   "month": 6,
+   "day": 6,
+   "reading": "Dana's Two Years Before the Mast",
+   "volume": 23,
+   "pages": "285-295",
+   "teaser": null,
+   "work": "Two Years Before the Mast",
+   "gutenberg_id": 2055
+  },
+  {
+   "month": 6,
+   "day": 7,
+   "reading": "Hamlet",
+   "volume": 46,
+   "pages": "176-183",
+   "teaser": null,
+   "work": "Hamlet",
+   "gutenberg_id": 1122
+  },
+  {
+   "month": 6,
+   "day": 8,
+   "reading": "Woolman's Journal",
+   "volume": 1,
+   "pages": "302-312",
+   "teaser": null,
+   "work": "The Journal of John Woolman",
+   "gutenberg_id": 37311
+  },
+  {
+   "month": 6,
+   "day": 9,
+   "reading": "The Psalms",
+   "volume": 44,
+   "pages": "168-179",
+   "teaser": null,
+   "work": "The Bible (selections: Job, Psalms, Ecclesiastes, Isaiah, Luke, Acts)",
+   "gutenberg_id": 10
+  },
+  {
+   "month": 6,
+   "day": 10,
+   "reading": "Sophocles' Oedipus, King of Thebes",
+   "volume": 8,
+   "pages": "209-223",
+   "teaser": null,
+   "work": "Oedipus the King",
+   "gutenberg_id": 31
+  },
+  {
+   "month": 6,
+   "day": 11,
+   "reading": "Spenser's The Epithalamium",
+   "volume": 40,
+   "pages": "234-245",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 6,
+   "day": 12,
+   "reading": "The Bhagavad-gita",
+   "volume": 45,
+   "pages": "785-798",
+   "teaser": null,
+   "work": "The Song Celestial (Bhagavad-Gita)",
+   "gutenberg_id": 2388
+  },
+  {
+   "month": 6,
+   "day": 13,
+   "reading": "Plutarch's Aristides",
+   "volume": 12,
+   "pages": "85-94",
+   "teaser": null,
+   "work": "Plutarch's Lives, Volume I",
+   "gutenberg_id": 14033
+  },
+  {
+   "month": 6,
+   "day": 14,
+   "reading": "Plato's Crito",
+   "volume": 2,
+   "pages": "31-43",
+   "teaser": null,
+   "work": "Crito",
+   "gutenberg_id": 13726
+  },
+  {
+   "month": 6,
+   "day": 15,
+   "reading": "Froissart's Wat Tyler's Rebellion",
+   "volume": 35,
+   "pages": "60-72",
+   "teaser": null,
+   "work": "Chronicle and Romance (Froissart, Malory, Holinshed)",
+   "gutenberg_id": 13674
+  },
+  {
+   "month": 6,
+   "day": 16,
+   "reading": "Byron's Manfred",
+   "volume": 18,
+   "pages": "415-428",
+   "teaser": null,
+   "work": "Manfred",
+   "gutenberg_id": null
+  },
+  {
+   "month": 6,
+   "day": 17,
+   "reading": "Eliot's Brief Narrative",
+   "volume": 43,
+   "pages": "138-146",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 6,
+   "day": 18,
+   "reading": "Grimm's Tales",
+   "volume": 17,
+   "pages": "98-104",
+   "teaser": null,
+   "work": "Grimms' Fairy Tales",
+   "gutenberg_id": 2591
+  },
+  {
+   "month": 6,
+   "day": 19,
+   "reading": "Holinshed's Our English Dogs",
+   "volume": 35,
+   "pages": "350-356",
+   "teaser": null,
+   "work": "Chronicle and Romance (Froissart, Malory, Holinshed)",
+   "gutenberg_id": 13674
+  },
+  {
+   "month": 6,
+   "day": 20,
+   "reading": "Darwin's Voyage of the Beagle",
+   "volume": 29,
+   "pages": "403-413",
+   "teaser": null,
+   "work": "The Voyage of the Beagle",
+   "gutenberg_id": 944
+  },
+  {
+   "month": 6,
+   "day": 21,
+   "reading": "Ruskin's Sesame",
+   "volume": 28,
+   "pages": "99-110",
+   "teaser": null,
+   "work": "Harvard Classics Volume 28: Essays, English and American",
+   "gutenberg_id": 21962
+  },
+  {
+   "month": 6,
+   "day": 22,
+   "reading": "Pliny's Letters",
+   "volume": 9,
+   "pages": "311-314",
+   "teaser": null,
+   "work": "Letters",
+   "gutenberg_id": 2811
+  },
+  {
+   "month": 6,
+   "day": 23,
+   "reading": "Mill's Autobiography",
+   "volume": 25,
+   "pages": "9-20",
+   "teaser": null,
+   "work": "Autobiography",
+   "gutenberg_id": 10378
+  },
+  {
+   "month": 6,
+   "day": 24,
+   "reading": "The Thousand and One Nights",
+   "volume": 16,
+   "pages": "120-133",
+   "teaser": null,
+   "work": "The Thousand and One Nights, Vol. I",
+   "gutenberg_id": 34206
+  },
+  {
+   "month": 6,
+   "day": 25,
+   "reading": "Herrick's Poems",
+   "volume": 40,
+   "pages": "334-340",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 6,
+   "day": 26,
+   "reading": "Beowulf",
+   "volume": 49,
+   "pages": "45-50",
+   "teaser": null,
+   "work": "Beowulf",
+   "gutenberg_id": 16328
+  },
+  {
+   "month": 6,
+   "day": 27,
+   "reading": "Bacon's Essays",
+   "volume": 3,
+   "pages": "22-26",
+   "teaser": null,
+   "work": "Essays, Civil and Moral",
+   "gutenberg_id": 575
+  },
+  {
+   "month": 6,
+   "day": 28,
+   "reading": "Darwin's Voyage of the Beagle",
+   "volume": 29,
+   "pages": "51-60",
+   "teaser": null,
+   "work": "The Voyage of the Beagle",
+   "gutenberg_id": 944
+  },
+  {
+   "month": 6,
+   "day": 29,
+   "reading": "Shakespeare's Macbeth",
+   "volume": 46,
+   "pages": "357-365",
+   "teaser": null,
+   "work": "Macbeth",
+   "gutenberg_id": 1129
+  },
+  {
+   "month": 6,
+   "day": 30,
+   "reading": "Mill's On Liberty",
+   "volume": 25,
+   "pages": "195-203",
+   "teaser": null,
+   "work": "On Liberty",
+   "gutenberg_id": 34901
+  },
+  {
+   "month": 7,
+   "day": 1,
+   "reading": "Darwin's Origin of Species",
+   "volume": 11,
+   "pages": "5-17",
+   "teaser": null,
+   "work": "The Origin of Species",
+   "gutenberg_id": 2009
+  },
+  {
+   "month": 7,
+   "day": 2,
+   "reading": "Plutarch's Cesar",
+   "volume": 12,
+   "pages": "310-315",
+   "teaser": null,
+   "work": "Plutarch's Lives, Volume I",
+   "gutenberg_id": 14033
+  },
+  {
+   "month": 7,
+   "day": 3,
+   "reading": "Haskell's Battle of Gettysburg",
+   "volume": 43,
+   "pages": "326-335",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 7,
+   "day": 4,
+   "reading": "Declaration of Independence",
+   "volume": 43,
+   "pages": "150-155",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 7,
+   "day": 5,
+   "reading": "The Thousand and One Nights",
+   "volume": 16,
+   "pages": "149-162",
+   "teaser": null,
+   "work": "The Thousand and One Nights, Vol. I",
+   "gutenberg_id": 34206
+  },
+  {
+   "month": 7,
+   "day": 6,
+   "reading": "More's Utopia",
+   "volume": 36,
+   "pages": "135-142",
+   "teaser": null,
+   "work": "Utopia",
+   "gutenberg_id": 2130
+  },
+  {
+   "month": 7,
+   "day": 7,
+   "reading": "Sheridan's School for Scandal",
+   "volume": 18,
+   "pages": "115-128",
+   "teaser": null,
+   "work": "The School for Scandal",
+   "gutenberg_id": 1929
+  },
+  {
+   "month": 7,
+   "day": 8,
+   "reading": "Shelley's Cenci",
+   "volume": 18,
+   "pages": "288-300",
+   "teaser": null,
+   "work": "The Cenci",
+   "gutenberg_id": null
+  },
+  {
+   "month": 7,
+   "day": 9,
+   "reading": "Bacon's Essays",
+   "volume": 3,
+   "pages": "7-19",
+   "teaser": null,
+   "work": "Essays, Civil and Moral",
+   "gutenberg_id": 575
+  },
+  {
+   "month": 7,
+   "day": 10,
+   "reading": "The Voyages to Vinland",
+   "volume": 43,
+   "pages": "14-20",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 7,
+   "day": 11,
+   "reading": "Newcomb's The Extent of the Universe",
+   "volume": 30,
+   "pages": "311-321",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 7,
+   "day": 12,
+   "reading": "Thoreau's Walking",
+   "volume": 28,
+   "pages": "395-405",
+   "teaser": null,
+   "work": "Harvard Classics Volume 28: Essays, English and American",
+   "gutenberg_id": 21962
+  },
+  {
+   "month": 7,
+   "day": 13,
+   "reading": "Plutarch's Pericles",
+   "volume": 12,
+   "pages": "47-57",
+   "teaser": null,
+   "work": "Plutarch's Lives, Volume I",
+   "gutenberg_id": 14033
+  },
+  {
+   "month": 7,
+   "day": 14,
+   "reading": "Burke's The Revolution in France",
+   "volume": 24,
+   "pages": "268-273",
+   "teaser": null,
+   "work": "Reflections on the Revolution in France",
+   "gutenberg_id": 15679
+  },
+  {
+   "month": 7,
+   "day": 15,
+   "reading": "Holinshed's Chronicles",
+   "volume": 35,
+   "pages": "271-288",
+   "teaser": null,
+   "work": "Chronicle and Romance (Froissart, Malory, Holinshed)",
+   "gutenberg_id": 13674
+  },
+  {
+   "month": 7,
+   "day": 16,
+   "reading": "The Koran",
+   "volume": 45,
+   "pages": "908-913",
+   "teaser": null,
+   "work": "Chapters from the Koran",
+   "gutenberg_id": null
+  },
+  {
+   "month": 7,
+   "day": 17,
+   "reading": "Racine's Phaedre",
+   "volume": 26,
+   "pages": "133-148",
+   "teaser": null,
+   "work": "Phaedra",
+   "gutenberg_id": 1977
+  },
+  {
+   "month": 7,
+   "day": 18,
+   "reading": "Browning's Blot in the 'scutcheon",
+   "volume": 18,
+   "pages": "359-368",
+   "teaser": null,
+   "work": "A Blot in the 'Scutcheon",
+   "gutenberg_id": 2880
+  },
+  {
+   "month": 7,
+   "day": 19,
+   "reading": "Raleigh's Discovery of Guiana",
+   "volume": 33,
+   "pages": "311-320",
+   "teaser": null,
+   "work": "The Discovery of Guiana",
+   "gutenberg_id": 2272
+  },
+  {
+   "month": 7,
+   "day": 20,
+   "reading": "Bunyan's Pilgrim's Progress",
+   "volume": 15,
+   "pages": "59-69",
+   "teaser": null,
+   "work": "The Pilgrim's Progress",
+   "gutenberg_id": 131
+  },
+  {
+   "month": 7,
+   "day": 21,
+   "reading": "Burns' Poems",
+   "volume": 6,
+   "pages": "70-79",
+   "teaser": null,
+   "work": "Poems and Songs of Robert Burns",
+   "gutenberg_id": 1279
+  },
+  {
+   "month": 7,
+   "day": 22,
+   "reading": "Homer's Odyssey",
+   "volume": 22,
+   "pages": "120-129",
+   "teaser": null,
+   "work": "The Odyssey",
+   "gutenberg_id": 1727
+  },
+  {
+   "month": 7,
+   "day": 23,
+   "reading": "Bacon's Essays",
+   "volume": 3,
+   "pages": "65-72",
+   "teaser": null,
+   "work": "Essays, Civil and Moral",
+   "gutenberg_id": 575
+  },
+  {
+   "month": 7,
+   "day": 24,
+   "reading": "Darwin's The Voyage of the Beagle",
+   "volume": 29,
+   "pages": "306-316",
+   "teaser": null,
+   "work": "The Voyage of the Beagle",
+   "gutenberg_id": 944
+  },
+  {
+   "month": 7,
+   "day": 25,
+   "reading": "Lay of Brynhild",
+   "volume": 49,
+   "pages": "391-395",
+   "teaser": null,
+   "work": "Harvard Classics Volume 49: Epic and Saga",
+   "gutenberg_id": 14019
+  },
+  {
+   "month": 7,
+   "day": 26,
+   "reading": "Thomas a Kempis",
+   "volume": 7,
+   "pages": "205-211",
+   "teaser": null,
+   "work": "The Imitation of Christ",
+   "gutenberg_id": 1653
+  },
+  {
+   "month": 7,
+   "day": 27,
+   "reading": "On the Antiseptic Principles",
+   "volume": 38,
+   "pages": "257-267",
+   "teaser": null,
+   "work": "Harvard Classics Volume 38: Scientific Papers (Physiology, Medicine, Surgery, Geology)",
+   "gutenberg_id": 5694
+  },
+  {
+   "month": 7,
+   "day": 28,
+   "reading": "Cowley's Of Agriculture",
+   "volume": 27,
+   "pages": "61-69",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 7,
+   "day": 29,
+   "reading": "Emerson's Stonehenge",
+   "volume": 5,
+   "pages": "453-462",
+   "teaser": null,
+   "work": "Essays, First Series",
+   "gutenberg_id": 2944
+  },
+  {
+   "month": 7,
+   "day": 30,
+   "reading": "Gilbert's Voyage to Newfoundland",
+   "volume": 33,
+   "pages": "263-273",
+   "teaser": null,
+   "work": "Sir Humphrey Gilbert's Voyage to Newfoundland",
+   "gutenberg_id": 3338
+  },
+  {
+   "month": 7,
+   "day": 31,
+   "reading": "Defoe's Education of Women",
+   "volume": 27,
+   "pages": "148-150",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 8,
+   "day": 1,
+   "reading": "Calvin's Dedication",
+   "volume": 39,
+   "pages": "27-33",
+   "teaser": null,
+   "work": "Prefaces and Prologues to Famous Books",
+   "gutenberg_id": 13182
+  },
+  {
+   "month": 8,
+   "day": 2,
+   "reading": "Drummond's Poems",
+   "volume": 40,
+   "pages": "326-330",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 8,
+   "day": 3,
+   "reading": "Virgil's Aeneid",
+   "volume": 13,
+   "pages": "110-117",
+   "teaser": null,
+   "work": "The Aeneid",
+   "gutenberg_id": 228
+  },
+  {
+   "month": 8,
+   "day": 4,
+   "reading": "Andersen's Tales",
+   "volume": 17,
+   "pages": "221-230",
+   "teaser": null,
+   "work": "Andersen's Fairy Tales",
+   "gutenberg_id": 1597
+  },
+  {
+   "month": 8,
+   "day": 5,
+   "reading": "Burns' Cotters' Saturday Night",
+   "volume": 6,
+   "pages": "134-140",
+   "teaser": null,
+   "work": "Poems and Songs of Robert Burns",
+   "gutenberg_id": 1279
+  },
+  {
+   "month": 8,
+   "day": 6,
+   "reading": "Tennyson's Locksley Hall",
+   "volume": 42,
+   "pages": "979-986",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 8,
+   "day": 7,
+   "reading": "Plato's Phaedo",
+   "volume": 2,
+   "pages": "45-54",
+   "teaser": null,
+   "work": "Phaedo",
+   "gutenberg_id": 1658
+  },
+  {
+   "month": 8,
+   "day": 8,
+   "reading": "Homer's Odyssey",
+   "volume": 22,
+   "pages": "133-144",
+   "teaser": null,
+   "work": "The Odyssey",
+   "gutenberg_id": 1727
+  },
+  {
+   "month": 8,
+   "day": 9,
+   "reading": "Walton's Life of Dr. Donne",
+   "volume": 15,
+   "pages": "326-334",
+   "teaser": null,
+   "work": "The Lives of Donne and Herbert",
+   "gutenberg_id": null
+  },
+  {
+   "month": 8,
+   "day": 10,
+   "reading": "Burke's The Revolution in France",
+   "volume": 24,
+   "pages": "143-157",
+   "teaser": null,
+   "work": "Reflections on the Revolution in France",
+   "gutenberg_id": 15679
+  },
+  {
+   "month": 8,
+   "day": 11,
+   "reading": "Epictetus' Golden Sayings",
+   "volume": 2,
+   "pages": "176-182",
+   "teaser": null,
+   "work": "The Golden Sayings of Epictetus",
+   "gutenberg_id": 871
+  },
+  {
+   "month": 8,
+   "day": 12,
+   "reading": "Lowell's Poems",
+   "volume": 42,
+   "pages": "1376-1379",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 8,
+   "day": 13,
+   "reading": "Southey's After Blenheim and Other Poems",
+   "volume": 41,
+   "pages": "732-735",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 8,
+   "day": 14,
+   "reading": "Dana's Two Years Before the Mast",
+   "volume": 23,
+   "pages": "30-37",
+   "teaser": null,
+   "work": "Two Years Before the Mast",
+   "gutenberg_id": 2055
+  },
+  {
+   "month": 8,
+   "day": 15,
+   "reading": "The Song of Roland",
+   "volume": 49,
+   "pages": "166-173",
+   "teaser": null,
+   "work": "The Song of Roland",
+   "gutenberg_id": 391
+  },
+  {
+   "month": 8,
+   "day": 16,
+   "reading": "The Psalms",
+   "volume": 44,
+   "pages": "286-295",
+   "teaser": null,
+   "work": "The Bible (selections: Job, Psalms, Ecclesiastes, Isaiah, Luke, Acts)",
+   "gutenberg_id": 10
+  },
+  {
+   "month": 8,
+   "day": 17,
+   "reading": "Luther's Address to the Nobility",
+   "volume": 36,
+   "pages": "263-275",
+   "teaser": null,
+   "work": "The Ninety-Five Theses",
+   "gutenberg_id": 274
+  },
+  {
+   "month": 8,
+   "day": 18,
+   "reading": "Cellini's Autobiography",
+   "volume": 31,
+   "pages": "312-323",
+   "teaser": null,
+   "work": "The Autobiography of Benvenuto Cellini",
+   "gutenberg_id": 4028
+  },
+  {
+   "month": 8,
+   "day": 19,
+   "reading": "Pare's Journeys in Diverse Places",
+   "volume": 38,
+   "pages": "50-58",
+   "teaser": null,
+   "work": "Harvard Classics Volume 38: Scientific Papers (Physiology, Medicine, Surgery, Geology)",
+   "gutenberg_id": 5694
+  },
+  {
+   "month": 8,
+   "day": 20,
+   "reading": "Milton's Paradise Lost",
+   "volume": 4,
+   "pages": "154-164",
+   "teaser": null,
+   "work": "Paradise Lost",
+   "gutenberg_id": 20
+  },
+  {
+   "month": 8,
+   "day": 21,
+   "reading": "Confessions of St. Augustine",
+   "volume": 7,
+   "pages": "118-126",
+   "teaser": null,
+   "work": "The Confessions of St. Augustine",
+   "gutenberg_id": 3296
+  },
+  {
+   "month": 8,
+   "day": 22,
+   "reading": "Dana's Two Years Before the Mast",
+   "volume": 23,
+   "pages": "99-111",
+   "teaser": null,
+   "work": "Two Years Before the Mast",
+   "gutenberg_id": 2055
+  },
+  {
+   "month": 8,
+   "day": 23,
+   "reading": "Burke's On the Sublime and Beautiful",
+   "volume": 24,
+   "pages": "78-88",
+   "teaser": null,
+   "work": "On the Sublime and Beautiful",
+   "gutenberg_id": 15043
+  },
+  {
+   "month": 8,
+   "day": 24,
+   "reading": "Pliny's Letters",
+   "volume": 9,
+   "pages": "284-291",
+   "teaser": null,
+   "work": "Letters",
+   "gutenberg_id": 2811
+  },
+  {
+   "month": 8,
+   "day": 25,
+   "reading": "Kelvin's Tides",
+   "volume": 30,
+   "pages": "274-285",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 8,
+   "day": 26,
+   "reading": "Froissart's Chronicles",
+   "volume": 35,
+   "pages": "27-33",
+   "teaser": null,
+   "work": "Chronicle and Romance (Froissart, Malory, Holinshed)",
+   "gutenberg_id": 13674
+  },
+  {
+   "month": 8,
+   "day": 27,
+   "reading": "Burns' Poems and Songs",
+   "volume": 6,
+   "pages": "317, 417, 442, 511",
+   "teaser": null,
+   "work": "Poems and Songs of Robert Burns",
+   "gutenberg_id": 1279
+  },
+  {
+   "month": 8,
+   "day": 28,
+   "reading": "Goethe's Faust",
+   "volume": 19,
+   "pages": "158-167",
+   "teaser": null,
+   "work": "Faust, Part I",
+   "gutenberg_id": 14591
+  },
+  {
+   "month": 8,
+   "day": 29,
+   "reading": "Plutarch's Antony",
+   "volume": 12,
+   "pages": "339-349",
+   "teaser": null,
+   "work": "Plutarch's Lives, Volume I",
+   "gutenberg_id": 14033
+  },
+  {
+   "month": 8,
+   "day": 30,
+   "reading": "Marcus Aurelius' Meditations",
+   "volume": 2,
+   "pages": "222-228",
+   "teaser": null,
+   "work": "Meditations",
+   "gutenberg_id": 2680
+  },
+  {
+   "month": 8,
+   "day": 31,
+   "reading": "Emerson's American Scholar",
+   "volume": 3,
+   "pages": "5-15",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 9,
+   "day": 1,
+   "reading": "Penn's Some Fruits of Solitude",
+   "volume": 1,
+   "pages": "321-331",
+   "teaser": null,
+   "work": "Some Fruits of Solitude",
+   "gutenberg_id": null
+  },
+  {
+   "month": 9,
+   "day": 2,
+   "reading": "Dryden's All for Love",
+   "volume": 18,
+   "pages": "88-100",
+   "teaser": null,
+   "work": "All for Love",
+   "gutenberg_id": 2062
+  },
+  {
+   "month": 9,
+   "day": 3,
+   "reading": "Treaty with Great Britain",
+   "volume": 43,
+   "pages": "174-179",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 9,
+   "day": 4,
+   "reading": "Voltaire's Letters on the English",
+   "volume": 34,
+   "pages": "85-93",
+   "teaser": null,
+   "work": "Letters on the English",
+   "gutenberg_id": 2445
+  },
+  {
+   "month": 9,
+   "day": 5,
+   "reading": "Darwin's Origin of Species",
+   "volume": 11,
+   "pages": ", pp. 353-357",
+   "teaser": null,
+   "work": "The Origin of Species",
+   "gutenberg_id": 2009
+  },
+  {
+   "month": 9,
+   "day": 6,
+   "reading": "Carlyle's Sir Walter Scott",
+   "volume": 25,
+   "pages": "393-403",
+   "teaser": null,
+   "work": "Characteristics",
+   "gutenberg_id": null
+  },
+  {
+   "month": 9,
+   "day": 7,
+   "reading": "Destruction of Da Derga's Hostel",
+   "volume": 49,
+   "pages": "199-209",
+   "teaser": null,
+   "work": "Harvard Classics Volume 49: Epic and Saga",
+   "gutenberg_id": 14019
+  },
+  {
+   "month": 9,
+   "day": 8,
+   "reading": "Helmholtz's Ice and Glaciers",
+   "volume": 30,
+   "pages": "211-223",
+   "teaser": null,
+   "work": "On the Conservation of Force",
+   "gutenberg_id": null
+  },
+  {
+   "month": 9,
+   "day": 9,
+   "reading": "Emerson's Nature",
+   "volume": 5,
+   "pages": "223-230",
+   "teaser": null,
+   "work": "Essays, First Series",
+   "gutenberg_id": 2944
+  },
+  {
+   "month": 9,
+   "day": 10,
+   "reading": "Holmes' Poems",
+   "volume": 42,
+   "pages": "1365-1370",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 9,
+   "day": 11,
+   "reading": "Adam Smith's Wealth of Nations",
+   "volume": 10,
+   "pages": "66-74",
+   "teaser": null,
+   "work": "An Inquiry into the Nature and Causes of the Wealth of Nations",
+   "gutenberg_id": 3300
+  },
+  {
+   "month": 9,
+   "day": 12,
+   "reading": "Sonnets From the Portuguese",
+   "volume": 41,
+   "pages": "923-932",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 9,
+   "day": 13,
+   "reading": "Bunyan's Pilgrim's Progress",
+   "volume": 15,
+   "pages": "13-23",
+   "teaser": null,
+   "work": "The Pilgrim's Progress",
+   "gutenberg_id": 131
+  },
+  {
+   "month": 9,
+   "day": 14,
+   "reading": "Dante's Divine Comedy",
+   "volume": 20,
+   "pages": "387-395",
+   "teaser": null,
+   "work": "The Divine Comedy",
+   "gutenberg_id": 8800
+  },
+  {
+   "month": 9,
+   "day": 15,
+   "reading": "Washington's Farewell Address",
+   "volume": 43,
+   "pages": "233-249",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 9,
+   "day": 16,
+   "reading": "Holinshed's Chronicles",
+   "volume": 35,
+   "pages": "363-370",
+   "teaser": null,
+   "work": "Chronicle and Romance (Froissart, Malory, Holinshed)",
+   "gutenberg_id": 13674
+  },
+  {
+   "month": 9,
+   "day": 17,
+   "reading": "Whittier's Poems",
+   "volume": 42,
+   "pages": "1351-1364",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 9,
+   "day": 18,
+   "reading": "Dana's Two Years Before the Mast",
+   "volume": 23,
+   "pages": "348-356",
+   "teaser": null,
+   "work": "Two Years Before the Mast",
+   "gutenberg_id": 2055
+  },
+  {
+   "month": 9,
+   "day": 19,
+   "reading": "Cervantes' Don Quixote",
+   "volume": 14,
+   "pages": "48-54",
+   "teaser": null,
+   "work": "Don Quixote",
+   "gutenberg_id": 996
+  },
+  {
+   "month": 9,
+   "day": 20,
+   "reading": "The Koran",
+   "volume": 45,
+   "pages": "967-974",
+   "teaser": null,
+   "work": "Chapters from the Koran",
+   "gutenberg_id": null
+  },
+  {
+   "month": 9,
+   "day": 21,
+   "reading": "Virgil's Aeneid",
+   "volume": 13,
+   "pages": "207-218",
+   "teaser": null,
+   "work": "The Aeneid",
+   "gutenberg_id": 228
+  },
+  {
+   "month": 9,
+   "day": 22,
+   "reading": "Froissart's Chronicles",
+   "volume": 35,
+   "pages": "42-53",
+   "teaser": null,
+   "work": "Chronicle and Romance (Froissart, Malory, Holinshed)",
+   "gutenberg_id": 13674
+  },
+  {
+   "month": 9,
+   "day": 23,
+   "reading": "Montaigne's To Learn How to Die",
+   "volume": 32,
+   "pages": "9-22",
+   "teaser": null,
+   "work": "Essays (selection)",
+   "gutenberg_id": 3600
+  },
+  {
+   "month": 9,
+   "day": 24,
+   "reading": "Plutarch's Themistocles",
+   "volume": 12,
+   "pages": "13-23",
+   "teaser": null,
+   "work": "Plutarch's Lives, Volume I",
+   "gutenberg_id": 14033
+  },
+  {
+   "month": 9,
+   "day": 25,
+   "reading": "Mill's Autobiography",
+   "volume": 25,
+   "pages": "116-120, 149",
+   "teaser": null,
+   "work": "Autobiography",
+   "gutenberg_id": 10378
+  },
+  {
+   "month": 9,
+   "day": 26,
+   "reading": "Cervantes' Don Quixote",
+   "volume": 14,
+   "pages": "29-35",
+   "teaser": null,
+   "work": "Don Quixote",
+   "gutenberg_id": 996
+  },
+  {
+   "month": 9,
+   "day": 27,
+   "reading": "Pascal's Thoughts",
+   "volume": 48,
+   "pages": "181-192",
+   "teaser": null,
+   "work": "Pensees (Thoughts)",
+   "gutenberg_id": 18269
+  },
+  {
+   "month": 9,
+   "day": 28,
+   "reading": "Pasteur's The Germ Theory",
+   "volume": 38,
+   "pages": "364-370",
+   "teaser": null,
+   "work": "Harvard Classics Volume 38: Scientific Papers (Physiology, Medicine, Surgery, Geology)",
+   "gutenberg_id": 5694
+  },
+  {
+   "month": 9,
+   "day": 29,
+   "reading": "Sayings of Confucius",
+   "volume": 44,
+   "pages": "5-14",
+   "teaser": null,
+   "work": "Confucian Analects",
+   "gutenberg_id": 4094
+  },
+  {
+   "month": 9,
+   "day": 30,
+   "reading": "Emerson's Manners",
+   "volume": 5,
+   "pages": "199-208",
+   "teaser": null,
+   "work": "Essays, First Series",
+   "gutenberg_id": 2944
+  },
+  {
+   "month": 10,
+   "day": 1,
+   "reading": "Machiavelli's The Prince",
+   "volume": 36,
+   "pages": "36-44",
+   "teaser": null,
+   "work": "The Prince",
+   "gutenberg_id": 1232
+  },
+  {
+   "month": 10,
+   "day": 2,
+   "reading": "Darwin's Voyage of the Beagle",
+   "volume": 29,
+   "pages": "107-111",
+   "teaser": null,
+   "work": "The Voyage of the Beagle",
+   "gutenberg_id": 944
+  },
+  {
+   "month": 10,
+   "day": 3,
+   "reading": "Chaucer's Poems",
+   "volume": 40,
+   "pages": "11-20",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 10,
+   "day": 4,
+   "reading": "Plutarch's Demosthenes",
+   "volume": 12,
+   "pages": "196-205",
+   "teaser": null,
+   "work": "Plutarch's Lives, Volume I",
+   "gutenberg_id": 14033
+  },
+  {
+   "month": 10,
+   "day": 5,
+   "reading": "Newman's University Life at Athens",
+   "volume": 28,
+   "pages": "51-61",
+   "teaser": null,
+   "work": "Harvard Classics Volume 28: Essays, English and American",
+   "gutenberg_id": 21962
+  },
+  {
+   "month": 10,
+   "day": 6,
+   "reading": "Burke's Revolution in France",
+   "volume": 24,
+   "pages": "208-217",
+   "teaser": null,
+   "work": "Reflections on the Revolution in France",
+   "gutenberg_id": 15679
+  },
+  {
+   "month": 10,
+   "day": 7,
+   "reading": "The Journal of John Woolman",
+   "volume": 1,
+   "pages": "283-288",
+   "teaser": null,
+   "work": "The Journal of John Woolman",
+   "gutenberg_id": 37311
+  },
+  {
+   "month": 10,
+   "day": 8,
+   "reading": "Fielding's Preface to Joseph Andrews",
+   "volume": 39,
+   "pages": "176-181",
+   "teaser": null,
+   "work": "Prefaces and Prologues to Famous Books",
+   "gutenberg_id": 13182
+  },
+  {
+   "month": 10,
+   "day": 9,
+   "reading": "Latin Hymns",
+   "volume": 45,
+   "pages": "546-556; also pp. 567-568",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 10,
+   "day": 10,
+   "reading": "Cervantes' Don Quixote",
+   "volume": 14,
+   "pages": "252-266",
+   "teaser": null,
+   "work": "Don Quixote",
+   "gutenberg_id": 996
+  },
+  {
+   "month": 10,
+   "day": 11,
+   "reading": "Virgil's Aeneid",
+   "volume": 13,
+   "pages": "178-188",
+   "teaser": null,
+   "work": "The Aeneid",
+   "gutenberg_id": 228
+  },
+  {
+   "month": 10,
+   "day": 12,
+   "reading": "Letter of Columbus",
+   "volume": 43,
+   "pages": "21-27",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 10,
+   "day": 13,
+   "reading": "Marcus Aurelius' Meditations",
+   "volume": 2,
+   "pages": "193-199",
+   "teaser": null,
+   "work": "Meditations",
+   "gutenberg_id": 2680
+  },
+  {
+   "month": 10,
+   "day": 14,
+   "reading": "Adam Smith's Wealth of Nations",
+   "volume": 10,
+   "pages": "395-404",
+   "teaser": null,
+   "work": "An Inquiry into the Nature and Causes of the Wealth of Nations",
+   "gutenberg_id": 3300
+  },
+  {
+   "month": 10,
+   "day": 15,
+   "reading": "Vespucci's Account of His First Voyage",
+   "volume": 43,
+   "pages": "28-44",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 10,
+   "day": 16,
+   "reading": "Hippocrates' Oath and Law",
+   "volume": 38,
+   "pages": "3-5",
+   "teaser": null,
+   "work": "Harvard Classics Volume 38: Scientific Papers (Physiology, Medicine, Surgery, Geology)",
+   "gutenberg_id": 5694
+  },
+  {
+   "month": 10,
+   "day": 17,
+   "reading": "Browne's Religio Medici",
+   "volume": 3,
+   "pages": "253-265",
+   "teaser": null,
+   "work": "Religio Medici",
+   "gutenberg_id": null
+  },
+  {
+   "month": 10,
+   "day": 18,
+   "reading": "Shelley's Poems",
+   "volume": 41,
+   "pages": "829-835",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 10,
+   "day": 19,
+   "reading": "Hunt's Essays",
+   "volume": 27,
+   "pages": "285-295",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 10,
+   "day": 20,
+   "reading": "Homer's Odysseus",
+   "volume": 22,
+   "pages": "68-80",
+   "teaser": null,
+   "work": "The Odyssey",
+   "gutenberg_id": 1727
+  },
+  {
+   "month": 10,
+   "day": 21,
+   "reading": "Cicero's On Old Age",
+   "volume": 9,
+   "pages": "45-56",
+   "teaser": null,
+   "work": "On Friendship and On Old Age",
+   "gutenberg_id": 2808
+  },
+  {
+   "month": 10,
+   "day": 22,
+   "reading": "Thackeray's Jonathan Swift",
+   "volume": 28,
+   "pages": "23-28",
+   "teaser": null,
+   "work": "Harvard Classics Volume 28: Essays, English and American",
+   "gutenberg_id": 21962
+  },
+  {
+   "month": 10,
+   "day": 23,
+   "reading": "Plutarch's Caesar",
+   "volume": 12,
+   "pages": "264-273",
+   "teaser": null,
+   "work": "Plutarch's Lives, Volume I",
+   "gutenberg_id": 14033
+  },
+  {
+   "month": 10,
+   "day": 24,
+   "reading": "Aeschylus' Agamemnon",
+   "volume": 8,
+   "pages": "52-64",
+   "teaser": null,
+   "work": "Agamemnon",
+   "gutenberg_id": 14417
+  },
+  {
+   "month": 10,
+   "day": 25,
+   "reading": "Macaulay's Machiavelli",
+   "volume": 27,
+   "pages": "363-372",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 10,
+   "day": 26,
+   "reading": "Franklin's Autobiography",
+   "volume": 1,
+   "pages": "14-21",
+   "teaser": null,
+   "work": "The Autobiography of Benjamin Franklin",
+   "gutenberg_id": 148
+  },
+  {
+   "month": 10,
+   "day": 27,
+   "reading": "Buddhist Writings",
+   "volume": 45,
+   "pages": "661-674",
+   "teaser": null,
+   "work": "Buddhist Writings",
+   "gutenberg_id": null
+  },
+  {
+   "month": 10,
+   "day": 28,
+   "reading": "Some Thoughts Concerning Education",
+   "volume": 37,
+   "pages": "128-136",
+   "teaser": null,
+   "work": "Some Thoughts Concerning Education",
+   "gutenberg_id": null
+  },
+  {
+   "month": 10,
+   "day": 29,
+   "reading": "Keats' Poems",
+   "volume": 41,
+   "pages": "874-882",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 10,
+   "day": 30,
+   "reading": "Lyell's The Progress of Geology",
+   "volume": 38,
+   "pages": "385-391",
+   "teaser": null,
+   "work": "Harvard Classics Volume 38: Scientific Papers (Physiology, Medicine, Surgery, Geology)",
+   "gutenberg_id": 5694
+  },
+  {
+   "month": 10,
+   "day": 31,
+   "reading": "Burns' Poems",
+   "volume": 6,
+   "pages": "110-119",
+   "teaser": null,
+   "work": "Poems and Songs of Robert Burns",
+   "gutenberg_id": 1279
+  },
+  {
+   "month": 11,
+   "day": 1,
+   "reading": "Shakespeare's The Tempest",
+   "volume": 46,
+   "pages": "397-410",
+   "teaser": null,
+   "work": "The Tempest",
+   "gutenberg_id": 1135
+  },
+  {
+   "month": 11,
+   "day": 2,
+   "reading": "Dante's Divine Comedy",
+   "volume": 20,
+   "pages": "13-20",
+   "teaser": null,
+   "work": "The Divine Comedy",
+   "gutenberg_id": 8800
+  },
+  {
+   "month": 11,
+   "day": 3,
+   "reading": "Pliny's Letters",
+   "volume": 9,
+   "pages": "404-406",
+   "teaser": null,
+   "work": "Letters",
+   "gutenberg_id": 2811
+  },
+  {
+   "month": 11,
+   "day": 4,
+   "reading": "Corneille's Polyeucte",
+   "volume": 26,
+   "pages": "87-97",
+   "teaser": null,
+   "work": "Polyeucte",
+   "gutenberg_id": 2543
+  },
+  {
+   "month": 11,
+   "day": 5,
+   "reading": "Roper's Life of Sir Thomas More",
+   "volume": 36,
+   "pages": "89-99",
+   "teaser": null,
+   "work": "Utopia",
+   "gutenberg_id": 2130
+  },
+  {
+   "month": 11,
+   "day": 6,
+   "reading": "Faraday's Force of Gravitation",
+   "volume": 30,
+   "pages": "13-21",
+   "teaser": null,
+   "work": "The Forces of Matter",
+   "gutenberg_id": null
+  },
+  {
+   "month": 11,
+   "day": 7,
+   "reading": "The Thousand and One Nights",
+   "volume": 16,
+   "pages": "100-107",
+   "teaser": null,
+   "work": "The Thousand and One Nights, Vol. I",
+   "gutenberg_id": 34206
+  },
+  {
+   "month": 11,
+   "day": 8,
+   "reading": "Milton's Paradise Regained",
+   "volume": 4,
+   "pages": "359-369",
+   "teaser": null,
+   "work": "Paradise Lost",
+   "gutenberg_id": 20
+  },
+  {
+   "month": 11,
+   "day": 9,
+   "reading": "The Psalms",
+   "volume": 44,
+   "pages": "318-327",
+   "teaser": null,
+   "work": "The Bible (selections: Job, Psalms, Ecclesiastes, Isaiah, Luke, Acts)",
+   "gutenberg_id": 10
+  },
+  {
+   "month": 11,
+   "day": 10,
+   "reading": "Goldsmith's The Deserted Village",
+   "volume": 41,
+   "pages": "509-520",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 11,
+   "day": 11,
+   "reading": "Whitman's Poems",
+   "volume": 42,
+   "pages": "1402-1412",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 11,
+   "day": 12,
+   "reading": "Milton's Paradise Lost",
+   "volume": 4,
+   "pages": "278-290",
+   "teaser": null,
+   "work": "Paradise Lost",
+   "gutenberg_id": 20
+  },
+  {
+   "month": 11,
+   "day": 13,
+   "reading": "Confessions of St. Augustine",
+   "volume": 7,
+   "pages": "31-38",
+   "teaser": null,
+   "work": "The Confessions of St. Augustine",
+   "gutenberg_id": 3296
+  },
+  {
+   "month": 11,
+   "day": 14,
+   "reading": "Lyell's Uniformity of Change",
+   "volume": 38,
+   "pages": "398-405",
+   "teaser": null,
+   "work": "Harvard Classics Volume 38: Scientific Papers (Physiology, Medicine, Surgery, Geology)",
+   "gutenberg_id": 5694
+  },
+  {
+   "month": 11,
+   "day": 15,
+   "reading": "Manzoni's I Promessi Sposi",
+   "volume": 21,
+   "pages": "450-460",
+   "teaser": null,
+   "work": "The Betrothed (I Promessi Sposi)",
+   "gutenberg_id": 35155
+  },
+  {
+   "month": 11,
+   "day": 16,
+   "reading": "Two Years Before the Mast",
+   "volume": 23,
+   "pages": "164-168",
+   "teaser": null,
+   "work": "Two Years Before the Mast",
+   "gutenberg_id": 2055
+  },
+  {
+   "month": 11,
+   "day": 17,
+   "reading": "Carlyle's Sir Walter Scott",
+   "volume": 25,
+   "pages": "410-420",
+   "teaser": null,
+   "work": "Characteristics",
+   "gutenberg_id": null
+  },
+  {
+   "month": 11,
+   "day": 18,
+   "reading": "Schiller's Wilhelm Tell",
+   "volume": 26,
+   "pages": "441-449",
+   "teaser": null,
+   "work": "Wilhelm Tell",
+   "gutenberg_id": null
+  },
+  {
+   "month": 11,
+   "day": 19,
+   "reading": "Tennyson's Morte D'arthur",
+   "volume": 42,
+   "pages": "986-992",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 11,
+   "day": 20,
+   "reading": "Grimm's Fairy Tales",
+   "volume": 17,
+   "pages": "90-98",
+   "teaser": null,
+   "work": "Grimms' Fairy Tales",
+   "gutenberg_id": 2591
+  },
+  {
+   "month": 11,
+   "day": 21,
+   "reading": "Voltaire's Letters",
+   "volume": 34,
+   "pages": "93-97",
+   "teaser": null,
+   "work": "Letters on the English",
+   "gutenberg_id": 2445
+  },
+  {
+   "month": 11,
+   "day": 22,
+   "reading": "Virgil's Aeneid",
+   "volume": 13,
+   "pages": "167-177",
+   "teaser": null,
+   "work": "The Aeneid",
+   "gutenberg_id": 228
+  },
+  {
+   "month": 11,
+   "day": 23,
+   "reading": "Pascal's Thoughts",
+   "volume": 48,
+   "pages": "26-36",
+   "teaser": null,
+   "work": "Pensees (Thoughts)",
+   "gutenberg_id": 18269
+  },
+  {
+   "month": 11,
+   "day": 24,
+   "reading": "Darwin's Origin of Species",
+   "volume": 11,
+   "pages": "23-30",
+   "teaser": null,
+   "work": "The Origin of Species",
+   "gutenberg_id": 2009
+  },
+  {
+   "month": 11,
+   "day": 25,
+   "reading": "Dekker's The Shoemaker's Holiday",
+   "volume": 47,
+   "pages": "469-483",
+   "teaser": null,
+   "work": "The Shoemaker's Holiday",
+   "gutenberg_id": null
+  },
+  {
+   "month": 11,
+   "day": 26,
+   "reading": "Lamb on the Tragedies of Shakespeare",
+   "volume": 27,
+   "pages": "299-310",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 11,
+   "day": 27,
+   "reading": "Sir Thomas More's Utopia",
+   "volume": 36,
+   "pages": "191-204",
+   "teaser": null,
+   "work": "Utopia",
+   "gutenberg_id": 2130
+  },
+  {
+   "month": 11,
+   "day": 28,
+   "reading": "Blake's Poems",
+   "volume": 41,
+   "pages": "583-592",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 11,
+   "day": 29,
+   "reading": "Hume's Of the Origin of Ideas",
+   "volume": 37,
+   "pages": "299-303",
+   "teaser": null,
+   "work": "An Enquiry Concerning Human Understanding",
+   "gutenberg_id": 9662
+  },
+  {
+   "month": 11,
+   "day": 30,
+   "reading": "Swift's Essay on Conversation",
+   "volume": 27,
+   "pages": "91-98",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 12,
+   "day": 1,
+   "reading": "Berkeley's Three Dialogues",
+   "volume": 37,
+   "pages": "189-199",
+   "teaser": null,
+   "work": "Three Dialogues Between Hylas and Philonous",
+   "gutenberg_id": 4724
+  },
+  {
+   "month": 12,
+   "day": 2,
+   "reading": "The Holy Grail",
+   "volume": 35,
+   "pages": "128-134",
+   "teaser": null,
+   "work": "Chronicle and Romance (Froissart, Malory, Holinshed)",
+   "gutenberg_id": 13674
+  },
+  {
+   "month": 12,
+   "day": 3,
+   "reading": "The Birth of the Buddha",
+   "volume": 45,
+   "pages": "603-612",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 12,
+   "day": 4,
+   "reading": "Virgil's Aeneid",
+   "volume": 13,
+   "pages": "152-162",
+   "teaser": null,
+   "work": "The Aeneid",
+   "gutenberg_id": 228
+  },
+  {
+   "month": 12,
+   "day": 5,
+   "reading": "Christina Rossetti's Poems",
+   "volume": 42,
+   "pages": "1181-1183",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 12,
+   "day": 6,
+   "reading": "Addison's Essays",
+   "volume": 27,
+   "pages": "73-80",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 12,
+   "day": 7,
+   "reading": "Plutarch's Cicero",
+   "volume": 12,
+   "pages": "222-231",
+   "teaser": null,
+   "work": "Plutarch's Lives, Volume I",
+   "gutenberg_id": 14033
+  },
+  {
+   "month": 12,
+   "day": 8,
+   "reading": "Levana and Our Ladies of Sorrow",
+   "volume": 27,
+   "pages": "319-325",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 12,
+   "day": 9,
+   "reading": "The Fugitive Slave Act",
+   "volume": 43,
+   "pages": "306-312",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 12,
+   "day": 10,
+   "reading": "Cellini's Autobiography",
+   "volume": 31,
+   "pages": "62-72",
+   "teaser": null,
+   "work": "The Autobiography of Benvenuto Cellini",
+   "gutenberg_id": 4028
+  },
+  {
+   "month": 12,
+   "day": 11,
+   "reading": "Plutarch's Alcibiades",
+   "volume": 12,
+   "pages": "106-117",
+   "teaser": null,
+   "work": "Plutarch's Lives, Volume I",
+   "gutenberg_id": 14033
+  },
+  {
+   "month": 12,
+   "day": 12,
+   "reading": "Browning's Poems",
+   "volume": 42,
+   "pages": "1066-1068",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 12,
+   "day": 13,
+   "reading": "Drake's Voyage Round the World",
+   "volume": 33,
+   "pages": "199-208",
+   "teaser": null,
+   "work": "Sir Francis Drake's Famous Voyage Round the World",
+   "gutenberg_id": 2991
+  },
+  {
+   "month": 12,
+   "day": 14,
+   "reading": "Marvell's Poems",
+   "volume": 40,
+   "pages": "370-379",
+   "teaser": null,
+   "work": null,
+   "gutenberg_id": null
+  },
+  {
+   "month": 12,
+   "day": 15,
+   "reading": "Homer's Odyssey",
+   "volume": 22,
+   "pages": "145-153",
+   "teaser": null,
+   "work": "The Odyssey",
+   "gutenberg_id": 1727
+  },
+  {
+   "month": 12,
+   "day": 16,
+   "reading": "Burke's The Sublime and Beautiful",
+   "volume": 24,
+   "pages": "37-48",
+   "teaser": null,
+   "work": "On the Sublime and Beautiful",
+   "gutenberg_id": 15043
+  },
+  {
+   "month": 12,
+   "day": 17,
+   "reading": "Confessions of St. Augustine",
+   "volume": 7,
+   "pages": "150-160",
+   "teaser": null,
+   "work": "The Confessions of St. Augustine",
+   "gutenberg_id": 3296
+  },
+  {
+   "month": 12,
+   "day": 18,
+   "reading": "Some Thoughts Concerning Education",
+   "volume": 37,
+   "pages": "136-145",
+   "teaser": null,
+   "work": "Some Thoughts Concerning Education",
+   "gutenberg_id": null
+  },
+  {
+   "month": 12,
+   "day": 19,
+   "reading": "Milton's Samson Agonistes",
+   "volume": 4,
+   "pages": "444-459",
+   "teaser": null,
+   "work": "The Poetical Works of John Milton",
+   "gutenberg_id": 1745
+  },
+  {
+   "month": 12,
+   "day": 20,
+   "reading": "Herodotus' An Account of Egypt",
+   "volume": 33,
+   "pages": "7-17",
+   "teaser": null,
+   "work": "An Account of Egypt",
+   "gutenberg_id": 2131
+  },
+  {
+   "month": 12,
+   "day": 21,
+   "reading": "Bunyan's Pilgrim's Progress",
+   "volume": 15,
+   "pages": "306-318",
+   "teaser": null,
+   "work": "The Pilgrim's Progress",
+   "gutenberg_id": 131
+  },
+  {
+   "month": 12,
+   "day": 22,
+   "reading": "Darwin's Voyage of the Beagle",
+   "volume": 29,
+   "pages": "425-434",
+   "teaser": null,
+   "work": "The Voyage of the Beagle",
+   "gutenberg_id": 944
+  },
+  {
+   "month": 12,
+   "day": 23,
+   "reading": "Sainte-Beuve's What Is a Classic?",
+   "volume": 32,
+   "pages": "121-133",
+   "teaser": null,
+   "work": "What Is a Classic?",
+   "gutenberg_id": null
+  },
+  {
+   "month": 12,
+   "day": 24,
+   "reading": "Holinshed's Chronicles",
+   "volume": 35,
+   "pages": "266-270",
+   "teaser": null,
+   "work": "Chronicle and Romance (Froissart, Malory, Holinshed)",
+   "gutenberg_id": 13674
+  },
+  {
+   "month": 12,
+   "day": 25,
+   "reading": "Gospel of St. Luke",
+   "volume": 44,
+   "pages": "357-360",
+   "teaser": null,
+   "work": "The Bible (selections: Job, Psalms, Ecclesiastes, Isaiah, Luke, Acts)",
+   "gutenberg_id": 10
+  },
+  {
+   "month": 12,
+   "day": 26,
+   "reading": "Shakespeare's King Lear",
+   "volume": 46,
+   "pages": "288-300",
+   "teaser": null,
+   "work": "King Lear",
+   "gutenberg_id": 1128
+  },
+  {
+   "month": 12,
+   "day": 27,
+   "reading": "Darwin's Voyage of the Beagle",
+   "volume": 29,
+   "pages": "376-389",
+   "teaser": null,
+   "work": "The Voyage of the Beagle",
+   "gutenberg_id": 944
+  },
+  {
+   "month": 12,
+   "day": 28,
+   "reading": "Drake's Great Armada",
+   "volume": 33,
+   "pages": "229-240",
+   "teaser": null,
+   "work": "Drake's Great Armada",
+   "gutenberg_id": 3334
+  },
+  {
+   "month": 12,
+   "day": 29,
+   "reading": "Homer's Odyssey",
+   "volume": 22,
+   "pages": "296-309",
+   "teaser": null,
+   "work": "The Odyssey",
+   "gutenberg_id": 1727
+  },
+  {
+   "month": 12,
+   "day": 30,
+   "reading": "Dana's Two Years Before the Mast",
+   "volume": 23,
+   "pages": "77-86",
+   "teaser": null,
+   "work": "Two Years Before the Mast",
+   "gutenberg_id": 2055
+  },
+  {
+   "month": 12,
+   "day": 31,
+   "reading": "Carlyle's Inaugural Address",
+   "volume": 25,
+   "pages": "364-374",
+   "teaser": null,
+   "work": "Inaugural Address at Edinburgh",
+   "gutenberg_id": null
+  }
+ ]
+}

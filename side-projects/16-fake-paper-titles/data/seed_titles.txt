@@ -1,0 +1,564 @@
+# Hand-curated seed of real NLP and ML paper titles, one per line.
+# This file exists only because the sandbox that built the project could not
+# reach arxiv.org, so ../03-arxiv-digest/data/titles.txt had 55 lines.
+# Replace or outgrow it by running ../03-arxiv-digest/collect_titles.py daily;
+# titles.py merges both files and drops duplicates. Lines starting with # are ignored.
+Attention Is All You Need
+BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding
+Language Models are Unsupervised Multitask Learners
+Improving Language Understanding by Generative Pre-Training
+RoBERTa: A Robustly Optimized BERT Pretraining Approach
+ALBERT: A Lite BERT for Self-supervised Learning of Language Representations
+DistilBERT, a distilled version of BERT: smaller, faster, cheaper and lighter
+ELECTRA: Pre-training Text Encoders as Discriminators Rather Than Generators
+XLNet: Generalized Autoregressive Pretraining for Language Understanding
+Exploring the Limits of Transfer Learning with a Unified Text-to-Text Transformer
+BART: Denoising Sequence-to-Sequence Pre-training for Natural Language Generation, Translation, and Comprehension
+Sequence to Sequence Learning with Neural Networks
+Neural Machine Translation by Jointly Learning to Align and Translate
+Effective Approaches to Attention-based Neural Machine Translation
+Efficient Estimation of Word Representations in Vector Space
+Distributed Representations of Words and Phrases and their Compositionality
+GloVe: Global Vectors for Word Representation
+Deep contextualized word representations
+Enriching Word Vectors with Subword Information
+Long Short-Term Memory
+Learning Phrase Representations using RNN Encoder-Decoder for Statistical Machine Translation
+Neural Machine Translation of Rare Words with Subword Units
+SentencePiece: A simple and language independent subword tokenizer and detokenizer for Neural Text Processing
+ByT5: Towards a token-free future with pre-trained byte-to-byte models
+Character-Aware Neural Language Models
+Layer Normalization
+Dropout: A Simple Way to Prevent Neural Networks from Overfitting
+Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift
+Adam: A Method for Stochastic Optimization
+Decoupled Weight Decay Regularization
+Generative Adversarial Nets
+Auto-Encoding Variational Bayes
+ImageNet Classification with Deep Convolutional Neural Networks
+Very Deep Convolutional Networks for Large-Scale Image Recognition
+Going Deeper with Convolutions
+An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale
+Learning Transferable Visual Models From Natural Language Supervision
+Playing Atari with Deep Reinforcement Learning
+Human-level control through deep reinforcement learning
+Proximal Policy Optimization Algorithms
+Mastering the game of Go with deep neural networks and tree search
+Training language models to follow instructions with human feedback
+Deep Reinforcement Learning from Human Preferences
+Constitutional AI: Harmlessness from AI Feedback
+Training a Helpful and Harmless Assistant with Reinforcement Learning from Human Feedback
+Llama 2: Open Foundation and Fine-Tuned Chat Models
+LLaMA: Open and Efficient Foundation Language Models
+The Llama 3 Herd of Models
+PaLM: Scaling Language Modeling with Pathways
+Training Compute-Optimal Large Language Models
+Emergent Abilities of Large Language Models
+Finetuned Language Models Are Zero-Shot Learners
+Scaling Instruction-Finetuned Language Models
+Self-Consistency Improves Chain of Thought Reasoning in Language Models
+Tree of Thoughts: Deliberate Problem Solving with Large Language Models
+Large Language Models are Zero-Shot Reasoners
+ReAct: Synergizing Reasoning and Acting in Language Models
+Toolformer: Language Models Can Teach Themselves to Use Tools
+Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks
+Dense Passage Retrieval for Open-Domain Question Answering
+REALM: Retrieval-Augmented Language Model Pre-Training
+Improving language models by retrieving from trillions of tokens
+Language Models as Knowledge Bases?
+How Can We Know What Language Models Know?
+Prefix-Tuning: Optimizing Continuous Prompts for Generation
+The Power of Scale for Parameter-Efficient Prompt Tuning
+Parameter-Efficient Transfer Learning for NLP
+QLoRA: Efficient Finetuning of Quantized LLMs
+FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness
+Longformer: The Long-Document Transformer
+Big Bird: Transformers for Longer Sequences
+Reformer: The Efficient Transformer
+Linformer: Self-Attention with Linear Complexity
+Mamba: Linear-Time Sequence Modeling with Selective State Spaces
+Efficiently Modeling Long Sequences with Structured State Spaces
+RoFormer: Enhanced Transformer with Rotary Position Embedding
+Train Short, Test Long: Attention with Linear Biases Enables Input Length Extrapolation
+Mixtral of Experts
+Mistral 7B
+Outrageously Large Neural Networks: The Sparsely-Gated Mixture-of-Experts Layer
+Switch Transformers: Scaling to Trillion Parameter Models with Simple and Efficient Sparsity
+GLUE: A Multi-Task Benchmark and Analysis Platform for Natural Language Understanding
+SuperGLUE: A Stickier Benchmark for General-Purpose Language Understanding Systems
+SQuAD: 100,000+ Questions for Machine Comprehension of Text
+Know What You Don't Know: Unanswerable Questions for SQuAD
+Measuring Massive Multitask Language Understanding
+Training Verifiers to Solve Math Word Problems
+HellaSwag: Can a Machine Really Finish Your Sentence?
+TruthfulQA: Measuring How Models Mimic Human Falsehoods
+Holistic Evaluation of Language Models
+Beyond the Imitation Game: Quantifying and extrapolating the capabilities of language models
+Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena
+Inverse Scaling: When Bigger Isn't Better
+Program Synthesis with Large Language Models
+Competition-Level Code Generation with AlphaCode
+Code Llama: Open Foundation Models for Code
+StarCoder: may the source be with you!
+SantaCoder: don't reach for the stars!
+The Stack: 3 TB of permissively licensed source code
+CodeT5: Identifier-aware Unified Pre-trained Encoder-Decoder Models for Code Understanding and Generation
+GraphCodeBERT: Pre-training Code Representations with Data Flow
+CodeXGLUE: A Machine Learning Benchmark Dataset for Code Understanding and Generation
+InCoder: A Generative Model for Code Infilling and Synthesis
+Unified Pre-training for Program Understanding and Generation
+Learning to Represent Programs with Graphs
+code2vec: Learning Distributed Representations of Code
+Is Self-Repair a Silver Bullet for Code Generation?
+Self-Refine: Iterative Refinement with Self-Feedback
+Reflexion: Language Agents with Verbal Reinforcement Learning
+Solving Quantitative Reasoning Problems with Language Models
+Let's Verify Step by Step
+STaR: Bootstrapping Reasoning With Reasoning
+Least-to-Most Prompting Enables Complex Reasoning in Large Language Models
+Calibrate Before Use: Improving Few-Shot Performance of Language Models
+Rethinking the Role of Demonstrations: What Makes In-Context Learning Work?
+What learning algorithm is in-context learning? Investigations with linear models
+Transformers learn in-context by gradient descent
+Grokking: Generalization Beyond Overfitting on Small Algorithmic Datasets
+Progress measures for grokking via mechanistic interpretability
+Omnigrok: Grokking Beyond Algorithmic Data
+Towards Understanding Grokking: An Effective Theory of Representation Learning
+The Clock and the Pizza: Two Stories in Mechanistic Explanation of Neural Networks
+A Toy Model of Universality: Reverse Engineering How Networks Learn Group Operations
+A Mathematical Framework for Transformer Circuits
+Towards Monosemanticity: Decomposing Language Models With Dictionary Learning
+Scaling Monosemanticity: Extracting Interpretable Features from Claude 3 Sonnet
+Zoom In: An Introduction to Circuits
+Interpretability Beyond Feature Attribution: Quantitative Testing with Concept Activation Vectors (TCAV)
+Axiomatic Attribution for Deep Networks
+A Unified Approach to Interpreting Model Predictions
+"Why Should I Trust You?": Explaining the Predictions of Any Classifier
+Attention is not Explanation
+Attention is not not Explanation
+Is Attention Interpretable?
+What Does BERT Look At? An Analysis of BERT's Attention
+A Primer in BERTology: What We Know About How BERT Works
+BERT Rediscovers the Classical NLP Pipeline
+Analyzing the Structure of Attention in a Transformer Language Model
+Transformer Feed-Forward Layers Are Key-Value Memories
+Transformer Feed-Forward Layers Build Predictions by Promoting Concepts in the Vocabulary Space
+Mass-Editing Memory in a Transformer
+Eliciting Latent Predictions from Transformers with the Tuned Lens
+Investigating Gender Bias in Language Models Using Causal Mediation Analysis
+Discovering Latent Knowledge in Language Models Without Supervision
+Linear Representations of Sentiment in Large Language Models
+Language Models Represent Space and Time
+Emergent Linear Representations in World Models of Self-Supervised Sequence Models
+Emergent World Representations: Exploring a Sequence Model Trained on a Synthetic Task
+The Linear Representation Hypothesis and the Geometry of Large Language Models
+Finding Neurons in a Haystack: Case Studies with Sparse Probing
+Knowledge Neurons in Pretrained Transformers
+Successor Heads: Recurring, Interpretable Attention Heads In The Wild
+Copy Suppression: Comprehensively Understanding an Attention Head
+How does GPT-2 compute greater-than?: Interpreting mathematical abilities in a pre-trained language model
+Localizing Model Behavior with Path Patching
+Towards Best Practices of Activation Patching in Language Models: Metrics and Methods
+How to use and interpret activation patching
+Does Localization Inform Editing? Surprising Differences in Causality-Based Localization vs. Knowledge Editing in Language Models
+Steering Language Models With Activation Engineering
+Language Models Implement Simple Word2Vec-style Vector Arithmetic
+An Interpretability Illusion for BERT
+Probing Classifiers: Promises, Shortcomings, and Advances
+Designing and Interpreting Probes with Control Tasks
+A Structural Probe for Finding Syntax in Word Representations
+Amnesic Probing: Behavioral Explanation with Amnesic Counterfactuals
+Null It Out: Guarding Protected Attributes by Iterative Nullspace Projection
+Circuit Component Reuse Across Tasks in Transformer Language Models
+Open Problems in Mechanistic Interpretability
+Jumping Ahead: Improving Reconstruction Fidelity with JumpReLU Sparse Autoencoders
+Improving Dictionary Learning with Gated Sparse Autoencoders
+Sparse Feature Circuits: Discovering and Editing Interpretable Causal Graphs in Language Models
+Identifying Functionally Important Features with End-to-End Sparse Dictionary Learning
+Interpreting Attention Layer Outputs with Sparse Autoencoders
+Neurons in Large Language Models: Dead, N-gram, Positional
+Confidence Regulation Neurons in Language Models
+Universal Neurons in GPT2 Language Models
+Polysemanticity and Capacity in Neural Networks
+Engineering Monosemanticity in Toy Models
+Codebook Features: Sparse and Discrete Interpretability for Neural Networks
+Interpretability at Scale: Identifying Causal Mechanisms in Alpaca
+Causal Abstractions of Neural Networks
+Finding Alignments Between Interpretable Causal Variables and Distributed Neural Representations
+Inducing Causal Structure for Interpretable Neural Networks
+Robust Feature-Level Adversaries are Interpretability Tools
+Cognitive Dissonance: Why Do Language Model Outputs Disagree with Internal Representations of Truthfulness?
+The Internal State of an LLM Knows When It's Lying
+The Hydra Effect: Emergent Self-repair in Language Model Computations
+Fine-Tuning Enhances Existing Mechanisms: A Case Study on Entity Tracking
+Mechanistically analyzing the effects of fine-tuning on procedurally defined tasks
+Interpreting CLIP's Image Representation via Text-Based Decomposition
+Rosetta Neurons: Mining the Common Units in a Model Zoo
+Quantifying Attention Flow in Transformers
+Analyzing Transformers in Embedding Space
+Backpack Language Models
+Are Sixteen Heads Really Better than One?
+Analyzing Multi-Head Self-Attention: Specialized Heads Do the Heavy Lifting, the Rest Can Be Pruned
+What Does BERT Learn about the Structure of Language?
+Linguistic Knowledge and Transferability of Contextual Representations
+Visualizing and Understanding Recurrent Networks
+Visualizing and Understanding Convolutional Networks
+Grad-CAM: Visual Explanations from Deep Networks via Gradient-based Localization
+Deep Inside Convolutional Networks: Visualising Image Classification Models and Saliency Maps
+Sanity Checks for Saliency Maps
+Network Dissection: Quantifying Interpretability of Deep Visual Representations
+Understanding Neural Networks Through Deep Visualization
+Rethinking Interpretability in the Era of Large Language Models
+Towards A Rigorous Science of Interpretable Machine Learning
+The Mythos of Model Interpretability
+Stop Explaining Black Box Machine Learning Models for High Stakes Decisions and Use Interpretable Models Instead
+Explanation in Artificial Intelligence: Insights from the Social Sciences
+Towards Faithfully Interpretable NLP Systems: How Should We Define and Evaluate Faithfulness?
+Do Prompt-Based Models Really Understand the Meaning of their Prompts?
+Do Models Explain Themselves? Counterfactual Simulatability of Natural Language Explanations
+Measuring Faithfulness in Chain-of-Thought Reasoning
+Neural Networks and the Chomsky Hierarchy
+Saturated Transformers are Constant-Depth Threshold Circuits
+The Parallelism Tradeoff: Limitations of Log-Precision Transformers
+Thinking Like Transformers
+Tracr: Compiled Transformers as a Laboratory for Interpretability
+Learning Transformer Programs
+Transformers as Recognizers of Formal Languages: A Survey on Expressivity
+On the Ability and Limitations of Transformers to Recognize Formal Languages
+Theoretical Limitations of Self-Attention in Neural Sequence Models
+Machine Unlearning
+Certified Data Removal from Machine Learning Models
+Eternal Sunshine of the Spotless Net: Selective Forgetting in Deep Networks
+Towards Making Systems Forget with Machine Unlearning
+Knowledge Unlearning for Mitigating Privacy Risks in Language Models
+Large Language Model Unlearning
+Machine Unlearning of Features and Labels
+Model Sparsity Can Simplify Machine Unlearning
+Towards Unbounded Machine Unlearning
+Eight Methods to Evaluate Robust Unlearning in LLMs
+MUSE: Machine Unlearning Six-Way Evaluation for Language Models
+Unlearning or Obfuscating? Jogging the Memory of Unlearned LLMs via Benign Relearning
+Machine Unlearning Doesn't Do What You Think: Lessons for Generative AI Policy, Research, and Practice
+In-Context Unlearning: Language Models as Few Shot Unlearners
+Unlearn What You Want to Forget: Efficient Unlearning for LLMs
+Remember What You Want to Forget: Algorithms for Machine Unlearning
+Descent-to-Delete: Gradient-Based Methods for Machine Unlearning
+An Adversarial Perspective on Machine Unlearning for AI Safety
+Tamper-Resistant Safeguards for Open-Weight LLMs
+Position: LLM Unlearning Benchmarks are Weak Measures of Progress
+Evaluating the Ripple Effects of Knowledge Editing in Language Models
+Editing Factual Knowledge in Language Models
+Fast Model Editing at Scale
+Memory-Based Model Editing at Scale
+Dissecting Recall of Factual Associations in Auto-Regressive Language Models
+Editing Large Language Models: Problems, Methods, and Opportunities
+Can We Edit Factual Knowledge by In-Context Learning?
+Detecting Pretraining Data from Large Language Models
+Membership Inference Attacks against Machine Learning Models
+Quantifying Memorization Across Neural Language Models
+The Secret Sharer: Evaluating and Testing Unintended Memorization in Neural Networks
+Deduplicating Training Data Makes Language Models Better
+Scalable Extraction of Training Data from (Production) Language Models
+Extracting Training Data from Diffusion Models
+Robust Distortion-free Watermarks for Language Models
+Undetectable Watermarks for Language Models
+On the Reliability of Watermarks for Large Language Models
+Provable Robust Watermarking for AI-Generated Text
+Watermarking Conditional Text Generation for AI Detection: Unveiling Challenges and a Semantic-Aware Watermark Remedy
+DetectGPT: Zero-Shot Machine-Generated Text Detection using Probability Curvature
+Can AI-Generated Text be Reliably Detected?
+Paraphrasing evades detectors of AI-generated text, but retrieval is an effective defense
+Scalable watermarking for identifying large language model outputs
+SemStamp: A Semantic Watermark with Paraphrastic Robustness for Text Generation
+Who Wrote this Code? Watermarking for Code Generation
+Publicly Detectable Watermarking for Language Models
+Watermarking Makes Language Models Radioactive
+Unbiased Watermark for Large Language Models
+Mark My Words: Analyzing and Evaluating Language Model Watermarks
+WaterBench: Towards Holistic Evaluation of Watermarks for Large Language Models
+Adaptive Text Watermark for Large Language Models
+Towards Codable Watermarking for Injecting Multi-bits Information to LLMs
+Watermark Stealing in Large Language Models
+Tree-Ring Watermarks: Fingerprints for Diffusion Images that are Invisible and Robust
+The Stable Signature: Rooting Watermarks in Latent Diffusion Models
+Large Language Models for Software Engineering: A Systematic Literature Review
+Large Language Models Meet NL2Code: A Survey
+A Survey of Large Language Models
+A Survey on Evaluation of Large Language Models
+Natural Language to Code Translation with Execution
+CodeSearchNet Challenge: Evaluating the State of Semantic Code Search
+Measuring Coding Challenge Competence With APPS
+DS-1000: A Natural and Reliable Benchmark for Data Science Code Generation
+Is Your Code Generated by ChatGPT Really Correct? Rigorous Evaluation of Large Language Models for Code Generation
+Recovering Clear, Natural Identifiers from Obfuscated JS Names
+Predicting Program Properties from "Big Code"
+Adversarial Examples for Models of Code
+Semantic Robustness of Models of Source Code
+On the Naturalness of Software
+A Survey of Machine Learning for Big Code and Naturalness
+DOBF: A Deobfuscation Pre-Training Objective for Programming Languages
+Unsupervised Translation of Programming Languages
+Lost at C: A User Study on the Security Implications of Large Language Model Code Assistants
+Asleep at the Keyboard? Assessing the Security of GitHub Copilot's Code Contributions
+Do Users Write More Insecure Code with AI Assistants?
+Expectation vs. Experience: Evaluating the Usability of Code Generation Tools Powered by Large Language Models
+Grounded Copilot: How Programmers Interact with Code-Generating Models
+Reading Between the Lines: Modeling User Behavior and Costs in AI-Assisted Programming
+WizardCoder: Empowering Code Large Language Models with Evol-Instruct
+Magicoder: Source Code Is All You Need
+Can Large Language Models Reason about Program Invariants?
+Repository-Level Prompt Generation for Large Language Models of Code
+RepoCoder: Repository-Level Code Completion Through Iterative Retrieval and Generation
+LiveCodeBench: Holistic and Contamination Free Evaluation of Large Language Models for Code
+Large Language Models of Code Fail at Completing Code with Potential Bugs
+Coder Reviewer Reranking for Code Generation
+CodeRL: Mastering Code Generation through Pretrained Models and Deep Reinforcement Learning
+Execution-Based Evaluation for Open-Domain Code Generation
+DeepCoder: Learning to Write Programs
+RobustFill: Neural Program Learning under Noisy I/O
+Neural Programmer-Interpreters
+Learning to Execute
+Cross-lingual Language Model Pretraining
+Massively Multilingual Sentence Embeddings for Zero-Shot Cross-Lingual Transfer and Beyond
+How Multilingual is Multilingual BERT?
+Beto, Bentz, Becas: The Surprising Cross-Lingual Effectiveness of BERT
+Language-agnostic BERT Sentence Embedding
+mT5: A Massively Multilingual Pre-trained Text-to-Text Transformer
+Multilingual Denoising Pre-training for Neural Machine Translation
+Google's Neural Machine Translation System: Bridging the Gap between Human and Machine Translation
+Google's Multilingual Neural Machine Translation System: Enabling Zero-Shot Translation
+Beyond English-Centric Multilingual Machine Translation
+BLEU: a Method for Automatic Evaluation of Machine Translation
+BERTScore: Evaluating Text Generation with BERT
+COMET: A Neural Framework for MT Evaluation
+Word Translation Without Parallel Data
+Unsupervised Machine Translation Using Monolingual Corpora Only
+Understanding Back-Translation at Scale
+Improving Neural Machine Translation Models with Monolingual Data
+Do Multilingual Language Models Think Better in English?
+Not All Languages Are Created Equal in LLMs: Improving Multilingual Capability by Cross-Lingual-Thought Prompting
+Language Models are Multilingual Chain-of-Thought Reasoners
+Emerging Cross-lingual Structure in Pretrained Language Models
+Six Challenges for Neural Machine Translation
+If beam search is the answer, what was the question?
+Model soups: averaging weights of multiple fine-tuned models improves accuracy without increasing inference time
+Merging Models with Fisher-Weighted Averaging
+Git Re-Basin: Merging Models modulo Permutation Symmetries
+ZipIt! Merging Models from Different Tasks without Training
+Linear Mode Connectivity and the Lottery Ticket Hypothesis
+The Lottery Ticket Hypothesis: Finding Sparse, Trainable Neural Networks
+Task Arithmetic in the Tangent Space: Improved Editing of Pre-Trained Models
+Model Breadcrumbs: Scaling Multi-Task Model Merging with Sparse Masks
+AdaMerging: Adaptive Model Merging for Multi-Task Learning
+Evolutionary Optimization of Model Merging Recipes
+Arcee's MergeKit: A Toolkit for Merging Large Language Models
+Activation Addition: Steering Language Models Without Optimization
+Plug and Play Language Models: A Simple Approach to Controlled Text Generation
+Self-Diagnosis and Self-Debiasing: A Proposal for Reducing Corpus-Based Bias in NLP
+GeDi: Generative Discriminator Guided Sequence Generation
+DExperts: Decoding-Time Controlled Text Generation with Experts and Anti-Experts
+Jailbroken: How Does LLM Safety Training Fail?
+Red Teaming Language Models with Language Models
+Ignore Previous Prompt: Attack Techniques For Language Models
+Not what you've signed up for: Compromising Real-World LLM-Integrated Applications with Indirect Prompt Injection
+Fine-tuning Aligned Language Models Compromises Safety, Even When Users Do Not Intend To!
+Sleeper Agents: Training Deceptive LLMs that Persist Through Safety Training
+Towards Understanding Sycophancy in Language Models
+Discovering Language Model Behaviors with Model-Written Evaluations
+Language Models (Mostly) Know What They Know
+On the Dangers of Stochastic Parrots: Can Language Models Be Too Big?
+Climbing towards NLU: On Meaning, Form, and Understanding in the Age of Data
+Sparks of Artificial General Intelligence: Early experiments with GPT-4
+GPT-4 Technical Report
+The Curious Case of Neural Text Degeneration
+Hierarchical Neural Story Generation
+Contrastive Decoding: Open-ended Text Generation as Optimization
+Locally Typical Sampling
+Fast Inference from Transformers via Speculative Decoding
+Accelerating Large Language Model Decoding with Speculative Sampling
+Efficient Memory Management for Large Language Model Serving with PagedAttention
+LLM.int8(): 8-bit Matrix Multiplication for Transformers at Scale
+GPTQ: Accurate Post-Training Quantization for Generative Pre-trained Transformers
+SmoothQuant: Accurate and Efficient Post-Training Quantization for Large Language Models
+Distilling the Knowledge in a Neural Network
+Learning both Weights and Connections for Efficient Neural Networks
+Rethinking the Inception Architecture for Computer Vision
+Rethinking Attention with Performers
+Revisiting Unreasonable Effectiveness of Data in Deep Learning Era
+Understanding deep learning requires rethinking generalization
+Deep Double Descent: Where Bigger Models and More Data Hurt
+Reconciling modern machine-learning practice and the classical bias-variance trade-off
+Neural Tangent Kernel: Convergence and Generalization in Neural Networks
+Visualizing the Loss Landscape of Neural Nets
+On Calibration of Modern Neural Networks
+Explaining and Harnessing Adversarial Examples
+Intriguing properties of neural networks
+Towards Deep Learning Models Resistant to Adversarial Attacks
+Adversarial Examples Are Not Bugs, They Are Features
+Semi-supervised Sequence Learning
+Universal Language Model Fine-tuning for Text Classification
+Convolutional Neural Networks for Sentence Classification
+A Neural Probabilistic Language Model
+Recurrent Neural Network Regularization
+Pointer Networks
+Get To The Point: Summarization with Pointer-Generator Networks
+Text Summarization with Pretrained Encoders
+SimCSE: Simple Contrastive Learning of Sentence Embeddings
+Sentence-BERT: Sentence Embeddings using Siamese BERT-Networks
+Universal Sentence Encoder
+Skip-Thought Vectors
+Supervised Learning of Universal Sentence Representations from Natural Language Inference Data
+A large annotated corpus for learning natural language inference
+A Broad-Coverage Challenge Corpus for Sentence Understanding through Inference
+Annotation Artifacts in Natural Language Inference Data
+Adversarial Examples for Evaluating Reading Comprehension Systems
+Right for the Wrong Reasons: Diagnosing Syntactic Heuristics in Natural Language Inference
+Beyond Accuracy: Behavioral Testing of NLP Models with CheckList
+Learning the Difference that Makes a Difference with Counterfactually-Augmented Data
+Datasheets for Datasets
+Model Cards for Model Reporting
+Documenting Large Webtext Corpora: A Case Study on the Colossal Clean Crawled Corpus
+The Pile: An 800GB Dataset of Diverse Text for Language Modeling
+Man is to Computer Programmer as Woman is to Homemaker? Debiasing Word Embeddings
+Semantics derived automatically from language corpora contain human-like biases
+StereoSet: Measuring stereotypical bias in pretrained language models
+RealToxicityPrompts: Evaluating Neural Toxic Degeneration in Language Models
+Language (Technology) is Power: A Critical Survey of "Bias" in NLP
+Neural Text Generation with Unlikelihood Training
+Generating Sequences With Recurrent Neural Networks
+Show, Attend and Tell: Neural Image Caption Generation with Visual Attention
+Show and Tell: A Neural Image Caption Generator
+Visual Instruction Tuning
+Flamingo: a Visual Language Model for Few-Shot Learning
+BLIP-2: Bootstrapping Language-Image Pre-training with Frozen Image Encoders and Large Language Models
+Zero-Shot Text-to-Image Generation
+Hierarchical Text-Conditional Image Generation with CLIP Latents
+Denoising Diffusion Implicit Models
+Score-Based Generative Modeling through Stochastic Differential Equations
+Neural Ordinary Differential Equations
+Highway Networks
+Squeeze-and-Excitation Networks
+Densely Connected Convolutional Networks
+U-Net: Convolutional Networks for Biomedical Image Segmentation
+Mask R-CNN
+You Only Look Once: Unified, Real-Time Object Detection
+Faster R-CNN: Towards Real-Time Object Detection with Region Proposal Networks
+wav2vec 2.0: A Framework for Self-Supervised Learning of Speech Representations
+Robust Speech Recognition via Large-Scale Weak Supervision
+WaveNet: A Generative Model for Raw Audio
+Graph Attention Networks
+Semi-Supervised Classification with Graph Convolutional Networks
+Inductive Representation Learning on Large Graphs
+How Powerful are Graph Neural Networks?
+Relational inductive biases, deep learning, and graph networks
+Model-Agnostic Meta-Learning for Fast Adaptation of Deep Networks
+Prototypical Networks for Few-shot Learning
+Matching Networks for One Shot Learning
+Overcoming catastrophic forgetting in neural networks
+An Empirical Investigation of Catastrophic Forgetting in Gradient-Based Neural Networks
+Communication-Efficient Learning of Deep Networks from Decentralized Data
+Deep Learning with Differential Privacy
+A Simple Framework for Contrastive Learning of Visual Representations
+Momentum Contrast for Unsupervised Visual Representation Learning
+Bootstrap Your Own Latent: A New Approach to Self-Supervised Learning
+Masked Autoencoders Are Scalable Vision Learners
+Emerging Properties in Self-Supervised Vision Transformers
+Swin Transformer: Hierarchical Vision Transformer using Shifted Windows
+Language Is Not All You Need: Aligning Perception with Language Models
+Diffusion Models Beat GANs on Image Synthesis
+Data Selection for Language Models via Importance Resampling
+Textbooks Are All You Need II: phi-1.5 technical report
+Self-Instruct: Aligning Language Models with Self-Generated Instructions
+LIMA: Less Is More for Alignment
+WizardLM: Empowering Large Language Models to Follow Complex Instructions
+Orca: Progressive Learning from Complex Explanation Traces of GPT-4
+Zephyr: Direct Distillation of LM Alignment
+RLAIF: Scaling Reinforcement Learning from Human Feedback with AI Feedback
+Scaling Laws for Reward Model Overoptimization
+Open Problems and Fundamental Limitations of Reinforcement Learning from Human Feedback
+Learning to summarize from human feedback
+Fine-Tuning Language Models from Human Preferences
+Scaling Laws for Transfer
+Scaling Laws for Autoregressive Generative Modeling
+Explaining Neural Scaling Laws
+Deep Learning Scaling is Predictable, Empirically
+Beyond Chinchilla-Optimal: Accounting for Inference in Language Model Scaling Laws
+Scaling Data-Constrained Language Models
+DoReMi: Optimizing Data Mixtures Speeds Up Language Model Pretraining
+Will we run out of data? An analysis of the limits of scaling datasets in Machine Learning
+Retentive Network: A Successor to Transformer for Large Language Models
+RWKV: Reinventing RNNs for the Transformer Era
+Hyena Hierarchy: Towards Larger Convolutional Language Models
+Resurrecting Recurrent Neural Networks for Long Sequences
+Were RNNs All We Needed?
+Universal Transformers
+Set Transformer: A Framework for Attention-based Permutation-Invariant Neural Networks
+Perceiver: General Perception with Iterative Attention
+Gradient-based learning applied to document recognition
+Learning representations by back-propagating errors
+Support-Vector Networks
+Random Forests
+Latent Dirichlet Allocation
+Indexing by Latent Semantic Analysis
+A Statistical Approach to Machine Translation
+The Mathematics of Statistical Machine Translation: Parameter Estimation
+Statistical Phrase-Based Translation
+Conditional Random Fields: Probabilistic Models for Segmenting and Labeling Sequence Data
+Bidirectional LSTM-CRF Models for Sequence Tagging
+Neural Architectures for Named Entity Recognition
+End-to-end Sequence Labeling via Bi-directional LSTM-CNNs-CRF
+Natural Language Processing (Almost) from Scratch
+Recursive Deep Models for Semantic Compositionality Over a Sentiment Treebank
+Improved Semantic Representations From Tree-Structured Long Short-Term Memory Networks
+A Fast and Accurate Dependency Parser using Neural Networks
+Deep Biaffine Attention for Neural Dependency Parsing
+Grammar as a Foreign Language
+Constituency Parsing with a Self-Attentive Encoder
+A Decomposable Attention Model for Natural Language Inference
+Bidirectional Attention Flow for Machine Comprehension
+Teaching Machines to Read and Comprehend
+Memory Networks
+End-To-End Memory Networks
+Neural Turing Machines
+Hybrid computing using a neural network with dynamic external memory
+Efficient Streaming Language Models with Attention Sinks
+Extending Context Window of Large Language Models via Positional Interpolation
+YaRN: Efficient Context Window Extension of Large Language Models
+Ring Attention with Blockwise Transformers for Near-Infinite Context
+Gemini: A Family of Highly Capable Multimodal Models
+DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via Reinforcement Learning
+DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models
+OLMo: Accelerating the Science of Language Models
+Dolma: an Open Corpus of Three Trillion Tokens for Language Model Pretraining Research
+Pythia: A Suite for Analyzing Large Language Models Across Training and Scaling
+BLOOM: A 176B-Parameter Open-Access Multilingual Language Model
+OPT: Open Pre-trained Transformer Language Models
+GPT-NeoX-20B: An Open-Source Autoregressive Language Model
+Language Modeling Is Compression
+Faith and Fate: Limits of Transformers on Compositionality
+The Reversal Curse: LLMs trained on "A is B" fail to learn "B is A"
+Large Language Models Cannot Self-Correct Reasoning Yet
+Large Language Models Can Be Easily Distracted by Irrelevant Context
+Language Models are Greedy Reasoners: A Systematic Formal Analysis of Chain-of-Thought
+Towards Reasoning in Large Language Models: A Survey
+Reasoning with Language Model is Planning with World Model
+Voyager: An Open-Ended Embodied Agent with Large Language Models
+Generative Agents: Interactive Simulacra of Human Behavior
+WebGPT: Browser-assisted question-answering with human feedback
+Gorilla: Large Language Model Connected with Massive APIs
+Simple synthetic data reduces sycophancy in large language models
+Weak-to-Strong Generalization: Eliciting Strong Capabilities With Weak Supervision
+Semantic Uncertainty: Linguistic Invariances for Uncertainty Estimation in Natural Language Generation
+SelfCheckGPT: Zero-Resource Black-Box Hallucination Detection for Generative Large Language Models
+Survey of Hallucination in Natural Language Generation
+Siren's Song in the AI Ocean: A Survey on Hallucination in Large Language Models
+CTRL: A Conditional Transformer Language Model for Controllable Generation
+Megatron-LM: Training Multi-Billion Parameter Language Models Using Model Parallelism
+ZeRO: Memory Optimizations Toward Training Trillion Parameter Models
+Mixed Precision Training
+Scaling Vision Transformers to 22 Billion Parameters
+Measuring the Intrinsic Dimension of Objective Landscapes
+Intrinsic Dimensionality Explains the Effectiveness of Language Model Fine-Tuning
+Fine-Tuning can Distort Pretrained Features and Underperform Out-of-Distribution
+Pretraining Language Models with Human Preferences
+Physics of Language Models: Part 3.1, Knowledge Storage and Extraction

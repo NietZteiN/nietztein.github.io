@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Grokking microscope</title>
+<meta name="description" content="A one-layer transformer learning modular addition, one checkpoint at a time: loss curves, attention patterns and the Fourier spectrum of its embeddings.">
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #131315;
+    --panel: #1b1b1e;
+    --panel-2: #222226;
+    --line: #2c2c31;
+    --line-strong: #3d3d44;
+    --text: #ececea;
+    --text-2: #a8a79f;
+    --text-3: #6f6e68;
+    --train: #3987e5;
+    --test: #d95926;
+    --accent: #86b6ef;
+    --bar: #3987e5;
+    --ok: #199e70;
+    --bad: #e66767;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--sans); }
+  body { font-size: 14px; line-height: 1.5; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 24px 16px 48px; }
+  header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 20px; margin-bottom: 18px; }
+  h1 { font-size: 20px; font-weight: 600; margin: 0; letter-spacing: 0.01em; }
+  .sub { font-family: var(--mono); font-size: 12px; color: var(--text-2); }
+  .badge { font-family: var(--mono); font-size: 11px; color: var(--text-3); border: 1px solid var(--line-strong); border-radius: 3px; padding: 1px 6px; }
+
+  /* transport */
+  .transport { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center;
+               background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; }
+  .transport button, .btn { font-family: var(--mono); font-size: 12px; background: var(--panel-2); color: var(--text);
+               border: 1px solid var(--line-strong); border-radius: 4px; padding: 6px 12px; cursor: pointer; min-width: 74px; }
+  .transport button:hover, .btn:hover { border-color: var(--accent); }
+  .btn.active { background: var(--train); border-color: var(--train); color: #fff; }
+  input[type=range] { width: 100%; accent-color: var(--accent); margin: 0; }
+  .readout { font-family: var(--mono); font-size: 12px; color: var(--text-2); white-space: nowrap; display: flex; gap: 14px; align-items: center; }
+  .readout b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .phase { padding: 2px 8px; border-radius: 3px; border: 1px solid var(--line-strong); font-size: 11px; }
+  .hints { grid-column: 1 / -1; font-family: var(--mono); font-size: 11px; color: var(--text-3); display: flex; flex-wrap: wrap; gap: 6px 18px; }
+  kbd { border: 1px solid var(--line-strong); border-bottom-width: 2px; border-radius: 3px; padding: 0 5px; color: var(--text-2); font-family: var(--mono); }
+
+  /* tiles */
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin: 14px 0; }
+  .tile { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; }
+  .tile .k { font-family: var(--mono); font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; }
+  .tile .v { font-family: var(--mono); font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; margin-top: 2px; }
+  .tile .v.small { font-size: 14px; font-weight: 500; }
+
+  /* panels */
+  .row { display: grid; gap: 12px; margin: 12px 0; }
+  .row.two { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+  .row.four { grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px 10px; min-width: 0; }
+  .panel h2 { font-size: 12px; font-family: var(--mono); font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em;
+              color: var(--text-2); margin: 0 0 8px; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .panel h2 .note { text-transform: none; letter-spacing: 0; font-weight: 400; color: var(--text-3); }
+  .legend { display: flex; gap: 14px; font-family: var(--mono); font-size: 11px; color: var(--text-2); margin-top: 4px; }
+  .legend i { display: inline-block; width: 14px; height: 2px; vertical-align: middle; margin-right: 6px; border-radius: 1px; }
+  .seg { display: inline-flex; border: 1px solid var(--line-strong); border-radius: 4px; overflow: hidden; }
+  .seg button { font-family: var(--mono); font-size: 11px; background: transparent; color: var(--text-2); border: 0; padding: 3px 9px; cursor: pointer; }
+  .seg button.active { background: var(--panel-2); color: var(--text); }
+  svg { display: block; width: 100%; height: auto; overflow: visible; }
+  svg text { font-family: var(--mono); font-size: 10px; fill: var(--text-3); }
+  .grid line { stroke: var(--line); stroke-width: 1; }
+  .axis line { stroke: var(--line-strong); }
+  .cursor { stroke: var(--accent); stroke-width: 1; }
+  .xhair { stroke: var(--text-3); stroke-width: 1; pointer-events: none; }
+
+  /* attention */
+  .head { display: grid; grid-template-columns: 1fr; gap: 8px; }
+  .heat { display: grid; grid-template-columns: auto auto 1fr; gap: 4px 8px; align-items: center; }
+  .heat canvas { image-rendering: pixelated; border-radius: 3px; display: block; }
+  .heat .lbl { font-family: var(--mono); font-size: 10px; color: var(--text-3); text-align: right; line-height: 2; }
+  .heat .lbl.wide { line-height: 1.75; }
+  .heat .cap { font-family: var(--mono); font-size: 10px; color: var(--text-3); align-self: start; }
+  .cap-row { font-family: var(--mono); font-size: 10px; color: var(--text-3); margin: 8px 0 2px; }
+
+  /* table */
+  table { border-collapse: collapse; width: 100%; font-family: var(--mono); font-size: 12px; }
+  th, td { text-align: right; padding: 4px 8px; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+  th { color: var(--text-3); font-weight: 500; }
+  td.ok { color: var(--ok); } td.bad { color: var(--bad); }
+
+  /* prose */
+  .prose { max-width: 760px; color: var(--text-2); font-size: 14px; }
+  .prose h2 { font-size: 13px; color: var(--text); margin: 18px 0 6px; }
+  .prose p { margin: 6px 0; }
+  .prose code { font-family: var(--mono); font-size: 12px; color: var(--text); }
+
+  /* tooltip */
+  #tip { position: fixed; pointer-events: none; display: none; background: #0d0d0f; border: 1px solid var(--line-strong);
+         border-radius: 4px; padding: 6px 9px; font-family: var(--mono); font-size: 11px; color: var(--text-2); z-index: 10; white-space: nowrap; }
+  #tip b { color: var(--text); font-weight: 600; }
+  #tip i { display: inline-block; width: 10px; height: 2px; vertical-align: middle; margin-right: 6px; }
+  .empty { padding: 40px; text-align: center; color: var(--text-3); font-family: var(--mono); }
+  @media (max-width: 640px) {
+    .transport { grid-template-columns: auto 1fr; }
+    .transport .readout { grid-column: 1 / -1; flex-wrap: wrap; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Grokking microscope</h1>
+    <span class="sub" id="subtitle">loading</span>
+    <span class="badge" id="badge"></span>
+  </header>
+
+  <div id="app"></div>
+  <div id="tip"></div>
+
+  <div class="prose">
+    <h2>What this shows</h2>
+    <p>A one-layer transformer with four attention heads is trained to answer <code>a + b mod p</code>, seeing only a random 30 percent of all input pairs. It receives three tokens, <code>a</code>, <code>b</code> and <code>=</code>, and reads its answer off the last position. Training uses full-batch AdamW with a large weight decay.</p>
+    <p>The training curve has two stages. Within a few hundred epochs the model fits every training pair, but its accuracy on held-out pairs stays near chance, so it has memorized rather than learned the rule. Then, after a long plateau, test accuracy climbs from near zero to near perfect over a short window. That delayed jump is called grokking. Weight decay is the usual explanation: the memorizing solution needs large, unstructured weights, and decay slowly trades it for a smaller solution that actually computes the sum.</p>
+    <p>The smaller solution is periodic. Instead of a lookup table, the model represents each number as a point on a few circles, one per frequency <code>k</code>: the embedding of <code>a</code> contains <code>cos(2&pi;ka/p)</code> and <code>sin(2&pi;ka/p)</code>. Adding angles on a circle is the same as adding numbers mod <code>p</code>, so the sum can be read out with trigonometry. The Fourier panel makes this visible: before grokking the spectrum of the token embedding is flat, and afterwards it concentrates on a handful of frequencies. The attention heads specialize in the same way, and the amount of attention a head pays to <code>a</code> becomes a periodic function of <code>a</code>.</p>
+    <h2>How to read the panels</h2>
+    <p>The slider moves over saved checkpoints, which are denser where accuracy changed quickly. The loss and accuracy curves are recorded every ten epochs during training; the vertical line marks the current checkpoint, and clicking on a curve jumps to the nearest one. Each attention panel shows one head: the average pattern over all pairs (rows are query positions, columns are the positions attended to, only the last row matters for the answer), the pattern of the <code>=</code> query for eight fixed held-out examples, and the average attention to <code>a</code> as a function of <code>a</code>. The spectrum bars give the norm of the embedding at each Fourier frequency, normalized so their squares sum to one; the unembedding and the MLP neurons (as functions of both inputs, constant term removed) are available with the toggle. The weight norm tile is the L2 norm of all parameters, which weight decay pulls down during the plateau.</p>
+    <p>Reproduce: <code>python3 train.py</code> then <code>python3 analyze.py</code>, which rebuilds this page with the new run inlined. There is no export to GIF; step through frames with the arrow keys and take screenshots, or let it play.</p>
+  </div>
+</div>
+
+<script>
+const DATA = /*__FRAMES_JSON__*/null;
+
+(function () {
+  'use strict';
+  const app = document.getElementById('app');
+  if (!DATA) {
+    app.innerHTML = '<div class="empty">No data inlined yet. Run python3 train.py and python3 analyze.py, then open viz/index.html.</div>';
+    document.getElementById('subtitle').textContent = 'template';
+    return;
+  }
+
+  const cfg = DATA.config, frames = DATA.frames, curve = DATA.curve, ex = DATA.examples;
+  const H = cfg.n_heads, P = cfg.p, NF = frames.length;
+  const POS = ['a', 'b', '='];
+  const tip = document.getElementById('tip');
+  const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+  document.getElementById('subtitle').textContent =
+    `1 layer, ${H} heads, d_model ${cfg.d_model}, a + b mod ${P}, ${Math.round(cfg.frac * 100)}% of pairs, wd ${cfg.wd}, seed ${cfg.seed}`;
+  document.getElementById('badge').textContent = DATA.grok_epoch != null
+    ? `test acc > 99% at epoch ${DATA.grok_epoch}` : 'did not reach 99% test acc';
+
+  // ---------------------------------------------------------------- helpers
+  const NS = 'http://www.w3.org/2000/svg';
+  function el(tag, attrs, parent) {
+    const e = document.createElementNS(NS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  function html(tag, cls, parent, text) {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  function showTip(x, y, rows) {
+    tip.replaceChildren();
+    rows.forEach(([label, value, color]) => {
+      const line = html('div', null, tip);
+      if (color) { const i = html('i', null, line); i.style.background = color; }
+      const b = html('b', null, line, value);
+      b.after(' ' + label);
+    });
+    tip.style.display = 'block';
+    const w = tip.offsetWidth, hgt = tip.offsetHeight;
+    tip.style.left = Math.min(x + 14, window.innerWidth - w - 8) + 'px';
+    tip.style.top = Math.max(8, Math.min(y - hgt - 10, window.innerHeight - hgt - 8)) + 'px';
+  }
+  function hideTip() { tip.style.display = 'none'; }
+  const fmt = (v, d = 3) => Number(v).toFixed(d);
+  const lerp = (a, b, t) => a + (b - a) * t;
+  function hexToRgb(h) { const n = parseInt(h.slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; }
+  const seqLo = hexToRgb('#1b1b1e'), seqHi = hexToRgb('#86b6ef');
+  function seqColor(t) {
+    t = Math.max(0, Math.min(1, t));
+    return `rgb(${seqLo.map((c, i) => Math.round(lerp(c, seqHi[i], t))).join(',')})`;
+  }
+  function phaseOf(f) {
+    if (f.test_acc > 0.99) return ['generalized', css('--ok')];
+    if (f.test_acc > 0.3) return ['grokking', css('--accent')];
+    if (f.train_acc > 0.99) return ['memorized', css('--test')];
+    return ['learning', css('--text-2')];
+  }
+
+  // ---------------------------------------------------------------- layout
+  const transport = html('div', 'transport', app);
+  const playBtn = html('button', null, transport, 'play');
+  const slider = document.createElement('input');
+  slider.type = 'range'; slider.min = 0; slider.max = NF - 1; slider.value = 0; slider.step = 1;
+  slider.setAttribute('aria-label', 'checkpoint');
+  transport.appendChild(slider);
+  const readout = html('div', 'readout', transport);
+  const epochOut = html('span', null, readout); epochOut.innerHTML = 'epoch <b>0</b>';
+  const frameOut = html('span', null, readout); frameOut.innerHTML = 'frame <b>1</b>/' + NF;
+  const phaseOut = html('span', 'phase', readout, '');
+  const speedSel = document.createElement('select');
+  speedSel.className = 'btn'; speedSel.style.minWidth = '0';
+  [['slow', 600], ['normal', 300], ['fast', 120]].forEach(([n, ms]) => {
+    const o = document.createElement('option'); o.value = ms; o.textContent = n; speedSel.appendChild(o);
+  });
+  speedSel.value = 300; speedSel.setAttribute('aria-label', 'playback speed');
+  readout.appendChild(speedSel);
+  const hints = html('div', 'hints', transport);
+  hints.innerHTML = '<span><kbd>space</kbd> play / pause</span><span><kbd>&larr;</kbd> <kbd>&rarr;</kbd> step one frame</span>' +
+    '<span><kbd>shift</kbd> + arrows: ten frames</span><span><kbd>home</kbd> <kbd>end</kbd> first / last</span>';
+
+  const tiles = html('div', 'tiles', app);
+  const tile = (k, small) => { const t = html('div', 'tile', tiles); html('div', 'k', t, k); return html('div', 'v' + (small ? ' small' : ''), t, ''); };
+  const tTrainAcc = tile('train acc'), tTestAcc = tile('test acc'), tTrainLoss = tile('train loss'),
+        tTestLoss = tile('test loss'), tNorm = tile('weight norm'), tFreq = tile('strongest embed freqs', true);
+
+  // ---------------------------------------------------------------- curves
+  const curvesRow = html('div', 'row two', app);
+  const xScaleState = { log: false };
+  const CW = 560, CH = 210, ML = 44, MR = 12, MT = 10, MB = 26;
+  const maxEpoch = curve[curve.length - 1].epoch;
+  const xOf = (e) => ML + (xScaleState.log ? Math.log10(e + 1) / Math.log10(maxEpoch + 1) : e / maxEpoch) * (CW - ML - MR);
+
+  function makeCurve(title, keys, yOf, yTicks) {
+    const panel = html('div', 'panel', curvesRow);
+    const h2 = html('h2', null, panel, title);
+    const seg = html('span', 'seg', h2);
+    const bLin = html('button', 'active', seg, 'x linear'), bLog = html('button', null, seg, 'x log');
+    const svg = el('svg', { viewBox: `0 0 ${CW} ${CH}`, role: 'img', 'aria-label': title }, panel);
+    const grid = el('g', { class: 'grid' }, svg);
+    const yTickG = el('g', null, svg), xTickG = el('g', null, svg);
+    el('line', { class: 'axis', x1: ML, x2: ML, y1: MT, y2: CH - MB, stroke: css('--line-strong') }, svg);
+    el('line', { class: 'axis', x1: ML, x2: CW - MR, y1: CH - MB, y2: CH - MB, stroke: css('--line-strong') }, svg);
+    yTicks.forEach(([v, label]) => {
+      const y = yOf(v);
+      el('line', { x1: ML, x2: CW - MR, y1: y, y2: y }, grid);
+      el('text', { x: ML - 6, y: y + 3, 'text-anchor': 'end' }, yTickG).textContent = label;
+    });
+    const paths = keys.map((k) => el('path', { fill: 'none', stroke: css(k === 'train' ? '--train' : '--test'), 'stroke-width': 2, 'stroke-linejoin': 'round' }, svg));
+    const marks = el('g', null, svg);  // small ticks: where checkpoints are
+    const cursor = el('line', { class: 'cursor', y1: MT, y2: CH - MB }, svg);
+    const xhair = el('line', { class: 'xhair', y1: MT, y2: CH - MB, style: 'display:none' }, svg);
+    const hit = el('rect', { x: ML, y: MT, width: CW - ML - MR, height: CH - MT - MB, fill: 'transparent', style: 'cursor:crosshair' }, svg);
+    const legend = html('div', 'legend', panel);
+    [['train', '--train'], ['test', '--test']].forEach(([n, c]) => {
+      const s = html('span', null, legend); const i = html('i', null, s); i.style.background = css(c); s.append(n);
+    });
+
+    function draw() {
+      keys.forEach((k, i) => {
+        const key = k + '_' + (title.startsWith('Loss') ? 'loss' : 'acc');
+        paths[i].setAttribute('d', curve.map((r, j) => (j ? 'L' : 'M') + fmt(xOf(r.epoch), 1) + ' ' + fmt(yOf(r[key]), 1)).join(''));
+      });
+      marks.replaceChildren();
+      frames.forEach((f) => el('line', { x1: xOf(f.epoch), x2: xOf(f.epoch), y1: CH - MB, y2: CH - MB + 4, stroke: css('--text-3') }, marks));
+      xTickG.replaceChildren();
+      const ticks = xScaleState.log ? [0, 10, 100, 1000, 10000].filter((t) => t <= maxEpoch) : [0, 0.25, 0.5, 0.75, 1].map((t) => Math.round(t * maxEpoch));
+      ticks.forEach((t) => el('text', { x: xOf(t), y: CH - MB + 15, 'text-anchor': 'middle' }, xTickG).textContent = t);
+    }
+    function nearestRow(mx) {
+      let best = 0, bd = Infinity;
+      curve.forEach((r, i) => { const d = Math.abs(xOf(r.epoch) - mx); if (d < bd) { bd = d; best = i; } });
+      return curve[best];
+    }
+    function svgX(ev) { const b = svg.getBoundingClientRect(); return (ev.clientX - b.left) * CW / b.width; }
+    hit.addEventListener('pointermove', (ev) => {
+      const r = nearestRow(svgX(ev));
+      const x = xOf(r.epoch);
+      xhair.setAttribute('x1', x); xhair.setAttribute('x2', x); xhair.style.display = '';
+      const isLoss = title.startsWith('Loss');
+      showTip(ev.clientX, ev.clientY, [
+        ['epoch', r.epoch],
+        ['train', fmt(isLoss ? r.train_loss : r.train_acc, isLoss ? 4 : 3), css('--train')],
+        ['test', fmt(isLoss ? r.test_loss : r.test_acc, isLoss ? 4 : 3), css('--test')],
+      ]);
+    });
+    hit.addEventListener('pointerleave', () => { xhair.style.display = 'none'; hideTip(); });
+    hit.addEventListener('click', (ev) => {
+      const e = nearestRow(svgX(ev)).epoch;
+      let best = 0; frames.forEach((f, i) => { if (Math.abs(f.epoch - e) < Math.abs(frames[best].epoch - e)) best = i; });
+      setFrame(best);
+    });
+    bLin.addEventListener('click', () => setXScale(false));
+    bLog.addEventListener('click', () => setXScale(true));
+    return { draw, cursor, bLin, bLog };
+  }
+  const lossFloor = 1e-4, lossCeil = Math.max(...curve.map((r) => Math.max(r.train_loss, r.test_loss)), 1);
+  const yLoss = (v) => { const t = (Math.log10(Math.max(v, lossFloor)) - Math.log10(lossFloor)) / (Math.log10(lossCeil) - Math.log10(lossFloor)); return CH - MB - t * (CH - MT - MB); };
+  const yAcc = (v) => CH - MB - v * (CH - MT - MB);
+  const lossTicks = [1e-4, 1e-3, 1e-2, 1e-1, 1, 10].filter((v) => v <= lossCeil).map((v) => [v, v >= 1 ? String(v) : v.toExponential(0)]);
+  const lossChart = makeCurve('Loss, log scale', ['train', 'test'], yLoss, lossTicks);
+  const accChart = makeCurve('Accuracy', ['train', 'test'], yAcc, [[0, '0'], [0.5, '0.5'], [1, '1']]);
+  function setXScale(log) {
+    xScaleState.log = log;
+    [lossChart, accChart].forEach((c) => { c.draw(); c.bLin.classList.toggle('active', !log); c.bLog.classList.toggle('active', log); });
+    setFrame(cur);
+  }
+
+  // ---------------------------------------------------------------- attention
+  const attnRow = html('div', 'row four', app);
+  const heads = [];
+  for (let h = 0; h < H; h++) {
+    const panel = html('div', 'panel', attnRow);
+    const h2 = html('h2', null, panel, `head ${h}`);
+    html('span', 'note', h2, 'mean over all pairs');
+    const heat = html('div', 'heat', panel);
+    const cvHeat = document.createElement('canvas'); cvHeat.width = 3; cvHeat.height = 3;
+    cvHeat.style.width = '60px'; cvHeat.style.height = '60px';
+    const rowLabels = html('div', 'lbl', heat); rowLabels.innerHTML = 'q a<br>q b<br>q =';
+    heat.appendChild(cvHeat);
+    html('div', 'cap', heat, 'rows: query position. columns: key a, b, =. only the last row feeds the answer.');
+    html('div', 'cap-row', panel, '"=" query on the 8 held-out examples (columns) attending to a, b, =');
+    const strips = html('div', 'heat', panel);
+    const cvStrip = document.createElement('canvas'); cvStrip.width = ex.a.length; cvStrip.height = 3;
+    cvStrip.style.width = '100%'; cvStrip.style.height = '54px';
+    const stripLabels = html('div', 'lbl wide', strips); stripLabels.innerHTML = 'to a<br>to b<br>to =';
+    const stripWrap = html('div', null, strips); stripWrap.style.gridColumn = '2 / 4'; stripWrap.appendChild(cvStrip);
+    const stripCap = html('div', 'cap', stripWrap, ex.a.map((_, i) => i + 1).join('\u2003'));
+    stripCap.style.display = 'flex'; stripCap.style.justifyContent = 'space-around'; stripCap.textContent = '';
+    ex.a.forEach((_, i) => html('span', null, stripCap, String(i + 1)));
+    html('div', 'cap-row', panel, 'attention to a, as a function of a (mean over b), from 0 to 1');
+    const SW = 260, SH = 70;
+    const svg = el('svg', { viewBox: `0 0 ${SW} ${SH}`, role: 'img', 'aria-label': `head ${h} attention to a by a` }, panel);
+    el('line', { x1: 0, x2: SW, y1: SH - 10, y2: SH - 10, stroke: css('--line-strong') }, svg);
+    el('line', { x1: 0, x2: SW, y1: 5, y2: 5, stroke: css('--line') }, svg);
+    el('text', { x: 0, y: SH, 'text-anchor': 'start' }, svg).textContent = 'a = 0';
+    el('text', { x: SW, y: SH, 'text-anchor': 'end' }, svg).textContent = String(P - 1);
+    el('text', { x: SW, y: 4 + 8, 'text-anchor': 'end' }, svg).textContent = '1';
+    const path = el('path', { fill: 'none', stroke: css('--train'), 'stroke-width': 1.5, 'stroke-linejoin': 'round' }, svg);
+    const hit = el('rect', { x: 0, y: 0, width: SW, height: SH, fill: 'transparent' }, svg);
+    const dot = el('circle', { r: 3, fill: css('--accent'), style: 'display:none' }, svg);
+    hit.addEventListener('pointermove', (ev) => {
+      const b = svg.getBoundingClientRect();
+      const a = Math.max(0, Math.min(P - 1, Math.round((ev.clientX - b.left) / b.width * (P - 1))));
+      const v = frames[cur].attn_to_a_by_a[h][a];
+      dot.setAttribute('cx', a / (P - 1) * SW); dot.setAttribute('cy', SH - 10 - v * (SH - 15)); dot.style.display = '';
+      showTip(ev.clientX, ev.clientY, [[`attention to a when a = ${a}`, fmt(v)]]);
+    });
+    hit.addEventListener('pointerleave', () => { dot.style.display = 'none'; hideTip(); });
+    cvHeat.addEventListener('pointermove', (ev) => {
+      const b = cvHeat.getBoundingClientRect();
+      const c = Math.min(2, Math.floor((ev.clientX - b.left) / b.width * 3)), r = Math.min(2, Math.floor((ev.clientY - b.top) / b.height * 3));
+      showTip(ev.clientX, ev.clientY, [[`query ${POS[r]} to key ${POS[c]}`, fmt(frames[cur].attn_mean[h][r][c])]]);
+    });
+    cvHeat.addEventListener('pointerleave', hideTip);
+    cvStrip.addEventListener('pointermove', (ev) => {
+      const b = cvStrip.getBoundingClientRect(), n = ex.a.length;
+      const i = Math.min(n - 1, Math.floor((ev.clientX - b.left) / b.width * n)), r = Math.min(2, Math.floor((ev.clientY - b.top) / b.height * 3));
+      showTip(ev.clientX, ev.clientY, [[`example ${i + 1}: ${ex.a[i]} + ${ex.b[i]}, "=" query to ${POS[r]}`, fmt(frames[cur].attn_examples[i][h][2][r])]]);
+    });
+    cvStrip.addEventListener('pointerleave', hideTip);
+    heads.push({ cvHeat, cvStrip, path, SW, SH });
+  }
+  function paintCells(canvas, rows) {
+    const ctx = canvas.getContext('2d');
+    rows.forEach((row, r) => row.forEach((v, c) => { ctx.fillStyle = seqColor(v); ctx.fillRect(c, r, 1, 1); }));
+  }
+
+  // ---------------------------------------------------------------- fourier
+  const fPanel = html('div', 'panel', app);
+  fPanel.style.marginTop = '12px';
+  const fh2 = html('h2', null, fPanel, 'Fourier spectrum over Z_p');
+  const fseg = html('span', 'seg', fh2);
+  const specKeys = { embedding: 'fourier_embed', unembedding: 'fourier_unembed', neurons: 'fourier_neurons' };
+  let specKey = 'fourier_embed';
+  const specBtns = Object.entries(specKeys).map(([n, k]) => {
+    const b = html('button', k === specKey ? 'active' : '', fseg, n);
+    b.addEventListener('click', () => { specKey = k; specBtns.forEach((x) => x.classList.toggle('active', x === b)); setFrame(cur); });
+    return b;
+  });
+  const NK = frames[0].fourier_embed.length;
+  const specMax = {}; Object.values(specKeys).forEach((k) => { specMax[k] = Math.max(...frames.map((f) => Math.max(...f[k]))) * 1.08; });
+  const FW = 1100, FH = 190, FL = 40, FB = 26, FT = 14;
+  const fsvg = el('svg', { viewBox: `0 0 ${FW} ${FH}`, role: 'img', 'aria-label': 'Fourier spectrum' }, fPanel);
+  const fgrid = el('g', { class: 'grid' }, fsvg), fyTicks = el('g', null, fsvg);
+  el('line', { x1: FL, x2: FW, y1: FH - FB, y2: FH - FB, stroke: css('--line-strong') }, fsvg);
+  const bw = (FW - FL) / NK, barW = Math.max(2, bw - 2);
+  const bars = [], labels = [];
+  for (let k = 0; k < NK; k++) {
+    const g = el('g', null, fsvg);
+    const bar = el('rect', { x: FL + k * bw + 1, width: barW, y: FH - FB, height: 0, rx: 2, fill: css('--bar') }, g);
+    el('rect', { x: FL + k * bw, width: bw, y: FT, height: FH - FT - FB, fill: 'transparent' }, g);
+    if (k % 4 === 0) el('text', { x: FL + k * bw + bw / 2, y: FH - FB + 14, 'text-anchor': 'middle' }, fsvg).textContent = k;
+    g.addEventListener('pointermove', (ev) => showTip(ev.clientX, ev.clientY, [[`at frequency k = ${k}`, fmt(frames[cur][specKey][k])]]));
+    g.addEventListener('pointerleave', hideTip);
+    g.addEventListener('pointerenter', () => bar.setAttribute('fill', css('--accent')));
+    g.addEventListener('pointerleave', () => bar.setAttribute('fill', css('--bar')));
+    bars.push(bar);
+    labels.push(el('text', { x: FL + k * bw + bw / 2, y: 0, 'text-anchor': 'middle', style: 'display:none', fill: css('--text-2') }, fsvg));
+  }
+  el('text', { x: FW / 2, y: FH, 'text-anchor': 'middle' }, fsvg).textContent = 'frequency k (cos and sin of 2 pi k x / p combined)';
+  const fcap = html('div', 'cap-row', fPanel, '');
+
+  // ---------------------------------------------------------------- examples
+  const exPanel = html('div', 'panel', app);
+  exPanel.style.marginTop = '12px';
+  html('h2', null, exPanel, 'eight held-out examples');
+  const table = html('table', null, exPanel);
+  const thead = html('tr', null, table);
+  ['#', 'a', 'b', 'a + b mod p', 'predicted', 'correct'].forEach((t) => html('th', null, thead, t));
+  const exRows = ex.a.map((a, i) => {
+    const tr = html('tr', null, table);
+    html('td', null, tr, i + 1); html('td', null, tr, a); html('td', null, tr, ex.b[i]); html('td', null, tr, ex.answer[i]);
+    return { pred: html('td', null, tr, ''), ok: html('td', null, tr, '') };
+  });
+
+  // ---------------------------------------------------------------- frame update
+  let cur = 0, timer = null;
+  function setFrame(i) {
+    cur = Math.max(0, Math.min(NF - 1, i));
+    const f = frames[cur];
+    slider.value = cur;
+    epochOut.querySelector('b').textContent = f.epoch;
+    frameOut.querySelector('b').textContent = cur + 1;
+    const [ph, col] = phaseOf(f);
+    phaseOut.textContent = ph; phaseOut.style.color = col; phaseOut.style.borderColor = col;
+
+    tTrainAcc.textContent = fmt(f.train_acc); tTestAcc.textContent = fmt(f.test_acc);
+    tTrainLoss.textContent = fmt(f.train_loss, 4); tTestLoss.textContent = fmt(f.test_loss, 4);
+    tNorm.textContent = fmt(f.weight_norm, 1);
+    const top = f.fourier_embed.map((v, k) => [v, k]).sort((x, y) => y[0] - x[0]).slice(0, 4);
+    tFreq.textContent = 'k = ' + top.map(([, k]) => k).join(', ');
+
+    const x = xOf(f.epoch);
+    [lossChart, accChart].forEach((c) => { c.cursor.setAttribute('x1', x); c.cursor.setAttribute('x2', x); });
+
+    heads.forEach((hd, h) => {
+      paintCells(hd.cvHeat, f.attn_mean[h]);
+      // rows: to a / to b / to =, columns: the 8 examples
+      paintCells(hd.cvStrip, [0, 1, 2].map((r) => f.attn_examples.map((e) => e[h][2][r])));
+      const v = f.attn_to_a_by_a[h];
+      hd.path.setAttribute('d', v.map((y, a) => (a ? 'L' : 'M') + fmt(a / (P - 1) * hd.SW, 1) + ' ' + fmt(hd.SH - 10 - y * (hd.SH - 15), 1)).join(''));
+    });
+
+    const spec = f[specKey], scale = (FH - FT - FB) / specMax[specKey];
+    fgrid.replaceChildren(); fyTicks.replaceChildren();
+    [0.25, 0.5, 0.75].forEach((t) => {
+      const v = t * specMax[specKey], y = FH - FB - v * scale;
+      el('line', { x1: FL, x2: FW, y1: y, y2: y }, fgrid);
+      el('text', { x: FL - 6, y: y + 3, 'text-anchor': 'end' }, fyTicks).textContent = fmt(v, 2);
+    });
+    const topK = spec.map((v, k) => [v, k]).sort((a, b) => b[0] - a[0]).slice(0, 4).map((t) => t[1]);
+    spec.forEach((v, k) => {
+      const hgt = v * scale;
+      bars[k].setAttribute('y', FH - FB - hgt); bars[k].setAttribute('height', hgt);
+      const lab = labels[k];
+      if (topK.includes(k) && v > 1.6 / Math.sqrt(NK)) { lab.style.display = ''; lab.setAttribute('y', FH - FB - hgt - 4); lab.textContent = 'k=' + k; }
+      else lab.style.display = 'none';
+    });
+    const flat = fmt(1 / Math.sqrt(NK), 3);
+    fcap.textContent = `${Object.keys(specKeys).find((n) => specKeys[n] === specKey)} at epoch ${f.epoch}. A flat spectrum would put ${flat} at every frequency; labels mark the strongest.`;
+
+    exRows.forEach((r, i) => {
+      const ok = f.example_pred[i] === ex.answer[i];
+      r.pred.textContent = f.example_pred[i];
+      r.ok.textContent = ok ? 'yes' : 'no'; r.ok.className = ok ? 'ok' : 'bad';
+    });
+  }
+
+  // ---------------------------------------------------------------- transport
+  function play() {
+    if (timer) return;
+    if (cur >= NF - 1) setFrame(0);
+    playBtn.textContent = 'pause';
+    timer = setInterval(() => { if (cur >= NF - 1) pause(); else setFrame(cur + 1); }, Number(speedSel.value));
+  }
+  function pause() { clearInterval(timer); timer = null; playBtn.textContent = 'play'; }
+  playBtn.addEventListener('click', () => (timer ? pause() : play()));
+  speedSel.addEventListener('change', () => { if (timer) { pause(); play(); } });
+  slider.addEventListener('input', () => { pause(); setFrame(Number(slider.value)); });
+  document.addEventListener('keydown', (ev) => {
+    if (ev.target.tagName === 'SELECT' || ev.target.tagName === 'INPUT') { if (ev.key !== ' ') return; }
+    const step = ev.shiftKey ? 10 : 1;
+    if (ev.key === 'ArrowRight') { pause(); setFrame(cur + step); }
+    else if (ev.key === 'ArrowLeft') { pause(); setFrame(cur - step); }
+    else if (ev.key === 'Home') { pause(); setFrame(0); }
+    else if (ev.key === 'End') { pause(); setFrame(NF - 1); }
+    else if (ev.key === ' ') { timer ? pause() : play(); }
+    else return;
+    ev.preventDefault();
+  });
+
+  lossChart.draw(); accChart.draw();
+  setFrame(0);
+})();
+</script>
+</body>
+</html>
