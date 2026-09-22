@@ -208,6 +208,107 @@
 		return '<p class="mb-3"><a href="#/blog" class="link-dark blog-back">← Back to posts</a></p>';
 	}
 
+	// ---- Views + comments ------------------------------------------------
+	//
+	// Both are optional and free, configured in assets/js/config.json:
+	//   goatCounterCode -> GoatCounter (also the analytics provider) exposes a
+	//                      public per-path counter; we read it back for the post.
+	//   giscus          -> comments + reactions stored as GitHub Discussions.
+	// With either left blank the corresponding UI simply does not appear.
+
+	var GISCUS_ORIGIN = 'https://giscus.app';
+
+	function siteConfig() {
+		return window.Site && window.Site.config ? window.Site.config : Promise.resolve({});
+	}
+
+	function postMetaHtml(date, slug) {
+		return (
+			'<div class="blog-post-meta blog-info mb-4">' +
+			(date ? '<span>' + escapeHtml(date) + '</span>' : '') +
+			'<span class="blog-views" data-slug="' + escapeHtml(slug) + '" hidden></span>' +
+			'</div>'
+		);
+	}
+
+	// GoatCounter: GET https://<code>.goatcounter.com/counter/<url-encoded path>.json
+	// -> { "count": "1 234" }. Requires "Allow adding visitor counts on your
+	// website" to be ticked in the GoatCounter site settings.
+	function loadViewCount(el, slug) {
+		if (!el) return;
+		siteConfig().then(function (cfg) {
+			if (!cfg.goatCounterCode) return;
+			var path = '/post/' + slug; // must match trackPageView() in main.js
+			var url =
+				'https://' +
+				cfg.goatCounterCode +
+				'.goatcounter.com/counter/' +
+				encodeURIComponent(path) +
+				'.json';
+			fetch(url)
+				.then(function (r) {
+					return r.ok ? r.json() : null;
+				})
+				.then(function (data) {
+					if (!data || data.count == null) return;
+					var n = parseInt(String(data.count).replace(/[^\d]/g, ''), 10);
+					if (isNaN(n)) return;
+					el.textContent = n.toLocaleString('en-US') + (n === 1 ? ' view' : ' views');
+					el.hidden = false;
+				})
+				.catch(function () {
+					/* counter unavailable: leave hidden */
+				});
+		});
+	}
+
+	// giscus: each post maps to one Discussion whose title is the post slug
+	// ("specific" mapping). Pathname mapping would not work here because the
+	// site uses hash routes, so every post would share a single thread.
+	function loadComments(el, slug) {
+		if (!el) return;
+		siteConfig().then(function (cfg) {
+			var g = cfg.giscus;
+			if (!g || !g.repo || !g.repoId || !g.category || !g.categoryId) return;
+			if (!el.isConnected) return; // user navigated away before config arrived
+
+			var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+			var s = document.createElement('script');
+			s.src = GISCUS_ORIGIN + '/client.js';
+			s.async = true;
+			s.crossOrigin = 'anonymous';
+			var attrs = {
+				'data-repo': g.repo,
+				'data-repo-id': g.repoId,
+				'data-category': g.category,
+				'data-category-id': g.categoryId,
+				'data-mapping': 'specific',
+				'data-term': slug,
+				'data-strict': '1',
+				'data-reactions-enabled': '1',
+				'data-emit-metadata': '0',
+				'data-input-position': 'bottom',
+				'data-theme': isDark ? 'dark' : 'light',
+				'data-lang': 'en',
+				'data-loading': 'lazy',
+			};
+			Object.keys(attrs).forEach(function (k) {
+				s.setAttribute(k, attrs[k]);
+			});
+			el.innerHTML = '<h2 class="blog-comments-title">Comments</h2>';
+			el.appendChild(s);
+		});
+	}
+
+	function setGiscusTheme(isDark) {
+		var iframe = document.querySelector('iframe.giscus-frame');
+		if (!iframe || !iframe.contentWindow) return;
+		iframe.contentWindow.postMessage(
+			{ giscus: { setConfig: { theme: isDark ? 'dark' : 'light' } } },
+			GISCUS_ORIGIN
+		);
+	}
+
 	function renderPost(slug) {
 		var v = views();
 		if (!v.list || !v.post) return;
@@ -242,13 +343,16 @@
 						'<h1 class="blog-post-title">' +
 						escapeHtml(title) +
 						'</h1>' +
-						(date ? '<div class="blog-info mb-4">' + escapeHtml(date) + '</div>' : '') +
+						postMetaHtml(date, slug) +
 						'<div class="blog-post-body">' +
 						clean +
-						'</div>';
+						'</div>' +
+						'<section class="blog-comments" id="blogComments"></section>';
 					v.post.style.display = '';
 
 					decorate(v.post.querySelector('.blog-post-body'));
+					loadViewCount(v.post.querySelector('.blog-views'), slug);
+					loadComments(v.post.querySelector('#blogComments'), slug);
 					window.scrollTo({ top: 0, behavior: 'auto' });
 					afterRender();
 				})
@@ -264,10 +368,11 @@
 
 	// ---- Theme hook + public API ------------------------------------------
 
-	// Sync the highlight.js stylesheet to the active theme.
+	// Sync the highlight.js stylesheet (and the giscus frame) to the active theme.
 	function setHljsTheme(isDark) {
 		var link = document.getElementById('hljs-theme');
 		if (link) link.href = isDark ? HLJS_DARK : HLJS_LIGHT;
+		setGiscusTheme(isDark);
 	}
 
 	window.Blog = {

@@ -202,6 +202,15 @@
 	//   googleAnalyticsMeasurementId  -> Google Analytics 4
 	//   goatCounterCode               -> https://<code>.goatcounter.com
 
+	// Shared with blog.js (view counts, giscus) so config is only fetched once.
+	var configPromise = fetch('assets/js/config.json')
+		.then(function (r) {
+			return r.ok ? r.json() : {};
+		})
+		.catch(function () {
+			return {};
+		});
+
 	var gaReady = false;
 	var gcReady = false;
 	var pendingViews = [];
@@ -285,6 +294,7 @@
 		showSection: showSection,
 		staggerReveal: staggerReveal,
 		updateProgress: updateProgress,
+		config: configPromise,
 	};
 
 	document.addEventListener('DOMContentLoaded', function () {
@@ -300,11 +310,6 @@
 
 		applyRoute();
 
-		fetch('assets/js/config.json')
-			.then(function (r) {
-				return r.ok ? r.json() : {};
-			})
-			.then(loadAnalytics)
-			.catch(function () {});
+		configPromise.then(loadAnalytics);
 	});
 })();

@@ -72,3 +72,44 @@ with [marked](https://marked.js.org/), sanitizes it with
 [DOMPurify](https://github.com/cure53/DOMPurify), then applies
 [highlight.js](https://highlightjs.org/) and [KaTeX](https://katex.org/).
 Individual posts are linkable at `#/post/<slug>`.
+
+## Views, likes, and comments
+
+Both features are optional, free, and switched on purely by filling in
+[`assets/js/config.json`](../assets/js/config.json). Leave a value blank and the
+matching UI does not render at all. Nothing is stored in this repository.
+
+### Comments and likes (giscus)
+
+Comments and emoji reactions live as **GitHub Discussions** on this repo, one
+Discussion per post (titled with the post's slug). Readers sign in with GitHub;
+you moderate from the repo's Discussions tab.
+
+One-time setup:
+
+1. **Settings → General → Features → tick "Discussions"** on the repo.
+2. Install the giscus app on the repo: <https://github.com/apps/giscus>.
+3. Open <https://giscus.app>, enter `NietZteiN/nietztein.github.io`, and pick the
+   **Announcements** category (so only you can open new threads; readers can
+   still reply). The page prints a `data-category-id` — copy it into
+   `giscus.categoryId` in `config.json`. The `repoId` is already filled in.
+4. Commit and push.
+
+The embed uses the `specific` mapping keyed by slug — pathname mapping would
+put every post in one thread, because the site uses hash routes.
+Reactions on the Discussion itself appear above the comment box and act as the
+post's "likes". The comment frame follows the site's light/dark toggle.
+
+### View counts (GoatCounter)
+
+GoatCounter is free for personal sites and doubles as privacy-friendly
+analytics (no cookies, no consent banner).
+
+1. Sign up at <https://www.goatcounter.com/signup> and pick a site code, e.g.
+   `nietztein` → `https://nietztein.goatcounter.com`.
+2. In GoatCounter, **Settings → Site → tick "Allow adding visitor counts on
+   your website"**. That exposes the public per-path counter the post page reads.
+3. Put the code into `goatCounterCode` in `config.json`, commit, push.
+
+Each post then shows "N views" next to its date. Counts are per path
+(`/post/<slug>`) and start from the moment tracking goes live.

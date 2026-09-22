@@ -890,3 +890,22 @@ body.palette-is-open {
 		scroll-behavior: auto !important;
 	}
 }
+
+/* ---------- Blog comments (giscus) ------------------------------------ */
+
+.blog-comments {
+	max-width: 46rem;
+	margin-top: 3.5rem;
+	padding-top: 1.5rem;
+	border-top: 1px solid var(--border);
+}
+
+.blog-comments:empty {
+	display: none;
+}
+
+.blog-comments-title {
+	font-size: 1.25rem;
+	font-weight: 600;
+	margin-bottom: 1rem;
+}
