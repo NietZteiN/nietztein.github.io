@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Translation Aligner</title>
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    --bg: #f5f2ea;
+    --paper: #fffdf8;
+    --ink: #2a2924;
+    --muted: #726d61;
+    --line: #dfd8c6;
+    --stripe: #f4f0e6;
+    --hover: #e7eff6;
+    --accent: #2c6a8e;
+    --accent-ink: #ffffff;
+    --maybe-bg: #fff0b8;
+    --maybe-line: #d39c00;
+    --covered-bg: #e2eedd;
+    --covered-line: #6f9a62;
+    --btn: #f1ede3;
+    --btn-hover: #e4ded0;
+    --drop: #cfe3f2;
+    --serif-en: Georgia, "Times New Roman", "Noto Serif", serif;
+    --serif-ja: "Noto Serif JP", "Noto Serif CJK JP", "Hiragino Mincho ProN", "Yu Mincho", "IPAMincho", "IPAexMincho", "IPAPGothic", "IPAGothic", serif;
+    --sans: system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--sans); font-size: 14px; }
+  body { padding: 0 0 60px; }
+
+  header { padding: 14px 20px 10px; border-bottom: 1px solid var(--line); background: var(--paper); }
+  header h1 { margin: 0 0 8px; font: 500 20px/1.2 var(--serif-en); letter-spacing: 0.01em; }
+  header h1 small { color: var(--muted); font-family: var(--sans); font-size: 12px; margin-left: 10px; }
+  .bar { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; }
+  .bar + .bar { margin-top: 8px; }
+  label.field { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); }
+  input[type=text], select { font: inherit; padding: 5px 8px; border: 1px solid var(--line); border-radius: 4px; background: #fff; color: var(--ink); }
+  input#title { min-width: 260px; }
+  button { font: inherit; padding: 5px 10px; border: 1px solid var(--line); border-radius: 4px; background: var(--btn); color: var(--ink); cursor: pointer; }
+  button:hover { background: var(--btn-hover); }
+  button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  button.primary:hover { background: #245877; }
+  button:disabled { opacity: 0.5; cursor: default; }
+  button.toggle[aria-pressed=true] { background: #dbe8f1; border-color: var(--accent); }
+  .sep { width: 1px; height: 22px; background: var(--line); }
+
+  main { display: grid; grid-template-columns: 1fr; gap: 0; }
+  main.with-panel { grid-template-columns: 1fr 320px; }
+
+  .inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 12px 20px; }
+  .inputs label { display: block; color: var(--muted); margin-bottom: 4px; }
+  textarea { width: 100%; min-height: 120px; resize: vertical; font: 14px/1.6 var(--serif-en); padding: 8px 10px; border: 1px solid var(--line); border-radius: 4px; background: #fff; color: var(--ink); }
+  textarea#src { font-family: var(--serif-ja); line-height: 1.9; }
+  .inputs .actions { grid-column: 1 / -1; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .hint { color: var(--muted); }
+
+  .status { padding: 4px 20px 8px; color: var(--muted); }
+  .status b { color: var(--ink); font-weight: 600; }
+
+  .tablewrap { padding: 0 20px; }
+  table.beads { width: 100%; border-collapse: collapse; background: var(--paper); border: 1px solid var(--line); }
+  table.beads th { text-align: left; font-weight: 600; color: var(--muted); padding: 8px 10px; border-bottom: 1px solid var(--line); font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; }
+  tr.bead:nth-child(4n+3) td { background: var(--stripe); }
+  tr.bead:hover td { background: var(--hover); }
+  tr.bead td { vertical-align: top; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+  td.num { width: 40px; color: var(--muted); font-variant-numeric: tabular-nums; padding-top: 12px; }
+  td.src { width: 46%; font-family: var(--serif-ja); font-size: 16px; line-height: 1.9; }
+  td.tgt { width: 46%; font-family: var(--serif-en); font-size: 15px; line-height: 1.6; }
+  td.ctrl { width: 64px; text-align: center; padding-top: 10px; white-space: nowrap; }
+  td.ctrl button { padding: 2px 6px; font-size: 12px; margin: 0 1px; }
+  td.empty-cell .placeholder { color: var(--muted); font-style: italic; font-family: var(--sans); font-size: 13px; }
+
+  tr.gap td { padding: 0; height: 4px; border: 0; transition: height 0.1s; }
+  body.dragging tr.gap td { height: 14px; background: repeating-linear-gradient(90deg, var(--line) 0 6px, transparent 6px 12px) center / 100% 1px no-repeat; }
+  tr.gap td.over { background: var(--drop); height: 22px; }
+  td.over { outline: 2px dashed var(--accent); outline-offset: -3px; }
+
+  .seg { position: relative; display: flex; gap: 8px; align-items: flex-start; padding: 4px 6px; margin: 0 -6px; border-radius: 4px; cursor: grab; }
+  .seg:hover { background: rgba(44, 106, 142, 0.08); }
+  .seg.is-dragging { opacity: 0.4; }
+  .seg .text { flex: 1; min-width: 0; }
+  .seg .segbtns { flex: none; opacity: 0; display: inline-flex; gap: 2px; font-family: var(--sans); }
+  .seg:hover .segbtns, .seg:focus-within .segbtns { opacity: 1; }
+  .seg .segbtns button { padding: 0 5px; font-size: 11px; line-height: 18px; }
+
+  /* dropped-word nudge */
+  .tok { border-radius: 3px; }
+  .tok.maybe { background: var(--maybe-bg); box-shadow: inset 0 -2px 0 var(--maybe-line); cursor: pointer; }
+  .tok.covered { background: var(--covered-bg); box-shadow: inset 0 -2px 0 var(--covered-line); cursor: pointer; }
+  .tok.maybe:hover, .tok.covered:hover { filter: brightness(0.95); }
+
+  aside.panel { border-left: 1px solid var(--line); background: var(--paper); padding: 14px 16px; position: sticky; top: 0; align-self: start; max-height: 100vh; overflow: auto; }
+  aside.panel h2 { margin: 0 0 6px; font: 600 14px var(--sans); }
+  aside.panel p { margin: 0 0 8px; color: var(--muted); line-height: 1.45; }
+  aside.panel textarea { min-height: 260px; font: 13px/1.5 ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+  aside.panel .gl-status { margin-top: 6px; min-height: 18px; }
+  aside.panel .gl-status.err { color: #a12d2d; }
+
+  .legend { display: inline-flex; gap: 12px; align-items: center; }
+  .legend span.sw { display: inline-block; width: 12px; height: 12px; border-radius: 2px; vertical-align: -1px; margin-right: 4px; }
+
+  .toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 8px 14px; border-radius: 4px; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+  .toast.show { opacity: 1; }
+
+  footer { padding: 12px 20px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+  @media (max-width: 900px) {
+    .inputs { grid-template-columns: 1fr; }
+    main.with-panel { grid-template-columns: 1fr; }
+    aside.panel { position: static; max-height: none; border-left: 0; border-top: 1px solid var(--line); }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Translation Aligner <small>Japanese source and English translation, side by side</small></h1>
+  <div class="bar">
+    <label class="field">Title <input type="text" id="title" placeholder="Untitled alignment"></label>
+    <label class="field">Split by
+      <select id="splitMode">
+        <option value="lines">lines (poetry)</option>
+        <option value="sentences">sentences (prose)</option>
+      </select>
+    </label>
+    <button id="btnAlign" class="primary" title="Split both texts and align them automatically">Align automatically</button>
+    <span class="sep"></span>
+    <button id="btnUndo" title="Undo the last alignment edit (Ctrl+Z)">Undo</button>
+    <button id="btnNudge" class="toggle" aria-pressed="false" title="Highlight source words that may not be reflected in the aligned target">Dropped-word nudge</button>
+    <button id="btnGlossary" class="toggle" aria-pressed="false">Glossary</button>
+    <span class="sep"></span>
+    <button id="btnSave">Save JSON</button>
+    <button id="btnLoad">Load JSON</button>
+    <input type="file" id="fileInput" accept=".json,application/json" hidden>
+    <button id="btnMd">Export Markdown</button>
+    <button id="btnTsv">Export TSV</button>
+    <span class="sep"></span>
+    <button id="btnSample" title="Replace the texts with the bundled sample poem">Load sample</button>
+  </div>
+</header>
+
+<main id="main">
+  <div>
+    <section class="inputs">
+      <div>
+        <label for="src">Japanese source</label>
+        <textarea id="src" lang="ja" spellcheck="false"></textarea>
+      </div>
+      <div>
+        <label for="tgt">English translation</label>
+        <textarea id="tgt" lang="en" spellcheck="false"></textarea>
+      </div>
+      <div class="actions">
+        <span class="hint">Paste both texts, choose a split mode, then click Align automatically. Drag a segment up or down to move it into another row, or use the small arrows. Segments can also be dropped into the gap between rows to make a new row.</span>
+      </div>
+    </section>
+
+    <div class="status" id="status"></div>
+
+    <div class="tablewrap">
+      <table class="beads" id="table">
+        <thead>
+          <tr><th>#</th><th>Source</th><th></th><th>Target</th></tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+
+    <footer>
+      <div id="nudgeNote" hidden>
+        <span class="legend"><span><span class="sw" style="background: var(--maybe-bg); box-shadow: inset 0 -2px 0 var(--maybe-line)"></span>possibly dropped</span>
+        <span><span class="sw" style="background: var(--covered-bg); box-shadow: inset 0 -2px 0 var(--covered-line)"></span>marked as covered</span></span>
+        <br>The nudge is a heuristic, not a dictionary. A word counts as reflected if the glossary maps it to an English word found in the aligned target, if it is a number that appears in the target, or if its romaji loosely resembles an English word there (katakana and kana words only). Everything else is only "possibly dropped". Click a highlighted word to mark it as covered (saved in the alignment file); shift-click to add it to the glossary.
+      </div>
+      <div>The sample poem is the opening of "Yogoretchimatta kanashimi ni" by Nakahara Chuya (1934, public domain in Japan; he died in 1937). The English beside it is a rough literal gloss written for this demo, not a published translation.</div>
+    </footer>
+  </div>
+
+  <aside class="panel" id="panel" hidden>
+    <h2>Glossary</h2>
+    <p>JSON object: Japanese word (as the tokenizer produces it) to a list of English words. A source word is reflected when any listed English word begins a word in the aligned target, so "fall" also matches "falls" and "falling". Saved with the alignment.</p>
+    <textarea id="glossary" spellcheck="false"></textarea>
+    <div class="bar" style="margin-top: 8px"><button id="btnGlossaryApply" class="primary">Apply</button><button id="btnGlossaryReset">Reset to sample</button></div>
+    <div class="gl-status" id="glStatus"></div>
+    <h2 style="margin-top: 16px">Tokenizer</h2>
+    <p id="tokInfo"></p>
+  </aside>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+
+/* ------------------------------------------------------------------ */
+/* Sample: Nakahara Chuya, opening stanzas of 汚れつちまつた悲しみに      */
+/* (Yagi no uta, 1934). The English is a plain literal gloss for demo.  */
+/* ------------------------------------------------------------------ */
+const SAMPLE = {
+  title: 'Nakahara Chuya, Yogoretchimatta kanashimi ni (rough gloss)',
+  split_mode: 'lines',
+  source_text: [
+    '汚れつちまつた悲しみに',
+    '今日も小雪の降りかかる',
+    '汚れつちまつた悲しみに',
+    '今日も風さへ吹きすぎる',
+    '',
+    '汚れつちまつた悲しみは',
+    'たとへば狐の革裘',
+    '汚れつちまつた悲しみは',
+    '小雪のかかつてちぢこまる',
+  ].join('\n'),
+  target_text: [
+    'On the sorrow that has been soiled',
+    'today too a light snow comes falling',
+    'on the sorrow that has been soiled',
+    'today too even the wind blows past',
+    '',
+    'The sorrow that has been soiled',
+    'is, say, a fox\'s fur coat',
+    'the sorrow that has been soiled',
+    'shrinks small beneath the settling snow',
+  ].join('\n'),
+  glossary: {
+    '汚れ': ['soil', 'stain', 'dirt'],
+    '悲しみ': ['sorrow', 'sadness', 'grief'],
+    '今日': ['today'],
+    '小雪': ['light snow', 'snow'],
+    '降り': ['fall'],
+    '風': ['wind'],
+    '吹き': ['blow'],
+    '狐': ['fox'],
+    '革裘': ['fur coat', 'fur', 'coat'],
+    'ちぢこまる': ['shrink', 'shrivel', 'huddle'],
+    'すぎる': ['past', 'pass', 'by'],
+    'たとへば': ['say', 'for example', 'like', 'as if'],
+    '倦怠': ['weariness', 'ennui', 'lassitude'],
+    '死': ['death', 'die'],
+    '夢': ['dream'],
+    '日': ['day', 'sun'],
+    '暮れ': ['dusk', 'darken', 'end'],
+  },
+};
+
+const STORAGE_KEY = 'translation-aligner:v1';
+const UNDO_LIMIT = 50;
+const EN_CHARS_PER_JA_CHAR = 2.2;
+
+/* ------------------------------------------------------------------ */
+/* State                                                                */
+/* ------------------------------------------------------------------ */
+const state = {
+  title: '',
+  source_text: '',
+  target_text: '',
+  split_mode: 'lines',
+  beads: [],          // [{source: [string], target: [string]}]
+  covered: [],        // source tokens the user marked as covered
+  glossary: {},       // Japanese token -> [English words]
+  nudge: false,
+  panel: false,
+};
+const undoStack = [];
+
+const $ = (id) => document.getElementById(id);
+const els = {
+  title: $('title'), splitMode: $('splitMode'), src: $('src'), tgt: $('tgt'),
+  tbody: $('tbody'), status: $('status'), panel: $('panel'), glossary: $('glossary'),
+  glStatus: $('glStatus'), tokInfo: $('tokInfo'), toast: $('toast'), main: $('main'),
+  nudgeNote: $('nudgeNote'), fileInput: $('fileInput'),
+};
+
+/* ------------------------------------------------------------------ */
+/* Segmentation                                                         */
+/* ------------------------------------------------------------------ */
+function splitLines(text) {
+  return text.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+}
+
+// Japanese sentences end at 。！？ (full or half width); closing brackets
+// that follow the terminal punctuation stay attached. Blank lines are
+// paragraph boundaries; single line breaks are joined.
+function splitJaSentences(text) {
+  const terminal = '。！？!?';
+  const closers = '」』）)”’】';
+  const out = [];
+  for (const para of text.split(/\n\s*\n/)) {
+    const flat = para.replace(/\r?\n/g, '').trim();
+    let buf = '';
+    for (let i = 0; i < flat.length; i++) {
+      const ch = flat[i];
+      buf += ch;
+      if (terminal.includes(ch)) {
+        // absorb runs of terminal marks and closing brackets
+        while (i + 1 < flat.length && (terminal.includes(flat[i + 1]) || closers.includes(flat[i + 1]))) {
+          buf += flat[++i];
+        }
+        if (buf.trim()) out.push(buf.trim());
+        buf = '';
+      }
+    }
+    if (buf.trim()) out.push(buf.trim());
+  }
+  return out;
+}
+
+// English sentences end at . ! ? (optionally followed by closing quotes
+// or brackets) and then whitespace or end of text. A small abbreviation
+// guard keeps "Mr. Smith" and "J. Smith" together.
+const EN_ABBREV = /(?:\b(?:Mr|Mrs|Ms|Dr|Prof|Sr|Jr|St|Mt|Rev|Gen|Col|Lt|Capt|Sgt|Inc|Ltd|Co|Vol|Fig|Ch|Ed|No)|\b(?:vs|etc|cf|approx|ca|e\.g|i\.e)|\b[A-Z])\.["'”’)\]]*$/;
+function splitEnSentences(text) {
+  const out = [];
+  for (const para of text.split(/\n\s*\n/)) {
+    const flat = para.replace(/\s+/g, ' ').trim();
+    if (!flat) continue;
+    const re = /[^.!?]*[.!?]+["'”’)\]]*(?:\s+|$)|[^.!?]+$/g;
+    let buf = '';
+    let m;
+    while ((m = re.exec(flat)) !== null) {
+      if (m[0] === '') { re.lastIndex++; continue; }
+      buf += m[0];
+      const t = buf.trim();
+      const endsInAbbrev = EN_ABBREV.test(t) && re.lastIndex < flat.length;
+      if (endsInAbbrev) continue;
+      out.push(t);
+      buf = '';
+    }
+    if (buf.trim()) out.push(buf.trim());
+  }
+  return out;
+}
+
+function segment(text, side, mode) {
+  if (mode === 'lines') return splitLines(text);
+  return side === 'source' ? splitJaSentences(text) : splitEnSentences(text);
+}
+
+/* ------------------------------------------------------------------ */
+/* Alignment: Gale and Church style length based DP                    */
+/* ------------------------------------------------------------------ */
+function normCdf(x) {
+  // Abramowitz and Stegun 7.1.26 via erf
+  const t = 1 / (1 + 0.3275911 * Math.abs(x) / Math.SQRT2);
+  const y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-(x * x) / 2);
+  return 0.5 * (1 + (x >= 0 ? y : -y));
+}
+
+// Cost of matching l1 source characters with l2 (already scaled) target
+// characters. c = 1 after scaling, variance parameter s2 = 6.8 as in the
+// original paper. Returns a cost in nats (smaller is better).
+function lengthCost(l1, l2) {
+  if (l1 === 0 && l2 === 0) return 0;
+  const mean = (l1 + l2) / 2;
+  const delta = (l2 - l1) / Math.sqrt(mean * 6.8);
+  const p = 2 * (1 - normCdf(Math.abs(delta)));
+  return -Math.log(Math.max(p, 1e-12));
+}
+
+// Bead priors from Gale and Church: 1-1 0.89, 1-0 and 0-1 0.0099, 2-1 and 1-2 0.089.
+const BEADS = [
+  { di: 1, dj: 1, penalty: 0 },
+  { di: 1, dj: 0, penalty: -Math.log(0.0099 / 0.89) },
+  { di: 0, dj: 1, penalty: -Math.log(0.0099 / 0.89) },
+  { di: 2, dj: 1, penalty: -Math.log(0.089 / 0.89) },
+  { di: 1, dj: 2, penalty: -Math.log(0.089 / 0.89) },
+];
+
+function jaLength(s) { return s.replace(/\s+/g, '').length; }
+function enLength(s) { return s.trim().length / EN_CHARS_PER_JA_CHAR; }
+
+function alignSegments(src, tgt) {
+  if (src.length === tgt.length) {
+    return src.map((s, i) => ({ source: [s], target: [tgt[i]] }));
+  }
+  const n = src.length, m = tgt.length;
+  const sl = src.map(jaLength), tl = tgt.map(enLength);
+  // Prefix sums so that a 2-segment bead length is a subtraction.
+  const sp = [0], tp = [0];
+  for (let i = 0; i < n; i++) sp.push(sp[i] + sl[i]);
+  for (let j = 0; j < m; j++) tp.push(tp[j] + tl[j]);
+
+  const W = m + 1;
+  const D = new Float64Array((n + 1) * W).fill(Infinity);
+  const back = new Int8Array((n + 1) * W).fill(-1);
+  D[0] = 0;
+  for (let i = 0; i <= n; i++) {
+    for (let j = 0; j <= m; j++) {
+      if (i === 0 && j === 0) continue;
+      let best = Infinity, arg = -1;
+      for (let b = 0; b < BEADS.length; b++) {
+        const { di, dj, penalty } = BEADS[b];
+        if (i - di < 0 || j - dj < 0) continue;
+        const prev = D[(i - di) * W + (j - dj)];
+        if (prev === Infinity) continue;
+        const cost = prev + penalty + lengthCost(sp[i] - sp[i - di], tp[j] - tp[j - dj]);
+        if (cost < best) { best = cost; arg = b; }
+      }
+      D[i * W + j] = best;
+      back[i * W + j] = arg;
+    }
+  }
+  const beads = [];
+  let i = n, j = m;
+  while (i > 0 || j > 0) {
+    const b = BEADS[back[i * W + j]];
+    beads.push({ source: src.slice(i - b.di, i), target: tgt.slice(j - b.dj, j) });
+    i -= b.di; j -= b.dj;
+  }
+  return beads.reverse();
+}
+
+/* ------------------------------------------------------------------ */
+/* Japanese tokenization for the dropped-word nudge                     */
+/* ------------------------------------------------------------------ */
+const HAS_SEGMENTER = typeof Intl !== 'undefined' && typeof Intl.Segmenter === 'function';
+const jaSegmenter = HAS_SEGMENTER ? new Intl.Segmenter('ja', { granularity: 'word' }) : null;
+const tokenCache = new Map();
+
+// Particles, copulas, light verbs and pronouns that carry little content.
+const STOP = new Set(('の は が を に へ と で も や か ね よ な から まで より など ば し て た だ です ます ' +
+  'ない いる ある する なる いた いて した して こと もの これ それ あれ この その あの どの ここ そこ あそこ ' +
+  'ため よう さえ さへ とか だけ ほど くらい ぐらい など しか ながら つつ ても でも けど けれど しかし そして ' +
+  'また まだ もう ずっと とても ちまつ ちまっ まつ つち って ゐ ゐる ゐた なく なし かかつ かかっ たとへ たとえ ' +
+  'ところ とき うち わたし ぼく あなた かれ かのじょ おれ われ いい よい ' +
+  'う ず ぬ ん ぞ ぜ わ さ ろ れ').split(/\s+/));
+
+const RE_WORDISH = /[\p{L}\p{N}]/u;
+const RE_KANA_ONLY = /^[\p{Script=Hiragana}\p{Script=Katakana}ー]+$/u;
+const RE_KATAKANA = /^[\p{Script=Katakana}ー]+$/u;
+const RE_HIRAGANA = /^[\p{Script=Hiragana}]+$/u;
+const RE_DIGITS = /^[0-9０-９]+$/;
+const RE_KANJI_NUM = /^[〇一二三四五六七八九十百千万]+$/;
+
+function isContentToken(t) {
+  if (!RE_WORDISH.test(t)) return false;
+  if (STOP.has(t)) return false;
+  if (RE_KANA_ONLY.test(t) && [...t].length < 2) return false;
+  return true;
+}
+
+// Returns [{text, start, end}] content tokens for one source segment.
+function tokenizeJa(text) {
+  if (tokenCache.has(text)) return tokenCache.get(text);
+  const toks = [];
+  if (jaSegmenter) {
+    for (const s of jaSegmenter.segment(text)) {
+      if (s.isWordLike && isContentToken(s.segment)) {
+        toks.push({ text: s.segment, start: s.index, end: s.index + s.segment.length });
+      }
+    }
+  } else {
+    // Fallback: chunk runs of kanji or katakana into character bigrams.
+    const re = /[\p{Script=Han}\p{Script=Katakana}ー0-9０-９]+/gu;
+    let m;
+    while ((m = re.exec(text)) !== null) {
+      const run = m[0];
+      for (let k = 0; k < run.length; k += 2) {
+        const piece = run.slice(k, k + 2);
+        toks.push({ text: piece, start: m.index + k, end: m.index + k + piece.length });
+      }
+    }
+  }
+  tokenCache.set(text, toks);
+  return toks;
+}
+
+/* ------------------------------------------------------------------ */
+/* Romaji and loose matching                                            */
+/* ------------------------------------------------------------------ */
+const KANA_MAP = {
+  あ: 'a', い: 'i', う: 'u', え: 'e', お: 'o', か: 'ka', き: 'ki', く: 'ku', け: 'ke', こ: 'ko',
+  さ: 'sa', し: 'shi', す: 'su', せ: 'se', そ: 'so', た: 'ta', ち: 'chi', つ: 'tsu', て: 'te', と: 'to',
+  な: 'na', に: 'ni', ぬ: 'nu', ね: 'ne', の: 'no', は: 'ha', ひ: 'hi', ふ: 'fu', へ: 'he', ほ: 'ho',
+  ま: 'ma', み: 'mi', む: 'mu', め: 'me', も: 'mo', や: 'ya', ゆ: 'yu', よ: 'yo',
+  ら: 'ra', り: 'ri', る: 'ru', れ: 're', ろ: 'ro', わ: 'wa', ゐ: 'i', ゑ: 'e', を: 'o', ん: 'n',
+  が: 'ga', ぎ: 'gi', ぐ: 'gu', げ: 'ge', ご: 'go', ざ: 'za', じ: 'ji', ず: 'zu', ぜ: 'ze', ぞ: 'zo',
+  だ: 'da', ぢ: 'ji', づ: 'zu', で: 'de', ど: 'do', ば: 'ba', び: 'bi', ぶ: 'bu', べ: 'be', ぼ: 'bo',
+  ぱ: 'pa', ぴ: 'pi', ぷ: 'pu', ぺ: 'pe', ぽ: 'po', ぁ: 'a', ぃ: 'i', ぅ: 'u', ぇ: 'e', ぉ: 'o', ゔ: 'vu',
+  きゃ: 'kya', きゅ: 'kyu', きょ: 'kyo', しゃ: 'sha', しゅ: 'shu', しょ: 'sho', ちゃ: 'cha', ちゅ: 'chu', ちょ: 'cho',
+  にゃ: 'nya', にゅ: 'nyu', にょ: 'nyo', ひゃ: 'hya', ひゅ: 'hyu', ひょ: 'hyo', みゃ: 'mya', みゅ: 'myu', みょ: 'myo',
+  りゃ: 'rya', りゅ: 'ryu', りょ: 'ryo', ぎゃ: 'gya', ぎゅ: 'gyu', ぎょ: 'gyo', じゃ: 'ja', じゅ: 'ju', じょ: 'jo',
+  びゃ: 'bya', びゅ: 'byu', びょ: 'byo', ぴゃ: 'pya', ぴゅ: 'pyu', ぴょ: 'pyo',
+  ふぁ: 'fa', ふぃ: 'fi', ふぇ: 'fe', ふぉ: 'fo', てぃ: 'ti', でぃ: 'di', うぃ: 'wi', うぇ: 'we', うぉ: 'wo',
+  ゔぁ: 'va', ゔぃ: 'vi', ゔぇ: 've', ゔぉ: 'vo', しぇ: 'she', ちぇ: 'che', じぇ: 'je', つぁ: 'tsa', つぇ: 'tse', つぉ: 'tso',
+};
+
+function toHiragana(s) {
+  return s.replace(/[ァ-ヶ]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) - 0x60));
+}
+
+function romaji(word) {
+  const h = toHiragana(word);
+  let out = '';
+  for (let i = 0; i < h.length; i++) {
+    const two = h.slice(i, i + 2);
+    if (KANA_MAP[two]) { out += KANA_MAP[two]; i++; continue; }
+    const ch = h[i];
+    if (ch === 'っ') {
+      const next = KANA_MAP[h.slice(i + 1, i + 3)] || KANA_MAP[h[i + 1]] || '';
+      if (next) out += next[0] === 'c' ? 't' : next[0];
+      continue;
+    }
+    if (ch === 'ー') { out += out.slice(-1); continue; }
+    out += KANA_MAP[ch] || '';
+  }
+  return out;
+}
+
+// Reduce both romaji and English to a rough phonetic form for comparison.
+function phonetic(s) {
+  return s.toLowerCase()
+    .replace(/[^a-z]/g, '')
+    .replace(/ph/g, 'f').replace(/ck/g, 'k').replace(/qu/g, 'k').replace(/x/g, 'ks')
+    .replace(/c(?=[eiy])/g, 's').replace(/c/g, 'k')
+    .replace(/th/g, 's').replace(/sh/g, 's').replace(/ch/g, 't').replace(/ts/g, 't')
+    .replace(/[lr]/g, 'r').replace(/v/g, 'b').replace(/f/g, 'h').replace(/w/g, 'u')
+    .replace(/(.)\1+/g, '$1');
+}
+
+function levenshtein(a, b) {
+  const prev = new Array(b.length + 1);
+  for (let j = 0; j <= b.length; j++) prev[j] = j;
+  for (let i = 1; i <= a.length; i++) {
+    let diag = prev[0];
+    prev[0] = i;
+    for (let j = 1; j <= b.length; j++) {
+      const tmp = prev[j];
+      prev[j] = Math.min(prev[j] + 1, prev[j - 1] + 1, diag + (a[i - 1] === b[j - 1] ? 0 : 1));
+      diag = tmp;
+    }
+  }
+  return prev[b.length];
+}
+
+function looselySimilar(rom, word) {
+  const a = phonetic(rom), b = phonetic(word);
+  if (a.length < 2 || b.length < 2) return false;
+  if (a === b) return true;
+  const ratio = 1 - levenshtein(a, b) / Math.max(a.length, b.length);
+  if (ratio >= 0.6) return true;
+  const sa = a.replace(/[aeiou]/g, ''), sb = b.replace(/[aeiou]/g, '');
+  return sa.length >= 2 && sb.length >= 2 && (sa === sb || (sa.length >= 3 && (sa.startsWith(sb) || sb.startsWith(sa))));
+}
+
+const NUMBER_WORDS = { 0: 'zero', 1: 'one', 2: 'two', 3: 'three', 4: 'four', 5: 'five', 6: 'six', 7: 'seven', 8: 'eight', 9: 'nine',
+  10: 'ten', 11: 'eleven', 12: 'twelve', 13: 'thirteen', 14: 'fourteen', 15: 'fifteen', 16: 'sixteen', 17: 'seventeen', 18: 'eighteen',
+  19: 'nineteen', 20: 'twenty', 30: 'thirty', 40: 'forty', 50: 'fifty', 60: 'sixty', 70: 'seventy', 80: 'eighty', 90: 'ninety',
+  100: 'hundred', 1000: 'thousand', 10000: 'ten thousand' };
+
+function kanjiToNumber(s) {
+  const digits = { 〇: 0, 一: 1, 二: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9 };
+  const units = { 十: 10, 百: 100, 千: 1000, 万: 10000 };
+  let total = 0, section = 0, current = 0;
+  for (const ch of s) {
+    if (ch in digits) current = digits[ch];
+    else if (units[ch] === 10000) { total += (section + (current || 0)) * 10000; section = 0; current = 0; }
+    else if (ch in units) { section += (current || 1) * units[ch]; current = 0; }
+  }
+  return total + section + current;
+}
+
+/* ------------------------------------------------------------------ */
+/* Reflection test: is a source token visible in the target text?       */
+/* ------------------------------------------------------------------ */
+function escapeRe(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
+function targetWords(targetText) {
+  return (targetText.toLowerCase().match(/[a-z][a-z'’-]*/g) || []);
+}
+
+// Glossary entries that apply to a token: an exact key, or a key that
+// shares a kanji-containing prefix with the token (so "降り" covers the
+// tokenizer's "降りかかる" and "吹き" covers a bare "吹").
+const RE_HAS_KANJI = /\p{Script=Han}/u;
+function glossaryEntriesFor(tok) {
+  const out = [];
+  for (const [key, val] of Object.entries(state.glossary)) {
+    if (!Array.isArray(val)) continue;
+    const hit = key === tok
+      || (RE_HAS_KANJI.test(key) && tok.startsWith(key))
+      || (RE_HAS_KANJI.test(tok) && key.startsWith(tok));
+    if (hit) out.push(...val);
+  }
+  return out;
+}
+
+function isReflected(tok, targetLower, words) {
+  if (targetLower.includes(tok.toLowerCase())) return true; // left in Japanese
+  for (const g of glossaryEntriesFor(tok)) {
+    if (typeof g !== 'string' || !g.trim()) continue;
+    if (new RegExp('\\b' + escapeRe(g.trim().toLowerCase())).test(targetLower)) return true;
+  }
+  if (RE_DIGITS.test(tok)) {
+    const ascii = tok.replace(/[０-９]/g, (d) => String.fromCharCode(d.charCodeAt(0) - 0xFEE0));
+    const n = parseInt(ascii, 10);
+    return targetLower.includes(ascii) || (NUMBER_WORDS[n] ? targetLower.includes(NUMBER_WORDS[n]) : false);
+  }
+  if (RE_KANJI_NUM.test(tok)) {
+    const n = kanjiToNumber(tok);
+    return targetLower.includes(String(n)) || (NUMBER_WORDS[n] ? targetLower.includes(NUMBER_WORDS[n]) : false);
+  }
+  if (RE_KATAKANA.test(tok) || RE_HIRAGANA.test(tok)) {
+    const rom = romaji(tok);
+    if (rom.length >= 2) {
+      for (const w of words) if (looselySimilar(rom, w)) return true;
+    }
+  }
+  return false;
+}
+
+/* ------------------------------------------------------------------ */
+/* Rendering                                                            */
+/* ------------------------------------------------------------------ */
+function escapeHtml(s) {
+  return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function renderSourceText(text, bead) {
+  if (!state.nudge) return escapeHtml(text);
+  const toks = tokenizeJa(text);
+  if (!toks.length) return escapeHtml(text);
+  const targetLower = bead.target.join(' ').toLowerCase();
+  const words = targetWords(targetLower);
+  const coveredSet = new Set(state.covered);
+  let html = '', pos = 0, dropped = 0;
+  for (const t of toks) {
+    html += escapeHtml(text.slice(pos, t.start));
+    let cls = 'ok';
+    if (coveredSet.has(t.text)) cls = 'covered';
+    else if (!isReflected(t.text, targetLower, words)) { cls = 'maybe'; dropped++; }
+    html += `<span class="tok ${cls}" data-tok="${escapeHtml(t.text)}" title="${cls === 'maybe' ? 'Possibly dropped. Click to mark as covered, shift-click to add to the glossary.' : cls === 'covered' ? 'Marked as covered. Click to unmark.' : ''}">${escapeHtml(t.text)}</span>`;
+    pos = t.end;
+  }
+  html += escapeHtml(text.slice(pos));
+  renderSourceText.dropped += dropped;
+  return html;
+}
+renderSourceText.dropped = 0;
+
+function segButtons(row, side, idx, count) {
+  return `<span class="segbtns">
+    <button data-act="up" title="Move to the row above">&#9650;</button>
+    <button data-act="down" title="Move to the row below">&#9660;</button>
+    ${count > 1 ? '<button data-act="split" title="Split this and following segments off into a new row">&#8615;</button>' : ''}
+  </span>`;
+}
+
+function renderCell(row, side, bead) {
+  const list = bead[side];
+  if (!list.length) return `<td class="${side === 'source' ? 'src' : 'tgt'} empty-cell" data-row="${row}" data-side="${side}"><span class="placeholder">(empty)</span></td>`;
+  const inner = list.map((text, idx) => `
+    <div class="seg" draggable="true" data-row="${row}" data-side="${side}" data-idx="${idx}" tabindex="0">
+      <span class="text">${side === 'source' ? renderSourceText(text, bead) : escapeHtml(text)}</span>
+      ${segButtons(row, side, idx, list.length)}
+    </div>`).join('');
+  return `<td class="${side === 'source' ? 'src' : 'tgt'}" data-row="${row}" data-side="${side}">${inner}</td>`;
+}
+
+function gapRow(pos) {
+  return `<tr class="gap"><td colspan="4" data-gap="${pos}"></td></tr>`;
+}
+
+function render() {
+  renderSourceText.dropped = 0;
+  const rows = [];
+  rows.push(gapRow(0));
+  state.beads.forEach((bead, r) => {
+    const bothEmpty = !bead.source.length && !bead.target.length;
+    rows.push(`<tr class="bead" data-row="${r}">
+      <td class="num">${r + 1}</td>
+      ${renderCell(r, 'source', bead)}
+      <td class="ctrl">
+        <button data-act="merge" title="Merge with the row below" ${r === state.beads.length - 1 ? 'disabled' : ''}>&#8615;</button>
+        <button data-act="insert" title="Insert an empty row below">+</button>
+        ${bothEmpty ? '<button data-act="delete" title="Delete this empty row">&times;</button>' : ''}
+      </td>
+      ${renderCell(r, 'target', bead)}
+    </tr>`);
+    rows.push(gapRow(r + 1));
+  });
+  els.tbody.innerHTML = rows.join('');
+
+  const n = state.beads.length;
+  const untranslated = state.beads.filter((b) => b.source.length && !b.target.length).length;
+  let s = n ? `<b>${n}</b> row${n === 1 ? '' : 's'}` : 'No rows yet. Paste texts and click Align automatically.';
+  if (untranslated) s += `, <b>${untranslated}</b> with no target`;
+  if (state.nudge && n) s += `, <b>${renderSourceText.dropped}</b> possibly dropped word${renderSourceText.dropped === 1 ? '' : 's'}`;
+  s += ` <span style="margin-left: 10px">Undo steps: ${undoStack.length}</span>`;
+  els.status.innerHTML = s;
+  $('btnUndo').disabled = undoStack.length === 0;
+  els.nudgeNote.hidden = !state.nudge;
+}
+
+function syncControls() {
+  els.title.value = state.title;
+  els.src.value = state.source_text;
+  els.tgt.value = state.target_text;
+  els.splitMode.value = state.split_mode;
+  $('btnNudge').setAttribute('aria-pressed', String(state.nudge));
+  $('btnGlossary').setAttribute('aria-pressed', String(state.panel));
+  els.panel.hidden = !state.panel;
+  els.main.classList.toggle('with-panel', state.panel);
+  els.glossary.value = JSON.stringify(state.glossary, null, 2);
+  els.tokInfo.textContent = HAS_SEGMENTER
+    ? 'Intl.Segmenter (locale ja, granularity word) is available in this browser.'
+    : 'Intl.Segmenter is not available; falling back to kanji and katakana character bigrams.';
+}
+
+/* ------------------------------------------------------------------ */
+/* Editing operations (all go through commit, which records undo)      */
+/* ------------------------------------------------------------------ */
+function snapshot() {
+  return JSON.stringify({ beads: state.beads, covered: state.covered });
+}
+
+function commit(mutate) {
+  const before = snapshot();
+  mutate();
+  const after = snapshot();
+  if (after !== before) {
+    undoStack.push(before);
+    if (undoStack.length > UNDO_LIMIT) undoStack.shift();
+  }
+  render();
+  autosave();
+}
+
+function undo() {
+  if (!undoStack.length) return;
+  const prev = JSON.parse(undoStack.pop());
+  state.beads = prev.beads;
+  state.covered = prev.covered;
+  render();
+  autosave();
+  toast('Undone');
+}
+
+function emptyBead() { return { source: [], target: [] }; }
+
+// Move one segment to another row on the same side. toIdx is the
+// insertion index within the destination row (undefined appends).
+function moveSegment(fromRow, side, fromIdx, toRow, toIdx) {
+  const src = state.beads[fromRow];
+  const [seg] = src[side].splice(fromIdx, 1);
+  const dst = state.beads[toRow];
+  let at = toIdx === undefined ? dst[side].length : toIdx;
+  if (fromRow === toRow && fromIdx < at) at--;
+  dst[side].splice(at, 0, seg);
+  pruneEmpty(fromRow, toRow);
+}
+
+// Drop a segment into the gap at position pos (a new row before bead pos).
+function moveSegmentToGap(fromRow, side, fromIdx, pos) {
+  const src = state.beads[fromRow];
+  const [seg] = src[side].splice(fromIdx, 1);
+  const bead = emptyBead();
+  bead[side].push(seg);
+  state.beads.splice(pos, 0, bead);
+  const adjustedFrom = pos <= fromRow ? fromRow + 1 : fromRow;
+  pruneEmpty(adjustedFrom, -1);
+}
+
+// Remove a bead that is empty on both sides after a move, unless it is
+// the destination of that move.
+function pruneEmpty(row, keepRow) {
+  const b = state.beads[row];
+  if (b && !b.source.length && !b.target.length && row !== keepRow && state.beads.length > 1) {
+    state.beads.splice(row, 1);
+  }
+}
+
+function moveUp(row, side, idx) {
+  if (row === 0) {
+    state.beads.unshift(emptyBead());
+    moveSegment(1, side, idx, 0);
+  } else {
+    moveSegment(row, side, idx, row - 1);
+  }
+}
+
+function moveDown(row, side, idx) {
+  if (row === state.beads.length - 1) {
+    state.beads.push(emptyBead());
+    moveSegment(row, side, idx, row + 1, 0);
+  } else {
+    moveSegment(row, side, idx, row + 1, 0);
+  }
+}
+
+function splitOff(row, side, idx) {
+  const bead = state.beads[row];
+  const tail = bead[side].splice(idx);
+  const fresh = emptyBead();
+  fresh[side] = tail;
+  state.beads.splice(row + 1, 0, fresh);
+}
+
+function mergeDown(row) {
+  if (row >= state.beads.length - 1) return;
+  const a = state.beads[row], b = state.beads[row + 1];
+  a.source.push(...b.source);
+  a.target.push(...b.target);
+  state.beads.splice(row + 1, 1);
+}
+
+function toggleCovered(tok) {
+  const i = state.covered.indexOf(tok);
+  if (i >= 0) state.covered.splice(i, 1); else state.covered.push(tok);
+}
+
+/* ------------------------------------------------------------------ */
+/* Persistence                                                          */
+/* ------------------------------------------------------------------ */
+function serialize() {
+  return {
+    title: state.title,
+    source_text: state.source_text,
+    target_text: state.target_text,
+    split_mode: state.split_mode,
+    beads: state.beads,
+    covered: state.covered,
+    glossary: state.glossary,
+    nudge: state.nudge,
+    saved_at: new Date().toISOString(),
+  };
+}
+
+function isBeadList(x) {
+  return Array.isArray(x) && x.every((b) => b && Array.isArray(b.source) && Array.isArray(b.target)
+    && b.source.every((s) => typeof s === 'string') && b.target.every((s) => typeof s === 'string'));
+}
+
+// Load a saved object into state. Returns an error string or null.
+function applySaved(obj) {
+  if (!obj || typeof obj !== 'object' || !isBeadList(obj.beads)) return 'Not an alignment file (missing beads).';
+  state.title = typeof obj.title === 'string' ? obj.title : '';
+  state.source_text = typeof obj.source_text === 'string' ? obj.source_text : '';
+  state.target_text = typeof obj.target_text === 'string' ? obj.target_text : '';
+  state.split_mode = obj.split_mode === 'sentences' ? 'sentences' : 'lines';
+  state.beads = obj.beads.map((b) => ({ source: [...b.source], target: [...b.target] }));
+  state.covered = Array.isArray(obj.covered) ? obj.covered.filter((s) => typeof s === 'string') : [];
+  state.glossary = obj.glossary && typeof obj.glossary === 'object' && !Array.isArray(obj.glossary) ? obj.glossary : {};
+  state.nudge = !!obj.nudge;
+  return null;
+}
+
+let autosaveTimer = null;
+function autosave() {
+  clearTimeout(autosaveTimer);
+  autosaveTimer = setTimeout(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...serialize(), panel: state.panel }));
+    } catch (e) { /* storage may be unavailable (private mode, file:// in some browsers) */ }
+  }, 150);
+}
+
+function restoreFromStorage() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return false;
+    const obj = JSON.parse(raw);
+    if (applySaved(obj)) return false;
+    state.panel = !!obj.panel;
+    return true;
+  } catch (e) { return false; }
+}
+
+function download(name, text, type) {
+  const blob = new Blob([text], { type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function fileStem() {
+  return (state.title.trim() || 'alignment').replace(/[^\w぀-ヿ一-鿿-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'alignment';
+}
+
+function exportMarkdown() {
+  const cell = (list) => list.map((s) => escapeHtml(s).replace(/\|/g, '\\|')).join('<br>');
+  const lines = [`# ${state.title || 'Alignment'}`, '', '| # | Source | Target |', '|---:|---|---|'];
+  state.beads.forEach((b, i) => lines.push(`| ${i + 1} | ${cell(b.source)} | ${cell(b.target)} |`));
+  return lines.join('\n') + '\n';
+}
+
+function exportTsv() {
+  const cell = (list) => list.join(' ').replace(/[\t\r\n]+/g, ' ');
+  const lines = ['index\tsource\ttarget'];
+  state.beads.forEach((b, i) => lines.push(`${i + 1}\t${cell(b.source)}\t${cell(b.target)}`));
+  return lines.join('\n') + '\n';
+}
+
+/* ------------------------------------------------------------------ */
+/* UI wiring                                                            */
+/* ------------------------------------------------------------------ */
+let toastTimer = null;
+function toast(msg) {
+  els.toast.textContent = msg;
+  els.toast.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => els.toast.classList.remove('show'), 1600);
+}
+
+function readInputs() {
+  state.title = els.title.value;
+  state.source_text = els.src.value;
+  state.target_text = els.tgt.value;
+  state.split_mode = els.splitMode.value;
+}
+
+function runAlignment() {
+  readInputs();
+  const src = segment(state.source_text, 'source', state.split_mode);
+  const tgt = segment(state.target_text, 'target', state.split_mode);
+  commit(() => { state.beads = alignSegments(src, tgt); });
+  toast(src.length === tgt.length ? `Aligned ${src.length} segments one to one` : `Aligned ${src.length} source and ${tgt.length} target segments by length`);
+}
+
+$('btnAlign').addEventListener('click', runAlignment);
+$('btnUndo').addEventListener('click', undo);
+document.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !['TEXTAREA', 'INPUT'].includes(document.activeElement.tagName)) {
+    e.preventDefault(); undo();
+  }
+});
+
+for (const id of ['title', 'src', 'tgt']) {
+  els[id].addEventListener('input', () => { readInputs(); autosave(); });
+}
+els.splitMode.addEventListener('change', () => { readInputs(); autosave(); });
+
+$('btnNudge').addEventListener('click', () => { state.nudge = !state.nudge; syncControls(); render(); autosave(); });
+$('btnGlossary').addEventListener('click', () => { state.panel = !state.panel; syncControls(); autosave(); });
+
+$('btnGlossaryApply').addEventListener('click', () => {
+  try {
+    const obj = JSON.parse(els.glossary.value || '{}');
+    if (!obj || typeof obj !== 'object' || Array.isArray(obj)) throw new Error('Top level must be an object.');
+    for (const [k, v] of Object.entries(obj)) {
+      if (!Array.isArray(v) || !v.every((s) => typeof s === 'string')) throw new Error(`Entry "${k}" must map to a list of strings.`);
+    }
+    state.glossary = obj;
+    els.glStatus.className = 'gl-status';
+    els.glStatus.textContent = `Applied: ${Object.keys(obj).length} entries.`;
+    render(); autosave();
+  } catch (e) {
+    els.glStatus.className = 'gl-status err';
+    els.glStatus.textContent = 'Invalid JSON: ' + e.message;
+  }
+});
+$('btnGlossaryReset').addEventListener('click', () => {
+  state.glossary = JSON.parse(JSON.stringify(SAMPLE.glossary));
+  els.glossary.value = JSON.stringify(state.glossary, null, 2);
+  els.glStatus.className = 'gl-status';
+  els.glStatus.textContent = 'Reset to the sample glossary.';
+  render(); autosave();
+});
+
+$('btnSave').addEventListener('click', () => {
+  readInputs();
+  download(fileStem() + '.align.json', JSON.stringify(serialize(), null, 2), 'application/json');
+  toast('Saved JSON');
+});
+$('btnLoad').addEventListener('click', () => els.fileInput.click());
+els.fileInput.addEventListener('change', async () => {
+  const f = els.fileInput.files[0];
+  els.fileInput.value = '';
+  if (!f) return;
+  try {
+    const obj = JSON.parse(await f.text());
+    const err = applySaved(obj);
+    if (err) { toast(err); return; }
+    undoStack.length = 0;
+    syncControls(); render(); autosave();
+    toast(`Loaded ${state.beads.length} rows`);
+  } catch (e) { toast('Could not read file: ' + e.message); }
+});
+$('btnMd').addEventListener('click', () => { readInputs(); download(fileStem() + '.md', exportMarkdown(), 'text/markdown'); toast('Exported Markdown'); });
+$('btnTsv').addEventListener('click', () => { readInputs(); download(fileStem() + '.tsv', exportTsv(), 'text/tab-separated-values'); toast('Exported TSV'); });
+
+$('btnSample').addEventListener('click', () => {
+  loadSample();
+  syncControls();
+  runAlignment();
+});
+
+function loadSample() {
+  state.title = SAMPLE.title;
+  state.source_text = SAMPLE.source_text;
+  state.target_text = SAMPLE.target_text;
+  state.split_mode = SAMPLE.split_mode;
+  state.glossary = JSON.parse(JSON.stringify(SAMPLE.glossary));
+  state.covered = [];
+}
+
+// Row and segment buttons, plus token clicks, via one delegated listener.
+els.tbody.addEventListener('click', (e) => {
+  const tok = e.target.closest('.tok.maybe, .tok.covered');
+  if (tok) {
+    const word = tok.dataset.tok;
+    if (e.shiftKey) {
+      const en = prompt(`English word(s) for "${word}", separated by commas:`, (state.glossary[word] || []).join(', '));
+      if (en === null) return;
+      state.glossary[word] = en.split(',').map((s) => s.trim()).filter(Boolean);
+      els.glossary.value = JSON.stringify(state.glossary, null, 2);
+      render(); autosave();
+    } else {
+      commit(() => toggleCovered(word));
+    }
+    return;
+  }
+  const btn = e.target.closest('button[data-act]');
+  if (!btn) return;
+  const act = btn.dataset.act;
+  const seg = btn.closest('.seg');
+  const tr = btn.closest('tr.bead');
+  const row = Number(tr.dataset.row);
+  if (seg) {
+    const side = seg.dataset.side, idx = Number(seg.dataset.idx);
+    if (act === 'up') commit(() => moveUp(row, side, idx));
+    else if (act === 'down') commit(() => moveDown(row, side, idx));
+    else if (act === 'split') commit(() => splitOff(row, side, idx));
+  } else if (act === 'merge') commit(() => mergeDown(row));
+  else if (act === 'insert') commit(() => state.beads.splice(row + 1, 0, emptyBead()));
+  else if (act === 'delete') commit(() => { if (state.beads.length > 1) state.beads.splice(row, 1); });
+});
+
+/* Drag and drop (HTML5). A segment can only be dropped on its own side. */
+let dragging = null;
+els.tbody.addEventListener('dragstart', (e) => {
+  const seg = e.target.closest('.seg');
+  if (!seg) return;
+  dragging = { row: Number(seg.dataset.row), side: seg.dataset.side, idx: Number(seg.dataset.idx) };
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', JSON.stringify(dragging));
+  seg.classList.add('is-dragging');
+  document.body.classList.add('dragging');
+});
+els.tbody.addEventListener('dragend', () => {
+  dragging = null;
+  document.body.classList.remove('dragging');
+  els.tbody.querySelectorAll('.is-dragging, .over').forEach((el) => el.classList.remove('is-dragging', 'over'));
+});
+function dropTarget(e) {
+  const gap = e.target.closest('td[data-gap]');
+  if (gap) return { gap };
+  const cell = e.target.closest('td[data-side]');
+  if (cell && dragging && cell.dataset.side === dragging.side) return { cell };
+  return null;
+}
+els.tbody.addEventListener('dragover', (e) => {
+  if (!dragging) return;
+  const t = dropTarget(e);
+  if (!t) return;
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  els.tbody.querySelectorAll('.over').forEach((el) => el.classList.remove('over'));
+  (t.gap || t.cell).classList.add('over');
+});
+els.tbody.addEventListener('dragleave', (e) => {
+  const el = e.target.closest && e.target.closest('.over');
+  if (el && !el.contains(e.relatedTarget)) el.classList.remove('over');
+});
+els.tbody.addEventListener('drop', (e) => {
+  if (!dragging) return;
+  const t = dropTarget(e);
+  if (!t) return;
+  e.preventDefault();
+  const d = dragging;
+  if (t.gap) {
+    commit(() => moveSegmentToGap(d.row, d.side, d.idx, Number(t.gap.dataset.gap)));
+  } else {
+    const toRow = Number(t.cell.dataset.row);
+    // insertion index: number of segments whose vertical midpoint is above the pointer
+    const segs = [...t.cell.querySelectorAll('.seg')];
+    let toIdx = segs.filter((s) => { const r = s.getBoundingClientRect(); return r.top + r.height / 2 < e.clientY; }).length;
+    if (toRow === d.row && toIdx === d.idx) return;
+    commit(() => moveSegment(d.row, d.side, d.idx, toRow, toIdx));
+  }
+});
+
+/* ------------------------------------------------------------------ */
+/* Start                                                                */
+/* ------------------------------------------------------------------ */
+if (!restoreFromStorage()) {
+  loadSample();
+  const src = segment(state.source_text, 'source', state.split_mode);
+  const tgt = segment(state.target_text, 'target', state.split_mode);
+  state.beads = alignSegments(src, tgt);
+}
+syncControls();
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Virtual library</title>
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    --bg: #f7f4ee;
+    --panel: #fffdf9;
+    --ink: #2b2622;
+    --ink-2: #6b625a;
+    --ink-3: #9a9087;
+    --line: #e4dcd0;
+    --wood: #b98a5a;
+    --wood-dark: #8c6239;
+    --wood-back: #efe6d8;
+    --accent: #2a78d6;
+    --alert: #d03b3b;
+    --bar: #2a78d6;
+    --tag: #f9b4cc;
+    --tag-ink: #7a2d4c;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); }
+  body {
+    font-family: "Source Sans 3", "Segoe UI", "Helvetica Neue", Arial, "Hiragino Sans", "Yu Gothic", "Noto Sans CJK JP", "IPAGothic", sans-serif;
+    font-size: 15px; line-height: 1.5;
+  }
+  header {
+    padding: 18px 24px 0; border-bottom: 1px solid var(--line); background: var(--panel);
+    position: sticky; top: 0; z-index: 5;
+  }
+  .masthead { display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; }
+  h1 { font-size: 22px; font-weight: 600; margin: 0; letter-spacing: 0.01em; }
+  #status { color: var(--ink-2); font-size: 14px; }
+  .toolbar { margin-left: auto; display: flex; gap: 14px; align-items: center; font-size: 14px; color: var(--ink-2); flex-wrap: wrap; }
+  .toolbar label { display: flex; gap: 6px; align-items: center; }
+  select, input[type=text], textarea, button {
+    font: inherit; color: var(--ink); background: #fff; border: 1px solid var(--line); border-radius: 6px; padding: 5px 9px;
+  }
+  button { cursor: pointer; }
+  button:hover { border-color: var(--ink-3); }
+  nav.tabs { display: flex; gap: 4px; margin-top: 12px; }
+  nav.tabs button {
+    border: none; border-bottom: 2px solid transparent; border-radius: 0; background: none; padding: 8px 12px; color: var(--ink-2);
+  }
+  nav.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); font-weight: 600; }
+  main { padding: 20px 24px 60px; max-width: 1480px; margin: 0 auto; }
+  section[hidden] { display: none; }
+  h2 { font-size: 17px; font-weight: 600; margin: 0 0 10px; }
+  p.lead { color: var(--ink-2); margin: 0 0 16px; max-width: 76ch; }
+
+  /* Loader */
+  #loader { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px 20px; margin-bottom: 20px; }
+  #loader .row { display: flex; gap: 20px; flex-wrap: wrap; }
+  #loader .row > div { flex: 1 1 320px; }
+  #loader textarea { width: 100%; height: 110px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; }
+  #loader label { display: block; font-weight: 600; margin-bottom: 6px; }
+  #loader .error { color: var(--alert); margin-top: 8px; }
+
+  /* Shelf view */
+  .shelves-layout { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 20px; align-items: start; }
+  .shelves-layout > div { min-width: 0; }
+  @media (max-width: 900px) { .shelves-layout { grid-template-columns: 1fr; } }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--ink-2); margin-bottom: 14px; }
+  .legend span::before {
+    content: ""; display: inline-block; width: 10px; height: 14px; border-radius: 2px; background: var(--sw); vertical-align: -2px; margin-right: 6px;
+  }
+  .legend span.sym::before { background: #d8d2c8; border: 1.5px dashed #8f867c; width: 8px; height: 12px; }
+  .legend span.obj::before { background: #b8b0a6; border: 1px solid #8f867c; width: 10px; height: 10px; }
+  .unit { margin-bottom: 26px; }
+  .unit-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin: 0 0 10px; border-bottom: 2px solid var(--wood); padding-bottom: 4px; }
+  .unit-head h2 { margin: 0; font-size: 18px; }
+  .unit-head .desc { color: var(--ink-2); font-size: 14px; }
+  .unit-head .count { color: var(--ink-3); font-size: 13px; margin-left: auto; }
+  .unit-shelves { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(380px, 100%), 1fr)); gap: 14px; min-width: 0; }
+  .shelf { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px 8px; overflow-x: auto; }
+  .shelf.is-wide { grid-column: 1 / -1; }
+  .shelf-head { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--ink-2); margin-bottom: 6px; flex-wrap: wrap; }
+  .tag {
+    display: inline-block; background: var(--tag); color: var(--tag-ink); font-weight: 700; font-size: 13px; line-height: 1.2;
+    padding: 5px 9px; border-radius: 2px; transform: rotate(-2deg); box-shadow: 1px 2px 3px rgba(0,0,0,0.18); white-space: nowrap;
+  }
+  .shelf-head .desc { color: var(--ink-3); font-size: 12.5px; flex: 1 1 200px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .shelf svg { display: block; }
+  .spine text { font-family: inherit; pointer-events: none; }
+  .spine:hover rect:first-child { filter: brightness(1.08); }
+  .spine.no-position rect:first-child { stroke: var(--alert); stroke-dasharray: 3 2; stroke-width: 1.5; }
+  .spine.is-highlighted rect:first-child { stroke: var(--alert); stroke-width: 3; animation: pulse 1.2s ease-in-out 3; }
+  @keyframes pulse { 50% { stroke-opacity: 0.2; } }
+
+  /* Detail panel */
+  #detail { position: sticky; top: 108px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; max-height: calc(100vh - 124px); overflow-y: auto; }
+  #detail .placeholder { color: var(--ink-3); }
+  #detail h3 { margin: 0 0 4px; font-size: 17px; line-height: 1.3; }
+  #detail .author { color: var(--ink-2); margin-bottom: 10px; }
+  #detail .badge { display: inline-block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; padding: 1px 7px; border-radius: 4px; background: #efe9df; color: var(--ink-2); margin: 0 6px 8px 0; }
+  #detail .badge.warn { background: #fbe3e3; color: #8a2b2b; }
+  #detail dl { margin: 0; display: grid; grid-template-columns: 96px 1fr; gap: 3px 10px; font-size: 13.5px; }
+  #detail dt { color: var(--ink-3); }
+  #detail dd { margin: 0; overflow-wrap: anywhere; }
+  #detail .where { margin-top: 12px; padding: 10px 12px; background: #f3eee5; border-radius: 8px; font-size: 14px; }
+  #detail .description { margin-top: 10px; font-size: 13.5px; color: var(--ink-2); }
+
+  /* Find */
+  #search { width: 100%; max-width: 560px; font-size: 16px; padding: 9px 12px; }
+  #results { list-style: none; padding: 0; margin: 14px 0 0; max-width: 860px; }
+  #results li { padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; margin-bottom: 6px; background: var(--panel); cursor: pointer; }
+  #results li:hover { border-color: var(--accent); }
+  #results .t { font-weight: 600; }
+  #results .a { color: var(--ink-2); margin-left: 10px; }
+  #results .w { color: var(--ink-3); font-size: 13px; display: block; }
+  #results mark { background: #ffe58a; padding: 0 1px; border-radius: 2px; }
+  #find-note { color: var(--ink-3); font-size: 13px; margin-top: 8px; }
+
+  /* Stats */
+  .charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr)); gap: 18px; }
+  .chart { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px 8px; }
+  .chart h3 { margin: 0 0 2px; font-size: 15px; font-weight: 600; }
+  .chart .sub { color: var(--ink-3); font-size: 13px; margin-bottom: 8px; }
+  .chart svg { width: 100%; height: auto; display: block; font-size: 12px; }
+  .chart .lbl { fill: var(--ink-2); }
+  .chart .val { fill: var(--ink); }
+  .chart .axis { stroke: var(--line); stroke-width: 1; }
+  .chart .bar { fill: var(--bar); }
+  .chart .bar:hover { fill: #1c5cab; }
+  #tooltip { position: fixed; pointer-events: none; background: var(--ink); color: #fff; font-size: 12px; padding: 4px 8px; border-radius: 5px; display: none; z-index: 20; white-space: nowrap; }
+  .chart table { display: none; }
+
+  /* Integrity */
+  #findings { list-style: none; padding: 0; margin: 0; max-width: 960px; }
+  #findings li { padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; margin-bottom: 6px; background: var(--panel); cursor: pointer; display: flex; gap: 12px; align-items: baseline; }
+  #findings li:hover { border-color: var(--accent); }
+  #findings li.no-book { cursor: default; }
+  .kind { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-2); background: #efe9df; padding: 2px 7px; border-radius: 4px; white-space: nowrap; }
+  #integrity-summary { color: var(--ink-2); margin-bottom: 12px; }
+  #kind-filter { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+  #kind-filter button { font-size: 12.5px; padding: 3px 10px; border-radius: 14px; }
+  #kind-filter button[aria-pressed="true"] { background: var(--ink); color: #fff; border-color: var(--ink); }
+  details.explain { max-width: 76ch; color: var(--ink-2); font-size: 14px; margin-bottom: 14px; }
+  details.explain summary { cursor: pointer; }
+  details.explain dt { font-weight: 600; color: var(--ink); margin-top: 6px; }
+  details.explain dd { margin: 0; }
+</style>
+</head>
+<body>
+<header>
+  <div class="masthead">
+    <h1>Virtual library</h1>
+    <span id="status">Loading catalog...</span>
+    <div class="toolbar">
+      <label>Color spines by
+        <select id="color-by">
+          <option value="genre">genre</option>
+          <option value="type">type</option>
+          <option value="language">language</option>
+        </select>
+      </label>
+      <label><input type="checkbox" id="show-objects" checked> Show objects</label>
+      <button id="toggle-loader" type="button">Load a CSV</button>
+    </div>
+  </div>
+  <nav class="tabs" role="tablist">
+    <button role="tab" data-tab="view-shelves" aria-selected="true">Shelves</button>
+    <button role="tab" data-tab="view-find" aria-selected="false">Find my book</button>
+    <button role="tab" data-tab="view-stats" aria-selected="false">Stats</button>
+    <button role="tab" data-tab="view-integrity" aria-selected="false">Integrity</button>
+  </nav>
+</header>
+
+<main>
+  <div id="loader" hidden>
+    <p class="lead" id="loader-note">Choose a CSV in the catalog schema (run <code>python3 import_xlsx.py catalog.xlsx</code> to make one from the workbook), or paste its rows below. Nothing leaves this page.</p>
+    <div class="row">
+      <div>
+        <label for="file">Pick a CSV or TSV file</label>
+        <input type="file" id="file" accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values">
+      </div>
+      <div>
+        <label for="paste">Or paste CSV or TSV text (with a header row)</label>
+        <textarea id="paste" placeholder="ID,Unit,Shelf,Pos (L to R),Title,Author / Editor,Publisher / Series,Language,Type,...,Status,Confidence,Notes,Genre"></textarea>
+        <button id="use-paste" type="button">Use pasted text</button>
+      </div>
+    </div>
+    <div class="error" id="loader-error"></div>
+  </div>
+
+  <section id="view-shelves">
+    <div class="legend" id="legend"></div>
+    <div class="shelves-layout">
+      <div id="units"></div>
+      <aside id="detail"><div class="placeholder">Click a spine to see the item.</div></aside>
+    </div>
+  </section>
+
+  <section id="view-find" hidden>
+    <h2>Find my book</h2>
+    <p class="lead">Type part of a title, an author, a publisher or a note. Matching ignores case and works for Japanese, German and Vietnamese text. Click a result to jump to its spine.</p>
+    <input type="text" id="search" placeholder="Search title, author, publisher or notes" autocomplete="off">
+    <div id="find-note"></div>
+    <ul id="results"></ul>
+  </section>
+
+  <section id="view-stats" hidden>
+    <h2>Stats</h2>
+    <p class="lead" id="stats-lead"></p>
+    <div class="charts" id="charts"></div>
+  </section>
+
+  <section id="view-integrity" hidden>
+    <h2>Integrity</h2>
+    <p class="lead">Books that break the alphabetical scheme on the pine bookcase, Harvard Classics volumes out of order or missing, positions that are doubled or skipped, rows worth a second look at the shelf, and titles that appear more than once. Click a finding to jump to the item.</p>
+    <details class="explain">
+      <summary>What each kind means</summary>
+      <dl>
+        <dt>out of order</dt><dd>On a letter-range shelf of the alphabetized unit, this book is not part of the longest run of titles in shelving order, so it (rather than its neighbors) is the one to move. Only rows with Status OK are compared.</dd>
+        <dt>outside range</dt><dd>The book's sort key does not fall in the letter range of its shelf name (widened to the end of the previous shelf and the start of the next). Usually a book filed by a keyword: put the keyword in sort_title to accept it.</dd>
+        <dt>hc order, hc missing, hc duplicate</dt><dd>Harvard Classics volumes on the HC shelves are not in numeric order, or some of volumes 1 to 51 are not on those shelves, or a volume number appears twice.</dd>
+        <dt>position gap, duplicate position</dt><dd>Positions on a shelf should run 1, 2, 3 with nothing skipped and nothing doubled.</dd>
+        <dt>second look</dt><dd>Rows with Status Unreadable or Partial, or Confidence Low, with the notes from the catalog. Worth checking at the shelf.</dd>
+        <dt>possible duplicate</dt><dd>The same title (case and accents ignored) in more than one place.</dd>
+        <dt>missing title, missing shelf, missing position, duplicate id</dt><dd>Rows with an empty field that the shelf view needs.</dd>
+      </dl>
+    </details>
+    <div id="integrity-summary"></div>
+    <div id="kind-filter"></div>
+    <ul id="findings"></ul>
+  </section>
+</main>
+<div id="tooltip"></div>
+
+<script src="library.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  var books = [];
+  var spineById = {};      // book id -> <g> element in the shelf view
+  var highlighted = null;
+  var findings = [];
+  var kindFilter = null;
+
+  var $ = function (sel) { return document.querySelector(sel); };
+
+  /* ---------------------------------------------------------------- */
+  /* Tabs                                                              */
+  /* ---------------------------------------------------------------- */
+
+  function showTab(id) {
+    document.querySelectorAll('nav.tabs button').forEach(function (b) {
+      b.setAttribute('aria-selected', b.dataset.tab === id ? 'true' : 'false');
+    });
+    document.querySelectorAll('main > section').forEach(function (s) { s.hidden = s.id !== id; });
+  }
+  document.querySelectorAll('nav.tabs button').forEach(function (b) {
+    b.addEventListener('click', function () { showTab(b.dataset.tab); });
+  });
+
+  /* ---------------------------------------------------------------- */
+  /* Loading                                                           */
+  /* ---------------------------------------------------------------- */
+
+  function setBooks(list, sourceName) {
+    books = list;
+    var shelves = Library.groupByShelf(books).length;
+    var objects = books.filter(function (b) { return b.isObject; }).length;
+    $('#status').textContent = books.length + ' rows on ' + shelves + ' shelves from ' + sourceName +
+      (objects ? ' (' + objects + ' are objects, not books)' : '');
+    $('#loader').hidden = true;
+    $('#loader-error').textContent = '';
+    renderShelves();
+    renderStats();
+    renderIntegrity();
+    runSearch();
+  }
+
+  function loadText(text, sourceName) {
+    var rows = Library.parseCSV(text);
+    if (rows.length === 0) {
+      $('#loader-error').textContent = 'No rows found. The first line must be a header row.';
+      $('#loader').hidden = false;
+      return;
+    }
+    setBooks(Library.normalizeRows(rows), sourceName);
+  }
+
+  $('#file').addEventListener('change', function (ev) {
+    var f = ev.target.files[0];
+    if (!f) return;
+    var reader = new FileReader();
+    reader.onload = function () { loadText(reader.result, f.name); };
+    reader.readAsText(f, 'utf-8');
+  });
+  $('#use-paste').addEventListener('click', function () {
+    loadText($('#paste').value, 'pasted text');
+  });
+  $('#toggle-loader').addEventListener('click', function () {
+    $('#loader').hidden = !$('#loader').hidden;
+  });
+
+  // The real export first, then the sample, then the picker.
+  var urls = Library.catalogUrls('');
+  Library.loadFirstCatalog(urls).then(function (result) {
+    setBooks(result.books, result.url);
+  }).catch(function (err) {
+    // Typical on a file:// origin, where fetch is blocked. Fall back to the picker.
+    $('#status').textContent = 'Could not load ' + urls.join(' or ') + ' (' + err.message + ').';
+    $('#loader-note').textContent = 'The page could not read the catalog by itself (this happens when it is opened as a file). Pick the CSV here or paste its rows. Nothing leaves this page.';
+    $('#loader').hidden = false;
+  });
+
+  /* ---------------------------------------------------------------- */
+  /* Shelf view                                                        */
+  /* ---------------------------------------------------------------- */
+
+  var BOARD = 12;        // thickness of the shelf board in SVG units
+  var GAP = 3;           // gap between spines
+  var PAD = 14;          // left and right padding inside a shelf
+
+  function colorBy() { return $('#color-by').value; }
+  function showObjects() { return $('#show-objects').checked; }
+
+  function renderShelves() {
+    var container = $('#units');
+    container.innerHTML = '';
+    spineById = {};
+    highlighted = null;
+
+    Library.groupByUnit(books).forEach(function (unit) {
+      var section = document.createElement('section');
+      section.className = 'unit';
+      section.id = 'unit-' + slug(unit.unit || 'none');
+
+      var head = document.createElement('div');
+      head.className = 'unit-head';
+      var h = document.createElement('h2');
+      h.textContent = unit.unit ? 'Unit ' + unit.unit : 'No unit recorded';
+      head.appendChild(h);
+      if (unit.description) {
+        var d = document.createElement('span'); d.className = 'desc'; d.textContent = unit.description; head.appendChild(d);
+      }
+      var total = unit.shelves.reduce(function (n, g) { return n + g.books.length; }, 0);
+      var c = document.createElement('span'); c.className = 'count';
+      c.textContent = unit.shelves.length + (unit.shelves.length === 1 ? ' shelf, ' : ' shelves, ') + total + ' items';
+      head.appendChild(c);
+      section.appendChild(head);
+
+      var grid = document.createElement('div');
+      grid.className = 'unit-shelves';
+      unit.shelves.forEach(function (g) { grid.appendChild(buildShelf(g)); });
+      section.appendChild(grid);
+      container.appendChild(section);
+    });
+    renderLegend();
+  }
+
+  function slug(s) { return String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-'); }
+
+  function buildShelf(group) {
+    var items = group.books.filter(function (b) { return showObjects() || !b.isObject; });
+    var maxH = 0, totalW = 0;
+    items.forEach(function (b) {
+      var geo = Library.spineGeometry(b, { colorBy: colorBy() });
+      maxH = Math.max(maxH, geo.height);
+      totalW += geo.width + GAP;
+    });
+    var width = totalW + PAD * 2;
+    var height = Math.max(maxH, 40) + BOARD + 10;
+
+    var card = document.createElement('div');
+    card.className = 'shelf' + (width > 560 ? ' is-wide' : '');
+    card.id = 'shelf-' + slug(group.unit + '-' + (group.shelf || 'none'));
+
+    var head = document.createElement('div');
+    head.className = 'shelf-head';
+    var tag = document.createElement('span');
+    tag.className = 'tag';
+    tag.textContent = group.shelf || 'No shelf recorded';
+    head.appendChild(tag);
+    var books_ = group.books.filter(function (b) { return !b.isObject; }).length;
+    var objects = group.books.length - books_;
+    var note = document.createElement('span');
+    note.textContent = books_ + (books_ === 1 ? ' book' : ' books') + (objects ? ', ' + objects + (objects === 1 ? ' object' : ' objects') : '') +
+      (group.books.length && Library.isAlphabetizedShelf(group.books[0]) ? ', alphabetized' : '');
+    head.appendChild(note);
+    if (group.description) {
+      var desc = document.createElement('span');
+      desc.className = 'desc';
+      desc.textContent = group.description;
+      desc.title = group.description;
+      head.appendChild(desc);
+    }
+    card.appendChild(head);
+
+    // No viewBox: one SVG unit is one CSS pixel, so spines keep the same size
+    // on every shelf. The boards stretch to the card width; the card scrolls
+    // sideways when a shelf is wider than the card.
+    var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('width', '100%');
+    svg.setAttribute('height', height);
+    svg.style.minWidth = width + 'px';
+
+    // Back panel and board.
+    svg.appendChild(rect(0, 0, '100%', height - BOARD, 'var(--wood-back)'));
+    svg.appendChild(rect(0, height - BOARD - 4, '100%', 4, 'rgba(0,0,0,0.08)'));
+    svg.appendChild(rect(0, height - BOARD, '100%', BOARD, 'var(--wood)'));
+    svg.appendChild(rect(0, height - 4, '100%', 4, 'var(--wood-dark)'));
+
+    var x = PAD;
+    var baseline = height - BOARD;
+    items.forEach(function (b) {
+      var opts = { colorBy: colorBy(), fontSize: 10, onClick: function (book) { showBook(book, false); } };
+      var g = Library.drawSpine(svg, b, x, baseline, opts);
+      if (b.position === null) g.classList.add('no-position');
+      spineById[b.id] = g;
+      x += Library.spineGeometry(b, opts).width + GAP;
+    });
+    card.appendChild(svg);
+    return card;
+  }
+
+  function rect(x, y, w, h, fill) {
+    var r = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    r.setAttribute('x', x); r.setAttribute('y', y); r.setAttribute('width', w); r.setAttribute('height', h);
+    r.setAttribute('fill', fill);
+    return r;
+  }
+
+  function renderLegend() {
+    var key = colorBy();
+    var counts = {};
+    books.forEach(function (b) {
+      if (b.isObject || b.isUnread) return;
+      var v = Library.colorKeyOf(b, key);
+      if (v) counts[v] = (counts[v] || 0) + 1;
+    });
+    var legend = $('#legend');
+    legend.innerHTML = '';
+    Object.keys(counts).sort(function (a, b) { return counts[b] - counts[a]; }).forEach(function (v) {
+      var span = document.createElement('span');
+      span.style.setProperty('--sw', Library.colorFor(key, v));
+      span.textContent = (key === 'language' ? Library.languageName(v) : v) + ' (' + counts[v] + ')';
+      legend.appendChild(span);
+    });
+    var unread = document.createElement('span'); unread.className = 'sym'; unread.textContent = 'unreadable or partial';
+    legend.appendChild(unread);
+    var obj = document.createElement('span'); obj.className = 'obj'; obj.textContent = 'not a book';
+    legend.appendChild(obj);
+  }
+
+  function rerenderShelves() {
+    var keep = highlighted;
+    renderShelves();
+    if (keep) highlightSpine(keep, false);
+  }
+  $('#color-by').addEventListener('change', rerenderShelves);
+  $('#show-objects').addEventListener('change', rerenderShelves);
+
+  /* ---------------------------------------------------------------- */
+  /* Detail panel and highlighting                                     */
+  /* ---------------------------------------------------------------- */
+
+  function showBook(book, scroll) {
+    var d = $('#detail');
+    d.innerHTML = '';
+    var h = document.createElement('h3'); h.textContent = book.title || '(no title)'; d.appendChild(h);
+    if (book.author) { var a = document.createElement('div'); a.className = 'author'; a.textContent = book.author; d.appendChild(a); }
+
+    var badges = document.createElement('div');
+    if (book.status) badge(badges, book.status, book.status !== 'OK');
+    if (book.confidence) badge(badges, book.confidence + ' confidence', book.confidence === 'Low');
+    d.appendChild(badges);
+
+    var dl = document.createElement('dl');
+    [['Unit', book.unit], ['Shelf', book.shelf], ['Position', book.position],
+     ['Left of it', book.leftNeighbor], ['Right of it', book.rightNeighbor],
+     ['Publisher', book.publisher], ['Language', book.languages.map(Library.languageName).join(', ') || book.language],
+     ['Type', book.type], ['Genre', book.genre],
+     ['Year', book.yearText || (book.year !== null ? String(book.year) : '')],
+     ['Pages', book.pages], ['Sort title', book.sortTitle],
+     ['Photo', book.photo ? book.photo + (book.photoFiles ? ' (' + book.photoFiles + ')' : '') : book.photoFiles],
+     ['Notes', book.notes], ['Id', book.id]]
+      .forEach(function (pair) {
+        if (pair[1] === null || pair[1] === '' || pair[1] === undefined) return;
+        var dt = document.createElement('dt'); dt.textContent = pair[0];
+        var dd = document.createElement('dd'); dd.textContent = pair[1];
+        dl.appendChild(dt); dl.appendChild(dd);
+      });
+    d.appendChild(dl);
+
+    if (book.description) {
+      var p = document.createElement('p'); p.className = 'description'; p.textContent = book.description; d.appendChild(p);
+    }
+
+    var where = document.createElement('div');
+    where.className = 'where';
+    where.textContent = Library.describeLocation(book);
+    d.appendChild(where);
+
+    highlightSpine(book, scroll);
+  }
+
+  function badge(parent, text, warn) {
+    var s = document.createElement('span');
+    s.className = 'badge' + (warn ? ' warn' : '');
+    s.textContent = text;
+    parent.appendChild(s);
+  }
+
+  function highlightSpine(book, scroll) {
+    if (highlighted && spineById[highlighted.id]) spineById[highlighted.id].classList.remove('is-highlighted');
+    highlighted = book;
+    var g = spineById[book.id];
+    if (!g && book.isObject && !showObjects()) {
+      // Objects are hidden; show them so the spine can be found.
+      $('#show-objects').checked = true;
+      renderShelves();
+      g = spineById[book.id];
+    }
+    if (!g) return;
+    g.classList.add('is-highlighted');
+    // Move the highlighted spine to the front so its stroke is not covered by its neighbour.
+    g.parentNode.appendChild(g);
+    if (scroll) {
+      showTab('view-shelves');
+      g.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+    }
+  }
+
+  /* ---------------------------------------------------------------- */
+  /* Find my book                                                      */
+  /* ---------------------------------------------------------------- */
+
+  function fold(s) { return String(s || '').normalize('NFKC').toLowerCase(); }
+
+  function runSearch() {
+    var q = fold($('#search').value.trim());
+    var list = $('#results');
+    list.innerHTML = '';
+    if (!q) { $('#find-note').textContent = books.length ? 'Start typing to search ' + books.length + ' rows.' : ''; return; }
+
+    var hits = books.filter(function (b) {
+      return fold(b.title).indexOf(q) !== -1 || fold(b.author).indexOf(q) !== -1 ||
+        fold(b.notes).indexOf(q) !== -1 || fold(b.publisher).indexOf(q) !== -1;
+    });
+    var LIMIT = 60;
+    $('#find-note').textContent = hits.length === 0 ? 'No matches.' :
+      hits.length + (hits.length === 1 ? ' match' : ' matches') + (hits.length > LIMIT ? ', showing the first ' + LIMIT : '') + '.';
+
+    hits.slice(0, LIMIT).forEach(function (b) {
+      var li = document.createElement('li');
+      var t = document.createElement('span'); t.className = 't'; t.appendChild(markMatch(b.title, q));
+      li.appendChild(t);
+      if (b.author) { var a = document.createElement('span'); a.className = 'a'; a.appendChild(markMatch(b.author, q)); li.appendChild(a); }
+      var w = document.createElement('span'); w.className = 'w'; w.textContent = Library.describeLocation(b);
+      li.appendChild(w);
+      li.addEventListener('click', function () { showBook(b, true); });
+      list.appendChild(li);
+    });
+  }
+
+  // Wrap the matched substring in <mark>. Folding can change string length for
+  // some characters, so only mark when the folded text has the same length.
+  function markMatch(text, q) {
+    var frag = document.createDocumentFragment();
+    var folded = fold(text);
+    var i = folded.length === text.length ? folded.indexOf(q) : -1;
+    if (i === -1) { frag.appendChild(document.createTextNode(text)); return frag; }
+    frag.appendChild(document.createTextNode(text.slice(0, i)));
+    var m = document.createElement('mark'); m.textContent = text.slice(i, i + q.length); frag.appendChild(m);
+    frag.appendChild(document.createTextNode(text.slice(i + q.length)));
+    return frag;
+  }
+
+  $('#search').addEventListener('input', runSearch);
+  $('#search').addEventListener('keydown', function (ev) {
+    if (ev.key === 'Enter') { var first = $('#results li'); if (first) first.click(); }
+  });
+
+  /* ---------------------------------------------------------------- */
+  /* Stats (plain SVG charts)                                          */
+  /* ---------------------------------------------------------------- */
+
+  function renderStats() {
+    var s = Library.stats(books);
+    $('#stats-lead').textContent = s.total + ' rows: ' + s.books + ' books and print items and ' + s.objects +
+      ' objects. ' + s.authors.length + ' distinct authors, ' + s.languages.length + ' languages, ' + s.genres.length +
+      ' genres, ' + s.types.length + ' types. ' + s.withYear + ' books have a publication year.';
+
+    var charts = $('#charts');
+    charts.innerHTML = '';
+    charts.appendChild(barChart('Authors with the most books', 'Top 12 by number of rows (blank and "?" skipped)', s.authors.slice(0, 12)));
+    charts.appendChild(barChart('Languages', 'Books per language; a book in two languages counts in both', s.languages.map(function (d) {
+      return { label: Library.languageName(d.label), count: d.count };
+    })));
+    charts.appendChild(columnChart('Publication decades', 'First publication or edition year, by decade (' + s.withYear + ' books)', s.decades));
+    charts.appendChild(barChart('Genres', 'Books per genre', s.genres));
+    charts.appendChild(barChart('Types', 'Books per type (top 20)', s.types.slice(0, 20)));
+    charts.appendChild(barChart('Status', 'All rows, including objects', s.statuses));
+    charts.appendChild(barChart('Confidence', 'How sure the catalog is about each row', s.confidences));
+  }
+
+  var SVG_NS = 'http://www.w3.org/2000/svg';
+  function el(name, attrs, text) {
+    var e = document.createElementNS(SVG_NS, name);
+    Object.keys(attrs).forEach(function (k) { e.setAttribute(k, attrs[k]); });
+    if (text !== undefined) e.textContent = text;
+    return e;
+  }
+
+  function chartCard(title, sub, data) {
+    var card = document.createElement('div');
+    card.className = 'chart';
+    var h = document.createElement('h3'); h.textContent = title; card.appendChild(h);
+    var p = document.createElement('div'); p.className = 'sub'; p.textContent = sub; card.appendChild(p);
+    // A plain table of the same numbers for screen readers and copying.
+    var table = document.createElement('table');
+    data.forEach(function (d) {
+      var tr = document.createElement('tr');
+      var td1 = document.createElement('td'); td1.textContent = d.label;
+      var td2 = document.createElement('td'); td2.textContent = d.count;
+      tr.appendChild(td1); tr.appendChild(td2); table.appendChild(tr);
+    });
+    card.appendChild(table);
+    return card;
+  }
+
+  // A rectangle with rounded corners only on the data end (right side for bars, top for columns).
+  function roundedEnd(x, y, w, h, r, side) {
+    r = Math.min(r, w / 2, h / 2);
+    if (side === 'right') {
+      return 'M' + x + ' ' + y + ' H' + (x + w - r) + ' a' + r + ' ' + r + ' 0 0 1 ' + r + ' ' + r +
+        ' V' + (y + h - r) + ' a' + r + ' ' + r + ' 0 0 1 ' + (-r) + ' ' + r + ' H' + x + ' Z';
+    }
+    return 'M' + x + ' ' + (y + h) + ' V' + (y + r) + ' a' + r + ' ' + r + ' 0 0 1 ' + r + ' ' + (-r) +
+      ' H' + (x + w - r) + ' a' + r + ' ' + r + ' 0 0 1 ' + r + ' ' + r + ' V' + (y + h) + ' Z';
+  }
+
+  function barChart(title, sub, data) {
+    var card = chartCard(title, sub, data);
+    var W = 420, labelW = 170, rowH = 24, barH = 15, top = 6;
+    var H = top + Math.max(1, data.length) * rowH + 6;
+    var max = Math.max.apply(null, data.map(function (d) { return d.count; }).concat([1]));
+    var plotW = W - labelW - 44;
+    var svg = el('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': title });
+    svg.appendChild(el('line', { x1: labelW, y1: top, x2: labelW, y2: H - 6, 'class': 'axis' }));
+    data.forEach(function (d, i) {
+      var y = top + i * rowH + (rowH - barH) / 2;
+      var w = Math.max(2, plotW * d.count / max);
+      var path = el('path', { d: roundedEnd(labelW + 1, y, w, barH, 4, 'right'), 'class': 'bar' });
+      attachTooltip(path, d.label + ': ' + d.count);
+      svg.appendChild(path);
+      var lbl = el('text', { x: labelW - 8, y: y + barH / 2 + 4, 'text-anchor': 'end', 'class': 'lbl' }, clip(d.label, 28));
+      if (d.label.length > 28) { var t = el('title', {}, d.label); lbl.appendChild(t); }
+      svg.appendChild(lbl);
+      svg.appendChild(el('text', { x: labelW + w + 7, y: y + barH / 2 + 4, 'class': 'val' }, d.count));
+    });
+    card.appendChild(svg);
+    return card;
+  }
+
+  function columnChart(title, sub, decades) {
+    var card = chartCard(title, sub, decades);
+    if (decades.length === 0) return card;
+    var first = decades[0].decade, last = decades[decades.length - 1].decade;
+    var all = [];
+    var counts = {};
+    decades.forEach(function (d) { counts[d.decade] = d.count; });
+    for (var dec = first; dec <= last; dec += 10) all.push({ decade: dec, count: counts[dec] || 0 });
+
+    var W = 420, H = 200, left = 34, bottom = 28, top = 26;
+    var plotW = W - left - 10, plotH = H - top - bottom;
+    var slot = plotW / all.length;
+    var colW = Math.min(24, Math.max(2, slot - 2));
+    var max = Math.max.apply(null, all.map(function (d) { return d.count; }).concat([1]));
+    var svg = el('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': title });
+
+    // Light gridlines at clean steps and a baseline.
+    var step = max > 200 ? 100 : max > 80 ? 50 : max > 40 ? 20 : max > 16 ? 10 : max > 8 ? 5 : 2;
+    for (var v = step; v <= max; v += step) {
+      var gy = top + plotH - plotH * v / max;
+      svg.appendChild(el('line', { x1: left, y1: gy, x2: W - 10, y2: gy, 'class': 'axis' }));
+      svg.appendChild(el('text', { x: left - 6, y: gy + 4, 'text-anchor': 'end', 'class': 'lbl' }, v));
+    }
+    svg.appendChild(el('line', { x1: left, y1: top + plotH, x2: W - 10, y2: top + plotH, 'class': 'axis' }));
+
+    // Label every decade if there is room, otherwise every fifth or tenth.
+    var labelEvery = slot >= 34 ? 1 : slot >= 8 ? 5 : 10;
+    all.forEach(function (d, i) {
+      var x = left + i * slot + (slot - colW) / 2;
+      if (d.count > 0) {
+        var h = plotH * d.count / max;
+        var path = el('path', { d: roundedEnd(x, top + plotH - h, colW, h, 3, 'top'), 'class': 'bar' });
+        attachTooltip(path, d.decade + 's: ' + d.count);
+        svg.appendChild(path);
+      }
+      if (d.decade % (10 * labelEvery) === 0) {
+        svg.appendChild(el('text', { x: x + colW / 2, y: top + plotH + 16, 'text-anchor': 'middle', 'class': 'lbl' }, d.decade));
+      }
+    });
+    // Direct label on the tallest column only.
+    var peak = all.reduce(function (a, b) { return b.count > a.count ? b : a; }, all[0]);
+    var pi = all.indexOf(peak);
+    svg.appendChild(el('text', { x: Math.min(W - 60, Math.max(left + 50, left + pi * slot + slot / 2)), y: top + plotH - plotH * peak.count / max - 5, 'text-anchor': 'middle', 'class': 'val' },
+      peak.count + ' in the ' + peak.decade + 's'));
+    card.appendChild(svg);
+    return card;
+  }
+
+  function clip(s, n) { return s.length > n ? s.slice(0, n - 1) + '…' : s; }
+
+  var tooltip = $('#tooltip');
+  function attachTooltip(node, text) {
+    node.addEventListener('mouseenter', function () { tooltip.textContent = text; tooltip.style.display = 'block'; });
+    node.addEventListener('mousemove', function (ev) { tooltip.style.left = (ev.clientX + 12) + 'px'; tooltip.style.top = (ev.clientY + 12) + 'px'; });
+    node.addEventListener('mouseleave', function () { tooltip.style.display = 'none'; });
+  }
+
+  /* ---------------------------------------------------------------- */
+  /* Integrity                                                         */
+  /* ---------------------------------------------------------------- */
+
+  function renderIntegrity() {
+    findings = Library.integrityChecks(books);
+    kindFilter = null;
+    var kinds = {};
+    findings.forEach(function (f) { kinds[f.kind] = (kinds[f.kind] || 0) + 1; });
+    var summary = findings.length === 0 ? 'No problems found in ' + books.length + ' rows.' :
+      findings.length + (findings.length === 1 ? ' finding' : ' findings') + ' in ' + books.length + ' rows: ' +
+      Object.keys(kinds).map(function (k) { return kinds[k] + ' ' + k.replace(/-/g, ' '); }).join(', ') + '.';
+    $('#integrity-summary').textContent = summary;
+
+    var filter = $('#kind-filter');
+    filter.innerHTML = '';
+    if (Object.keys(kinds).length > 1) {
+      var all = document.createElement('button'); all.type = 'button'; all.textContent = 'all (' + findings.length + ')';
+      all.setAttribute('aria-pressed', 'true'); all.dataset.kind = '';
+      filter.appendChild(all);
+      Object.keys(kinds).forEach(function (k) {
+        var b = document.createElement('button'); b.type = 'button'; b.textContent = k.replace(/-/g, ' ') + ' (' + kinds[k] + ')';
+        b.setAttribute('aria-pressed', 'false'); b.dataset.kind = k;
+        filter.appendChild(b);
+      });
+    }
+    renderFindings();
+  }
+
+  function renderFindings() {
+    var list = $('#findings');
+    list.innerHTML = '';
+    findings.forEach(function (f) {
+      if (kindFilter && f.kind !== kindFilter) return;
+      var li = document.createElement('li');
+      var k = document.createElement('span'); k.className = 'kind'; k.textContent = f.kind.replace(/-/g, ' ');
+      var m = document.createElement('span'); m.textContent = f.message;
+      li.appendChild(k); li.appendChild(m);
+      if (f.book) li.addEventListener('click', function () { showBook(f.book, true); });
+      else li.className = 'no-book';
+      list.appendChild(li);
+    });
+  }
+
+  $('#kind-filter').addEventListener('click', function (ev) {
+    var b = ev.target.closest('button');
+    if (!b) return;
+    kindFilter = b.dataset.kind || null;
+    document.querySelectorAll('#kind-filter button').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+    renderFindings();
+  });
+})();
+</script>
+</body>
+</html>

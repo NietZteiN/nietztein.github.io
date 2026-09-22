@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Obfuscation Guessing Game</title>
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    --bg: #12151c;
+    --panel: #1b1f29;
+    --panel-2: #232837;
+    --code-bg: #0b0d12;
+    --line: #2d3344;
+    --text: #e6e9f0;
+    --muted: #8b93a7;
+    --accent: #7aa2f7;
+    --accent-2: #bb9af7;
+    --ok: #9ece6a;
+    --bad: #f7768e;
+    --warn: #e0af68;
+    --radius: 10px;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--sans); }
+  body { min-height: 100vh; line-height: 1.45; }
+  a { color: var(--accent); }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 20px 16px 48px; }
+  header.top { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px 16px; margin-bottom: 18px; }
+  header.top h1 { font-size: 22px; margin: 0; letter-spacing: 0.2px; }
+  header.top h1 span { color: var(--accent-2); }
+  header.top .status { color: var(--muted); font-size: 13px; }
+  .screen { display: none; }
+  .screen.active { display: block; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 20px; margin-bottom: 16px; }
+  .card h2 { margin: 0 0 12px; font-size: 17px; font-weight: 600; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px 22px; }
+  label.field { display: block; font-size: 13px; color: var(--muted); }
+  label.field > span { display: block; margin-bottom: 4px; }
+  input[type=text], input[type=number], select, textarea {
+    width: 100%; background: var(--panel-2); color: var(--text); border: 1px solid var(--line);
+    border-radius: 6px; padding: 8px 10px; font-size: 14px; font-family: inherit;
+  }
+  textarea { font-family: var(--mono); min-height: 90px; resize: vertical; }
+  input:focus, select:focus, textarea:focus, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .radio-row { display: flex; gap: 14px; flex-wrap: wrap; font-size: 14px; color: var(--text); }
+  .radio-row label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+  .check { display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer; }
+  button {
+    background: var(--panel-2); color: var(--text); border: 1px solid var(--line); border-radius: 8px;
+    padding: 9px 16px; font-size: 14px; font-family: inherit; cursor: pointer; transition: background 0.12s, transform 0.05s;
+  }
+  button:hover { background: #2b3142; }
+  button:active { transform: translateY(1px); }
+  button.primary { background: var(--accent); color: #0b0d12; border-color: transparent; font-weight: 600; }
+  button.primary:hover { background: #8fb2ff; }
+  button:disabled { opacity: 0.45; cursor: not-allowed; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .row.between { justify-content: space-between; }
+  .muted { color: var(--muted); }
+  .small { font-size: 13px; }
+  kbd { font-family: var(--mono); font-size: 11px; background: var(--panel-2); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 1px 5px; color: var(--muted); }
+
+  /* Round screen */
+  .round-head { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip { font-size: 12px; padding: 3px 9px; border-radius: 999px; background: var(--panel-2); border: 1px solid var(--line); color: var(--muted); }
+  .chip.diff-easy { color: var(--ok); border-color: #3f5a2e; }
+  .chip.diff-medium { color: var(--warn); border-color: #6b5430; }
+  .chip.diff-hard { color: var(--bad); border-color: #6e3644; }
+  .timer { font-family: var(--mono); font-size: 40px; font-weight: 600; letter-spacing: 1px; color: var(--warn); min-width: 130px; text-align: right; font-variant-numeric: tabular-nums; }
+  .timer.idle { color: var(--muted); }
+  .code-panel { position: relative; background: var(--code-bg); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+  .code-panel pre { margin: 0; padding: 14px 0; overflow-x: auto; font-family: var(--mono); font-size: 13.5px; line-height: 1.5; }
+  .code-panel pre.hidden-code { filter: blur(7px); user-select: none; pointer-events: none; }
+  .code-line { display: flex; }
+  .code-line .ln { width: 46px; flex: 0 0 46px; text-align: right; padding-right: 12px; color: #4a5268; user-select: none; }
+  .code-line .src { white-space: pre; padding-right: 16px; }
+  .reveal-cover { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; background: rgba(11, 13, 18, 0.55); }
+  .reveal-cover button { font-size: 16px; padding: 12px 22px; }
+  .answer { margin-top: 14px; }
+  .choices { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; }
+  .choice { text-align: left; font-family: var(--mono); font-size: 13px; white-space: pre-wrap; padding: 10px 12px; display: flex; gap: 10px; align-items: flex-start; }
+  .choice .key { color: var(--accent-2); font-weight: 700; flex: 0 0 auto; }
+  .choice.selected { border-color: var(--accent); background: #24304a; }
+  .confidence { display: flex; align-items: center; gap: 12px; margin-top: 14px; flex-wrap: wrap; }
+  .confidence input[type=range] { flex: 1; min-width: 160px; accent-color: var(--accent); }
+  .confidence output { font-family: var(--mono); min-width: 48px; font-size: 16px; }
+
+  /* Feedback */
+  .verdict { font-size: 30px; font-weight: 700; margin: 0 0 4px; }
+  .verdict.ok { color: var(--ok); }
+  .verdict.bad { color: var(--bad); }
+  .near-miss { color: var(--warn); font-size: 14px; margin-bottom: 8px; }
+  .compare { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-top: 10px; }
+  .compare h3, .card h3 { font-size: 13px; color: var(--muted); margin: 0 0 6px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+  .out { background: var(--code-bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; font-family: var(--mono); font-size: 13.5px; white-space: pre-wrap; margin: 0; min-height: 42px; }
+  .facts { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 12px; font-size: 14px; }
+  .facts b { font-family: var(--mono); font-weight: 600; }
+
+  /* End screen */
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+  .tile { background: var(--panel-2); border-radius: 8px; padding: 12px 14px; }
+  .tile .v { font-size: 28px; font-weight: 700; font-family: var(--mono); }
+  .tile .k { color: var(--muted); font-size: 12px; }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 500; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+  td.num, th.num { text-align: right; font-family: var(--mono); }
+  .calib { display: grid; grid-template-columns: 1fr auto; gap: 18px; align-items: start; }
+  @media (max-width: 640px) { .calib { grid-template-columns: 1fr; } .timer { font-size: 30px; } }
+  svg text { font-family: var(--sans); font-size: 11px; fill: var(--muted); }
+  .toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: var(--panel-2); border: 1px solid var(--line); padding: 8px 14px; border-radius: 8px; font-size: 13px; opacity: 0; transition: opacity 0.2s; pointer-events: none; }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>Obfuscation <span>Guessing Game</span></h1>
+    <div class="status" id="bank-status">loading bank...</div>
+  </header>
+
+  <!-- ------------------------------------------------------------------ -->
+  <section id="screen-settings" class="screen active">
+    <div class="card">
+      <h2>Predict the output of obfuscated code</h2>
+      <p class="muted small" style="margin:0 0 14px">
+        You will see a short Python snippet that has been passed through one or more obfuscation transforms.
+        Reveal it, work out what it prints, answer, and rate your confidence. Correctness, response time
+        and confidence are recorded in this browser only.
+      </p>
+      <div class="grid">
+        <label class="field"><span>Mode</span>
+          <div class="radio-row">
+            <label><input type="radio" name="mode" value="text" checked> Free text answer</label>
+            <label><input type="radio" name="mode" value="choice"> Multiple choice</label>
+          </div>
+        </label>
+        <label class="field"><span>Difficulty</span>
+          <select id="set-difficulty">
+            <option value="all">All</option>
+            <option value="easy">Easy (score 1 to 2)</option>
+            <option value="medium">Medium (score 3 to 4)</option>
+            <option value="hard">Hard (score 5 and up)</option>
+          </select>
+        </label>
+        <label class="field"><span>Rounds</span>
+          <input type="number" id="set-rounds" min="1" max="100" value="10">
+        </label>
+        <label class="field"><span>Participant id (optional)</span>
+          <input type="text" id="set-participant" placeholder="anonymous">
+        </label>
+        <label class="check"><input type="checkbox" id="set-show-transforms" checked> Show transform names during the round</label>
+      </div>
+      <div class="row between" style="margin-top:18px">
+        <button class="primary" id="btn-start">Start game <kbd>Enter</kbd></button>
+        <span class="muted small" id="pool-info"></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Data</h2>
+      <div class="row between">
+        <span class="small" id="trials-info">0 trials stored</span>
+        <div class="row">
+          <button id="btn-export-csv">Export CSV</button>
+          <button id="btn-export-json">Export JSON</button>
+          <button id="btn-clear">Clear stored trials</button>
+        </div>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <label class="small muted" for="bank-file">Load a different bank.json:</label>
+        <input type="file" id="bank-file" accept=".json,application/json" class="small">
+      </div>
+    </div>
+    <p class="muted small">Shortcuts: <kbd>Space</kbd> reveal, <kbd>Enter</kbd> submit or continue, <kbd>1</kbd> to <kbd>4</kbd> pick a choice, <kbd>Shift</kbd>+<kbd>Enter</kbd> new line in the answer box.</p>
+  </section>
+
+  <!-- ------------------------------------------------------------------ -->
+  <section id="screen-round" class="screen">
+    <div class="round-head">
+      <div>
+        <div style="font-size:16px;font-weight:600" id="round-title">Round 1 of 10</div>
+        <div class="chips" id="round-chips"></div>
+      </div>
+      <div class="timer idle" id="timer">0.0 s</div>
+    </div>
+    <div class="code-panel">
+      <pre id="code" class="hidden-code"></pre>
+      <div class="reveal-cover" id="reveal-cover">
+        <button class="primary" id="btn-reveal">Reveal code</button>
+        <span class="muted small">The timer starts when the code appears. <kbd>Space</kbd></span>
+      </div>
+    </div>
+    <div class="card answer">
+      <div id="answer-text">
+        <label class="field"><span>What does this program print? (exact output, one line per printed line)</span>
+          <textarea id="answer-box" spellcheck="false" autocomplete="off" disabled></textarea>
+        </label>
+      </div>
+      <div id="answer-choice" class="choices" style="display:none"></div>
+      <div class="confidence">
+        <span class="small muted">Confidence</span>
+        <input type="range" id="confidence" min="50" max="100" step="10" value="70">
+        <output id="confidence-out">70%</output>
+      </div>
+      <div class="row between" style="margin-top:14px">
+        <button class="primary" id="btn-submit" disabled>Submit <kbd>Enter</kbd></button>
+        <button id="btn-quit" class="small">End session</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ------------------------------------------------------------------ -->
+  <section id="screen-feedback" class="screen">
+    <div class="card">
+      <p class="verdict" id="verdict">Correct</p>
+      <div class="near-miss" id="near-miss" style="display:none"></div>
+      <div class="compare">
+        <div><h3>Your answer</h3><pre class="out" id="fb-answer"></pre></div>
+        <div><h3>True output</h3><pre class="out" id="fb-expected"></pre></div>
+      </div>
+      <div class="facts">
+        <span>Time <b id="fb-time"></b></span>
+        <span>Confidence <b id="fb-conf"></b></span>
+        <span>Difficulty <b id="fb-diff"></b></span>
+      </div>
+      <div style="margin-top:12px"><h3>Transforms used</h3><div class="chips" id="fb-transforms"></div></div>
+      <div class="row" style="margin-top:14px">
+        <button id="btn-toggle-clean">Show clean program</button>
+        <button id="btn-toggle-obf">Show obfuscated code</button>
+      </div>
+      <div class="code-panel" id="fb-clean-panel" style="display:none;margin-top:10px"><pre id="fb-clean"></pre></div>
+      <div class="code-panel" id="fb-obf-panel" style="display:none;margin-top:10px"><pre id="fb-obf"></pre></div>
+      <div class="row between" style="margin-top:16px">
+        <button class="primary" id="btn-next">Next <kbd>Enter</kbd></button>
+        <span class="muted small" id="fb-progress"></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ------------------------------------------------------------------ -->
+  <section id="screen-end" class="screen">
+    <div class="card">
+      <h2>Session summary</h2>
+      <div class="tiles" id="end-tiles"></div>
+    </div>
+    <div class="card">
+      <h2>Calibration</h2>
+      <p class="muted small" style="margin:0 0 10px">Stated confidence against observed accuracy. Points on the dashed line are perfectly calibrated; points below it mean overconfidence.</p>
+      <div class="calib">
+        <table id="calib-table"></table>
+        <div id="calib-plot"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Accuracy per transform</h2>
+      <p class="muted small" style="margin:0 0 10px">A trial counts toward every transform in its stack.</p>
+      <table id="transform-table"></table>
+    </div>
+    <div class="row">
+      <button class="primary" id="btn-again">Play again <kbd>Enter</kbd></button>
+      <button id="btn-end-csv">Export CSV</button>
+      <button id="btn-end-json">Export JSON</button>
+    </div>
+  </section>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// BANK_FALLBACK_START
+const BUILT_IN_BANK = {"version":1,"note":"built-in fallback, 10 of 306 items","programs":{"ackermann":{"source":"# Ackermann's function for small arguments (deep recursion, small answer).\ndef ack(m, n):\n    if m == 0:\n        return n + 1\n    if n == 0:\n        return ack(m - 1, 1)\n    return ack(m - 1, ack(m, n - 1))\n\n\nprint(\"ack(2,3)\", ack(2, 3), \"ack(3,2)\", ack(3, 2))\n","output":"ack(2,3) 9 ack(3,2) 29\n","language":"python"},"palindromes":{"source":"# Keep the words that read the same backwards.\nwords = [\"level\", \"python\", \"noon\", \"radar\", \"code\", \"civic\"]\nfound = [w for w in words if w == w[::-1]]\nprint(len(found), \",\".join(found))\n","output":"4 level,noon,radar,civic\n","language":"python"},"digit_sum":{"source":"# Sum of digits of a number, then the sum of digits of that sum.\ndef digit_sum(n):\n    total = 0\n    while n > 0:\n        total += n % 10\n        n = n // 10\n    return total\n\n\nfirst = digit_sum(98765)\nsecond = digit_sum(first)\nprint(first, second)\n","output":"35 8\n","language":"python"},"primes":{"source":"# Sieve of Eratosthenes: print the primes below 50.\ndef primes_below(limit):\n    sieve = [True] * limit\n    sieve[0] = False\n    if limit > 1:\n        sieve[1] = False\n    for i in range(2, limit):\n        if sieve[i]:\n            for j in range(i * i, limit, i):\n                sieve[j] = False\n    return [i for i in range(limit) if sieve[i]]\n\n\nfound = primes_below(50)\nprint(\"count\", len(found))\nprint(\"primes\", found)\n","output":"count 15\nprimes [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47]\n","language":"python"},"gcd_lcm":{"source":"# Euclid's algorithm for the gcd, then the lcm from it.\ndef gcd(a, b):\n    while b != 0:\n        a, b = b, a % b\n    return a\n\n\nx = 84\ny = 36\ng = gcd(x, y)\nprint(\"gcd\", g, \"lcm\", x * y // g)\n","output":"gcd 12 lcm 252\n","language":"python"},"factorial":{"source":"# Recursive factorial of 7 and the number of trailing zeros in it.\ndef fact(n):\n    if n <= 1:\n        return 1\n    return n * fact(n - 1)\n\n\nvalue = fact(7)\nzeros = 0\nwhile value % 10 == 0:\n    value = value // 10\n    zeros += 1\nprint(\"fact7\", fact(7), \"zeros\", zeros)\n","output":"fact7 5040 zeros 1\n","language":"python"},"squares_sum":{"source":"# Sum of the squares of the odd numbers below 12.\ntotal = 0\nfor n in range(12):\n    if n % 2 == 1:\n        total += n * n\nprint(\"sum\", total)\n","output":"sum 286\n","language":"python"},"fizzbuzz":{"source":"# Classic FizzBuzz for the numbers 1 through 20.\ndef classify(n):\n    if n % 15 == 0:\n        return \"FizzBuzz\"\n    if n % 3 == 0:\n        return \"Fizz\"\n    if n % 5 == 0:\n        return \"Buzz\"\n    return str(n)\n\n\ndef main():\n    results = []\n    for n in range(1, 21):\n        results.append(classify(n))\n    print(\" \".join(results))\n\n\nmain()\n","output":"1 2 Fizz 4 Buzz Fizz 7 8 Fizz Buzz 11 Fizz 13 14 FizzBuzz 16 17 Fizz 19 Buzz\n","language":"python"}},"items":[{"id":"ackermann.e.s0","program":"ackermann","transforms":["expression_rewriting"],"seed":0,"code":"def ack(m, n):\n    if not not m == 12 ^ 12:\n        return n + (33 ^ 32)\n    if not not n == -31 + 31:\n        return ack(m - (26 - 25), 33 ^ 32)\n    return ack(m - (-22 + 23), ack(m, n - (30 ^ 31)))\nprint('ack(2,3)', ack(2 - 0, 14 + -11), 'ack(3,2)', ack(-34 - -37, 13 ^ 15))","expected_output":"ack(2,3) 9 ack(3,2) 29\n","distractors":["ACK(2,3) 9 ack(3,2) 29\n","ack(2,3) 9 ack(2,2) 29\n","ack(2,3) 8 ack(3,2) 29\n"],"difficulty":1,"language":"python"},{"id":"palindromes.d.s1","program":"palindromes","transforms":["dead_code_insertion"],"seed":1,"code":"_dead_516b = -989\nwords = ['level', 'python', 'noon', 'radar', 'code', 'civic']\nfound = [w for w in words if w == w[::-1]]\nif 61 % 2 == 0:\n    _dead_efc5 = [3]\nprint(len(found), ','.join(found))\n_dead_7c8a = 28 + 29","expected_output":"4 level,noon,radar,civic\n","distractors":["4 level,NOON,radar,civic\n","4 level,noon,radar,CIVIC\n","4 Level,noon,radar,civic\n"],"difficulty":1,"language":"python"},{"id":"ackermann.ra.s0","program":"ackermann","transforms":["rename_identifiers:adversarial"],"seed":0,"code":"def compress(error_flag, total_price):\n    if error_flag == 0:\n        return total_price + 1\n    if total_price == 0:\n        return compress(error_flag - 1, 1)\n    return compress(error_flag - 1, compress(error_flag, total_price - 1))\nprint('ack(2,3)', compress(2, 3), 'ack(3,2)', compress(3, 2))","expected_output":"ack(2,3) 9 ack(3,2) 29\n","distractors":["ack(2,3) 9 ack(3,2) 28\n","ack(2,3) 9 29 ack(3,2)\n","ack(2,3) 10 ack(3,2) 29\n"],"difficulty":1,"language":"python"},{"id":"palindromes.e.s0","program":"palindromes","transforms":["expression_rewriting"],"seed":0,"code":"words = ['level', 'python', 'noon', 'radar', 'code', 'civic']\nfound = [w for w in words if w == w[::-(12 ^ 13)]]\nprint(len(found), ','.join(found))","expected_output":"4 level,noon,radar,civic\n","distractors":["level,noon,radar,civic 4\n","4 level,noon,radar,CIVIC\n","4 level,NOON,radar,civic\n"],"difficulty":1,"language":"python"},{"id":"digit_sum.f.s0","program":"digit_sum","transforms":["control_flow_flatten"],"seed":0,"code":"def digit_sum(n):\n    _state_eda3 = 0\n    while True:\n        if _state_eda3 == 0:\n            total = 0\n            _state_eda3 = 1\n        elif _state_eda3 == 1:\n            while n > 0:\n                total += n % 10\n                n = n // 10\n            _state_eda3 = 2\n        elif _state_eda3 == 2:\n            return total\n            _state_eda3 = 3\n        else:\n            break\nfirst = digit_sum(98765)\nsecond = digit_sum(first)\nprint(first, second)","expected_output":"35 8\n","distractors":["36 8\n","45 8\n","35 16\n"],"difficulty":2,"language":"python"},{"id":"primes.s.s0","program":"primes","transforms":["string_encoding:base64"],"seed":0,"code":"import base64 as _b64x\n\ndef _dec_53d6(s):\n    return _b64x.b64decode(s).decode('utf-8')\n\ndef primes_below(limit):\n    sieve = [True] * limit\n    sieve[0] = False\n    if limit > 1:\n        sieve[1] = False\n    for i in range(2, limit):\n        if sieve[i]:\n            for j in range(i * i, limit, i):\n                sieve[j] = False\n    return [i for i in range(limit) if sieve[i]]\nfound = primes_below(50)\nprint(_dec_53d6('Y291bnQ='), len(found))\nprint(_dec_53d6('cHJpbWVz'), found)","expected_output":"count 15\nprimes [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47]\n","distractors":["count 15\nprimes [2, 3, 5, 7, 11, 13, 17, 19, 23, 39, 31, 37, 41, 43, 47]\n","count 15\nprimes [2, 3, 5, 17, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47]\n","count 15\nprimes [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 44, 47]\n"],"difficulty":2,"language":"python"},{"id":"gcd_lcm.s+ru.s1","program":"gcd_lcm","transforms":["string_encoding:base64","rename_identifiers:uninformative"],"seed":1,"code":"import base64 as _b64x\n\ndef b2(f6):\n    return _b64x.b64decode(f6).decode('utf-8')\n\ndef c3(d4, e5):\n    while e5 != 0:\n        d4, e5 = (e5, d4 % e5)\n    return d4\ng7 = 84\nh8 = 36\na1 = c3(g7, h8)\nprint(b2('Z2Nk'), a1, b2('bGNt'), g7 * h8 // a1)","expected_output":"gcd 12 lcm 252\n","distractors":["gcd 12 Lcm 252\n","252 mcl 21 dcg\n","gcd 12 lcm 251\n"],"difficulty":3,"language":"python"},{"id":"factorial.f+d.s1","program":"factorial","transforms":["control_flow_flatten","dead_code_insertion"],"seed":1,"code":"def fact(n):\n    if 43 % 2 == 0:\n        _dead_fe4c = []\n    _state_0f79 = 0\n    while True:\n        if 38 * 38 < 0:\n            _dead_8fe2 = 28 + 1\n        if _state_0f79 == 0:\n            if n <= 1:\n                _dead_6a37 = []\n                return 1\n                if 11 % 2 == 0:\n                    _dead_c8fd = []\n            _state_0f79 = 1\n            if 18 < 18 - 1:\n                _dead_7ad6 = -763\n        elif _state_0f79 == 1:\n            return n * fact(n - 1)\n            if 17 < 17 - 1:\n                _dead_6a6a = 49 + 3\n            _state_0f79 = 2\n        else:\n            if 21 * 21 < 0:\n                _dead_b38d = 15 + 30\n            break\n        if 3 % 2 == 0:\n            _dead_d5a0 = -938\nif 63 % 2 == 0:\n    _dead_5095 = []\nvalue = fact(7)\n_dead_516b = -989\nzeros = 0\nwhile value % 10 == 0:\n    value = value // 10\n    if 18 * 18 < 0:\n        _dead_614f = -651\n    zeros += 1\nif 61 % 2 == 0:\n    _dead_efc5 = [3]\nprint('fact7', fact(7), 'zeros', zeros)\n_dead_7c8a = 28 + 29","expected_output":"fact7 5040 zeros 1\n","distractors":["fact7 5040 ZEROS 1\n","fact7 5040 1 zeros\n","fact7 5041 zeros 1\n"],"difficulty":4,"language":"python"},{"id":"squares_sum.ra+e+s+d.s0","program":"squares_sum","transforms":["rename_identifiers:adversarial","expression_rewriting","string_encoding:base64","dead_code_insertion"],"seed":0,"code":"if 37 % 2 == 0:\n    _dead_71c6 = [5]\nimport base64 as _b64x\n_dead_fcfb = -982\n\ndef _dec_2421(s):\n    return _b64x.b64decode(s).decode('utf-8')\ntotal_price = 31 ^ 31\n_dead_7bc9 = -149\nfor error_flag in range(5 + 7):\n    if not not error_flag % (14 ^ 12) == 12 - 11:\n        total_price += error_flag * error_flag\n    if 77 % 2 == 0:\n        _dead_b555 = 23 + 2\nprint(_dec_2421('c3Vt'), total_price)\nif 5 % 2 == 0:\n    _dead_d667 = 36 + 38","expected_output":"sum 286\n","distractors":["sum 572\n","SUM 286\n","286 sum\n"],"difficulty":5,"language":"python"},{"id":"fizzbuzz.ra+e+s+d+f.s3","program":"fizzbuzz","transforms":["rename_identifiers:adversarial","expression_rewriting","string_encoding:base64","dead_code_insertion","control_flow_flatten"],"seed":3,"code":"import base64 as _b64x\n\ndef _dec_4042(s):\n    _state_4903 = 0\n    while True:\n        if _state_4903 == 0:\n            _dead_6837 = 28 + 45\n            _state_4903 = 1\n        elif _state_4903 == 1:\n            return _b64x.b64decode(s).decode('utf-8')\n            _state_4903 = 2\n        else:\n            break\n_dead_c2e8 = []\n\ndef validate(cache_hit):\n    _state_1e0b = 0\n    while True:\n        if _state_1e0b == 0:\n            _dead_dee7 = -706\n            _state_1e0b = 1\n        elif _state_1e0b == 1:\n            if not not cache_hit % (-15 + 30) == 21 ^ 21:\n                _dead_7085 = []\n                return _dec_4042('Rml6ekJ1eno=')\n            _state_1e0b = 2\n        elif _state_1e0b == 2:\n            if not not cache_hit % (-5 + 8) == 26 + -26:\n                return _dec_4042('Rml6eg==')\n            _state_1e0b = 3\n        elif _state_1e0b == 3:\n            if not not cache_hit % (41 - 36) == -27 + 27:\n                return _dec_4042('QnV6eg==')\n                if 5 % 2 == 0:\n                    _dead_6998 = 38 + 25\n            _state_1e0b = 4\n        elif _state_1e0b == 4:\n            _dead_cb41 = [3, 8]\n            _state_1e0b = 5\n        elif _state_1e0b == 5:\n            return str(cache_hit)\n            _state_1e0b = 6\n        elif _state_1e0b == 6:\n            _dead_004c = 14 + 6\n            _state_1e0b = 7\n        else:\n            break\n\ndef serialize():\n    _state_9e37 = 0\n    while True:\n        if _state_9e37 == 0:\n            if 97 % 2 == 0:\n                _dead_6c1c = -854\n            _state_9e37 = 1\n        elif _state_9e37 == 1:\n            raw_payload = []\n            _state_9e37 = 2\n        elif _state_9e37 == 2:\n            for cache_hit in range(37 + -36, -29 + 50):\n                raw_payload.append(validate(cache_hit))\n                if 31 % 2 == 0:\n                    _dead_318a = -792\n            _state_9e37 = 3\n        elif _state_9e37 == 3:\n            if 9 < 9 - 1:\n                _dead_0b49 = -156\n            _state_9e37 = 4\n        elif _state_9e37 == 4:\n            print(_dec_4042('IA==').join(raw_payload))\n            _state_9e37 = 5\n        elif _state_9e37 == 5:\n            if 55 % 2 == 0:\n                _dead_7067 = 23 + 9\n            _state_9e37 = 6\n        else:\n            break\nserialize()","expected_output":"1 2 Fizz 4 Buzz Fizz 7 8 Fizz Buzz 11 Fizz 13 14 FizzBuzz 16 17 Fizz 19 Buzz\n","distractors":["1 2 Fizz 4 Buzz Fizz 7 8 Fizz zzuB 11 Fizz 13 14 FizzBuzz 16 17 Fizz 19 Buzz\n","1 3 Fizz 4 Buzz Fizz 7 8 Fizz Buzz 11 Fizz 13 14 FizzBuzz 16 17 Fizz 19 Buzz\n","1 2 Fizz 4 Buzz Fizz 7 8 Fizz Buzz 11 13 Fizz 14 FizzBuzz 16 17 Fizz 19 Buzz\n"],"difficulty":8,"language":"python"}]};
+// BANK_FALLBACK_END
+
+(function () {
+  "use strict";
+
+  const STORAGE_KEY = "obgame_trials_v1";
+  const TRANSFORM_LABELS = {
+    rename_identifiers: "rename",
+    control_flow_flatten: "flatten",
+    dead_code_insertion: "dead code",
+    string_encoding: "string encoding",
+    expression_rewriting: "expression rewriting",
+  };
+
+  const $ = (id) => document.getElementById(id);
+
+  // ----------------------------------------------------------------------- //
+  // State
+  // ----------------------------------------------------------------------- //
+  const state = {
+    bank: null,
+    bankSource: "",
+    sessionId: "",
+    participant: "anonymous",
+    settings: { mode: "text", difficulty: "all", rounds: 10, showTransforms: true },
+    queue: [],
+    index: 0,
+    item: null,
+    revealedAt: null,
+    timerHandle: null,
+    choices: [],
+    selectedChoice: -1,
+    results: [],
+  };
+
+  // ----------------------------------------------------------------------- //
+  // Helpers
+  // ----------------------------------------------------------------------- //
+  function showScreen(name) {
+    if (document.activeElement) document.activeElement.blur();
+    document.querySelectorAll(".screen").forEach((s) => s.classList.remove("active"));
+    $("screen-" + name).classList.add("active");
+    window.scrollTo(0, 0);
+  }
+
+  function toast(msg) {
+    const el = $("toast");
+    el.textContent = msg;
+    el.classList.add("show");
+    clearTimeout(toast.handle);
+    toast.handle = setTimeout(() => el.classList.remove("show"), 1800);
+  }
+
+  function newId(prefix) {
+    return prefix + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  }
+
+  function shuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  function baseName(transform) {
+    return transform.split(":")[0];
+  }
+
+  function transformLabel(transform) {
+    const [base, arg] = transform.split(":");
+    const label = TRANSFORM_LABELS[base] || base;
+    return arg ? label + " (" + arg + ")" : label;
+  }
+
+  function difficultyClass(score) {
+    if (score <= 2) return "easy";
+    if (score <= 4) return "medium";
+    return "hard";
+  }
+
+  function renderCode(pre, code) {
+    pre.textContent = "";
+    code.replace(/\n$/, "").split("\n").forEach((line, i) => {
+      const row = document.createElement("div");
+      row.className = "code-line";
+      const ln = document.createElement("span");
+      ln.className = "ln";
+      ln.textContent = String(i + 1);
+      const src = document.createElement("span");
+      src.className = "src";
+      src.textContent = line;
+      row.append(ln, src);
+      pre.appendChild(row);
+    });
+  }
+
+  function chipList(container, transforms, difficulty) {
+    container.textContent = "";
+    if (difficulty !== undefined) {
+      const c = document.createElement("span");
+      c.className = "chip diff-" + difficultyClass(difficulty);
+      c.textContent = difficultyClass(difficulty) + " " + difficulty;
+      container.appendChild(c);
+    }
+    (transforms.length ? transforms : ["no transform"]).forEach((t) => {
+      const c = document.createElement("span");
+      c.className = "chip";
+      c.textContent = transformLabel(t);
+      container.appendChild(c);
+    });
+  }
+
+  // Answer matching: normalize line endings, curly quotes, per-line edge
+  // whitespace and trailing newlines. A near miss is an answer that matches
+  // once every whitespace character is removed.
+  function normalize(text) {
+    return String(text)
+      .replace(/\r\n?/g, "\n")
+      .replace(/[‘’‚]/g, "'")
+      .replace(/[“”„]/g, '"')
+      .split("\n").map((l) => l.trim()).join("\n")
+      .replace(/\n+$/, "").trim();
+  }
+
+  function judge(answer, expected) {
+    const a = normalize(answer);
+    const e = normalize(expected);
+    const correct = a === e;
+    const nearMiss = !correct && a.replace(/\s+/g, "") === e.replace(/\s+/g, "");
+    return { correct, nearMiss };
+  }
+
+  // ----------------------------------------------------------------------- //
+  // Storage and export
+  // ----------------------------------------------------------------------- //
+  function loadTrials() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function saveTrial(trial) {
+    try {
+      const all = loadTrials();
+      all.push(trial);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
+    } catch (e) {
+      toast("Could not save to localStorage");
+    }
+    updateTrialsInfo();
+  }
+
+  function updateTrialsInfo() {
+    const n = loadTrials().length;
+    $("trials-info").textContent = n + " trial" + (n === 1 ? "" : "s") + " stored in this browser";
+  }
+
+  function download(name, text, type) {
+    const blob = new Blob([text], { type });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  const CSV_COLUMNS = ["session_id", "participant", "item_id", "program", "transforms", "mode",
+    "correct", "near_miss", "response_ms", "confidence", "answer", "expected", "timestamp"];
+
+  function toCsv(trials) {
+    const q = (v) => '"' + String(v === undefined || v === null ? "" : v).replace(/"/g, '""') + '"';
+    const lines = [CSV_COLUMNS.join(",")];
+    trials.forEach((t) => {
+      lines.push(CSV_COLUMNS.map((c) => {
+        const v = t[c];
+        return q(Array.isArray(v) ? v.join("+") : v);
+      }).join(","));
+    });
+    return lines.join("\n") + "\n";
+  }
+
+  function stamp() {
+    return new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+  }
+
+  function exportCsv() {
+    const trials = loadTrials();
+    if (!trials.length) return toast("No trials to export");
+    download("obfuscation-game-trials-" + stamp() + ".csv", toCsv(trials), "text/csv");
+  }
+
+  function exportJson() {
+    const trials = loadTrials();
+    if (!trials.length) return toast("No trials to export");
+    download("obfuscation-game-trials-" + stamp() + ".json", JSON.stringify(trials, null, 2), "application/json");
+  }
+
+  function clearTrials() {
+    const n = loadTrials().length;
+    if (!n) return toast("Nothing stored");
+    if (!confirm("Delete all " + n + " stored trials from this browser?")) return;
+    localStorage.removeItem(STORAGE_KEY);
+    updateTrialsInfo();
+    toast("Stored trials cleared");
+  }
+
+  // ----------------------------------------------------------------------- //
+  // Bank loading
+  // ----------------------------------------------------------------------- //
+  function setBank(bank, source) {
+    if (!bank || !Array.isArray(bank.items) || !bank.items.length) {
+      toast("That file has no items");
+      return;
+    }
+    state.bank = bank;
+    state.bankSource = source;
+    $("bank-status").textContent = bank.items.length + " snippets from " + source;
+    updatePoolInfo();
+  }
+
+  async function loadBank() {
+    try {
+      // Browsers refuse fetch on file://, so go straight to the fallback there.
+      if (location.protocol === "file:") throw new Error("file://");
+      const res = await fetch("bank.json", { cache: "no-store" });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      setBank(await res.json(), "bank.json");
+    } catch (e) {
+      // file:// or missing bank.json: use the embedded fallback.
+      setBank(BUILT_IN_BANK, "the built-in fallback (open via http.server or pick bank.json below for the full set)");
+    }
+  }
+
+  function readBankFile(file) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        setBank(JSON.parse(reader.result), file.name);
+        toast("Loaded " + file.name);
+      } catch (e) {
+        toast("Not a valid bank.json");
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  function readSettings() {
+    state.settings.mode = document.querySelector("input[name=mode]:checked").value;
+    state.settings.difficulty = $("set-difficulty").value;
+    state.settings.rounds = Math.max(1, Math.min(100, parseInt($("set-rounds").value, 10) || 10));
+    state.settings.showTransforms = $("set-show-transforms").checked;
+    state.participant = $("set-participant").value.trim() || "anonymous";
+  }
+
+  function poolItems() {
+    if (!state.bank) return [];
+    const d = state.settings.difficulty;
+    return state.bank.items.filter((it) => d === "all" || difficultyClass(it.difficulty) === d);
+  }
+
+  function updatePoolInfo() {
+    readSettings();
+    const n = poolItems().length;
+    $("pool-info").textContent = n + " snippet" + (n === 1 ? "" : "s") + " match the difficulty filter";
+    $("btn-start").disabled = n === 0;
+  }
+
+  // Pick rounds from the pool, preferring one snippet per clean program so a
+  // session does not show the same program twice under different disguises.
+  function buildQueue() {
+    const pool = shuffle(poolItems().slice());
+    const seen = new Set();
+    const first = [];
+    const rest = [];
+    pool.forEach((it) => {
+      if (seen.has(it.program)) rest.push(it);
+      else { seen.add(it.program); first.push(it); }
+    });
+    return first.concat(rest).slice(0, state.settings.rounds);
+  }
+
+  // ----------------------------------------------------------------------- //
+  // Game loop
+  // ----------------------------------------------------------------------- //
+  function startGame() {
+    readSettings();
+    state.queue = buildQueue();
+    if (!state.queue.length) return toast("No snippets match the filter");
+    state.sessionId = newId("s");
+    state.index = 0;
+    state.results = [];
+    showRound();
+  }
+
+  function stopTimer() {
+    clearInterval(state.timerHandle);
+    state.timerHandle = null;
+  }
+
+  function showRound() {
+    const item = state.queue[state.index];
+    state.item = item;
+    state.revealedAt = null;
+    state.selectedChoice = -1;
+    stopTimer();
+
+    $("round-title").textContent = "Round " + (state.index + 1) + " of " + state.queue.length;
+    chipList($("round-chips"), state.settings.showTransforms ? item.transforms : [], item.difficulty);
+    if (!state.settings.showTransforms) {
+      $("round-chips").lastChild.textContent = item.transforms.length + " transform" + (item.transforms.length === 1 ? "" : "s");
+    }
+    const timer = $("timer");
+    timer.textContent = "0.0 s";
+    timer.classList.add("idle");
+
+    const code = $("code");
+    renderCode(code, item.code);
+    code.classList.add("hidden-code");
+    $("reveal-cover").style.display = "flex";
+
+    const isText = state.settings.mode === "text";
+    $("answer-text").style.display = isText ? "" : "none";
+    $("answer-choice").style.display = isText ? "none" : "";
+    const box = $("answer-box");
+    box.value = "";
+    box.disabled = true;
+    $("confidence").value = 70;
+    $("confidence-out").textContent = "70%";
+    $("btn-submit").disabled = true;
+
+    if (!isText) {
+      state.choices = shuffle([item.expected_output].concat(item.distractors || []));
+      const holder = $("answer-choice");
+      holder.textContent = "";
+      state.choices.forEach((text, i) => {
+        const b = document.createElement("button");
+        b.className = "choice";
+        b.disabled = true;
+        const key = document.createElement("span");
+        key.className = "key";
+        key.textContent = String(i + 1);
+        const body = document.createElement("span");
+        body.textContent = text.replace(/\n$/, "");
+        b.append(key, body);
+        b.addEventListener("click", () => selectChoice(i));
+        holder.appendChild(b);
+      });
+    }
+    showScreen("round");
+    $("btn-reveal").focus();
+  }
+
+  function reveal() {
+    if (state.revealedAt !== null) return;
+    state.revealedAt = performance.now();
+    $("code").classList.remove("hidden-code");
+    $("reveal-cover").style.display = "none";
+    $("btn-reveal").blur();
+    $("timer").classList.remove("idle");
+    state.timerHandle = setInterval(() => {
+      $("timer").textContent = ((performance.now() - state.revealedAt) / 1000).toFixed(1) + " s";
+    }, 100);
+    $("btn-submit").disabled = false;
+    if (state.settings.mode === "text") {
+      const box = $("answer-box");
+      box.disabled = false;
+      box.focus();
+    } else {
+      document.querySelectorAll(".choice").forEach((b) => { b.disabled = false; });
+    }
+  }
+
+  function selectChoice(i) {
+    if (state.revealedAt === null || i < 0 || i >= state.choices.length) return;
+    state.selectedChoice = i;
+    document.querySelectorAll(".choice").forEach((b, j) => b.classList.toggle("selected", j === i));
+  }
+
+  function submit() {
+    if (state.revealedAt === null) return;
+    const isText = state.settings.mode === "text";
+    let answer;
+    if (isText) {
+      answer = $("answer-box").value;
+      if (!answer.trim()) return toast("Type your prediction first");
+    } else {
+      if (state.selectedChoice < 0) return toast("Pick one of the four outputs");
+      answer = state.choices[state.selectedChoice];
+    }
+    const responseMs = Math.round(performance.now() - state.revealedAt);
+    stopTimer();
+    const item = state.item;
+    const verdict = judge(answer, item.expected_output);
+    const trial = {
+      session_id: state.sessionId,
+      participant: state.participant,
+      item_id: item.id,
+      program: item.program,
+      transforms: item.transforms,
+      mode: state.settings.mode,
+      correct: verdict.correct,
+      near_miss: verdict.nearMiss,
+      response_ms: responseMs,
+      confidence: parseInt($("confidence").value, 10),
+      answer,
+      expected: item.expected_output,
+      timestamp: new Date().toISOString(),
+    };
+    state.results.push(trial);
+    saveTrial(trial);
+    showFeedback(trial);
+  }
+
+  function showFeedback(trial) {
+    const item = state.item;
+    const v = $("verdict");
+    v.textContent = trial.correct ? "Correct" : "Not quite";
+    v.className = "verdict " + (trial.correct ? "ok" : "bad");
+    const nm = $("near-miss");
+    nm.style.display = trial.near_miss ? "" : "none";
+    nm.textContent = "Near miss: your answer differs from the true output only in whitespace.";
+    $("fb-answer").textContent = trial.answer.replace(/\n$/, "");
+    $("fb-expected").textContent = item.expected_output.replace(/\n$/, "");
+    $("fb-time").textContent = (trial.response_ms / 1000).toFixed(1) + " s";
+    $("fb-conf").textContent = trial.confidence + "%";
+    $("fb-diff").textContent = difficultyClass(item.difficulty) + " (" + item.difficulty + ")";
+    chipList($("fb-transforms"), item.transforms);
+    const prog = state.bank.programs[item.program];
+    renderCode($("fb-clean"), prog ? prog.source : "(clean program not in bank)");
+    renderCode($("fb-obf"), item.code);
+    $("fb-clean-panel").style.display = "none";
+    $("fb-obf-panel").style.display = "none";
+    $("btn-toggle-clean").textContent = "Show clean program";
+    $("btn-toggle-obf").textContent = "Show obfuscated code";
+    const last = state.index + 1 >= state.queue.length;
+    $("btn-next").textContent = last ? "See summary " : "Next ";
+    $("btn-next").appendChild(Object.assign(document.createElement("kbd"), { textContent: "Enter" }));
+    $("fb-progress").textContent = (state.index + 1) + " of " + state.queue.length + " done";
+    showScreen("feedback");
+    $("btn-next").focus();
+  }
+
+  function togglePanel(panelId, buttonId, showText, hideText) {
+    const panel = $(panelId);
+    const open = panel.style.display === "none";
+    panel.style.display = open ? "" : "none";
+    $(buttonId).textContent = open ? hideText : showText;
+  }
+
+  function next() {
+    state.index += 1;
+    if (state.index >= state.queue.length) showEnd();
+    else showRound();
+  }
+
+  function endEarly() {
+    stopTimer();
+    if (state.results.length) showEnd();
+    else showScreen("settings");
+  }
+
+  // ----------------------------------------------------------------------- //
+  // End screen: accuracy, response time, calibration, per-transform accuracy
+  // ----------------------------------------------------------------------- //
+  function pct(k, n) {
+    return n ? Math.round((100 * k) / n) + "%" : "n/a";
+  }
+
+  function tile(value, label) {
+    const d = document.createElement("div");
+    d.className = "tile";
+    d.innerHTML = '<div class="v"></div><div class="k"></div>';
+    d.firstChild.textContent = value;
+    d.lastChild.textContent = label;
+    return d;
+  }
+
+  function tableRows(table, header, rows) {
+    table.textContent = "";
+    const thead = document.createElement("tr");
+    header.forEach((h, i) => {
+      const th = document.createElement("th");
+      th.textContent = h;
+      if (i > 0) th.className = "num";
+      thead.appendChild(th);
+    });
+    table.appendChild(thead);
+    rows.forEach((r) => {
+      const tr = document.createElement("tr");
+      r.forEach((c, i) => {
+        const td = document.createElement("td");
+        td.textContent = c;
+        if (i > 0) td.className = "num";
+        tr.appendChild(td);
+      });
+      table.appendChild(tr);
+    });
+  }
+
+  function calibrationPlot(bins) {
+    const W = 260, H = 240, L = 36, B = 28, T = 10, R = 10;
+    // Domains run a little past 100 so the circles at the edges are not clipped.
+    const x = (v) => L + ((v - 40) / 66) * (W - L - R);
+    const y = (v) => H - B - ((v + 6) / 112) * (H - B - T);
+    let s = '<svg width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="calibration plot">';
+    s += '<rect x="' + L + '" y="' + T + '" width="' + (W - L - R) + '" height="' + (H - B - T) + '" fill="#0b0d12" stroke="#2d3344"/>';
+    [50, 75, 100].forEach((v) => {
+      s += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(v) + '" y2="' + y(v) + '" stroke="#2d3344" stroke-dasharray="2 3"/>';
+      s += '<text x="' + (L - 6) + '" y="' + (y(v) + 4) + '" text-anchor="end">' + v + '</text>';
+    });
+    [50, 70, 90].forEach((v) => {
+      s += '<text x="' + x(v) + '" y="' + (H - B + 14) + '" text-anchor="middle">' + v + '%</text>';
+    });
+    s += '<line x1="' + x(40) + '" y1="' + y(40) + '" x2="' + x(100) + '" y2="' + y(100) + '" stroke="#8b93a7" stroke-dasharray="5 4"/>';
+    bins.forEach((b) => {
+      if (!b.n) return;
+      const r = 4 + Math.sqrt(b.n) * 2.2;
+      s += '<circle cx="' + x(b.conf) + '" cy="' + y(b.acc) + '" r="' + r + '" fill="#7aa2f7" fill-opacity="0.6" stroke="#7aa2f7"/>';
+    });
+    s += '<text x="' + ((L + W - R) / 2) + '" y="' + (H - 2) + '" text-anchor="middle">stated confidence</text>';
+    s += '<text transform="translate(10 ' + ((T + H - B) / 2) + ') rotate(-90)" text-anchor="middle">accuracy %</text>';
+    s += "</svg>";
+    return s;
+  }
+
+  function showEnd() {
+    const res = state.results;
+    const n = res.length;
+    const correct = res.filter((r) => r.correct).length;
+    const meanMs = n ? res.reduce((a, r) => a + r.response_ms, 0) / n : 0;
+    const meanConf = n ? res.reduce((a, r) => a + r.confidence, 0) / n : 0;
+    const tiles = $("end-tiles");
+    tiles.textContent = "";
+    tiles.append(
+      tile(pct(correct, n), "accuracy (" + correct + " of " + n + ")"),
+      tile((meanMs / 1000).toFixed(1) + " s", "mean response time"),
+      tile(Math.round(meanConf) + "%", "mean confidence"),
+      tile(String(res.filter((r) => r.near_miss).length), "near misses")
+    );
+
+    const bins = [50, 60, 70, 80, 90, 100].map((conf) => {
+      const group = res.filter((r) => r.confidence === conf);
+      const k = group.filter((r) => r.correct).length;
+      return { conf, n: group.length, k, acc: group.length ? (100 * k) / group.length : 0 };
+    });
+    tableRows($("calib-table"), ["Confidence", "Trials", "Correct", "Accuracy", "Gap"],
+      bins.map((b) => [b.conf + "%", b.n, b.k, b.n ? Math.round(b.acc) + "%" : "-",
+        b.n ? (Math.round(b.acc) - b.conf > 0 ? "+" : "") + (Math.round(b.acc) - b.conf) : "-"]));
+    $("calib-plot").innerHTML = calibrationPlot(bins);
+
+    const perTransform = {};
+    res.forEach((r) => {
+      const names = r.transforms.length ? r.transforms.map(baseName) : ["none"];
+      new Set(names).forEach((t) => {
+        perTransform[t] = perTransform[t] || { n: 0, k: 0, ms: 0 };
+        perTransform[t].n += 1;
+        perTransform[t].k += r.correct ? 1 : 0;
+        perTransform[t].ms += r.response_ms;
+      });
+    });
+    const rows = Object.keys(perTransform).sort().map((t) => {
+      const p = perTransform[t];
+      return [transformLabel(t), p.n, pct(p.k, p.n), (p.ms / p.n / 1000).toFixed(1) + " s"];
+    });
+    tableRows($("transform-table"), ["Transform", "Trials", "Accuracy", "Mean time"], rows);
+    showScreen("end");
+    $("btn-again").focus();
+  }
+
+  // ----------------------------------------------------------------------- //
+  // Wiring
+  // ----------------------------------------------------------------------- //
+  $("btn-start").addEventListener("click", startGame);
+  $("btn-reveal").addEventListener("click", reveal);
+  $("btn-submit").addEventListener("click", submit);
+  $("btn-quit").addEventListener("click", endEarly);
+  $("btn-next").addEventListener("click", next);
+  $("btn-again").addEventListener("click", () => showScreen("settings"));
+  $("btn-toggle-clean").addEventListener("click", () =>
+    togglePanel("fb-clean-panel", "btn-toggle-clean", "Show clean program", "Hide clean program"));
+  $("btn-toggle-obf").addEventListener("click", () =>
+    togglePanel("fb-obf-panel", "btn-toggle-obf", "Show obfuscated code", "Hide obfuscated code"));
+  ["btn-export-csv", "btn-end-csv"].forEach((id) => $(id).addEventListener("click", exportCsv));
+  ["btn-export-json", "btn-end-json"].forEach((id) => $(id).addEventListener("click", exportJson));
+  $("btn-clear").addEventListener("click", clearTrials);
+  $("set-difficulty").addEventListener("change", updatePoolInfo);
+  $("bank-file").addEventListener("change", (e) => { if (e.target.files[0]) readBankFile(e.target.files[0]); });
+  $("confidence").addEventListener("input", (e) => { $("confidence-out").textContent = e.target.value + "%"; });
+
+  // Keyboard shortcuts. A focused button that is still visible keeps its
+  // native Enter behaviour; anything else is dispatched by screen. Checking
+  // visibility matters because a button that was just hidden can keep focus
+  // for a frame, and Enter would otherwise be swallowed.
+  document.addEventListener("keydown", (e) => {
+    const screen = document.querySelector(".screen.active").id;
+    const target = e.target;
+    const visibleButton = target.tagName === "BUTTON" && target.offsetParent !== null;
+    const isChoice = visibleButton && target.classList.contains("choice");
+    if (screen === "screen-settings") {
+      if (e.key === "Enter" && !visibleButton && target.type !== "file") { e.preventDefault(); startGame(); }
+      return;
+    }
+    if (screen === "screen-round") {
+      if (state.revealedAt === null) {
+        if ((e.key === " " || e.key === "Enter") && !visibleButton) { e.preventDefault(); reveal(); }
+        return;
+      }
+      if (e.key === "Enter" && !e.shiftKey && (!visibleButton || isChoice)) { e.preventDefault(); submit(); }
+      const inText = target.tagName === "TEXTAREA" || target.tagName === "INPUT";
+      if (!inText && state.settings.mode === "choice" && /^[1-4]$/.test(e.key)) { selectChoice(parseInt(e.key, 10) - 1); }
+      return;
+    }
+    if (screen === "screen-feedback" && e.key === "Enter" && !visibleButton) { e.preventDefault(); next(); }
+    if (screen === "screen-end" && e.key === "Enter" && !visibleButton) { e.preventDefault(); showScreen("settings"); }
+  });
+
+  updateTrialsInfo();
+  loadBank();
+})();
+</script>
+</body>
+</html>

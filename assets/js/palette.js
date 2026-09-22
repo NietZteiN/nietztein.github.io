@@ -29,6 +29,7 @@
 		{ label: 'Teaching', hash: '#/teaching', keywords: 'grader teaching assistant courses' },
 		{ label: 'Presentations', hash: '#/presentations', keywords: 'talks symposium conference' },
 		{ label: 'Experience', hash: '#/experience', keywords: 'work internships research industry community' },
+		{ label: 'Miscellaneous', hash: '#/misc', keywords: 'misc toys side projects games clocks tools playground' },
 	];
 
 	var LINKS = [

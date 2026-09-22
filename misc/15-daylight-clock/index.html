@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Daylight clock</title>
+<meta name="description" content="Local time, sunrise, sunset and a horizon strip for three cities, computed locally from the NOAA solar equations.">
+<style>
+  /* Base palette (night). Each city column overrides the tint variables
+     according to its own phase of the day. */
+  :root {
+    --page-bg: #0b0d14;
+    --page-fg: #d9dce6;
+    --muted: #7d8398;
+    --line: rgba(255, 255, 255, 0.08);
+    --tint-bg: #0f1322;
+    --tint-accent: #8f9fc9;
+    --tint-warm: #c99a5b;
+    --tint-twilight: #4b5a8f;
+    --tint-night: #0a0d18;
+    --font: "Inter", "Helvetica Neue", "Segoe UI", system-ui, -apple-system, sans-serif;
+  }
+
+  /* Phase tints. Backgrounds stay dark so the page is calm on a second
+     monitor; only the hue and the accent move with the sun. */
+  .phase-night { --tint-bg: #0f1322; --tint-accent: #8f9fc9; --tint-warm: #a8863f; --tint-twilight: #2b3563; --tint-night: #090c17; }
+  .phase-dawn  { --tint-bg: #1c1622; --tint-accent: #e8a58c; --tint-warm: #e3a75c; --tint-twilight: #55437a; --tint-night: #0e0c16; }
+  .phase-day   { --tint-bg: #1b1813; --tint-accent: #f1c56d; --tint-warm: #f0b85a; --tint-twilight: #4f5e8c; --tint-night: #0b0d15; }
+  .phase-dusk  { --tint-bg: #1e1519; --tint-accent: #e6896b; --tint-warm: #e39b55; --tint-twilight: #5a3f6b; --tint-night: #0d0b13; }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--page-bg);
+    color: var(--page-fg);
+    font-family: var(--font);
+    font-variant-numeric: tabular-nums;
+    min-height: 100vh;
+    padding: 20px 16px 28px;
+    line-height: 1.4;
+  }
+
+  header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px 24px;
+    max-width: 1400px;
+    margin: 0 auto 20px;
+  }
+  header h1 {
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0;
+  }
+  .settings { display: flex; gap: 18px; flex-wrap: wrap; }
+  .settings label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--muted);
+    cursor: pointer;
+    user-select: none;
+  }
+  .settings input { display: none; }
+  .switch {
+    width: 30px; height: 16px; border-radius: 8px;
+    background: var(--line);
+    border: 1px solid rgba(255,255,255,0.12);
+    position: relative;
+    transition: background 0.2s;
+  }
+  .switch::after {
+    content: ""; position: absolute; top: 2px; left: 2px;
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--muted);
+    transition: transform 0.2s, background 0.2s;
+  }
+  .settings input:checked + .switch { background: rgba(240, 184, 90, 0.25); }
+  .settings input:checked + .switch::after { transform: translateX(14px); background: #f0b85a; }
+
+  .cities {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 16px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+  .city {
+    background: var(--tint-bg);
+    border-radius: 16px;
+    padding: 22px 22px 16px;
+    border: 1px solid var(--line);
+    transition: background 1.5s ease;
+    min-width: 0;
+  }
+  .city-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .city h2 { font-size: 20px; font-weight: 500; margin: 0; letter-spacing: 0.01em; }
+  .city .zone { font-size: 12px; color: var(--muted); white-space: nowrap; }
+  .city .phase-label {
+    font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--tint-accent); opacity: 0.85; margin-top: 4px;
+  }
+  .time {
+    font-size: clamp(48px, 6vw, 76px);
+    font-weight: 300;
+    letter-spacing: -0.02em;
+    line-height: 1.05;
+    margin: 12px 0 2px;
+    color: var(--page-fg);
+    white-space: nowrap;
+  }
+  .time .seconds { font-size: 0.42em; color: var(--muted); font-weight: 400; margin-left: 4px; letter-spacing: 0; }
+  .time .ampm { font-size: 0.3em; color: var(--muted); font-weight: 400; margin-left: 8px; letter-spacing: 0.05em; }
+  .date { font-size: 14px; color: var(--muted); margin-bottom: 14px; }
+
+  .sun-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+    gap: 8px 12px;
+    margin-bottom: 8px;
+  }
+  .sun-row div { min-width: 0; }
+  .sun-row .k { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+  .sun-row .v { font-size: 17px; margin-top: 2px; white-space: nowrap; }
+  .sun-row .noon[hidden] { display: none; }
+
+  .horizon { width: 100%; height: auto; display: block; margin-top: 6px; }
+  .horizon text { font-family: var(--font); font-size: 11px; fill: var(--muted); }
+
+  .shared {
+    max-width: 1400px;
+    margin: 18px auto 0;
+    background: var(--tint-bg);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 14px 22px 10px;
+  }
+  .shared h3 {
+    font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--muted); font-weight: 500; margin: 0 0 6px;
+  }
+  .shared svg { width: 100%; height: auto; display: block; }
+  .shared text { font-family: var(--font); font-size: 11px; fill: var(--muted); }
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 11px; color: var(--muted); margin-top: 6px; }
+  .legend span::before {
+    content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 2px;
+    margin-right: 6px; vertical-align: -1px;
+  }
+  .legend .l-day::before { background: #f0b85a; }
+  .legend .l-twi::before { background: #4f5e8c; }
+  .legend .l-wake::before { background: rgba(255,255,255,0.35); height: 3px; vertical-align: 2px; }
+
+  #test-panel {
+    max-width: 1400px; margin: 18px auto 0;
+    background: var(--tint-bg); border: 1px solid var(--line); border-radius: 16px;
+    padding: 14px 22px; font-size: 13px; overflow-x: auto;
+  }
+  #test-panel[hidden] { display: none; }
+  #test-panel table { border-collapse: collapse; width: 100%; }
+  #test-panel th, #test-panel td { text-align: left; padding: 4px 10px 4px 0; border-bottom: 1px solid var(--line); }
+  #test-panel th { color: var(--muted); font-weight: 500; }
+
+  @media (max-width: 480px) {
+    body { padding: 14px 16px 20px; }
+    .city { padding: 18px 16px 12px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Daylight</h1>
+  <div class="settings">
+    <label><input type="checkbox" id="opt-24h"><span class="switch"></span><span>24 hour time</span></label>
+    <label><input type="checkbox" id="opt-noon"><span class="switch"></span><span>Show solar noon</span></label>
+  </div>
+</header>
+
+<main class="cities" id="cities"></main>
+
+<section class="shared">
+  <h3>Same moment, one UTC axis</h3>
+  <svg id="shared-svg" xmlns="http://www.w3.org/2000/svg"></svg>
+  <div class="legend">
+    <span class="l-day">daylight</span>
+    <span class="l-twi">civil twilight</span>
+    <span class="l-wake">local waking hours</span>
+  </div>
+</section>
+
+<section id="test-panel" hidden></section>
+
+<script src="solar.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  /* ------------------------------------------------------------------
+   * Configuration. Add a city by appending an entry; the layout adapts.
+   * Time zone names are IANA identifiers, resolved by the browser's Intl.
+   * ---------------------------------------------------------------- */
+  var CONFIG = {
+    cities: [
+      { name: "Dallas",      lat: 32.7767, lon: -96.7970, tz: "America/Chicago" },
+      { name: "Saarbrücken", lat: 49.2354, lon: 6.9969,   tz: "Europe/Berlin" },
+      { name: "Sendai",      lat: 38.2682, lon: 140.8694, tz: "Asia/Tokyo" }
+    ],
+    // Local hours drawn as "waking hours" on the shared UTC strip.
+    wakingHours: [8, 22],
+    // Fixed dates printed in test mode (?test=1) for comparison with
+    // published sunrise and sunset tables.
+    testDates: [[2026, 6, 21], [2026, 12, 21]]
+  };
+
+  var MS_DAY = 86400000;
+  var settings = { hour24: true, showNoon: false };
+
+  /* ------------------------------------------------------------------
+   * Time zone helpers built on Intl.DateTimeFormat (no network, no
+   * libraries). Formatters are cached per zone because creating them
+   * is the slow part.
+   * ---------------------------------------------------------------- */
+  var fmtCache = {};
+  function formatter(key, opts) {
+    if (!fmtCache[key]) fmtCache[key] = new Intl.DateTimeFormat("en-GB", opts);
+    return fmtCache[key];
+  }
+
+  // Calendar fields of an instant in a zone: {year, month (1..12), day,
+  // hour (0..23), minute, second, weekday}
+  function zoneParts(date, tz) {
+    var f = formatter("parts:" + tz, {
+      timeZone: tz, hourCycle: "h23",
+      year: "numeric", month: "numeric", day: "numeric",
+      hour: "numeric", minute: "numeric", second: "numeric"
+    });
+    var out = {};
+    f.formatToParts(date).forEach(function (p) {
+      if (p.type !== "literal") out[p.type] = parseInt(p.value, 10);
+    });
+    if (out.hour === 24) out.hour = 0; // some engines report 24 at midnight
+    return out;
+  }
+
+  // UTC instant (ms) of local midnight at the start of the local date
+  // that contains `date`. A second pass corrects for DST transitions.
+  function localMidnight(date, tz) {
+    var p = zoneParts(date, tz);
+    var guess = Date.UTC(p.year, p.month - 1, p.day, 0, 0, 0);
+    var offset = Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second) -
+                 Math.floor(date.getTime() / 1000) * 1000;
+    guess -= offset;
+    var q = zoneParts(new Date(guess), tz);
+    if (q.hour !== 0 || q.minute !== 0) guess -= (q.hour * 60 + q.minute) * 60000;
+    return guess;
+  }
+
+  // UTC instant (ms) of a local wall-clock time on the local date of
+  // `date` (used for the waking-hours marks).
+  function localHourToUTC(date, tz, hour) {
+    return localMidnight(date, tz) + hour * 3600000;
+  }
+
+  function fmtClock(date, tz) {
+    var f = settings.hour24
+      ? formatter("t24:" + tz, { timeZone: tz, hourCycle: "h23", hour: "2-digit", minute: "2-digit" })
+      : formatter("t12:" + tz, { timeZone: tz, hour12: true, hour: "numeric", minute: "2-digit" });
+    return f.format(date);
+  }
+  function fmtEvent(date, tz) {
+    if (!date) return "none";
+    return fmtClock(date, tz).replace(/\s?(am|pm)/i, function (m) { return m.trim().toLowerCase(); });
+  }
+  function fmtDate(date, tz) {
+    return formatter("date:" + tz, {
+      timeZone: tz, weekday: "long", day: "numeric", month: "long", year: "numeric"
+    }).format(date);
+  }
+  // Offset from UTC as "UTC+9" or "UTC-5:30". Abbreviations such as CDT
+  // vary between browsers and languages, so the offset is shown instead.
+  function zoneLabel(date, tz) {
+    var p = zoneParts(date, tz);
+    var local = Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second);
+    var offMin = Math.round((local - Math.floor(date.getTime() / 1000) * 1000) / 60000);
+    var sign = offMin < 0 ? "-" : "+";
+    var abs = Math.abs(offMin);
+    var h = Math.floor(abs / 60), m = abs % 60;
+    return "UTC" + sign + h + (m ? ":" + pad2(m) : "");
+  }
+  function fmtDuration(min) {
+    if (min === null || min === undefined) return "none";
+    var h = Math.floor(min / 60);
+    var m = Math.round(min - h * 60);
+    if (m === 60) { h += 1; m = 0; }
+    return h + " h " + (m < 10 ? "0" : "") + m + " min";
+  }
+  function pad2(n) { return (n < 10 ? "0" : "") + n; }
+
+  /* ------------------------------------------------------------------
+   * Solar events for the local date of a city that contains `date`.
+   * ---------------------------------------------------------------- */
+  function eventsFor(city, date) {
+    var p = zoneParts(date, city.tz);
+    var ev = Solar.solarEvents(p.year, p.month, p.day, city.lat, city.lon);
+    ev.midnight = localMidnight(date, city.tz);
+    ev.dateKey = p.year + "-" + p.month + "-" + p.day;
+    return ev;
+  }
+
+  function phaseOf(ev, now) {
+    var t = now.getTime();
+    if (ev.polar === "day") return "day";
+    if (ev.polar === "night") return "night";
+    if (ev.sunrise && ev.sunset && t >= ev.sunrise && t < ev.sunset) return "day";
+    if (ev.dawn && ev.sunrise && t >= ev.dawn && t < ev.sunrise) return "dawn";
+    if (ev.sunset && ev.dusk && t >= ev.sunset && t < ev.dusk) return "dusk";
+    return "night";
+  }
+
+  /* ------------------------------------------------------------------
+   * SVG helpers
+   * ---------------------------------------------------------------- */
+  var SVG_NS = "http://www.w3.org/2000/svg";
+  function el(tag, attrs, text) {
+    var node = document.createElementNS(SVG_NS, tag);
+    for (var k in attrs) node.setAttribute(k, attrs[k]);
+    if (text !== undefined) node.textContent = text;
+    return node;
+  }
+
+  /* Horizon strip: 24 local hours left to right, sun altitude as an arc
+   * around a horizon line, fills for day, twilight and night. */
+  // Strips are drawn in CSS pixels (viewBox matches the element width)
+  // so text and dots keep their size at any column width. Everything
+  // is redrawn on resize.
+  var HH = 150, AXIS_H = 24, TOP_PAD = 10;
+  var BAND_H = HH - AXIS_H;
+  var HORIZON_Y = TOP_PAD + (BAND_H - TOP_PAD) * 0.62;
+  var ALT_UP = (HORIZON_Y - TOP_PAD) / 90;    // px per degree above the horizon
+  var ALT_DOWN = (BAND_H - HORIZON_Y) / 90;   // px per degree below (compressed)
+
+  function widthOf(svg) {
+    var w = svg.getBoundingClientRect().width;
+    return w > 40 ? Math.round(w) : 480;
+  }
+  function xOfTime(ms, midnight, w) {
+    return ((ms - midnight) / MS_DAY) * w;
+  }
+  function yOfAlt(alt) {
+    return HORIZON_Y - alt * (alt >= 0 ? ALT_UP : ALT_DOWN);
+  }
+
+  function drawHorizon(svg, city, ev, now) {
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+    var HW = widthOf(svg);
+    svg.setAttribute("viewBox", "0 0 " + HW + " " + HH);
+    svg.setAttribute("height", HH);
+    var uid = "c" + city.index;
+    var midnight = ev.midnight;
+
+    var defs = el("defs", {});
+    var clip = el("clipPath", { id: "clip-" + uid });
+    clip.appendChild(el("rect", { x: 0, y: 0, width: HW, height: BAND_H, rx: 8 }));
+    defs.appendChild(clip);
+    var grad = el("linearGradient", { id: "grad-" + uid, x1: 0, y1: 0, x2: 0, y2: 1 });
+    grad.appendChild(el("stop", { offset: "0", "stop-color": "var(--tint-warm)", "stop-opacity": "0.55" }));
+    grad.appendChild(el("stop", { offset: "1", "stop-color": "var(--tint-warm)", "stop-opacity": "0.05" }));
+    defs.appendChild(grad);
+    svg.appendChild(defs);
+
+    var band = el("g", { "clip-path": "url(#clip-" + uid + ")" });
+    svg.appendChild(band);
+
+    // Night everywhere, then twilight and day on top.
+    band.appendChild(el("rect", { x: 0, y: 0, width: HW, height: HH, fill: "var(--tint-night)" }));
+    function span(a, b, fill, opacity) {
+      if (a === null || b === null) return;
+      var x1 = Math.max(0, xOfTime(a, midnight, HW));
+      var x2 = Math.min(HW, xOfTime(b, midnight, HW));
+      if (x2 <= x1) return;
+      band.appendChild(el("rect", { x: x1, y: 0, width: x2 - x1, height: HH, fill: fill, opacity: opacity }));
+    }
+    if (ev.polar === "day") {
+      span(midnight, midnight + MS_DAY, "var(--tint-warm)", 0.26);
+    } else if (ev.polar !== "night") {
+      span(ev.dawn, ev.dusk, "var(--tint-twilight)", 0.6);
+      span(ev.sunrise, ev.sunset, "var(--tint-warm)", 0.26);
+    }
+
+    // Sun altitude sampled every 6 minutes; the area above the horizon
+    // is filled with a warm gradient and the whole curve is stroked.
+    var steps = 240, pts = [], areaTop = [];
+    for (var i = 0; i <= steps; i++) {
+      var t = midnight + (i / steps) * MS_DAY;
+      var alt = Solar.altitude(new Date(t), city.lat, city.lon);
+      var x = (i / steps) * HW, y = yOfAlt(alt);
+      pts.push((i ? "L" : "M") + x.toFixed(1) + " " + y.toFixed(1));
+      areaTop.push((i ? "L" : "M") + x.toFixed(1) + " " + Math.min(y, HORIZON_Y).toFixed(1));
+    }
+    band.appendChild(el("path", {
+      d: areaTop.join(" ") + " L" + HW + " " + HORIZON_Y + " L0 " + HORIZON_Y + " Z",
+      fill: "url(#grad-" + uid + ")"
+    }));
+    band.appendChild(el("line", {
+      x1: 0, y1: HORIZON_Y, x2: HW, y2: HORIZON_Y,
+      stroke: "rgba(255,255,255,0.22)", "stroke-width": 1
+    }));
+    band.appendChild(el("path", {
+      d: pts.join(" "), fill: "none", stroke: "var(--tint-accent)",
+      "stroke-width": 1.5, "stroke-linejoin": "round", opacity: 0.9,
+      "class": "arc"
+    }));
+
+    // Hour ticks along the bottom edge of the band
+    for (var h = 0; h <= 24; h += 3) {
+      var hx = (h / 24) * HW;
+      svg.appendChild(el("line", {
+        x1: hx, y1: BAND_H, x2: hx, y2: BAND_H + 5, stroke: "rgba(255,255,255,0.25)", "stroke-width": 1
+      }));
+      var label = h === 24 ? "24" : pad2(h);
+      var anchor = h === 0 ? "start" : (h === 24 ? "end" : "middle");
+      svg.appendChild(el("text", { x: hx, y: HH - 6, "text-anchor": anchor }, label));
+    }
+
+    // Small marks at sunrise and sunset on the horizon line
+    [ev.sunrise, ev.sunset].forEach(function (e) {
+      if (!e) return;
+      var ex = xOfTime(e, midnight, HW);
+      band.appendChild(el("circle", { cx: ex, cy: HORIZON_Y, r: 2, fill: "var(--tint-accent)", opacity: 0.8 }));
+    });
+
+    // "Now" line and sun dot, updated every second by updateNow().
+    var nowG = el("g", { "class": "now" });
+    nowG.appendChild(el("line", {
+      "class": "now-line", x1: 0, y1: 0, x2: 0, y2: BAND_H,
+      stroke: "rgba(255,255,255,0.35)", "stroke-width": 1, "stroke-dasharray": "3 4"
+    }));
+    nowG.appendChild(el("circle", { "class": "now-halo", cx: 0, cy: 0, r: 9, fill: "var(--tint-accent)", opacity: 0.18 }));
+    nowG.appendChild(el("circle", { "class": "now-dot", cx: 0, cy: 0, r: 4, fill: "var(--tint-accent)" }));
+    band.appendChild(nowG);
+    updateNow(svg, city, ev, now);
+  }
+
+  function updateNow(svg, city, ev, now) {
+    var x = xOfTime(now.getTime(), ev.midnight, svg.viewBox.baseVal.width);
+    var y = yOfAlt(Solar.altitude(now, city.lat, city.lon));
+    var line = svg.querySelector(".now-line");
+    if (!line) return;
+    line.setAttribute("x1", x); line.setAttribute("x2", x);
+    svg.querySelector(".now-halo").setAttribute("cx", x);
+    svg.querySelector(".now-halo").setAttribute("cy", y);
+    svg.querySelector(".now-dot").setAttribute("cx", x);
+    svg.querySelector(".now-dot").setAttribute("cy", y);
+  }
+
+  /* Shared strip: every city on one UTC axis, from 00:00 to 24:00 UTC
+   * of the current UTC day. Daylight and twilight are drawn from the
+   * events of the neighbouring solar days, clipped to the window. */
+  var ROW_H = 26, S_TOP = 6;
+
+  function drawShared(svg, cities, now) {
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+    var SW = widthOf(svg);
+    var LABEL_W = SW < 600 ? 84 : 110;
+    var rows = cities.length;
+    var height = S_TOP + rows * ROW_H + 22;
+    svg.setAttribute("viewBox", "0 0 " + SW + " " + height);
+    svg.setAttribute("height", height);
+    var axisW = SW - LABEL_W;
+    var day0 = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+    function xOf(ms) { return LABEL_W + ((ms - day0) / MS_DAY) * axisW; }
+
+    cities.forEach(function (city, i) {
+      var y = S_TOP + i * ROW_H;
+      svg.appendChild(el("text", { x: 0, y: y + 16 }, city.name));
+      svg.appendChild(el("rect", {
+        x: LABEL_W, y: y + 3, width: axisW, height: ROW_H - 8, rx: 4, fill: "var(--tint-night)"
+      }));
+      var spans = [];
+      // Solar days whose events might fall into this UTC window
+      [-1, 0, 1].forEach(function (d) {
+        var dt = new Date(day0 + d * MS_DAY + MS_DAY / 2);
+        var p = zoneParts(dt, city.tz);
+        var ev = Solar.solarEvents(p.year, p.month, p.day, city.lat, city.lon);
+        if (ev.polar === "day") {
+          spans.push([localMidnight(dt, city.tz), localMidnight(dt, city.tz) + MS_DAY, "day"]);
+        } else if (ev.polar !== "night") {
+          spans.push([ev.dawn, ev.dusk, "twilight"]);
+          spans.push([ev.sunrise, ev.sunset, "day"]);
+        }
+      });
+      spans.forEach(function (s) {
+        var a = Math.max(s[0], day0), b = Math.min(s[1], day0 + MS_DAY);
+        if (b <= a) return;
+        svg.appendChild(el("rect", {
+          x: xOf(a), y: y + 3, width: xOf(b) - xOf(a), height: ROW_H - 8,
+          fill: s[2] === "day" ? "#f0b85a" : "#4f5e8c",
+          opacity: s[2] === "day" ? 0.7 : 0.6
+        }));
+      });
+      // Waking hours: thin line under the row for each local day touching the window
+      [-1, 0, 1].forEach(function (d) {
+        var dt = new Date(day0 + d * MS_DAY + MS_DAY / 2);
+        var a = Math.max(localHourToUTC(dt, city.tz, CONFIG.wakingHours[0]), day0);
+        var b = Math.min(localHourToUTC(dt, city.tz, CONFIG.wakingHours[1]), day0 + MS_DAY);
+        if (b <= a) return;
+        svg.appendChild(el("line", {
+          x1: xOf(a), y1: y + ROW_H - 3, x2: xOf(b), y2: y + ROW_H - 3,
+          stroke: "rgba(255,255,255,0.35)", "stroke-width": 2, "stroke-linecap": "round"
+        }));
+      });
+    });
+
+    // UTC hour labels
+    var axisY = S_TOP + rows * ROW_H + 14;
+    var step = axisW < 520 ? 6 : 3; // fewer labels when the strip is narrow
+    for (var h = 0; h <= 24; h += step) {
+      var hx = LABEL_W + (h / 24) * axisW;
+      var anchor = h === 0 ? "start" : (h === 24 ? "end" : "middle");
+      svg.appendChild(el("text", { x: hx, y: axisY, "text-anchor": anchor },
+        (h === 24 ? "24" : pad2(h)) + (h === 12 ? " UTC" : "")));
+    }
+
+    // Now line
+    var nx = xOf(now.getTime());
+    svg.appendChild(el("line", {
+      "class": "now-line", x1: nx, y1: S_TOP, x2: nx, y2: S_TOP + rows * ROW_H - 2,
+      stroke: "rgba(255,255,255,0.6)", "stroke-width": 1.2
+    }));
+  }
+
+  /* ------------------------------------------------------------------
+   * Build the columns
+   * ---------------------------------------------------------------- */
+  var container = document.getElementById("cities");
+  var views = CONFIG.cities.map(function (city, i) {
+    city.index = i;
+    var sec = document.createElement("section");
+    sec.className = "city phase-night";
+    sec.innerHTML =
+      '<div class="city-head"><h2></h2><span class="zone"></span></div>' +
+      '<div class="phase-label"></div>' +
+      '<div class="time"><span class="hm"></span><span class="seconds"></span><span class="ampm"></span></div>' +
+      '<div class="date"></div>' +
+      '<div class="sun-row">' +
+        '<div><div class="k">Sunrise</div><div class="v rise"></div></div>' +
+        '<div><div class="k">Sunset</div><div class="v set"></div></div>' +
+        '<div><div class="k">Day length</div><div class="v len"></div></div>' +
+        '<div class="noon" hidden><div class="k">Solar noon</div><div class="v noonv"></div></div>' +
+      '</div>' +
+      '<svg class="horizon" xmlns="http://www.w3.org/2000/svg" role="img"></svg>';
+    sec.querySelector("h2").textContent = city.name;
+    sec.querySelector(".horizon").setAttribute("aria-label", "Sun altitude across the day in " + city.name);
+    container.appendChild(sec);
+    return { city: city, el: sec, svg: sec.querySelector(".horizon"), events: null, phase: null };
+  });
+  var sharedSvg = document.getElementById("shared-svg");
+
+  var PHASE_WORDS = { night: "Night", dawn: "Dawn", day: "Day", dusk: "Dusk" };
+
+  // Text that depends on the date or on settings (not on the second)
+  function renderStatic(view, now) {
+    var ev = view.events, tz = view.city.tz, q = function (s) { return view.el.querySelector(s); };
+    q(".zone").textContent = zoneLabel(now, tz);
+    q(".date").textContent = fmtDate(now, tz);
+    if (ev.polar === "day") {
+      q(".rise").textContent = "up all day"; q(".set").textContent = "up all day";
+    } else if (ev.polar === "night") {
+      q(".rise").textContent = "no sunrise"; q(".set").textContent = "no sunset";
+    } else {
+      q(".rise").textContent = fmtEvent(ev.sunrise, tz);
+      q(".set").textContent = fmtEvent(ev.sunset, tz);
+    }
+    q(".len").textContent = fmtDuration(ev.dayLengthMinutes);
+    q(".noonv").textContent = fmtEvent(ev.solarNoon, tz);
+    q(".noon").hidden = !settings.showNoon;
+  }
+
+  function renderClock(view, now) {
+    var tz = view.city.tz;
+    var p = zoneParts(now, tz);
+    var hm, ampm = "";
+    if (settings.hour24) {
+      hm = pad2(p.hour) + ":" + pad2(p.minute);
+    } else {
+      var h12 = p.hour % 12; if (h12 === 0) h12 = 12;
+      hm = h12 + ":" + pad2(p.minute);
+      ampm = p.hour < 12 ? "am" : "pm";
+    }
+    view.el.querySelector(".hm").textContent = hm;
+    view.el.querySelector(".seconds").textContent = ":" + pad2(p.second);
+    view.el.querySelector(".ampm").textContent = ampm;
+  }
+
+  function setPhase(view, now) {
+    var phase = phaseOf(view.events, now);
+    if (phase !== view.phase) {
+      view.phase = phase;
+      view.el.className = "city phase-" + phase;
+      view.el.querySelector(".phase-label").textContent = PHASE_WORDS[phase];
+    }
+  }
+
+  var lastSharedMinute = -1;
+
+  function tick() {
+    var now = new Date();
+    views.forEach(function (view) {
+      var p = zoneParts(now, view.city.tz);
+      var key = p.year + "-" + p.month + "-" + p.day;
+      if (!view.events || view.events.dateKey !== key) {
+        // New local day (or first run): recompute events and redraw the strip
+        view.events = eventsFor(view.city, now);
+        renderStatic(view, now);
+        drawHorizon(view.svg, view.city, view.events, now);
+      }
+      renderClock(view, now);
+      setPhase(view, now);
+      updateNow(view.svg, view.city, view.events, now);
+    });
+    var minute = Math.floor(now.getTime() / 60000);
+    if (minute !== lastSharedMinute) {
+      lastSharedMinute = minute;
+      drawShared(sharedSvg, CONFIG.cities, now);
+    }
+  }
+
+  function rerenderAll() {
+    var now = new Date();
+    views.forEach(function (view) { renderStatic(view, now); renderClock(view, now); });
+  }
+
+  var resizeTimer = null;
+  window.addEventListener("resize", function () {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function () {
+      var now = new Date();
+      views.forEach(function (view) { drawHorizon(view.svg, view.city, view.events, now); });
+      drawShared(sharedSvg, CONFIG.cities, now);
+    }, 120);
+  });
+
+  /* ------------------------------------------------------------------
+   * Settings (persisted per browser; failures are ignored)
+   * ---------------------------------------------------------------- */
+  var opt24 = document.getElementById("opt-24h");
+  var optNoon = document.getElementById("opt-noon");
+  try {
+    var saved = JSON.parse(localStorage.getItem("daylight-settings") || "{}");
+    if (typeof saved.hour24 === "boolean") settings.hour24 = saved.hour24;
+    if (typeof saved.showNoon === "boolean") settings.showNoon = saved.showNoon;
+  } catch (e) { /* storage unavailable, keep defaults */ }
+  opt24.checked = settings.hour24;
+  optNoon.checked = settings.showNoon;
+  function saveSettings() {
+    try { localStorage.setItem("daylight-settings", JSON.stringify(settings)); } catch (e) { /* ignore */ }
+  }
+  opt24.addEventListener("change", function () { settings.hour24 = opt24.checked; saveSettings(); rerenderAll(); });
+  optNoon.addEventListener("change", function () { settings.showNoon = optNoon.checked; saveSettings(); rerenderAll(); });
+
+  /* ------------------------------------------------------------------
+   * Test mode: ?test=1 prints computed events for fixed dates so they
+   * can be compared with published tables. Also exposes window.__daylight
+   * for automated checks.
+   * ---------------------------------------------------------------- */
+  var params = new URLSearchParams(location.search);
+  if (params.get("test") === "1") {
+    var panel = document.getElementById("test-panel");
+    panel.hidden = false;
+    var rows = [];
+    var html = "<table><tr><th>Date</th><th>City</th><th>Civil dawn</th><th>Sunrise</th><th>Solar noon</th><th>Sunset</th><th>Civil dusk</th><th>Day length</th></tr>";
+    CONFIG.testDates.forEach(function (d) {
+      CONFIG.cities.forEach(function (city) {
+        var ev = Solar.solarEvents(d[0], d[1], d[2], city.lat, city.lon);
+        var f = function (x) {
+          return x ? formatter("test:" + city.tz, { timeZone: city.tz, hourCycle: "h23", hour: "2-digit", minute: "2-digit", second: "2-digit" }).format(x) : "none";
+        };
+        var row = {
+          date: d[0] + "-" + pad2(d[1]) + "-" + pad2(d[2]), city: city.name,
+          dawn: f(ev.dawn), sunrise: f(ev.sunrise), solarNoon: f(ev.solarNoon),
+          sunset: f(ev.sunset), dusk: f(ev.dusk), dayLength: fmtDuration(ev.dayLengthMinutes)
+        };
+        rows.push(row);
+        html += "<tr><td>" + row.date + "</td><td>" + row.city + "</td><td>" + row.dawn + "</td><td>" +
+          row.sunrise + "</td><td>" + row.solarNoon + "</td><td>" + row.sunset + "</td><td>" +
+          row.dusk + "</td><td>" + row.dayLength + "</td></tr>";
+      });
+    });
+    html += "</table>";
+    panel.innerHTML = "<h3 style='margin:0 0 8px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:500'>Self-check (local time, hh:mm:ss)</h3>" + html;
+    console.log("daylight self-check", JSON.stringify(rows, null, 2));
+  }
+  window.__daylight = { config: CONFIG, views: views, settings: settings, Solar: Solar };
+
+  tick();
+  setInterval(tick, 1000);
+})();
+</script>
+</body>
+</html>

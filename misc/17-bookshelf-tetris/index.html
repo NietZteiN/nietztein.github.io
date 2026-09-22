@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bookshelf Tetris</title>
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    --bg: #17120e;
+    --panel: #241b15;
+    --panel-2: #2f241c;
+    --line: #453628;
+    --ink: #f1e8da;
+    --ink-2: #b8a893;
+    --wood: #b98a5a;
+    --wood-dark: #7a5433;
+    --wood-back: #4a3323;
+    --good: #5fd08a;
+    --bad: #e8635a;
+    --gold: #f2c14e;
+  }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); }
+  body {
+    font: 15px/1.45 -apple-system, "Segoe UI", Helvetica, Arial, "Hiragino Sans", "Yu Gothic", "IPAGothic", "Noto Sans CJK JP", sans-serif;
+    padding: 14px 16px 24px;
+  }
+  h1 { font-size: 22px; margin: 0; font-weight: 600; letter-spacing: 0.01em; }
+  header { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 12px; }
+  header .sub { color: var(--ink-2); font-size: 14px; }
+  header .spacer { flex: 1; }
+  button {
+    font: inherit; color: var(--ink); background: var(--panel-2); border: 1px solid var(--line);
+    border-radius: 7px; padding: 6px 12px; cursor: pointer;
+  }
+  button:hover { background: #3c2e23; }
+  button:active { transform: translateY(1px); }
+  button.small { font-size: 13px; padding: 4px 10px; }
+
+  #layout { display: flex; gap: 18px; align-items: flex-start; flex-wrap: wrap; }
+  #stage { flex: 0 1 480px; max-width: 480px; width: 100%; }
+  #boardwrap { position: relative; }
+  #board { display: block; width: 100%; height: auto; border-radius: 8px; box-shadow: 0 12px 30px rgba(0,0,0,0.45); }
+  svg text { font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Hiragino Mincho ProN", "Yu Mincho", "IPAGothic", "Noto Serif CJK JP", serif; }
+
+  #side { flex: 1 1 230px; min-width: 230px; max-width: 330px; display: grid; gap: 10px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+  .card h2 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-2); margin: 0 0 6px; font-weight: 600; }
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; }
+  .stats div { display: flex; justify-content: space-between; border-bottom: 1px dotted var(--line); padding: 2px 0; }
+  .stats b { font-variant-numeric: tabular-nums; font-weight: 600; }
+  #hint { min-height: 2.9em; font-size: 14px; }
+  #hint.good { color: var(--good); }
+  #hint.bad { color: var(--bad); }
+  #message { color: var(--gold); min-height: 1.4em; font-size: 14px; }
+  #preview svg, #holdbox svg { display: block; height: 108px; width: auto; max-width: 100%; }
+  #source { color: var(--ink-2); font-size: 13px; }
+
+  /* Overlays over the board */
+  .overlay {
+    position: absolute; inset: 0; display: none; align-items: center; justify-content: center;
+    background: rgba(16, 10, 6, 0.78); border-radius: 8px; padding: 18px; text-align: center;
+  }
+  .overlay.show { display: flex; }
+  .overlay .box { max-width: 380px; }
+  .overlay h2 { margin: 0 0 8px; font-size: 24px; font-weight: 600; }
+  .overlay p { margin: 6px 0; color: var(--ink-2); }
+  .overlay .keys { text-align: left; display: inline-grid; grid-template-columns: auto auto; gap: 3px 14px; margin: 10px 0; font-size: 14px; }
+  .overlay .keys kbd { font-family: inherit; background: var(--panel-2); border: 1px solid var(--line); border-radius: 4px; padding: 0 6px; }
+  #help .box { max-width: 440px; text-align: left; }
+  #help p { color: var(--ink); font-size: 14px; }
+  #help svg { display: block; width: 100%; height: auto; margin: 10px 0; }
+
+  /* Touch buttons */
+  #touch { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 12px; }
+  #touch button { padding: 10px 6px; font-size: 15px; touch-action: manipulation; user-select: none; }
+
+  @media (max-width: 760px) {
+    #side { max-width: none; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Bookshelf Tetris</h1>
+  <span class="sub">Books fall, shelves fill, and a shelf only clears when it is in order.</span>
+  <span class="spacer"></span>
+  <button class="small" id="btn-help">Alphabet rule</button>
+  <button class="small" id="btn-csv">Load a CSV</button>
+  <input type="file" id="csv-file" accept=".csv,.tsv,.txt" style="display:none">
+</header>
+
+<div id="layout">
+  <div id="stage">
+    <div id="boardwrap">
+    <svg id="board" xmlns="http://www.w3.org/2000/svg"></svg>
+
+    <div class="overlay show" id="start">
+      <div class="box">
+        <h2>Bookshelf Tetris</h2>
+        <p>Every falling piece is a book from the catalog, one shelf high and one to three cells wide by size (manga and bunko narrow, art books and textbooks wide). A full shelf clears only when its titles read left to right in shelving order.</p>
+        <div class="keys">
+          <span><kbd>&larr;</kbd> <kbd>&rarr;</kbd></span><span>move</span>
+          <span><kbd>&darr;</kbd></span><span>soft drop</span>
+          <span><kbd>Space</kbd></span><span>hard drop</span>
+          <span><kbd>C</kbd> or <kbd>Shift</kbd></span><span>hold</span>
+          <span><kbd>F</kbd> or <kbd>&uarr;</kbd></span><span>flip the spine text</span>
+          <span><kbd>R</kbd></span><span>reshelve a misordered shelf</span>
+          <span><kbd>P</kbd></span><span>pause</span>
+          <span><kbd>H</kbd></span><span>the alphabet rule</span>
+        </div>
+        <p><button id="btn-start">Start</button></p>
+      </div>
+    </div>
+
+    <div class="overlay" id="paused">
+      <div class="box"><h2>Paused</h2><p>Press P to continue.</p><p><button id="btn-resume">Resume</button></p></div>
+    </div>
+
+    <div class="overlay" id="gameover">
+      <div class="box">
+        <h2>The shelves are full</h2>
+        <p id="final"></p>
+        <p><button id="btn-restart">Play again</button></p>
+      </div>
+    </div>
+
+    <div class="overlay" id="help">
+      <div class="box">
+        <h2>The alphabet rule</h2>
+        <p>The pine bookcase is alphabetized by title, ignoring case and accents. One convention is special: titles beginning with "The" are grouped after S and before T, so "The Trial" sits after "Sein und Zeit" and before "Tristram Shandy". "A" and "An" are not moved, so "A History of Japan" files under A. Titles in non-Latin scripts, such as Japanese, come after all Latin titles.</p>
+        <p>A correctly ordered shelf, drawn with the same spines as the virtual library:</p>
+        <svg id="help-shelf" xmlns="http://www.w3.org/2000/svg"></svg>
+        <p>The order comes from <code>Library.titleSortKey</code> in project 1, which rewrites a leading "The " as a prefix that sorts between S and T.</p>
+        <p style="text-align:center"><button id="btn-help-close">Close</button></p>
+      </div>
+    </div>
+    </div>
+
+    <div id="touch">
+      <button data-key="ArrowLeft" aria-label="move left">&larr;</button>
+      <button data-key="ArrowRight" aria-label="move right">&rarr;</button>
+      <button data-key="ArrowDown" aria-label="soft drop">&darr;</button>
+      <button data-key=" " aria-label="hard drop">Drop</button>
+      <button data-key="c">Hold</button>
+      <button data-key="f">Flip</button>
+      <button data-key="r">Reshelve</button>
+      <button data-key="p">Pause</button>
+    </div>
+  </div>
+
+  <div id="side">
+    <div class="card">
+      <h2>Next</h2>
+      <div id="preview"></div>
+    </div>
+    <div class="card">
+      <h2>Hold</h2>
+      <div id="holdbox"></div>
+    </div>
+    <div class="card">
+      <h2>Score</h2>
+      <div class="stats">
+        <div><span>Score</span><b id="score">0</b></div>
+        <div><span>Best</span><b id="best">0</b></div>
+        <div><span>Level</span><b id="level">1</b></div>
+        <div><span>Shelves</span><b id="lines">0</b></div>
+        <div><span>Combo</span><b id="combo">0</b></div>
+        <div><span>Reshelves</span><b id="reshelves">0</b></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Where this book fits</h2>
+      <div id="hint">Start the game to get a hint for each falling book.</div>
+      <div id="message"></div>
+    </div>
+    <div class="card">
+      <h2>Catalog</h2>
+      <div id="source">Loading the catalog.</div>
+    </div>
+  </div>
+</div>
+
+<script src="../01-virtual-library/library.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
