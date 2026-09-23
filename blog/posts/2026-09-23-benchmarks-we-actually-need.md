@@ -67,5 +67,3 @@ Metrics exist for a decent chunk of these, but I think they can go further.
 - **Apology quality.** Rate apologies on non-apology-ness ("sorry you feel that way").
 <!-- - **Explain it to grandma.** ELI5 exists ([Fan et al., ACL 2019](https://arxiv.org/abs/1907.09190)), but judged by actual grandmas? -->
 - **IKEA furniture assembly** from the pictogram manual only.
-
-The pattern across most of these: we can already measure whether a model *recognizes* the thing, and almost never whether it can *do* the thing. Flirting has detectors and no generators. CBT-Bench separates knowing the therapy from giving it. Persuasion is scored on content and not delivery. The gap is the same one every time, which is probably the point.
