@@ -129,6 +129,27 @@ try {
 $descById = @{}
 foreach ($d in $descs) { if ($d["ID"]) { $descById[$d["ID"]] = $d } }
 
+# Optional sidecars next to this script:
+#   free-texts.json   { "<ID>": { "src": "gutenberg"|"aozora", "url": "...", "note": "..." } }
+#   arrangement.json  { "<Unit>|<Shelf>": ["<ID>", ...] }  (exported from the site's Rearrange mode)
+$freeTexts = @{}
+$freePath = Join-Path $PSScriptRoot "free-texts.json"
+if (Test-Path $freePath) {
+	$raw = Get-Content $freePath -Raw -Encoding UTF8 | ConvertFrom-Json
+	foreach ($p in $raw.PSObject.Properties) { if ($p.Name -notmatch '^_') { $freeTexts[$p.Name] = $p.Value } }
+}
+$arrangement = @{}
+$arrPath = Join-Path $PSScriptRoot "arrangement.json"
+if (Test-Path $arrPath) {
+	$raw = Get-Content $arrPath -Raw -Encoding UTF8 | ConvertFrom-Json
+	foreach ($p in $raw.PSObject.Properties) {
+		$parts = $p.Name -split '\|', 2
+		for ($i = 0; $i -lt $p.Value.Count; $i++) {
+			$arrangement[$p.Value[$i]] = @{ u = $parts[0]; s = $parts[1]; p = $i + 1 }
+		}
+	}
+}
+
 $counts = @{ rows = 0; books = 0; unreadable = 0; objects = 0 }
 $items = New-Object System.Collections.Generic.List[string]
 
@@ -148,11 +169,16 @@ foreach ($r in $library) {
 	$desc = if ($d) { $d["Description"] } else { "" }
 	if ($desc -match '^Not identified\.') { $desc = "" }
 
+	$unit = $r["Unit"]; $shelf = $r["Shelf"]; $pos = [int]$r["Pos (L to R)"]
+	if ($arrangement.ContainsKey($r["ID"])) {
+		$a = $arrangement[$r["ID"]]; $unit = $a.u; $shelf = $a.s; $pos = $a.p
+	}
+
 	$fields = @(
 		('"id":' + (Json-String $r["ID"])),
-		('"u":' + (Json-String $r["Unit"])),
-		('"s":' + (Json-String $r["Shelf"])),
-		('"p":' + [int]$r["Pos (L to R)"]),
+		('"u":' + (Json-String $unit)),
+		('"s":' + (Json-String $shelf)),
+		('"p":' + $pos),
 		('"t":' + (Json-String (Clean-Title $r["Title"]))),
 		('"a":' + (Json-String $r["Author / Editor"])),
 		('"pub":' + (Json-String $r["Publisher / Series"])),
@@ -164,6 +190,12 @@ foreach ($r in $library) {
 		('"yr":' + (Json-String $yearRaw)),
 		('"d":' + (Json-String $desc))
 	)
+	if ($freeTexts.ContainsKey($r["ID"])) {
+		$f = $freeTexts[$r["ID"]]
+		$ff = '"src":' + (Json-String $f.src) + ',"url":' + (Json-String $f.url)
+		if ($f.note) { $ff += ',"note":' + (Json-String $f.note) }
+		$fields += ('"free":{' + $ff + '}')
+	}
 	$items.Add("{" + ($fields -join ",") + "}")
 }
 

@@ -1052,12 +1052,25 @@ body.palette-is-open {
 	--bs-spine-shift: -9%;
 }
 
+/* Registered so spine colours can transition when the colour mode changes. */
+@property --sh { syntax: '<number>'; inherits: false; initial-value: 0; }
+@property --ss { syntax: '<percentage>'; inherits: false; initial-value: 0%; }
+@property --sl { syntax: '<percentage>'; inherits: false; initial-value: 40%; }
+
 .bs {
 	position: relative;
+	--bs-zoom: 1;
 }
 
 .bs-intro {
-	max-width: 46rem;
+	font-size: 1.6rem;
+	font-weight: 600;
+	letter-spacing: -0.02em;
+	color: var(--heading);
+}
+
+.bs [hidden] {
+	display: none !important;
 }
 
 /* Loading skeleton */
@@ -1078,7 +1091,7 @@ body.palette-is-open {
 
 .bs-loading-row i {
 	display: block;
-	width: var(--w, 14px);
+	width: 14px;
 	height: 70%;
 	border-radius: 2px 2px 0 0;
 	background: var(--surface-2);
@@ -1097,7 +1110,8 @@ body.palette-is-open {
 	color: var(--text-2);
 }
 
-/* Toolbar */
+/* ---- Toolbar ---- */
+
 .bs-toolbar {
 	display: flex;
 	flex-wrap: wrap;
@@ -1107,7 +1121,8 @@ body.palette-is-open {
 }
 
 .bs-search {
-	flex: 1 1 260px;
+	position: relative;
+	flex: 1 1 280px;
 	display: flex;
 	align-items: center;
 	gap: 8px;
@@ -1138,7 +1153,7 @@ body.palette-is-open {
 
 .bs-search-input::placeholder {
 	color: var(--text-2);
-	opacity: .8;
+	opacity: .7;
 }
 
 .bs-search-input::-webkit-search-cancel-button {
@@ -1151,6 +1166,92 @@ body.palette-is-open {
 	font-size: .72rem;
 	color: var(--text-2);
 	white-space: nowrap;
+}
+
+/* Search results dropdown */
+.bs-results {
+	position: absolute;
+	top: calc(100% + 6px);
+	left: 0;
+	right: 0;
+	z-index: 40;
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: 14px;
+	box-shadow: var(--shadow-hover);
+	padding: 6px;
+	max-height: 60vh;
+	overflow-y: auto;
+	animation: bs-drop var(--dur) var(--ease-out) both;
+}
+
+@keyframes bs-drop {
+	from { opacity: 0; transform: translateY(-6px); }
+	to { opacity: 1; transform: none; }
+}
+
+.bs-result {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 8px 10px;
+	border-radius: 9px;
+	cursor: pointer;
+	transition: background-color var(--dur-fast) ease;
+}
+
+.bs-result:hover,
+.bs-result.is-selected {
+	background: var(--accent-soft);
+}
+
+.bs-result .bs-swatch {
+	width: 8px;
+	height: 26px;
+	border-radius: 2px;
+}
+
+.bs-result-body {
+	min-width: 0;
+	flex: 1 1 auto;
+}
+
+.bs-result-t {
+	color: var(--heading);
+	font-weight: 500;
+	font-size: .92rem;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.bs-result-m {
+	color: var(--text-2);
+	font-size: .76rem;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.bs-result mark {
+	background: transparent;
+	color: var(--accent);
+	font-weight: 600;
+	padding: 0;
+}
+
+.bs-result-free {
+	margin-left: 8px;
+	font-family: var(--font-mono);
+	font-size: .66rem;
+	color: var(--accent);
+}
+
+.bs-result-empty,
+.bs-result-more {
+	padding: 8px 10px;
+	font-size: .78rem;
+	color: var(--text-2);
 }
 
 .bs-seg {
@@ -1191,8 +1292,8 @@ body.palette-is-open {
 	box-shadow: 0 0 0 3px var(--accent-ring);
 }
 
-.bs-sorts,
-.bs-langs {
+.bs-ctx,
+.bs-filters {
 	display: flex;
 	flex-wrap: wrap;
 	align-items: center;
@@ -1200,24 +1301,51 @@ body.palette-is-open {
 	flex: 1 1 100%;
 }
 
-.bs-sorts {
+.bs-ctx:empty {
 	display: none;
 }
 
-.bs[data-view="wall"] .bs-sorts {
-	display: flex;
-}
-
-.bs-sorts-label {
-	font-size: .78rem;
+.bs-row-label {
+	font-size: .72rem;
 	font-weight: 600;
 	letter-spacing: .06em;
 	text-transform: uppercase;
 	color: var(--text-2);
-	margin-right: 4px;
+	margin: 0 4px 0 2px;
 }
 
-/* Chips: sort keys, language filter, genre legend */
+.bs-row-hint {
+	font-size: .78rem;
+	color: var(--text-2);
+	font-weight: 300;
+	margin-left: 4px;
+}
+
+.bs-paint {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	margin-left: 8px;
+	padding-left: 10px;
+	border-left: 1px solid var(--border);
+}
+
+.bs-zoom {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	margin-left: 6px;
+	color: var(--text-2);
+	font-size: .8rem;
+}
+
+.bs-zoom input[type="range"] {
+	width: 90px;
+	accent-color: var(--accent);
+	cursor: pointer;
+}
+
+/* Chips: sort keys, filters, legend */
 .bs-chip {
 	appearance: none;
 	display: inline-flex;
@@ -1263,6 +1391,10 @@ body.palette-is-open {
 	background: var(--accent-soft);
 }
 
+.bs-chip-quiet {
+	color: var(--text-2);
+}
+
 .bs-chip-static {
 	cursor: default;
 }
@@ -1294,6 +1426,7 @@ body.palette-is-open {
 .bs-legend {
 	display: flex;
 	flex-wrap: wrap;
+	align-items: center;
 	gap: 5px;
 	margin: 12px 0 18px;
 }
@@ -1301,6 +1434,31 @@ body.palette-is-open {
 .bs-legend .bs-chip {
 	padding: 4px 8px;
 	font-size: .74rem;
+}
+
+.bs-ramp {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	font-size: .76rem;
+	color: var(--text-2);
+}
+
+.bs-ramp-bar {
+	display: inline-block;
+	width: 160px;
+	height: 12px;
+	border-radius: 3px;
+	background: linear-gradient(90deg, hsl(214 42% 24%), hsl(214 42% 56%));
+}
+
+.bs-ramp-undated {
+	margin-left: 10px;
+}
+
+.bs-ramp-undated .bs-swatch {
+	background: hsl(214 4% 44%);
+	vertical-align: -2px;
 }
 
 /* Minimap strip */
@@ -1319,11 +1477,12 @@ body.palette-is-open {
 }
 
 .bs-strip rect {
-	transition: x 700ms var(--ease-out), opacity var(--dur) ease;
+	transition: x 700ms var(--ease-out), opacity var(--dur) ease, fill 700ms ease;
 	cursor: pointer;
 }
 
-/* Bookcases */
+/* ---- Bookcases ---- */
+
 .bs-unit {
 	margin: 0 0 30px;
 }
@@ -1387,6 +1546,17 @@ body.palette-is-open {
 	transform: rotate(-2deg);
 	box-shadow: 1px 2px 3px rgba(0, 0, 0, 0.18);
 	white-space: nowrap;
+	transform-origin: 10% 0;
+}
+
+.bs-shelf:hover .bs-tag {
+	animation: tag-wobble 900ms ease-in-out;
+}
+
+@keyframes tag-wobble {
+	0%, 100% { transform: rotate(-2deg); }
+	30% { transform: rotate(2deg); }
+	60% { transform: rotate(-3deg); }
 }
 
 .bs-shelf-sub {
@@ -1397,13 +1567,14 @@ body.palette-is-open {
 
 /* A row wraps; every wrapped line sits on its own board. */
 .bs-row {
-	--slot: 138px;
+	--slot: calc(138px * var(--bs-zoom));
 	--board: 9px;
 	display: flex;
 	flex-wrap: wrap;
 	align-items: flex-end;
 	gap: 0 2px;
 	padding: 0 8px;
+	min-height: var(--slot);
 	background:
 		repeating-linear-gradient(
 			to bottom,
@@ -1415,7 +1586,7 @@ body.palette-is-open {
 		);
 	background-color: var(--wood-back);
 	border-radius: 4px;
-	transition: background-color var(--dur) ease;
+	transition: background-color var(--dur) ease, box-shadow var(--dur) ease;
 }
 
 .bk-slot {
@@ -1425,30 +1596,39 @@ body.palette-is-open {
 	padding-bottom: var(--board);
 }
 
-/* The spine */
+/* ---- The spine ---- */
+
 .bk {
 	position: relative;
 	appearance: none;
 	border: 0;
 	padding: 7px 0 6px;
 	margin: 0;
-	width: var(--w, 16px);
-	height: var(--h, 100px);
+	width: calc(var(--w, 16px) * var(--bs-zoom));
+	height: calc(var(--h, 100px) * var(--bs-zoom));
 	border-radius: 2px 2px 1px 1px;
-	background:
-		linear-gradient(90deg, rgba(0, 0, 0, 0.28) 0, rgba(255, 255, 255, 0.10) 28%, rgba(255, 255, 255, 0.02) 55%, rgba(0, 0, 0, 0.22) 100%),
-		hsl(var(--sh) var(--ss) calc(var(--sl) + var(--bs-spine-shift)));
+	background-image:
+		var(--bk-mark, none),
+		linear-gradient(90deg, rgba(0, 0, 0, 0.28) 0, rgba(255, 255, 255, 0.10) 28%, rgba(255, 255, 255, 0.02) 55%, rgba(0, 0, 0, 0.22) 100%);
+	background-color: hsl(var(--sh) var(--ss) calc(var(--sl) + var(--bs-spine-shift)));
 	box-shadow: 1px 0 0 rgba(0, 0, 0, 0.18), inset 0 -2px 0 rgba(0, 0, 0, 0.15);
 	color: rgba(255, 255, 255, 0.92);
 	cursor: pointer;
 	overflow: hidden;
 	text-align: center;
 	transform-origin: 50% 100%;
-	transition: transform 260ms var(--ease-out), box-shadow 260ms ease, opacity var(--dur) ease, filter var(--dur) ease;
+	transition: transform 260ms var(--ease-out), box-shadow 260ms ease, opacity var(--dur) ease, filter var(--dur) ease,
+		--sh 700ms ease, --ss 700ms ease, --sl 700ms ease;
 	will-change: transform;
 	font-family: var(--font-body);
 	-webkit-user-select: none;
 	user-select: none;
+	touch-action: pan-y;
+}
+
+/* A small white dot near the foot of spines with a free text online. */
+.bk-free {
+	--bk-mark: radial-gradient(circle at 50% calc(100% - 3px), rgba(255, 255, 255, 0.95) 1.4px, transparent 2.2px);
 }
 
 .bk-t {
@@ -1456,7 +1636,7 @@ body.palette-is-open {
 	writing-mode: vertical-rl;
 	text-orientation: mixed;
 	white-space: nowrap;
-	font-size: clamp(7.5px, calc(var(--w, 16px) * 0.6), 11px);
+	font-size: clamp(7.5px, calc(var(--w, 16px) * var(--bs-zoom) * 0.6), calc(11px * var(--bs-zoom)));
 	font-weight: 500;
 	letter-spacing: .01em;
 	line-height: 1;
@@ -1468,7 +1648,7 @@ body.palette-is-open {
 
 .bk-t[lang="ja"] {
 	font-family: 'Hiragino Sans', 'Yu Gothic', 'Meiryo', 'Noto Sans CJK JP', 'Noto Sans JP', sans-serif;
-	font-size: clamp(8px, calc(var(--w, 16px) * 0.62), 11.5px);
+	font-size: clamp(8px, calc(var(--w, 16px) * var(--bs-zoom) * 0.62), calc(11.5px * var(--bs-zoom)));
 }
 
 .bk-band-1::before,
@@ -1501,6 +1681,15 @@ body.palette-is-open {
 	box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent), 0 10px 18px rgba(0, 0, 0, 0.28);
 }
 
+/* Neighbours lean away from a hovered spine. */
+.bk-slot:has(+ .bk-slot > .bk:hover) > .bk {
+	transform: rotate(-4deg);
+}
+
+.bk-slot:has(> .bk:hover) + .bk-slot > .bk {
+	transform: rotate(4deg);
+}
+
 .bk.is-dim {
 	opacity: .16;
 	filter: saturate(.2);
@@ -1529,9 +1718,14 @@ body.palette-is-open {
 	z-index: 4;
 }
 
-/* First render: spines rise up onto the boards, staggered by position. */
-.bs-shelves.is-entering .bk {
-	animation: bk-in 560ms var(--ease-out) both;
+/* Spines rise onto a board the first time it scrolls into view. */
+.bs-shelf.is-unseen .bk {
+	opacity: 0;
+}
+
+.bs-shelf.is-unseen.is-seen .bk {
+	opacity: 1;
+	animation: bk-in 560ms var(--ease-out) backwards;
 	animation-delay: calc(var(--d, 0) * 1ms);
 }
 
@@ -1544,7 +1738,60 @@ body.palette-is-open {
 	z-index: 2;
 }
 
-/* Tooltip */
+/* ---- Rearrange mode ---- */
+
+.bs.is-rearranging .bs-row {
+	box-shadow: inset 0 0 0 1px var(--accent-ring);
+}
+
+.bs.is-rearranging .bk {
+	cursor: grab;
+	touch-action: none;
+	animation: bk-wiggle 320ms ease-in-out infinite alternate;
+	animation-delay: calc(var(--d, 0) * -0.37ms);
+}
+
+.bs.is-rearranging .bk:hover {
+	animation-play-state: paused;
+}
+
+@keyframes bk-wiggle {
+	from { transform: rotate(-1.6deg) translateY(0); }
+	to { transform: rotate(1.6deg) translateY(-1px); }
+}
+
+.bs.is-dragging,
+.bs.is-dragging .bk {
+	cursor: grabbing;
+}
+
+.bk.is-drag-src {
+	opacity: .25;
+	animation: none;
+}
+
+.bk-ghost {
+	position: fixed;
+	z-index: 1300;
+	margin: 0;
+	pointer-events: none;
+	animation: none;
+	box-shadow: 0 18px 30px rgba(0, 0, 0, 0.4), 0 0 0 2px var(--accent);
+	transition: none;
+}
+
+.bk.is-dropped {
+	animation: bk-drop 480ms var(--ease-out);
+}
+
+@keyframes bk-drop {
+	0% { transform: translateY(-14px) scale(1.06); }
+	60% { transform: translateY(2px); }
+	100% { transform: none; }
+}
+
+/* ---- Tooltip ---- */
+
 .bs-tip {
 	position: fixed;
 	top: 0; left: 0;
@@ -1567,7 +1814,8 @@ body.palette-is-open {
 .bs-tip-t { display: block; font-weight: 600; }
 .bs-tip-a { display: block; opacity: .75; font-size: .74rem; }
 
-/* Book card */
+/* ---- Book card ---- */
+
 body.bs-card-is-open { overflow: hidden; }
 
 .bs-card-backdrop {
@@ -1647,7 +1895,7 @@ body.bs-card-is-open { overflow: hidden; }
 	}
 }
 
-/* Generated cover: same colour as the spine, with a hinge crease. */
+/* Generated cover: the spine colour, a hinge crease and page edges. */
 .bs-cover {
 	--rx: 0deg;
 	--ry: 0deg;
@@ -1677,6 +1925,17 @@ body.bs-card-is-open { overflow: hidden; }
 	to { transform: rotateY(0) translateX(0); opacity: 1; }
 }
 
+.bs-cover-pages {
+	position: absolute;
+	top: 6px;
+	bottom: 6px;
+	right: 0;
+	width: 6px;
+	background: repeating-linear-gradient(to bottom, rgba(255, 255, 255, 0.55) 0 1px, rgba(0, 0, 0, 0.15) 1px 2px);
+	opacity: .7;
+	border-radius: 0 10px 10px 0;
+}
+
 .bs-cover-in {
 	position: absolute;
 	inset: 0;
@@ -1685,7 +1944,7 @@ body.bs-card-is-open { overflow: hidden; }
 	flex-direction: column;
 	border: 1px solid rgba(255, 255, 255, 0.18);
 	border-radius: inherit;
-	margin: 10px;
+	margin: 10px 14px 10px 10px;
 }
 
 .bs-cover-title {
@@ -1764,6 +2023,20 @@ body.bs-card-is-open { overflow: hidden; }
 	margin: 0 0 10px;
 }
 
+.bs-info-free {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 6px 10px;
+	margin: 0 0 12px;
+}
+
+.bs-info-free-note {
+	font-size: .76rem;
+	color: var(--text-2);
+	font-weight: 300;
+}
+
 .bs-info-where {
 	font-size: .85rem;
 	color: var(--text-2);
@@ -1797,12 +2070,14 @@ body.bs-card-is-open { overflow: hidden; }
 	padding: 7px 11px;
 	border-radius: 999px;
 	cursor: pointer;
+	text-decoration: none;
 	transition: border-color var(--dur-fast) ease, background-color var(--dur-fast) ease, transform var(--dur-fast) var(--ease-out);
 }
 
 .bs-btn:hover:not(:disabled) {
 	border-color: var(--border-strong);
 	transform: translateY(-1px);
+	color: var(--heading);
 }
 
 .bs-btn:focus-visible {
@@ -1819,7 +2094,20 @@ body.bs-card-is-open { overflow: hidden; }
 	color: var(--text-2);
 }
 
-/* Stats */
+.bs-btn-accent {
+	background: var(--accent);
+	border-color: var(--accent);
+	color: #fff;
+}
+
+.bs-btn-accent:hover:not(:disabled) {
+	color: #fff;
+	border-color: var(--accent);
+	box-shadow: 0 6px 16px var(--accent-ring);
+}
+
+/* ---- Stats ---- */
+
 .bs-stats-grid {
 	display: grid;
 	grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1963,7 +2251,6 @@ body.bs-card-is-open { overflow: hidden; }
 	font-variant-numeric: tabular-nums;
 }
 
-/* Columns (era) */
 .bs-cols {
 	display: flex;
 	align-items: flex-end;
@@ -2026,7 +2313,6 @@ body.bs-card-is-open { overflow: hidden; }
 	text-overflow: clip;
 }
 
-/* Stacked bar (language) */
 .bs-stack {
 	display: flex;
 	height: 22px;
@@ -2075,7 +2361,6 @@ body.bs-card-is-open { overflow: hidden; }
 .bs-series-2 { background: var(--bs-series-2); }
 .bs-series-3 { background: var(--bs-series-3); }
 
-/* Table twin for each chart */
 .bs-table {
 	margin-top: 10px;
 	font-size: .8rem;
