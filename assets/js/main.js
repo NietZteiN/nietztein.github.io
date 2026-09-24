@@ -2,7 +2,7 @@
 //
 // Routes (every section is linkable):
 //   #/about  #/education  #/publications  #/press  #/blog  #/post/<slug>
-//   #/teaching  #/presentations  #/experience  #/misc
+//   #/teaching  #/presentations  #/experience  #/bookshelf  #/bookshelf/<id>  #/misc
 //
 // The blog module (blog.js) renders inside the #/blog and #/post/* routes;
 // this file decides which section is visible and tells Blog what to draw.
@@ -23,6 +23,7 @@
 		teaching: 'academicContent',
 		presentations: 'presentationsContent',
 		experience: 'experienceContent',
+		bookshelf: 'bookshelfContent',
 		misc: 'miscContent',
 	};
 	var TITLES = {
@@ -35,6 +36,7 @@
 		teaching: 'Teaching',
 		presentations: 'Presentations',
 		experience: 'Experience',
+		bookshelf: 'Bookshelf',
 		misc: 'Miscellaneous',
 	};
 	var DEFAULT_ROUTE = 'about';
@@ -188,6 +190,9 @@
 			window.Blog.renderList();
 		} else if (r.route === 'post' && window.Blog) {
 			window.Blog.renderPost(decodeURIComponent(r.rest));
+		} else if (r.route === 'bookshelf' && window.Bookshelf) {
+			// #/bookshelf/<id> opens that book's card; bookshelf.js loads lazily.
+			window.Bookshelf.show(r.rest ? decodeURIComponent(r.rest) : '');
 		}
 
 		if (r.route !== 'post') {

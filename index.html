@@ -97,6 +97,9 @@
 						<a class="nav-link" data-route="experience" href="#/experience">Experience</a>
 					</li>
 					<li class="nav-item">
+						<a class="nav-link" data-route="bookshelf" href="#/bookshelf">Bookshelf</a>
+					</li>
+					<li class="nav-item">
 						<a class="nav-link" data-route="misc" href="#/misc">Misc</a>
 					</li>
 				</ul>
@@ -646,6 +649,18 @@
 				</div>
 			</div>
 
+			<!-- Bookshelf: the whole library as spines (rendered by assets/js/bookshelf.js) -->
+			<div class="section col-md-8 offset-md-1 mb-5" id="bookshelfContent">
+				<div class="container">
+					<p class="justify mt-2 mb-3 bs-intro">
+						Every book in the house, catalogued spine by spine from photographs of the shelves and drawn
+						here in the order it actually sits. Hover a spine to read it, click to open it, search for a
+						title, or reshelve the whole library by genre, language, era or author and watch it move.
+					</p>
+					<div id="bookshelf" class="bs" aria-busy="true"></div>
+				</div>
+			</div>
+
 			<!-- Miscellaneous: small web toys, each opens in its own page -->
 			<div class="section col-md-8 offset-md-1 mb-5" id="miscContent">
 				<div class="container">
@@ -779,6 +794,7 @@
 
 	<script src="assets/js/main.js"></script>
 	<script src="assets/js/blog.js"></script>
+	<script src="assets/js/bookshelf.js"></script>
 	<script src="assets/js/palette.js"></script>
 </body>
 
