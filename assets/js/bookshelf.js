@@ -2,16 +2,18 @@
 //
 // Data comes from assets/data/library.json (built by scripts/build-library-json.ps1).
 // Three views share one set of spine elements:
-//   shelves  the real layout, bookcase by bookcase, shelf by shelf; in Rearrange
-//            mode the spines can be dragged between slots and shelves, shuffled,
-//            and reset (the visitor's arrangement lives in localStorage)
+//   shelves  the real layout, bookcase by bookcase, shelf by shelf. Rearrange
+//            mode adds drag-and-drop (with multi-select), Move to shelf, custom
+//            shelves, per-shelf sorting, a global Tidy menu, Shuffle, Reset and
+//            Undo. The visitor's arrangement lives in localStorage.
 //   wall     every spine reshelved by genre, language, era, author or title
 //            (spines fly to their new slot with a FLIP animation)
 //   stats    headline numbers and a few small charts
-// Search supports field filters (author:, genre:, year:, is:free ...) and shows a
-// ranked dropdown. Spines can be coloured by genre, language or era and the
-// colours morph between modes. Clicking a spine opens a card; #/bookshelf/<id>
-// deep-links to one and ?view=&sort=&q=&genre=&lang=&paint= carry the state.
+// A search or filter collapses the library to the matches (empty shelves fold
+// away) unless "In place" is chosen; ◀ ▶ step through hits. Search supports
+// field filters (author:, genre:, year:1990s, is:free ...) and a ranked dropdown.
+// Spines can be coloured by genre, language or era. Clicking a spine opens a
+// card; #/bookshelf/<id> deep-links to one and ?view=&sort=&q=... carry state.
 //
 // main.js calls window.Bookshelf.show(rest) whenever the #/bookshelf route is
 // applied. Everything renders lazily on the first call.
@@ -21,13 +23,13 @@
 
 	var DATA_URL = 'assets/data/library.json';
 	var STORE_ARRANGEMENT = 'bookshelf.arrangement.v1';
+	var STORE_CUSTOM = 'bookshelf.custom.v1';
 	var STORE_ZOOM = 'bookshelf.zoom';
+	var CUSTOM_UNIT = 'My';
+	var UNDO_MAX = 40;
 
 	// ---- Physical layout ----------------------------------------------------
 
-	// Order of presentation and a short description of each bookcase (shown in
-	// the wall view only). Shelf keys match the Shelf column of the catalog; an
-	// object merges several keys into one row.
 	var UNITS = [
 		{
 			k: 'K', name: 'Pine library',
@@ -50,74 +52,49 @@
 	];
 
 	var GENRE_HUE = {
-		'Literature (English & European)': 214,
-		'Japanese literature': 354,
-		'Manga & comics': 322,
-		'Light novels': 282,
-		'Writing, film & literary craft': 28,
-		'History & biography': 14,
-		'Philosophy & political theory': 248,
-		'Religion & theology': 42,
-		'Society, culture & ideas': 186,
-		'Politics, law & current affairs': 168,
-		'Psychology, self-help & business': 142,
-		'Art & visual culture': 76,
-		'Music & opera': 266,
-		'Language study & reference': 104,
-		'Test prep & study guides': 56,
-		'Math, CS & engineering': 200,
-		'Science': 178,
-		'Nursing & medical': 6,
-		'Magazines & catalogues': 90,
-		'Occult & folklore': 300,
-		'Games & other objects': 0,
-		'Unidentified': 0,
+		'Literature (English & European)': 214, 'Japanese literature': 354, 'Manga & comics': 322, 'Light novels': 282,
+		'Writing, film & literary craft': 28, 'History & biography': 14, 'Philosophy & political theory': 248,
+		'Religion & theology': 42, 'Society, culture & ideas': 186, 'Politics, law & current affairs': 168,
+		'Psychology, self-help & business': 142, 'Art & visual culture': 76, 'Music & opera': 266,
+		'Language study & reference': 104, 'Test prep & study guides': 56, 'Math, CS & engineering': 200,
+		'Science': 178, 'Nursing & medical': 6, 'Magazines & catalogues': 90, 'Occult & folklore': 300,
+		'Games & other objects': 0, 'Unidentified': 0,
 	};
 	var LANG_HUE = { English: 214, Japanese: 354, 'Bilingual & other': 42 };
-
 	var LANG_NAME = { EN: 'English', JA: 'Japanese', DE: 'German', IT: 'Italian', LA: 'Latin', VI: 'Vietnamese' };
-
 	var AUTHOR_ALIAS = {
-		'村上春樹': 'Haruki Murakami',
-		'三島由紀夫': 'Yukio Mishima', 'Mishima Yukio': 'Yukio Mishima',
-		'太宰治': 'Osamu Dazai', 'Dazai Osamu': 'Osamu Dazai',
-		'夏目漱石': 'Natsume Sōseki',
-		'芥川龍之介': 'Ryūnosuke Akutagawa',
-		'ed. Charles W. Eliot': 'Charles W. Eliot (ed.)',
-		'井浦秀夫 / 監修 小林茂和': '井浦秀夫',
-		'渡航 ほか': '渡航',
+		'村上春樹': 'Haruki Murakami', '三島由紀夫': 'Yukio Mishima', 'Mishima Yukio': 'Yukio Mishima',
+		'太宰治': 'Osamu Dazai', 'Dazai Osamu': 'Osamu Dazai', '夏目漱石': 'Natsume Sōseki', '芥川龍之介': 'Ryūnosuke Akutagawa',
+		'ed. Charles W. Eliot': 'Charles W. Eliot (ed.)', '井浦秀夫 / 監修 小林茂和': '井浦秀夫', '渡航 ほか': '渡航',
 	};
-
 	var FREE_SOURCE = { gutenberg: 'Project Gutenberg', aozora: 'Aozora Bunko' };
 
 	// ---- State ---------------------------------------------------------------
 
-	var books = [];
-	var byId = {};
-	var counts = {};
-	var loaded = false;
-	var loading = null;
-	var rendered = false;
+	var books = [], byId = {}, counts = {};
+	var loaded = false, loading = null, rendered = false;
 
-	var view = ''; // shelves | wall | stats (empty until the first render)
+	var view = '';
 	var sort = 'genre';
-	var paint = 'genre'; // genre | language | era
+	var paint = 'genre';
 	var query = '';
 	var parsed = { terms: [], filters: [] };
-	var genreFilter = null;
-	var langFilter = null;
-	var freeFilter = false;
+	var genreFilter = null, langFilter = null, freeFilter = false;
+	var gather = true;
 	var zoom = 1;
 	var rearranging = false;
-	var arrangement = {}; // "unit|shelf" -> [ids]
+	var arrangement = {};
+	var customShelves = [];
+	var selected = {}, selectedCount = 0;
+	var undoStack = [];
+	var hits = [], hitIndex = -1;
 	var pendingId = '';
 
 	var reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-	var root, toolbar, ctxRow, strip, stripSvg, shelfArea, statsArea, tip, card, cardBody, countEl, legendEl;
-	var searchInput, resultsEl;
-	var cardOpenFor = null;
-	var lastFocus = null;
+	var root, toolbar, bar, ctxRow, navRow, strip, stripSvg, shelfArea, statsArea, tip, card, cardBody, countEl, legendEl;
+	var searchInput, resultsEl, hitNav, gatherBtn, selBar, menuEl;
+	var cardOpenFor = null, lastFocus = null;
 	var order = [];
 	var observer = null;
 
@@ -134,12 +111,10 @@
 		for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
 		return h >>> 0;
 	}
-	function ordinal(n) {
-		var s = ['th', 'st', 'nd', 'rd'], v = n % 100;
-		return n + (s[(v - 20) % 10] || s[v] || s[0]);
-	}
+	function ordinal(n) { var s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
 	function fmt(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
 	function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+	function plural(n, w) { return fmt(n) + ' ' + w + (n === 1 ? '' : 's'); }
 	function langName(code) {
 		if (!code || code === '?') return 'Unknown language';
 		return code.split('/').map(function (c) { return LANG_NAME[c] || c; }).join(' / ');
@@ -152,23 +127,22 @@
 	function authorKey(a) { return a ? (AUTHOR_ALIAS[a] || a) : ''; }
 	function isJapaneseText(s) { return /[぀-ヿ一-鿿]/.test(s); }
 	function store(key, val) {
-		try {
-			if (val == null) localStorage.removeItem(key);
-			else localStorage.setItem(key, JSON.stringify(val));
-		} catch (e) { /* private mode */ }
+		try { if (val == null) localStorage.removeItem(key); else localStorage.setItem(key, JSON.stringify(val)); } catch (e) { /* private mode */ }
 	}
 	function load(key) {
 		try { var v = localStorage.getItem(key); return v ? JSON.parse(v) : null; } catch (e) { return null; }
 	}
-
-	// Search normalisation: strip accents, fold katakana to hiragana and
-	// full-width ASCII to ASCII, lower-case.
 	function norm(s) {
 		return String(s || '')
 			.normalize('NFD').replace(/[̀-ͯ]/g, '')
 			.toLowerCase()
 			.replace(/[ァ-ヶ]/g, function (c) { return String.fromCharCode(c.charCodeAt(0) - 0x60); })
 			.replace(/[！-～]/g, function (c) { return String.fromCharCode(c.charCodeAt(0) - 0xfee0); });
+	}
+	function isEditable(t) {
+		if (!t || !t.tagName) return false;
+		var tag = t.tagName.toLowerCase();
+		return tag === 'input' || tag === 'textarea' || tag === 'select' || t.isContentEditable;
 	}
 
 	// ---- Spine geometry + colour --------------------------------------------
@@ -182,7 +156,6 @@
 		var thin = t === 'Magazine' || t === 'Calendar' || t === 'Math journal';
 		var tall = /^(Art|Textbook|Reference|Anthology|Technical|Nursing & medical|Test prep|Documents|Picture book|Other)$/.test(t);
 		var hc = /Harvard Classics/.test(pub);
-
 		var height, width;
 		if (hc) { height = 108; width = 15; }
 		else if (manga) { height = 84 + (h % 2) * 4; width = 12 + (h % 3); }
@@ -191,12 +164,10 @@
 		else if (thin) { height = 116; width = 8 + (h % 3); }
 		else if (tall) { height = 116 + (h % 3) * 4; width = 18 + (h % 12); }
 		else { height = 98 + (h % 4) * 4; width = 14 + ((h >> 3) % 8); }
-
-		b.w = width;
-		b.hgt = height;
+		b.w = width; b.hgt = height;
 		b.seed = hash(b.a || b.pub || b.t);
 		b.band = (h >> 5) % 4;
-		b.ou = b.u; b.os = b.s; b.op = b.p; // catalog positions, for Reset
+		b.ou = b.u; b.os = b.s; b.op = b.p;
 		b.nt = norm(b.t); b.na = norm(b.a); b.np = norm(b.pub); b.nd = norm(b.d); b.ng = norm(b.g);
 		b.lb = langBucket(b.l);
 		b.free = b.free || null;
@@ -205,13 +176,10 @@
 	function colorFor(b, mode) {
 		var seed = b.seed, hue, sat, lig;
 		if (mode === 'language') {
-			hue = LANG_HUE[b.lb];
-			sat = 36 + (seed % 24); lig = 30 + ((seed >> 4) % 24);
+			hue = LANG_HUE[b.lb]; sat = 36 + (seed % 24); lig = 30 + ((seed >> 4) % 24);
 		} else if (mode === 'era') {
-			hue = 214;
-			if (b.y == null) { sat = 4; lig = 44; }
-			else { sat = 42; lig = Math.round(24 + 32 * clamp((b.y - 1800) / 225, 0, 1)); }
-			return { h: hue, s: sat, l: lig };
+			if (b.y == null) return { h: 214, s: 4, l: 44 };
+			return { h: 214, s: 42, l: Math.round(24 + 32 * clamp((b.y - 1800) / 225, 0, 1)) };
 		} else {
 			hue = GENRE_HUE[b.g]; if (hue == null) hue = 0;
 			sat = 34 + (seed % 26); lig = 30 + ((seed >> 4) % 26);
@@ -240,14 +208,51 @@
 		var label = el('span', 'bk-t', b.t);
 		if (isJapaneseText(b.t)) label.lang = 'ja';
 		s.appendChild(label);
+		var slot = el('div', 'bk-slot');
+		slot.appendChild(s);
 		b.el = s;
+		b.slot = slot;
 		applyColor(b);
-		return s;
 	}
 
-	// ---- Arrangement (visitor's own rearranging) ------------------------------
+	// ---- Arrangement (data model of where every book sits) --------------------
 
 	function shelfKey(u, s) { return u + '|' + s; }
+
+	function allUnits() {
+		if (!customShelves.length) return UNITS;
+		return [{ k: CUSTOM_UNIT, name: 'My shelves', desc: 'Shelves you made in this browser.', shelves: customShelves.slice() }].concat(UNITS);
+	}
+
+	function shelfLabel(key) {
+		var m = /^(.*?)\s*\((.*)\)\s*$/.exec(key);
+		if (!m) return { label: key, sub: '' };
+		return { label: m[1], sub: /sticky|photo/.test(m[2]) ? '' : m[2] };
+	}
+	function unitName(k) {
+		var us = allUnits();
+		for (var i = 0; i < us.length; i++) if (us[i].k === k) return us[i].name;
+		return 'unit ' + k;
+	}
+	function byTitle(a, b) { return a.t.localeCompare(b.t, ['en', 'ja']); }
+	function byPos(a, b) { return a.p - b.p; }
+
+	// Every row of the shelves view as {unit, shelf(primary key), keys, label, sub}.
+	function rowDefs() {
+		var defs = [];
+		allUnits().forEach(function (u) {
+			u.shelves.forEach(function (sh) {
+				var keys = typeof sh === 'string' ? [sh] : sh.keys;
+				var lab = typeof sh === 'string' ? shelfLabel(sh) : { label: sh.label, sub: sh.sub || '' };
+				defs.push({ unit: u.k, shelf: keys[0], keys: keys, label: lab.label, sub: lab.sub, custom: u.k === CUSTOM_UNIT });
+			});
+		});
+		return defs;
+	}
+
+	function rowBooks(def) {
+		return books.filter(function (b) { return b.u === def.unit && def.keys.indexOf(b.s) !== -1; }).sort(byPos);
+	}
 
 	function applyArrangement() {
 		books.forEach(function (b) { b.u = b.ou; b.s = b.os; b.p = b.op; });
@@ -260,86 +265,269 @@
 		});
 	}
 
-	function hasArrangement() { return Object.keys(arrangement).length > 0; }
+	function hasArrangement() { return Object.keys(arrangement).length > 0 || customShelves.length > 0; }
 
-	function renumberRow(row) {
-		var u = row.getAttribute('data-unit'), s = row.getAttribute('data-shelf');
-		var ids = [];
-		$$('.bk', row).forEach(function (e, i) {
-			var b = byId[e.getAttribute('data-id')];
-			b.u = u; b.s = s; b.p = i + 1;
-			ids.push(b.id);
-		});
-		arrangement[shelfKey(u, s)] = ids;
+	function saveAll() {
+		store(STORE_ARRANGEMENT, Object.keys(arrangement).length ? arrangement : null);
+		store(STORE_CUSTOM, customShelves.length ? customShelves : null);
 	}
 
-	function saveArrangement() {
-		store(STORE_ARRANGEMENT, hasArrangement() ? arrangement : null);
-		refreshCounts();
-		rebuildOrder();
+	// Set the full contents of one row (ids in order) in the data model.
+	function setRow(unit, shelf, ids) {
+		arrangement[shelfKey(unit, shelf)] = ids.slice();
+		ids.forEach(function (id, i) { var b = byId[id]; b.u = unit; b.s = shelf; b.p = i + 1; });
+	}
+
+	function rowIds(unit, shelf) {
+		var def = null;
+		rowDefs().forEach(function (d) { if (d.unit === unit && d.shelf === shelf) def = d; });
+		if (!def) return [];
+		return rowBooks(def).map(function (b) { return b.id; });
+	}
+
+	// Rows may hold several catalog keys (Loose); normalise them to the primary key.
+	function normaliseRow(def) {
+		var ids = rowBooks(def).map(function (b) { return b.id; });
+		setRow(def.unit, def.shelf, ids);
+	}
+
+	function snapshot() {
+		var snap = {};
+		rowDefs().forEach(function (d) { snap[shelfKey(d.unit, d.shelf)] = rowBooks(d).map(function (b) { return b.id; }); });
+		return { rows: snap, custom: customShelves.slice() };
+	}
+
+	function restore(snap) {
+		customShelves = snap.custom.slice();
+		arrangement = {};
+		Object.keys(snap.rows).forEach(function (k) { arrangement[k] = snap.rows[k].slice(); });
+		applyArrangement();
+		saveAll();
+	}
+
+	function pushUndo() {
+		undoStack.push(snapshot());
+		if (undoStack.length > UNDO_MAX) undoStack.shift();
+	}
+
+	function undo() {
+		if (!undoStack.length) return;
+		var snap = undoStack.pop();
+		restore(snap);
+		afterMutation(true);
+	}
+
+	// Re-render after a data change in the shelves view, keep counts, strip and
+	// highlights in step, and persist.
+	function afterMutation(animate) {
+		saveAll();
+		if (view === 'shelves') renderShelves(animate);
+		else if (view === 'wall') updateStrip();
+		applyHighlight(false);
 		updateContextRow();
+		updateSelBar();
+		if (cardOpenFor) refreshCardWhere();
 	}
 
-	function refreshCounts() {
-		$$('.bs-unit', shelfArea).forEach(function (u) {
-			var n = $$('.bk', u).length;
-			var c = $('.bs-unit-count', u);
-			if (c) c.textContent = fmt(n) + (n === 1 ? ' book' : ' books');
+	function moveBooks(ids, unit, shelf, beforeId) {
+		ids = ids.filter(function (id) { return byId[id]; });
+		if (!ids.length) return;
+		pushUndo();
+		// Remove from their current rows.
+		var touched = {};
+		ids.forEach(function (id) { var b = byId[id]; touched[shelfKey(b.u, b.s)] = [b.u, b.s]; });
+		Object.keys(touched).forEach(function (k) {
+			var us = touched[k];
+			var def = null;
+			rowDefs().forEach(function (d) { if (d.unit === us[0] && d.keys.indexOf(us[1]) !== -1) def = d; });
+			if (def) setRow(def.unit, def.shelf, rowBooks(def).map(function (b) { return b.id; }).filter(function (id) { return ids.indexOf(id) === -1; }));
 		});
+		var target = rowIds(unit, shelf).filter(function (id) { return ids.indexOf(id) === -1; });
+		var at = beforeId ? target.indexOf(beforeId) : -1;
+		if (at === -1) target = target.concat(ids);
+		else target = target.slice(0, at).concat(ids, target.slice(at));
+		setRow(unit, shelf, target);
+		afterMutation(true);
 	}
 
-	function rebuildOrder() {
-		order = $$('.bk', shelfArea).map(function (e) { return byId[e.getAttribute('data-id')]; });
-		updateStrip();
+	function sortRow(def, kind) {
+		var items = rowBooks(def);
+		var cmp = {
+			title: byTitle,
+			author: function (a, b) { return (authorKey(a.a) || '￿').localeCompare(authorKey(b.a) || '￿', ['en', 'ja']) || byTitle(a, b); },
+			colour: function (a, b) { return a.ch - b.ch || a.cl - b.cl || byTitle(a, b); },
+			height: function (a, b) { return b.hgt - a.hgt || b.w - a.w || byTitle(a, b); },
+			year: function (a, b) { return (a.y == null ? 1e9 : a.y) - (b.y == null ? 1e9 : b.y) || byTitle(a, b); },
+			catalog: function (a, b) { return a.op - b.op; },
+			reverse: null,
+		}[kind];
+		if (kind === 'reverse') items.reverse(); else if (cmp) items.sort(cmp);
+		setRow(def.unit, def.shelf, items.map(function (b) { return b.id; }));
+	}
+
+	function tidyAll(kind) {
+		pushUndo();
+		rowDefs().forEach(function (d) { sortRow(d, kind); });
+		afterMutation(true);
+	}
+
+	function tidyOne(def, kind) {
+		pushUndo();
+		sortRow(def, kind);
+		afterMutation(true);
 	}
 
 	function shuffleShelves() {
 		if (view !== 'shelves') setView('shelves');
-		var rows = $$('.bs-row', shelfArea);
-		var pool = [], sizes = [];
-		rows.forEach(function (r) {
-			var slots = $$('.bk-slot', r);
-			sizes.push(slots.length);
-			slots.forEach(function (sl) { pool.push(sl); });
-		});
+		pushUndo();
+		var defs = rowDefs();
+		var pool = [];
+		defs.forEach(function (d) { rowBooks(d).forEach(function (b) { pool.push(b.id); }); });
 		for (var i = pool.length - 1; i > 0; i--) {
 			var j = Math.floor(Math.random() * (i + 1));
 			var t = pool[i]; pool[i] = pool[j]; pool[j] = t;
 		}
-		// Every shelf keeps its size; each slot is appended exactly once, so the
-		// final order within a shelf follows the shuffled pool.
-		flip(function () {
-			var k = 0;
-			rows.forEach(function (r, ri) {
-				for (var i = 0; i < sizes[ri]; i++) r.appendChild(pool[k++]);
-			});
-			rows.forEach(renumberRow);
+		var k = 0;
+		defs.forEach(function (d) {
+			var n = rowBooks(d).length;
+			setRow(d.unit, d.shelf, pool.slice(k, k + n));
+			k += n;
 		});
-		saveArrangement();
+		afterMutation(true);
 	}
 
 	function resetShelves() {
+		pushUndo();
 		arrangement = {};
+		customShelves = [];
 		applyArrangement();
-		store(STORE_ARRANGEMENT, null);
+		clearSelection();
 		if (view !== 'shelves') setView('shelves');
-		else renderShelves(true);
-		updateContextRow();
+		afterMutation(true);
+	}
+
+	function addCustomShelf(name) {
+		name = (name || '').trim().slice(0, 40);
+		if (!name) return null;
+		var base = name, n = 2;
+		while (customShelves.indexOf(name) !== -1) name = base + ' ' + n++;
+		pushUndo();
+		customShelves.push(name);
+		arrangement[shelfKey(CUSTOM_UNIT, name)] = [];
+		afterMutation(true);
+		return name;
+	}
+
+	function renameCustomShelf(oldName, newName) {
+		newName = (newName || '').trim().slice(0, 40);
+		if (!newName || newName === oldName || customShelves.indexOf(newName) !== -1) return;
+		pushUndo();
+		var ids = rowIds(CUSTOM_UNIT, oldName);
+		delete arrangement[shelfKey(CUSTOM_UNIT, oldName)];
+		customShelves[customShelves.indexOf(oldName)] = newName;
+		setRow(CUSTOM_UNIT, newName, ids);
+		afterMutation(false);
+	}
+
+	function deleteCustomShelf(name) {
+		pushUndo();
+		var ids = rowIds(CUSTOM_UNIT, name);
+		delete arrangement[shelfKey(CUSTOM_UNIT, name)];
+		customShelves.splice(customShelves.indexOf(name), 1);
+		// Books go back to the end of the shelf they came from.
+		ids.forEach(function (id) {
+			var b = byId[id];
+			var def = null;
+			rowDefs().forEach(function (d) { if (d.unit === b.ou && d.keys.indexOf(b.os) !== -1) def = d; });
+			if (def) setRow(def.unit, def.shelf, rowBooks(def).map(function (x) { return x.id; }).concat([id]));
+		});
+		afterMutation(true);
 	}
 
 	function downloadLayout() {
-		var snapshot = {};
-		$$('.bs-row', shelfArea).forEach(function (r) {
-			snapshot[shelfKey(r.getAttribute('data-unit'), r.getAttribute('data-shelf'))] =
-				$$('.bk', r).map(function (e) { return e.getAttribute('data-id'); });
-		});
-		var blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' });
+		var snap = snapshot();
+		var out = { _custom: snap.custom };
+		Object.keys(snap.rows).forEach(function (k) { out[k] = snap.rows[k]; });
+		var blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
 		var a = document.createElement('a');
 		a.href = URL.createObjectURL(blob);
 		a.download = 'arrangement.json';
 		document.body.appendChild(a);
 		a.click();
 		setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+	}
+
+	// ---- Selection -------------------------------------------------------------
+
+	function setSelected(b, on) {
+		if (!!selected[b.id] === !!on) return;
+		if (on) { selected[b.id] = true; selectedCount++; b.el.classList.add('is-selected'); }
+		else { delete selected[b.id]; selectedCount--; b.el.classList.remove('is-selected'); }
+	}
+	function toggleSelect(b) { setSelected(b, !selected[b.id]); updateSelBar(); }
+	function clearSelection() {
+		Object.keys(selected).forEach(function (id) { byId[id].el.classList.remove('is-selected'); });
+		selected = {}; selectedCount = 0;
+		updateSelBar();
+	}
+	function selectedIds() {
+		return order.filter(function (b) { return selected[b.id]; }).map(function (b) { return b.id; });
+	}
+	function selectMatches() {
+		books.forEach(function (b) { if (b.hit) setSelected(b, true); });
+		updateSelBar();
+	}
+
+	function shelfSelect(onPick, current) {
+		var sel = el('select', 'bs-select');
+		sel.setAttribute('aria-label', 'Move to shelf');
+		var ph = el('option', null, 'Move to shelf…');
+		ph.value = ''; ph.disabled = true; ph.selected = true;
+		sel.appendChild(ph);
+		var newer = el('option', null, '＋ New shelf…');
+		newer.value = '__new__';
+		sel.appendChild(newer);
+		allUnits().forEach(function (u) {
+			var og = el('optgroup');
+			og.label = u.name + ' (' + u.k + ')';
+			u.shelves.forEach(function (sh) {
+				var key = typeof sh === 'string' ? sh : sh.keys[0];
+				var lab = typeof sh === 'string' ? shelfLabel(sh).label : sh.label;
+				var o = el('option', null, lab);
+				o.value = shelfKey(u.k, key);
+				if (current && current === o.value) o.disabled = true;
+				og.appendChild(o);
+			});
+			sel.appendChild(og);
+		});
+		sel.addEventListener('change', function () {
+			var v = sel.value;
+			sel.value = '';
+			if (v === '__new__') {
+				var name = window.prompt('Name for the new shelf', 'Reading next');
+				if (name) {
+					var made = addCustomShelf(name);
+					if (made) onPick(CUSTOM_UNIT, made);
+				}
+				return;
+			}
+			var parts = v.split('|');
+			onPick(parts[0], parts[1]);
+		});
+		return sel;
+	}
+
+	function updateSelBar() {
+		if (!selBar) return;
+		selBar.textContent = '';
+		if (!selectedCount) { selBar.hidden = true; return; }
+		selBar.hidden = false;
+		selBar.appendChild(el('span', 'bs-selbar-n', plural(selectedCount, 'book') + ' selected'));
+		selBar.appendChild(shelfSelect(function (u, s) { var ids = selectedIds(); clearSelection(); moveBooks(ids, u, s); }));
+		var clear = el('button', 'bs-btn bs-btn-quiet', 'Deselect');
+		clear.type = 'button';
+		clear.addEventListener('click', clearSelection);
+		selBar.appendChild(clear);
 	}
 
 	// ---- Drag and drop ---------------------------------------------------------
@@ -360,14 +548,14 @@
 		var r = drag.el.getBoundingClientRect();
 		var g = drag.el.cloneNode(true);
 		g.className = drag.el.className + ' bk-ghost';
-		g.style.width = r.width + 'px';
-		g.style.height = r.height + 'px';
-		g.style.left = r.left + 'px';
-		g.style.top = r.top + 'px';
+		g.style.width = r.width + 'px'; g.style.height = r.height + 'px';
+		g.style.left = r.left + 'px'; g.style.top = r.top + 'px';
+		var group = selected[drag.el.getAttribute('data-id')] && selectedCount > 1;
+		if (group) g.appendChild(el('span', 'bk-ghost-badge', String(selectedCount)));
 		document.body.appendChild(g);
 		drag.ghost = g;
-		drag.dx = ev.clientX - r.left;
-		drag.dy = ev.clientY - r.top;
+		drag.group = group;
+		drag.dx = ev.clientX - r.left; drag.dy = ev.clientY - r.top;
 		drag.active = true;
 		drag.el.classList.add('is-drag-src');
 		root.classList.add('is-dragging');
@@ -375,7 +563,7 @@
 		drag.scroll = setInterval(function () {
 			if (!drag) return;
 			var y = drag.lastY || 0;
-			if (y < 70) window.scrollBy(0, -12);
+			if (y < 90) window.scrollBy(0, -12);
 			else if (y > window.innerHeight - 70) window.scrollBy(0, 12);
 		}, 16);
 	}
@@ -390,22 +578,18 @@
 		drag.lastY = ev.clientY;
 		var x = ev.clientX - drag.dx, y = ev.clientY - drag.dy;
 		drag.ghost.style.transform = 'translate(' + (x - parseFloat(drag.ghost.style.left)) + 'px,' + (y - parseFloat(drag.ghost.style.top)) + 'px) rotate(-4deg) scale(1.06)';
-
 		var under = document.elementFromPoint(ev.clientX, ev.clientY);
 		if (!under) return;
 		var slot = under.closest ? under.closest('.bk-slot') : null;
 		if (slot && slot !== drag.slot) {
 			var rr = slot.getBoundingClientRect();
-			var before = ev.clientX < rr.left + rr.width / 2;
 			var row = slot.parentNode;
-			if (before) row.insertBefore(drag.slot, slot);
+			if (ev.clientX < rr.left + rr.width / 2) row.insertBefore(drag.slot, slot);
 			else row.insertBefore(drag.slot, slot.nextSibling);
 			return;
 		}
 		var row2 = under.closest ? under.closest('.bs-row') : null;
-		if (row2 && row2 !== drag.slot.parentNode) {
-			row2.appendChild(drag.slot);
-		}
+		if (row2 && row2 !== drag.slot.parentNode) row2.appendChild(drag.slot);
 	}
 
 	function onPointerUp(ev) {
@@ -419,43 +603,56 @@
 		root.classList.remove('is-dragging');
 		suppressClick = true;
 		setTimeout(function () { suppressClick = false; }, 0);
+
+		pushUndo();
 		var toRow = d.slot.closest('.bs-row');
-		renumberRow(d.fromRow);
-		if (toRow && toRow !== d.fromRow) renumberRow(toRow);
-		saveArrangement();
+		var rows = [d.fromRow];
+		if (toRow && toRow !== d.fromRow) rows.push(toRow);
+		if (d.group) {
+			// The rest of the selection lines up after the dropped spine.
+			var after = d.slot;
+			selectedIds().forEach(function (id) {
+				var b = byId[id];
+				if (b.el === d.el) return;
+				var from = b.slot.closest('.bs-row');
+				if (rows.indexOf(from) === -1) rows.push(from);
+				toRow.insertBefore(b.slot, after.nextSibling);
+				after = b.slot;
+			});
+		}
+		rows.forEach(function (r) { if (r) renumberFromDom(r); });
+		afterMutation(false);
 		d.el.classList.add('is-dropped');
 		setTimeout(function () { d.el.classList.remove('is-dropped'); }, 500);
+	}
+
+	function renumberFromDom(row) {
+		var u = row.getAttribute('data-unit'), s = row.getAttribute('data-shelf');
+		setRow(u, s, $$('.bk', row).map(function (e) { return e.getAttribute('data-id'); }));
 	}
 
 	function setRearranging(on) {
 		rearranging = on;
 		root.classList.toggle('is-rearranging', on);
 		if (on && view !== 'shelves') setView('shelves');
+		if (!on) clearSelection();
+		closeMenu();
+		applyHighlight(true);
 		updateContextRow();
 	}
 
 	// ---- Layouts -------------------------------------------------------------
 
-	function shelfLabel(key) {
-		var m = /^(.*?)\s*\((.*)\)\s*$/.exec(key);
-		if (!m) return { label: key, sub: '' };
-		return { label: m[1], sub: /sticky|photo/.test(m[2]) ? '' : m[2] };
-	}
-	function byTitle(a, b) { return a.t.localeCompare(b.t, ['en', 'ja']); }
-	function byPos(a, b) { return a.p - b.p; }
-
 	function layoutShelves() {
 		var groups = [];
-		UNITS.forEach(function (u) {
+		allUnits().forEach(function (u) {
 			var rows = [];
-			u.shelves.forEach(function (sh) {
-				var keys = typeof sh === 'string' ? [sh] : sh.keys;
-				var lab = typeof sh === 'string' ? shelfLabel(sh) : { label: sh.label, sub: sh.sub || '' };
-				var items = books.filter(function (b) { return b.u === u.k && keys.indexOf(b.s) !== -1; }).sort(byPos);
-				rows.push({ label: lab.label, sub: lab.sub, books: items, unit: u.k, shelf: keys[0] });
+			rowDefs().forEach(function (d) {
+				if (d.unit !== u.k) return;
+				rows.push({ label: d.label, sub: d.sub, books: rowBooks(d), def: d });
 			});
 			var n = rows.reduce(function (a, r) { return a + r.books.length; }, 0);
-			groups.push({ label: u.name, sub: u.desc, count: n, rows: rows, unit: u.k });
+			groups.push({ label: u.name, sub: u.desc, count: n, rows: rows, unit: u.k, nav: u.k === CUSTOM_UNIT ? '★' : u.k });
 		});
 		return groups;
 	}
@@ -480,17 +677,13 @@
 		if (sortGroups) keys.sort(sortGroups);
 		return keys.map(function (k) {
 			var items = map[k].sort(sortItems || byTitle);
-			return { label: k, sub: subFn ? subFn(k, items) : '', count: items.length, rows: [{ books: items }] };
+			return { label: k, sub: subFn ? subFn(k, items) : '', count: items.length, rows: [{ books: items }], nav: k };
 		});
 	}
 
 	function layoutWall(kind) {
-		if (kind === 'genre') {
-			return groupBy(function (b) { return b.g; }, null, byTitle).sort(function (a, b) { return b.count - a.count; });
-		}
-		if (kind === 'language') {
-			return groupBy(function (b) { return langName(b.l); }, null, byTitle).sort(function (a, b) { return b.count - a.count; });
-		}
+		if (kind === 'genre') return groupBy(function (b) { return b.g; }, null, byTitle).sort(function (a, b) { return b.count - a.count; });
+		if (kind === 'language') return groupBy(function (b) { return langName(b.l); }, null, byTitle).sort(function (a, b) { return b.count - a.count; });
 		if (kind === 'era') {
 			return groupBy(function (b) { return eraLabel(b.y); },
 				function (a, b) { return eraRank(a) - eraRank(b); },
@@ -508,9 +701,7 @@
 			var groups = groupBy(function (b) {
 				var k = authorKey(b.a);
 				return k && tally[k] >= 3 ? k : (k ? 'One or two each' : 'No author on the spine');
-			}, null, function (a, b) {
-				return authorKey(a.a).localeCompare(authorKey(b.a), ['en', 'ja']) || byTitle(a, b);
-			});
+			}, null, function (a, b) { return authorKey(a.a).localeCompare(authorKey(b.a), ['en', 'ja']) || byTitle(a, b); });
 			var tail = ['One or two each', 'No author on the spine'];
 			return groups.sort(function (a, b) {
 				var ta = tail.indexOf(a.label), tb = tail.indexOf(b.label);
@@ -532,11 +723,13 @@
 
 	// ---- Rendering the shelves ----------------------------------------------
 
-	function buildGroup(g) {
+	function buildGroup(g, gi) {
 		var wrap = el('section', 'bs-unit');
+		wrap.id = 'bs-g' + gi;
+		if (g.unit) wrap.setAttribute('data-unit', g.unit);
 		var head = el('div', 'bs-unit-head');
 		head.appendChild(el('h3', 'bs-unit-name', g.label));
-		head.appendChild(el('span', 'bs-unit-count', fmt(g.count) + (g.count === 1 ? ' book' : ' books')));
+		head.appendChild(el('span', 'bs-unit-count', plural(g.count, 'book')));
 		wrap.appendChild(head);
 		if (g.sub && view !== 'shelves') wrap.appendChild(el('p', 'bs-unit-desc', g.sub));
 		g.rows.forEach(function (r) {
@@ -545,15 +738,19 @@
 				var tag = el('div', 'bs-shelf-tag');
 				tag.appendChild(el('span', 'bs-tag', r.label));
 				if (r.sub) tag.appendChild(el('span', 'bs-shelf-sub', r.sub));
+				var menuBtn = el('button', 'bs-shelf-menu');
+				menuBtn.type = 'button';
+				menuBtn.setAttribute('aria-label', 'Shelf actions');
+				menuBtn.innerHTML = '<i class="fa-solid fa-ellipsis" aria-hidden="true"></i>';
+				menuBtn.addEventListener('click', function (ev) { ev.stopPropagation(); openShelfMenu(menuBtn, r.def); });
+				tag.appendChild(menuBtn);
 				shelf.appendChild(tag);
 			}
 			var row = el('div', 'bs-row');
-			if (r.unit) { row.setAttribute('data-unit', r.unit); row.setAttribute('data-shelf', r.shelf); }
+			if (r.def) { row.setAttribute('data-unit', r.def.unit); row.setAttribute('data-shelf', r.def.shelf); }
 			r.books.forEach(function (b, i) {
-				var slot = el('div', 'bk-slot');
 				b.el.style.setProperty('--d', Math.min(i * 14, 520));
-				slot.appendChild(b.el);
-				row.appendChild(slot);
+				row.appendChild(b.slot);
 				order.push(b);
 			});
 			shelf.appendChild(row);
@@ -564,7 +761,6 @@
 
 	function currentGroups() { return view === 'wall' ? layoutWall(sort) : layoutShelves(); }
 
-	// FLIP: measure, mutate, measure, and animate the difference away.
 	function flip(mutate) {
 		if (reducedMotion) { mutate(); return; }
 		var first = {};
@@ -575,6 +771,7 @@
 			var a = first[b.id];
 			if (!a) return;
 			var z = b.el.getBoundingClientRect();
+			if (!z.width) return;
 			var dx = a.left - z.left, dy = a.top - z.top;
 			if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
 			b.el.style.transition = 'none';
@@ -602,9 +799,10 @@
 		var build = function () {
 			order = [];
 			var frag = document.createDocumentFragment();
-			groups.forEach(function (g) { frag.appendChild(buildGroup(g)); });
+			groups.forEach(function (g, i) { frag.appendChild(buildGroup(g, i)); });
 			shelfArea.textContent = '';
 			shelfArea.appendChild(frag);
+			applyGatherClasses();
 		};
 		if (animate && !reducedMotion) {
 			flip(build);
@@ -614,9 +812,9 @@
 			watchShelves();
 		}
 		updateStrip();
+		renderNav(groups);
 	}
 
-	// Spines rise onto each board as it scrolls into view.
 	function watchShelves() {
 		var shelves = $$('.bs-shelf', shelfArea);
 		if (reducedMotion || !('IntersectionObserver' in window)) {
@@ -630,6 +828,27 @@
 			});
 		}, { rootMargin: '80px 0px' });
 		shelves.forEach(function (s) { s.classList.add('is-unseen'); observer.observe(s); });
+	}
+
+	function renderNav(groups) {
+		navRow.textContent = '';
+		if (groups.length < 2 || groups.length > 24) return;
+		navRow.appendChild(el('span', 'bs-row-label', view === 'wall' ? 'Jump to' : 'Bookcases'));
+		groups.forEach(function (g, i) {
+			var c = el('button', 'bs-navchip');
+			c.type = 'button';
+			c.setAttribute('data-nav', i);
+			c.appendChild(el('b', null, g.nav));
+			c.appendChild(el('span', null, fmt(g.count)));
+			c.title = g.label;
+			c.addEventListener('click', function () {
+				var t = document.getElementById('bs-g' + i);
+				if (!t) return;
+				var top = t.getBoundingClientRect().top + window.pageYOffset - 118;
+				window.scrollTo({ top: Math.max(0, top), behavior: reducedMotion ? 'auto' : 'smooth' });
+			});
+			navRow.appendChild(c);
+		});
 	}
 
 	function updateStrip() {
@@ -695,12 +914,12 @@
 				if (f.v === 'dated') return b.y != null;
 				if (f.v === 'undated') return b.y == null;
 				if (f.v === 'moved') return b.u !== b.ou || b.s !== b.os || b.p !== b.op;
+				if (f.v === 'selected') return !!selected[b.id];
 				return true;
 		}
 		return true;
 	}
 
-	// 0 = no match, otherwise a relevance score.
 	function score(b) {
 		var i;
 		for (i = 0; i < parsed.filters.length; i++) if (!passesFilter(b, parsed.filters[i])) return 0;
@@ -718,6 +937,8 @@
 		return total;
 	}
 
+	function filterActive() { return !!(parsed.terms.length || parsed.filters.length || genreFilter || langFilter || freeFilter); }
+
 	function matches(b) {
 		if (genreFilter && b.g !== genreFilter) return false;
 		if (langFilter && b.lb !== langFilter) return false;
@@ -726,8 +947,22 @@
 		return true;
 	}
 
-	function applyHighlight() {
-		var active = !!(parsed.terms.length || parsed.filters.length || genreFilter || langFilter || freeFilter);
+	// Collapse the library to the matches: hide non-matching slots and any
+	// shelf or bookcase left with nothing in it.
+	function applyGatherClasses() {
+		var on = filterActive() && gather && !rearranging && view !== 'stats';
+		root.classList.toggle('is-gathered', on);
+		books.forEach(function (b) { b.slot.classList.toggle('is-out', on && !b.hit); });
+		$$('.bs-shelf', shelfArea).forEach(function (s) {
+			s.classList.toggle('is-empty', on && !$$('.bk-slot:not(.is-out)', s).length);
+		});
+		$$('.bs-unit', shelfArea).forEach(function (u) {
+			u.classList.toggle('is-empty', on && !$$('.bk-slot:not(.is-out)', u).length);
+		});
+	}
+
+	function applyHighlight(animate) {
+		var active = filterActive();
 		var n = 0;
 		books.forEach(function (b) {
 			var ok = !active || matches(b);
@@ -737,26 +972,49 @@
 			b.el.classList.toggle('is-hit', active && ok);
 			if (b.strip) b.strip.setAttribute('opacity', active && !ok ? '0.15' : '1');
 		});
-		if (countEl) {
-			countEl.textContent = active ? fmt(n) + ' of ' + fmt(books.length) : fmt(books.length) + ' books';
-		}
+		if (countEl) countEl.textContent = active ? fmt(n) + ' of ' + fmt(books.length) : plural(books.length, 'book');
 		$$('[data-genre]', legendEl).forEach(function (c) { c.classList.toggle('is-on', c.getAttribute('data-genre') === genreFilter); });
 		$$('[data-lang]', root).forEach(function (c) { c.classList.toggle('is-on', (c.getAttribute('data-lang') || null) === langFilter); });
 		$$('[data-free]', toolbar).forEach(function (c) { c.classList.toggle('is-on', freeFilter); });
 		root.classList.toggle('has-filter', active);
+		if (view !== 'stats') {
+			if (animate && !reducedMotion) flip(applyGatherClasses); else applyGatherClasses();
+		}
+		hits = active ? order.filter(function (b) { return b.hit; }) : [];
+		hitIndex = -1;
+		updateHitNav();
+		updateContextRow();
 		syncUrl();
 	}
 
-	var resultSel = -1;
-	var resultItems = [];
+	function updateHitNav() {
+		if (!hitNav) return;
+		var active = filterActive();
+		hitNav.hidden = !active;
+		gatherBtn.hidden = !active || view === 'stats';
+		if (!active) return;
+		$('.bs-hit-pos', hitNav).textContent = (hitIndex >= 0 ? hitIndex + 1 : '–') + ' / ' + fmt(hits.length);
+		gatherBtn.innerHTML = gather
+			? '<i class="fa-solid fa-compress" aria-hidden="true"></i> Gathered'
+			: '<i class="fa-solid fa-expand" aria-hidden="true"></i> In place';
+		gatherBtn.classList.toggle('is-on', gather);
+	}
+
+	function stepHit(dir) {
+		if (!hits.length) return;
+		if (view === 'stats') setView('shelves');
+		hitIndex = (hitIndex + dir + hits.length) % hits.length;
+		revealSpine(hits[hitIndex]);
+		updateHitNav();
+	}
+
+	var resultSel = -1, resultItems = [];
 
 	function highlightText(text, terms) {
 		var frag = document.createDocumentFragment();
-		var lower = norm(text);
-		var spans = [];
+		var lower = norm(text), spans = [];
 		terms.forEach(function (t) {
 			var i = lower.indexOf(t);
-			// Only highlight when normalisation kept the string length (plain ASCII/kana).
 			if (i !== -1 && lower.length === text.length) spans.push([i, i + t.length]);
 		});
 		spans.sort(function (a, b) { return a[0] - b[0]; });
@@ -773,8 +1031,7 @@
 
 	function renderResults() {
 		resultsEl.textContent = '';
-		resultItems = [];
-		resultSel = -1;
+		resultItems = []; resultSel = -1;
 		if (!parsed.terms.length && !parsed.filters.length) { resultsEl.hidden = true; return; }
 		var scored = [];
 		books.forEach(function (b) {
@@ -790,7 +1047,7 @@
 			resultsEl.hidden = false;
 			return;
 		}
-		scored.slice(0, 8).forEach(function (pair, i) {
+		scored.slice(0, 8).forEach(function (pair) {
 			var b = pair[1];
 			var item = el('div', 'bs-result');
 			item.setAttribute('role', 'option');
@@ -814,7 +1071,7 @@
 			resultsEl.appendChild(item);
 			resultItems.push(item);
 		});
-		if (scored.length > 8) resultsEl.appendChild(el('div', 'bs-result-more', fmt(scored.length - 8) + ' more highlighted on the shelves'));
+		if (scored.length > 8) resultsEl.appendChild(el('div', 'bs-result-more', fmt(scored.length - 8) + ' more on the shelves below'));
 		resultsEl.hidden = false;
 	}
 
@@ -832,13 +1089,13 @@
 		setTimeout(function () { openCard(b, searchInput); }, 350);
 	}
 
-	function jumpToFirstHit() {
-		for (var i = 0; i < order.length; i++) if (order[i].hit) { revealSpine(order[i]); return; }
-	}
-
 	function revealSpine(b) {
 		if (view === 'stats') setView('shelves');
 		var r = b.el.getBoundingClientRect();
+		if (!r.width) { // hidden by gather/collapse: fall back to its unit
+			var u = b.slot.closest('.bs-unit');
+			if (u) r = u.getBoundingClientRect();
+		}
 		var top = r.top + window.pageYOffset - window.innerHeight / 2 + r.height / 2;
 		window.scrollTo({ top: Math.max(0, top), behavior: reducedMotion ? 'auto' : 'smooth' });
 		b.el.classList.remove('is-pulse');
@@ -859,10 +1116,9 @@
 		if (genreFilter) q.push('genre=' + encodeURIComponent(genreFilter));
 		if (langFilter) q.push('lang=' + encodeURIComponent(langFilter));
 		if (freeFilter) q.push('free=1');
+		if (!gather) q.push('inplace=1');
 		var h = '#/bookshelf' + (cardOpenFor ? '/' + encodeURIComponent(cardOpenFor.id) : '') + (q.length ? '?' + q.join('&') : '');
-		if (window.location.hash !== h) {
-			try { history.replaceState(null, '', h); } catch (e) { /* file:// */ }
-		}
+		if (window.location.hash !== h) { try { history.replaceState(null, '', h); } catch (e) { /* file:// */ } }
 	}
 
 	function readUrlState() {
@@ -881,9 +1137,10 @@
 		if (params.genre && GENRE_HUE[params.genre] != null) genreFilter = params.genre;
 		if (params.lang && LANG_HUE[params.lang]) langFilter = params.lang;
 		if (params.free === '1') freeFilter = true;
+		if (params.inplace === '1') gather = false;
 	}
 
-	// ---- Tooltip -------------------------------------------------------------
+	// ---- Tooltip + popover menu -------------------------------------------------
 
 	function showTip(b, rect) {
 		if (drag && drag.active) return;
@@ -899,18 +1156,98 @@
 	}
 	function hideTip() { tip.classList.remove('is-on'); }
 
-	// ---- Book card -----------------------------------------------------------
-
-	function unitName(k) {
-		for (var i = 0; i < UNITS.length; i++) if (UNITS[i].k === k) return UNITS[i].name;
-		return 'unit ' + k;
+	function openMenu(anchor, items) {
+		closeMenu();
+		menuEl = el('div', 'bs-menu');
+		menuEl.setAttribute('role', 'menu');
+		items.forEach(function (it) {
+			if (it === '-') { menuEl.appendChild(el('div', 'bs-menu-sep')); return; }
+			if (it.heading) { menuEl.appendChild(el('div', 'bs-menu-head', it.heading)); return; }
+			var b = el('button', 'bs-menu-item' + (it.danger ? ' is-danger' : ''));
+			b.type = 'button';
+			b.setAttribute('role', 'menuitem');
+			b.innerHTML = (it.icon ? '<i class="fa-solid ' + it.icon + '" aria-hidden="true"></i>' : '<i></i>') + '<span></span>';
+			b.querySelector('span').textContent = it.label;
+			b.addEventListener('click', function () { closeMenu(); it.run(); });
+			menuEl.appendChild(b);
+		});
+		document.body.appendChild(menuEl);
+		var r = anchor.getBoundingClientRect();
+		var w = menuEl.offsetWidth, h = menuEl.offsetHeight;
+		var x = clamp(r.left, 8, window.innerWidth - w - 8);
+		var y = r.bottom + 6;
+		if (y + h > window.innerHeight - 8) y = Math.max(8, r.top - h - 6);
+		menuEl.style.left = x + 'px';
+		menuEl.style.top = y + 'px';
+		var first = $('.bs-menu-item', menuEl);
+		if (first) first.focus();
+		setTimeout(function () {
+			document.addEventListener('pointerdown', onDocPointerForMenu, true);
+			document.addEventListener('keydown', onKeyForMenu, true);
+		}, 0);
 	}
+	function onDocPointerForMenu(ev) { if (menuEl && !menuEl.contains(ev.target)) closeMenu(); }
+	function onKeyForMenu(ev) { if (ev.key === 'Escape') { closeMenu(); ev.stopPropagation(); } }
+	function closeMenu() {
+		if (!menuEl) return;
+		menuEl.remove();
+		menuEl = null;
+		document.removeEventListener('pointerdown', onDocPointerForMenu, true);
+		document.removeEventListener('keydown', onKeyForMenu, true);
+	}
+
+	function sortItems(run) {
+		return [
+			{ heading: 'Sort' },
+			{ label: 'A to Z by title', icon: 'fa-arrow-down-a-z', run: function () { run('title'); } },
+			{ label: 'By author', icon: 'fa-user-pen', run: function () { run('author'); } },
+			{ label: 'Rainbow (by colour)', icon: 'fa-palette', run: function () { run('colour'); } },
+			{ label: 'By height', icon: 'fa-arrow-down-wide-short', run: function () { run('height'); } },
+			{ label: 'By year', icon: 'fa-clock-rotate-left', run: function () { run('year'); } },
+			{ label: 'Reverse', icon: 'fa-right-left', run: function () { run('reverse'); } },
+			{ label: 'Catalog order', icon: 'fa-list-ol', run: function () { run('catalog'); } },
+		];
+	}
+
+	function openShelfMenu(anchor, def) {
+		var items = sortItems(function (kind) { tidyOne(def, kind); });
+		items.push('-');
+		if (filterActive() && hits.length) {
+			items.push({ label: 'Move the ' + plural(hits.length, 'match') + ' here', icon: 'fa-arrow-right-to-bracket', run: function () {
+				moveBooks(hits.map(function (b) { return b.id; }), def.unit, def.shelf);
+			} });
+		}
+		items.push({ label: rearranging ? 'Select all on this shelf' : 'Rearrange and select this shelf', icon: 'fa-object-group', run: function () {
+			if (!rearranging) setRearranging(true);
+			rowBooks(def).forEach(function (b) { setSelected(b, true); });
+			updateSelBar();
+		} });
+		if (def.custom) {
+			items.push('-');
+			items.push({ label: 'Rename shelf', icon: 'fa-pen', run: function () {
+				var n = window.prompt('New name for this shelf', def.shelf);
+				if (n) renameCustomShelf(def.shelf, n);
+			} });
+			items.push({ label: 'Delete shelf (books go home)', icon: 'fa-trash', danger: true, run: function () { deleteCustomShelf(def.shelf); } });
+		}
+		openMenu(anchor, items);
+	}
+
+	function openTidyMenu(anchor) {
+		var items = sortItems(function (kind) { tidyAll(kind); });
+		items.unshift({ heading: 'Every shelf, books stay on their shelf' });
+		items.shift(); // drop the inner "Sort" heading
+		openMenu(anchor, items);
+	}
+
+	// ---- Book card -----------------------------------------------------------
 
 	function whereText(b) {
 		var lab = shelfLabel(b.s);
 		var name = unitName(b.u);
-		name = name.charAt(0).toLowerCase() + name.slice(1);
 		var moved = b.u !== b.ou || b.s !== b.os || b.p !== b.op;
+		if (b.u === CUSTOM_UNIT) return 'On your shelf "' + b.s + '", ' + ordinal(b.p) + ' from the left.';
+		name = name.charAt(0).toLowerCase() + name.slice(1);
 		if (b.u === 'Loose') return moved ? 'Moved to the desk-and-floor pile.' : 'Not shelved. It was out on the desk or floor.';
 		return (moved ? 'Moved by you to the ' : 'On the ') + name + ' (' + b.u + '), shelf ' + lab.label + ', ' + ordinal(b.p) + ' from the left.';
 	}
@@ -924,9 +1261,15 @@
 	function button(cls, icon, label, onClick) {
 		var btn = el('button', 'bs-btn' + (cls ? ' ' + cls : ''));
 		btn.type = 'button';
-		btn.innerHTML = (icon ? '<i class="fa-solid ' + icon + '" aria-hidden="true"></i> ' : '') + '<span>' + label + '</span>';
+		btn.innerHTML = (icon ? '<i class="fa-solid ' + icon + '" aria-hidden="true"></i> ' : '') + '<span></span>';
+		btn.querySelector('span').textContent = label;
 		if (onClick) btn.addEventListener('click', onClick);
 		return btn;
+	}
+
+	function refreshCardWhere() {
+		var w = $('.bs-info-where', cardBody);
+		if (w && cardOpenFor) { w.textContent = ''; w.appendChild(el('i', 'fa-solid fa-location-dot')); w.appendChild(document.createTextNode(' ' + whereText(cardOpenFor))); }
 	}
 
 	function openCard(b, fromEl) {
@@ -975,10 +1318,9 @@
 		if (b.free) {
 			var freeBox = el('div', 'bs-info-free');
 			var a = el('a', 'bs-btn bs-btn-accent');
-			a.href = b.free.url;
-			a.target = '_blank';
-			a.rel = 'noopener';
-			a.innerHTML = '<i class="fa-solid fa-book-open-reader" aria-hidden="true"></i> <span>Read it free on ' + (FREE_SOURCE[b.free.src] || b.free.src) + '</span>';
+			a.href = b.free.url; a.target = '_blank'; a.rel = 'noopener';
+			a.innerHTML = '<i class="fa-solid fa-book-open-reader" aria-hidden="true"></i> <span></span>';
+			a.querySelector('span').textContent = 'Read it free on ' + (FREE_SOURCE[b.free.src] || b.free.src);
 			freeBox.appendChild(a);
 			if (b.free.note) freeBox.appendChild(el('span', 'bs-info-free-note', b.free.note));
 			info.appendChild(freeBox);
@@ -1011,6 +1353,7 @@
 			else done();
 		});
 		nav.appendChild(prev); nav.appendChild(next); nav.appendChild(show); nav.appendChild(link);
+		nav.appendChild(shelfSelect(function (u, s) { moveBooks([b.id], u, s); }, shelfKey(b.u, b.s)));
 		info.appendChild(nav);
 
 		cardBody.appendChild(cover);
@@ -1042,10 +1385,8 @@
 		var cover = $('.bs-cover', cardBody);
 		if (!cover || reducedMotion) return;
 		var r = cover.getBoundingClientRect();
-		var px = (ev.clientX - r.left) / r.width - 0.5;
-		var py = (ev.clientY - r.top) / r.height - 0.5;
-		cover.style.setProperty('--rx', (-py * 10).toFixed(2) + 'deg');
-		cover.style.setProperty('--ry', (px * 14).toFixed(2) + 'deg');
+		cover.style.setProperty('--rx', (-((ev.clientY - r.top) / r.height - 0.5) * 10).toFixed(2) + 'deg');
+		cover.style.setProperty('--ry', (((ev.clientX - r.left) / r.width - 0.5) * 14).toFixed(2) + 'deg');
 	}
 	function untiltCover() {
 		var cover = $('.bs-cover', cardBody);
@@ -1144,7 +1485,7 @@
 			if (opts.clickGenre) {
 				row.classList.add('is-clickable');
 				row.tabIndex = 0;
-				var go = function () { genreFilter = r.k; setView('wall'); applyHighlight(); };
+				var go = function () { genreFilter = r.k; setView('wall'); applyHighlight(false); };
 				row.addEventListener('click', go);
 				row.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); go(); } });
 			}
@@ -1171,7 +1512,7 @@
 			stack.appendChild(bar);
 			c.appendChild(stack);
 			c.appendChild(el('div', 'bs-col-label', r.short || r.k));
-			c.addEventListener('mouseenter', function () { showTip({ t: r.k, a: fmt(r.n) + (r.n === 1 ? ' book' : ' books') }, c.getBoundingClientRect()); });
+			c.addEventListener('mouseenter', function () { showTip({ t: r.k, a: plural(r.n, 'book') }, c.getBoundingClientRect()); });
 			c.addEventListener('mouseleave', hideTip);
 			cols.appendChild(c);
 		});
@@ -1227,11 +1568,9 @@
 
 		var charts = el('div', 'bs-charts');
 		charts.appendChild(barChart('By genre', genres, { sub: 'Click a genre to reshelve the wall by it.', swatch: true, clickGenre: true, head: ['Genre', 'Books'] }));
-
 		var langs = [{ k: 'English', n: 0 }, { k: 'Japanese', n: 0 }, { k: 'Bilingual & other', n: 0 }];
 		books.forEach(function (b) { for (var i = 0; i < langs.length; i++) if (langs[i].k === b.lb) langs[i].n++; });
 		charts.appendChild(stackedBar('By language', langs, 'German, Italian and Latin, and bilingual dictionaries and readers, are the sliver on the right.'));
-
 		var eraRows = [], eraMap = {}, maxYear = 1900;
 		books.forEach(function (b) {
 			if (b.y == null) return;
@@ -1249,7 +1588,6 @@
 		charts.appendChild(barChart('Most collected authors', authors.slice(0, 12), { head: ['Author', 'Books'], sub: 'Primary author or editor as printed on the spine.' }));
 		charts.appendChild(barChart('Publishers and series', tally(function (b) { return b.pub; }).slice(0, 12), { head: ['Publisher', 'Books'] }));
 		statsArea.appendChild(charts);
-
 		setTimeout(function () { statsArea.classList.add('is-in'); countUp(); }, 40);
 	}
 
@@ -1271,36 +1609,34 @@
 	function setView(v) {
 		var prev = view;
 		view = v;
-		$$('[data-view]', toolbar).forEach(function (b) {
+		$$('[data-view]', bar).forEach(function (b) {
 			var on = b.getAttribute('data-view') === v;
 			b.classList.toggle('is-on', on);
 			b.setAttribute('aria-pressed', on ? 'true' : 'false');
 		});
 		root.setAttribute('data-view', v);
+		closeMenu();
 		if (v !== 'shelves' && rearranging) setRearranging(false);
 		if (v === 'stats') {
-			shelfArea.hidden = true; strip.hidden = true; legendEl.hidden = true;
+			shelfArea.hidden = true; strip.hidden = true; legendEl.hidden = true; navRow.hidden = true;
 			statsArea.hidden = false;
 			statsArea.classList.remove('is-in');
 			renderStats();
 		} else {
 			statsArea.hidden = true;
-			shelfArea.hidden = false; strip.hidden = false; legendEl.hidden = false;
+			shelfArea.hidden = false; strip.hidden = false; legendEl.hidden = false; navRow.hidden = false;
 			if (prev !== v || prev === 'stats') renderShelves(prev !== 'stats' && prev !== '');
 		}
+		updateHitNav();
 		updateContextRow();
 		syncUrl();
 	}
 
 	function setSort(s) {
 		sort = s;
-		$$('[data-sort]', toolbar).forEach(function (b) {
-			var on = b.getAttribute('data-sort') === s;
-			b.classList.toggle('is-on', on);
-			b.setAttribute('aria-pressed', on ? 'true' : 'false');
-		});
 		if (view !== 'wall') setView('wall');
-		else { renderShelves(true); syncUrl(); }
+		else { renderShelves(true); applyHighlight(false); }
+		updateContextRow();
 	}
 
 	function setPaint(p) {
@@ -1326,8 +1662,15 @@
 		if (onClick) b.addEventListener('click', onClick);
 		return b;
 	}
+	function iconChip(icon, label, onClick, cls, attrs) {
+		var c = chip('', attrs, onClick, cls);
+		c.innerHTML = '<i class="fa-solid ' + icon + '" aria-hidden="true"></i> <span></span>';
+		c.querySelector('span').textContent = label;
+		return c;
+	}
 
 	function updateContextRow() {
+		if (!ctxRow) return;
 		ctxRow.textContent = '';
 		if (view === 'wall') {
 			ctxRow.appendChild(el('span', 'bs-row-label', 'Reshelve by'));
@@ -1335,30 +1678,34 @@
 				ctxRow.appendChild(chip(s[1], { 'data-sort': s[0] }, function () { setSort(s[0]); }, sort === s[0] ? 'is-on' : ''));
 			});
 		} else if (view === 'shelves') {
-			var re = chip('', null, function () { setRearranging(!rearranging); }, rearranging ? 'is-on' : '');
-			re.innerHTML = '<i class="fa-solid ' + (rearranging ? 'fa-check' : 'fa-hand') + '" aria-hidden="true"></i> ' + (rearranging ? 'Done rearranging' : 'Rearrange');
-			ctxRow.appendChild(re);
-			var sh = chip('', null, shuffleShelves);
-			sh.innerHTML = '<i class="fa-solid fa-shuffle" aria-hidden="true"></i> Shuffle';
-			ctxRow.appendChild(sh);
-			if (hasArrangement()) {
-				var rs = chip('', null, resetShelves);
-				rs.innerHTML = '<i class="fa-solid fa-rotate-left" aria-hidden="true"></i> Reset shelves';
-				ctxRow.appendChild(rs);
-			}
+			ctxRow.appendChild(iconChip(rearranging ? 'fa-check' : 'fa-hand', rearranging ? 'Done rearranging' : 'Rearrange', function () { setRearranging(!rearranging); }, rearranging ? 'is-on' : ''));
+			var tidy = iconChip('fa-broom', 'Tidy', null);
+			tidy.addEventListener('click', function () { openTidyMenu(tidy); });
+			ctxRow.appendChild(tidy);
+			ctxRow.appendChild(iconChip('fa-shuffle', 'Shuffle', shuffleShelves));
+			ctxRow.appendChild(iconChip('fa-folder-plus', 'New shelf', function () {
+				var name = window.prompt('Name for the new shelf', 'Reading next');
+				if (name) {
+					var made = addCustomShelf(name);
+					if (made && !rearranging) setRearranging(true);
+				}
+			}));
+			if (undoStack.length) ctxRow.appendChild(iconChip('fa-rotate-left', 'Undo', undo, '', { 'data-action': 'undo' }));
+			if (hasArrangement()) ctxRow.appendChild(iconChip('fa-eraser', 'Reset shelves', resetShelves, 'bs-chip-quiet'));
 			if (rearranging) {
-				var dl = chip('', null, downloadLayout, 'bs-chip-quiet');
-				dl.innerHTML = '<i class="fa-solid fa-download" aria-hidden="true"></i> Download layout';
-				ctxRow.appendChild(dl);
-				ctxRow.appendChild(el('span', 'bs-row-hint', 'Drag a spine to another slot or shelf. Your arrangement is saved in this browser only.'));
+				if (filterActive() && hits.length) {
+					ctxRow.appendChild(iconChip('fa-object-group', 'Select the ' + plural(hits.length, 'match'), selectMatches));
+				}
+				ctxRow.appendChild(iconChip('fa-download', 'Download layout', downloadLayout, 'bs-chip-quiet'));
+				ctxRow.appendChild(el('span', 'bs-row-hint', 'Click spines to select, drag to move (a selection moves together). Saved in this browser only.'));
 			} else if (hasArrangement()) {
 				ctxRow.appendChild(el('span', 'bs-row-hint', 'Showing your rearranged shelves.'));
 			}
 		}
 	}
 
-	function buildToolbar() {
-		toolbar = el('div', 'bs-toolbar');
+	function buildBar() {
+		bar = el('div', 'bs-topbar');
 
 		var search = el('div', 'bs-search');
 		var ic = el('i', 'fa-solid fa-magnifying-glass');
@@ -1376,7 +1723,7 @@
 			t = setTimeout(function () {
 				query = searchInput.value.trim();
 				parsed = parseQuery(query);
-				applyHighlight();
+				applyHighlight(true);
 				renderResults();
 			}, 80);
 		});
@@ -1388,13 +1735,12 @@
 			else if (ev.key === 'Enter') {
 				ev.preventDefault();
 				if (resultSel >= 0 && resultItems[resultSel]) pickResult(byId[resultItems[resultSel].getAttribute('data-id')]);
-				else if (resultItems.length && view !== 'stats') jumpToFirstHit();
-				else if (resultItems.length) pickResult(byId[resultItems[0].getAttribute('data-id')]);
+				else { resultsEl.hidden = true; searchInput.blur(); stepHit(1); }
 			}
 			else if (ev.key === 'Escape') {
 				if (!resultsEl.hidden) { resultsEl.hidden = true; return; }
 				searchInput.value = ''; query = ''; parsed = parseQuery('');
-				applyHighlight();
+				applyHighlight(true);
 			}
 		});
 		search.appendChild(searchInput);
@@ -1404,7 +1750,26 @@
 		resultsEl.setAttribute('role', 'listbox');
 		resultsEl.hidden = true;
 		search.appendChild(resultsEl);
-		toolbar.appendChild(search);
+		bar.appendChild(search);
+
+		hitNav = el('div', 'bs-hitnav');
+		hitNav.hidden = true;
+		var prev = el('button', 'bs-hit-btn');
+		prev.type = 'button'; prev.setAttribute('aria-label', 'Previous match');
+		prev.innerHTML = '<i class="fa-solid fa-chevron-left" aria-hidden="true"></i>';
+		prev.addEventListener('click', function () { stepHit(-1); });
+		var next = el('button', 'bs-hit-btn');
+		next.type = 'button'; next.setAttribute('aria-label', 'Next match');
+		next.innerHTML = '<i class="fa-solid fa-chevron-right" aria-hidden="true"></i>';
+		next.addEventListener('click', function () { stepHit(1); });
+		hitNav.appendChild(prev);
+		hitNav.appendChild(el('span', 'bs-hit-pos', ''));
+		hitNav.appendChild(next);
+		bar.appendChild(hitNav);
+
+		gatherBtn = chip('', { 'data-action': 'gather' }, function () { gather = !gather; applyHighlight(true); }, 'bs-chip-gather');
+		gatherBtn.hidden = true;
+		bar.appendChild(gatherBtn);
 
 		var views = el('div', 'bs-seg');
 		views.setAttribute('role', 'group');
@@ -1417,18 +1782,20 @@
 			b.addEventListener('click', function () { setView(v[0]); });
 			views.appendChild(b);
 		});
-		toolbar.appendChild(views);
+		bar.appendChild(views);
+		return bar;
+	}
 
+	function buildToolbar() {
+		toolbar = el('div', 'bs-toolbar');
 		ctxRow = el('div', 'bs-ctx');
 		toolbar.appendChild(ctxRow);
 
 		var filters = el('div', 'bs-filters');
 		[['', 'All'], ['English', 'English'], ['Japanese', 'Japanese'], ['Bilingual & other', 'Other']].forEach(function (l) {
-			filters.appendChild(chip(l[1], { 'data-lang': l[0] }, function () { langFilter = l[0] || null; applyHighlight(); renderResults(); }));
+			filters.appendChild(chip(l[1], { 'data-lang': l[0] }, function () { langFilter = l[0] || null; applyHighlight(true); renderResults(); }));
 		});
-		var fr = chip('', { 'data-free': '1' }, function () { freeFilter = !freeFilter; applyHighlight(); renderResults(); });
-		fr.innerHTML = '<i class="fa-solid fa-book-open-reader" aria-hidden="true"></i> Free to read';
-		filters.appendChild(fr);
+		filters.appendChild(iconChip('fa-book-open-reader', 'Free to read', function () { freeFilter = !freeFilter; applyHighlight(true); renderResults(); }, '', { 'data-free': '1' }));
 
 		var paintBox = el('span', 'bs-paint');
 		paintBox.appendChild(el('span', 'bs-row-label', 'Colour by'));
@@ -1446,9 +1813,7 @@
 		zoomBox.appendChild(range);
 		filters.appendChild(zoomBox);
 
-		var rnd = chip('', { 'data-action': 'random' }, pullRandom, 'bs-chip-accent');
-		rnd.innerHTML = '<i class="fa-solid fa-dice" aria-hidden="true"></i> Pull a random book';
-		filters.appendChild(rnd);
+		filters.appendChild(iconChip('fa-dice', 'Pull a random book', pullRandom, 'bs-chip-accent', { 'data-action': 'random' }));
 		toolbar.appendChild(filters);
 		return toolbar;
 	}
@@ -1457,7 +1822,7 @@
 		legendEl.textContent = '';
 		if (paint === 'genre') {
 			tally(function (b) { return b.g; }).forEach(function (g) {
-				var c = chip('', { 'data-genre': g.k }, function () { genreFilter = genreFilter === g.k ? null : g.k; applyHighlight(); renderResults(); }, 'bs-chip-genre' + (genreFilter === g.k ? ' is-on' : ''));
+				var c = chip('', { 'data-genre': g.k }, function () { genreFilter = genreFilter === g.k ? null : g.k; applyHighlight(true); renderResults(); }, 'bs-chip-genre' + (genreFilter === g.k ? ' is-on' : ''));
 				var sw = el('i', 'bs-swatch');
 				sw.style.background = 'hsl(' + (GENRE_HUE[g.k] || 0) + ' 55% 45%)';
 				c.appendChild(sw);
@@ -1468,7 +1833,7 @@
 		} else if (paint === 'language') {
 			['English', 'Japanese', 'Bilingual & other'].forEach(function (k) {
 				var n = books.filter(function (b) { return b.lb === k; }).length;
-				var c = chip('', { 'data-lang': k }, function () { langFilter = langFilter === k ? null : k; applyHighlight(); renderResults(); }, 'bs-chip-genre' + (langFilter === k ? ' is-on' : ''));
+				var c = chip('', { 'data-lang': k }, function () { langFilter = langFilter === k ? null : k; applyHighlight(true); renderResults(); }, 'bs-chip-genre' + (langFilter === k ? ' is-on' : ''));
 				var sw = el('i', 'bs-swatch');
 				sw.style.background = 'hsl(' + LANG_HUE[k] + ' 55% 45%)';
 				c.appendChild(sw);
@@ -1496,6 +1861,7 @@
 		root.setAttribute('aria-busy', 'false');
 		root.style.setProperty('--bs-zoom', zoom);
 
+		root.appendChild(buildBar());
 		root.appendChild(buildToolbar());
 
 		strip = el('div', 'bs-strip');
@@ -1509,11 +1875,18 @@
 		root.appendChild(legendEl);
 		renderLegend();
 
+		navRow = el('div', 'bs-nav');
+		root.appendChild(navRow);
+
 		shelfArea = el('div', 'bs-shelves');
 		root.appendChild(shelfArea);
 		statsArea = el('div', 'bs-stats');
 		statsArea.hidden = true;
 		root.appendChild(statsArea);
+
+		selBar = el('div', 'bs-selbar');
+		selBar.hidden = true;
+		document.body.appendChild(selBar);
 
 		tip = el('div', 'bs-tip');
 		tip.setAttribute('role', 'tooltip');
@@ -1542,15 +1915,19 @@
 		shelfArea.addEventListener('click', function (ev) {
 			if (suppressClick) return;
 			var s = ev.target.closest ? ev.target.closest('.bk') : null;
-			if (s) openCard(byId[s.getAttribute('data-id')], s);
+			if (!s) return;
+			var b = byId[s.getAttribute('data-id')];
+			if (rearranging) toggleSelect(b); else openCard(b, s);
+		});
+		shelfArea.addEventListener('dblclick', function (ev) {
+			var s = ev.target.closest ? ev.target.closest('.bk') : null;
+			if (s && rearranging) openCard(byId[s.getAttribute('data-id')], s);
 		});
 		shelfArea.addEventListener('mouseover', function (ev) {
 			var s = ev.target.closest ? ev.target.closest('.bk') : null;
 			if (s) showTip(byId[s.getAttribute('data-id')], s.getBoundingClientRect());
 		});
-		shelfArea.addEventListener('mouseout', function (ev) {
-			if (ev.target.closest && ev.target.closest('.bk')) hideTip();
-		});
+		shelfArea.addEventListener('mouseout', function (ev) { if (ev.target.closest && ev.target.closest('.bk')) hideTip(); });
 		shelfArea.addEventListener('focusin', function (ev) {
 			var s = ev.target.closest ? ev.target.closest('.bk') : null;
 			if (s) showTip(byId[s.getAttribute('data-id')], s.getBoundingClientRect());
@@ -1574,14 +1951,25 @@
 		window.addEventListener('scroll', hideTip, { passive: true });
 
 		document.addEventListener('keydown', function (ev) {
-			if (!cardOpenFor) return;
-			if (ev.key === 'Escape') { ev.preventDefault(); closeCard(); }
-			else if (ev.key === 'ArrowLeft') { var p = shelfNeighbors(cardOpenFor).prev; if (p) { ev.preventDefault(); openCard(p); } }
-			else if (ev.key === 'ArrowRight') { var n = shelfNeighbors(cardOpenFor).next; if (n) { ev.preventDefault(); openCard(n); } }
+			if (cardOpenFor) {
+				if (ev.key === 'Escape') { ev.preventDefault(); closeCard(); }
+				else if (ev.key === 'ArrowLeft') { var p = shelfNeighbors(cardOpenFor).prev; if (p) { ev.preventDefault(); openCard(p); } }
+				else if (ev.key === 'ArrowRight') { var n = shelfNeighbors(cardOpenFor).next; if (n) { ev.preventDefault(); openCard(n); } }
+				return;
+			}
+			if (isEditable(ev.target) || menuEl) return;
+			if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === 'z' && !ev.shiftKey) {
+				if (undoStack.length && view === 'shelves') { ev.preventDefault(); undo(); }
+				return;
+			}
+			if (ev.ctrlKey || ev.metaKey || ev.altKey) return;
+			if (ev.key === 'n') stepHit(1);
+			else if (ev.key === 'p') stepHit(-1);
+			else if (ev.key === 'Escape' && selectedCount) clearSelection();
 		});
 
 		setView(view || 'shelves');
-		applyHighlight();
+		applyHighlight(false);
 		rendered = true;
 		syncUrl();
 
@@ -1600,11 +1988,16 @@
 				books = data.books || [];
 				counts = data.counts || {};
 				books.forEach(function (b) { decorate(b); byId[b.id] = b; });
+				customShelves = (load(STORE_CUSTOM) || []).filter(function (n) { return typeof n === 'string' && n; });
+				// Custom shelves baked into the data (via scripts/arrangement.json) count too.
+				books.forEach(function (b) { if (b.u === CUSTOM_UNIT && customShelves.indexOf(b.s) === -1) customShelves.push(b.s); });
 				arrangement = load(STORE_ARRANGEMENT) || {};
-				// Drop stored ids that no longer exist in the catalog.
 				Object.keys(arrangement).forEach(function (k) {
+					if (!Array.isArray(arrangement[k])) { delete arrangement[k]; return; }
 					arrangement[k] = arrangement[k].filter(function (id) { return byId[id]; });
-					if (!arrangement[k].length) delete arrangement[k];
+					var isCustom = k.indexOf(CUSTOM_UNIT + '|') === 0;
+					if (isCustom && customShelves.indexOf(k.split('|')[1]) === -1) customShelves.push(k.split('|')[1]);
+					if (!arrangement[k].length && !isCustom) delete arrangement[k];
 				});
 				applyArrangement();
 				var z = load(STORE_ZOOM);

@@ -2397,3 +2397,369 @@ body.bs-card-is-open { overflow: hidden; }
 	font-family: var(--font-mono);
 	font-variant-numeric: tabular-nums;
 }
+
+/* ---- Bookshelf: sticky bar, hit navigation, gather, selection, menus ---- */
+
+.bs-topbar {
+	position: sticky;
+	top: 52px;
+	z-index: 35;
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px 10px;
+	padding: 8px 0 10px;
+	margin: 0 0 4px;
+	background: var(--bg);
+	transition: background-color var(--dur) ease;
+}
+
+.bs-topbar .bs-search {
+	flex: 1 1 240px;
+}
+
+.bs-toolbar {
+	margin-top: 0;
+}
+
+.bs-hitnav {
+	display: inline-flex;
+	align-items: center;
+	gap: 2px;
+	border: 1px solid var(--border);
+	border-radius: 999px;
+	background: var(--surface);
+	padding: 2px;
+}
+
+.bs-hit-btn {
+	appearance: none;
+	border: 0;
+	background: transparent;
+	color: var(--heading);
+	width: 30px;
+	height: 30px;
+	border-radius: 999px;
+	cursor: pointer;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	transition: background-color var(--dur-fast) ease;
+}
+
+.bs-hit-btn:hover {
+	background: var(--accent-soft);
+}
+
+.bs-hit-btn:focus-visible {
+	outline: none;
+	box-shadow: 0 0 0 3px var(--accent-ring);
+}
+
+.bs-hit-pos {
+	font-family: var(--font-mono);
+	font-size: .74rem;
+	color: var(--text-2);
+	min-width: 5.5em;
+	text-align: center;
+	white-space: nowrap;
+}
+
+.bs-chip-gather.is-on {
+	background: var(--accent);
+	border-color: var(--accent);
+	color: #fff;
+}
+
+/* Bookcase jump row */
+.bs-nav {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 4px;
+	margin: 0 0 16px;
+}
+
+.bs-navchip {
+	appearance: none;
+	display: inline-flex;
+	align-items: baseline;
+	gap: 5px;
+	border: 1px solid var(--border);
+	background: var(--surface);
+	color: var(--text);
+	font: inherit;
+	font-size: .74rem;
+	padding: 4px 9px;
+	border-radius: 999px;
+	cursor: pointer;
+	transition: border-color var(--dur-fast) ease, transform var(--dur-fast) var(--ease-out), background-color var(--dur-fast) ease;
+}
+
+.bs-navchip b {
+	font-family: var(--font-mono);
+	font-weight: 600;
+	color: var(--heading);
+}
+
+.bs-navchip span {
+	color: var(--text-2);
+	font-family: var(--font-mono);
+	font-size: .66rem;
+}
+
+.bs-navchip:hover {
+	border-color: var(--accent);
+	background: var(--accent-soft);
+	transform: translateY(-1px);
+}
+
+.bs-navchip:focus-visible {
+	outline: none;
+	box-shadow: 0 0 0 3px var(--accent-ring);
+}
+
+/* Gathered search: only matches stay, empty shelves and bookcases fold away. */
+.bs.is-gathered .bk-slot.is-out,
+.bs.is-gathered .bs-shelf.is-empty,
+.bs.is-gathered .bs-unit.is-empty {
+	display: none;
+}
+
+.bs.is-gathered .bk.is-hit {
+	transform: none;
+	box-shadow: 1px 0 0 rgba(0, 0, 0, 0.18), inset 0 -2px 0 rgba(0, 0, 0, 0.15);
+}
+
+.bs.is-gathered .bk.is-hit:hover {
+	transform: translateY(-7px);
+	box-shadow: 1px 0 0 rgba(0, 0, 0, 0.18), 0 10px 18px rgba(0, 0, 0, 0.28);
+}
+
+/* Selection (Rearrange mode) */
+.bk.is-selected {
+	--bk-mark: linear-gradient(rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.3));
+	outline: 3px solid var(--accent);
+	outline-offset: 1px;
+	transform: translateY(-5px);
+	z-index: 2;
+	animation: none;
+}
+
+.bk.is-selected.bk-free {
+	--bk-mark: linear-gradient(rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.3)),
+		radial-gradient(circle at 50% calc(100% - 3px), rgba(255, 255, 255, 0.95) 1.4px, transparent 2.2px);
+}
+
+.bk-ghost {
+	overflow: visible;
+}
+
+.bk-ghost-badge {
+	position: absolute;
+	top: -10px;
+	right: -12px;
+	min-width: 22px;
+	height: 22px;
+	padding: 0 6px;
+	border-radius: 999px;
+	background: var(--accent);
+	color: #fff;
+	font-family: var(--font-mono);
+	font-size: .72rem;
+	font-weight: 600;
+	line-height: 22px;
+	text-align: center;
+	box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.bs.is-rearranging .bs-row:empty {
+	position: relative;
+}
+
+.bs.is-rearranging .bs-row:empty::before {
+	content: 'Drop books here';
+	position: absolute;
+	inset: 0 0 var(--board) 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: .8rem;
+	color: var(--text-2);
+	pointer-events: none;
+}
+
+.bs-unit[data-unit="My"] .bs-unit-head {
+	border-bottom-color: var(--accent);
+}
+
+/* Floating selection bar */
+.bs-selbar {
+	position: fixed;
+	left: 50%;
+	bottom: 18px;
+	transform: translateX(-50%);
+	z-index: 1150;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 8px 10px 8px 16px;
+	border: 1px solid var(--border);
+	border-radius: 999px;
+	background: var(--surface);
+	color: var(--text);
+	box-shadow: var(--shadow-hover);
+	animation: bs-selbar-in var(--dur) var(--ease-out) both;
+	max-width: calc(100vw - 32px);
+	flex-wrap: wrap;
+	justify-content: center;
+}
+
+.bs-selbar[hidden] {
+	display: none;
+}
+
+@keyframes bs-selbar-in {
+	from { opacity: 0; transform: translate(-50%, 12px); }
+	to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+.bs-selbar-n {
+	font-weight: 600;
+	color: var(--heading);
+	font-size: .9rem;
+	white-space: nowrap;
+}
+
+.bs-select {
+	appearance: none;
+	font: inherit;
+	font-size: .8rem;
+	font-weight: 500;
+	color: var(--heading);
+	background: var(--bg);
+	border: 1px solid var(--border);
+	border-radius: 999px;
+	padding: 7px 28px 7px 12px;
+	cursor: pointer;
+	max-width: 220px;
+	background-image: linear-gradient(45deg, transparent 50%, var(--text-2) 50%), linear-gradient(135deg, var(--text-2) 50%, transparent 50%);
+	background-position: calc(100% - 15px) 55%, calc(100% - 10px) 55%;
+	background-size: 5px 5px, 5px 5px;
+	background-repeat: no-repeat;
+}
+
+.bs-select:hover {
+	border-color: var(--border-strong);
+}
+
+.bs-select:focus-visible {
+	outline: none;
+	box-shadow: 0 0 0 3px var(--accent-ring);
+}
+
+/* Popover menu (shelf actions, Tidy) */
+.bs-menu {
+	position: fixed;
+	z-index: 1250;
+	min-width: 230px;
+	padding: 6px;
+	border: 1px solid var(--border);
+	border-radius: 12px;
+	background: var(--surface);
+	color: var(--text);
+	box-shadow: var(--shadow-hover);
+	animation: bs-drop var(--dur-fast) var(--ease-out) both;
+}
+
+.bs-menu-head {
+	padding: 6px 10px 4px;
+	font-size: .66rem;
+	font-weight: 600;
+	letter-spacing: .06em;
+	text-transform: uppercase;
+	color: var(--text-2);
+}
+
+.bs-menu-sep {
+	height: 1px;
+	background: var(--border);
+	margin: 5px 4px;
+}
+
+.bs-menu-item {
+	appearance: none;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	width: 100%;
+	border: 0;
+	background: transparent;
+	color: var(--heading);
+	font: inherit;
+	font-size: .84rem;
+	text-align: left;
+	padding: 7px 10px;
+	border-radius: 8px;
+	cursor: pointer;
+}
+
+.bs-menu-item i {
+	width: 16px;
+	text-align: center;
+	color: var(--text-2);
+	font-size: .8rem;
+}
+
+.bs-menu-item:hover,
+.bs-menu-item:focus-visible {
+	background: var(--accent-soft);
+	outline: none;
+}
+
+.bs-menu-item.is-danger {
+	color: #d03b3b;
+}
+
+.bs-menu-item.is-danger i {
+	color: #d03b3b;
+}
+
+.bs-shelf-menu {
+	appearance: none;
+	border: 1px solid transparent;
+	background: transparent;
+	color: var(--text-2);
+	width: 24px;
+	height: 22px;
+	border-radius: 999px;
+	cursor: pointer;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	opacity: .35;
+	transition: opacity var(--dur-fast) ease, background-color var(--dur-fast) ease, border-color var(--dur-fast) ease;
+}
+
+.bs-shelf-tag:hover .bs-shelf-menu,
+.bs-shelf-menu:focus-visible,
+.bs.is-rearranging .bs-shelf-menu {
+	opacity: 1;
+}
+
+.bs-shelf-menu:hover {
+	background: var(--surface);
+	border-color: var(--border);
+	color: var(--heading);
+}
+
+.bs-shelf-menu:focus-visible {
+	outline: none;
+	box-shadow: 0 0 0 3px var(--accent-ring);
+}
+
+@media (max-width: 767.98px) {
+	.bs-bar {
+		top: 0;
+	}
+}
