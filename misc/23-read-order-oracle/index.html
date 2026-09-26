@@ -2,814 +2,384 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Read-Order Oracle</title>
+<meta name="description" content="A transit map of one library: twelve lines of books, interchanges where descriptions overlap, and a journey planner for what to read next.">
 <link rel="icon" href="data:,">
 <style>
+  /* ---------- tokens: one type scale (22/15/13/11), an 8px grid, three radii ---------- */
   :root {
-    --bg: #15171d;
-    --panel: #1e2129;
-    --panel-2: #272b35;
+    color-scheme: dark;
+    --bg: #14161c;
+    --panel: #1c1f27;
+    --panel-2: #262a34;
+    --panel-3: #303542;
     --line: #363b48;
-    --ink: #f3efe6;
-    --ink-2: #aab0bd;
-    --ink-3: #6f7685;
+    --line-2: #464c5b;
+    --ink: #f2eee6;
+    --ink-2: #b1b6c2;
+    --ink-3: #7d8391;
     --accent: #f2c14e;
-    --good: #5fd08a;
-    --bad: #e8635a;
+    --accent-ink: #1a1400;
+    --focus: #8ab4ff;
+    --danger: #e8635a;
+    --map-bg: #171a21;
     --station: #f7f2e8;
-    --station-ring: #15171d;
+    --station-ring: #14161c;
+    --shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
     --sans: -apple-system, "Segoe UI", Helvetica, Arial, "Hiragino Sans", "Yu Gothic", "IPAGothic", "Noto Sans CJK JP", sans-serif;
+    --r1: 6px; --r2: 10px; --r3: 14px;
+    --panel-w: 372px;
   }
-  html, body { margin: 0; background: var(--bg); color: var(--ink); }
-  body { font: 15px/1.45 var(--sans); padding: 14px 16px 24px; }
-  h1 { font-size: 22px; margin: 0; font-weight: 700; letter-spacing: 0.01em; }
-  header { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
-  header .sub { color: var(--ink-2); font-size: 14px; }
-  header .spacer { flex: 1; }
-  button {
-    font: inherit; color: var(--ink); background: var(--panel-2); border: 1px solid var(--line);
-    border-radius: 7px; padding: 6px 12px; cursor: pointer;
+  :root[data-theme="light"] {
+    color-scheme: light;
+    --bg: #f1eee8;
+    --panel: #ffffff;
+    --panel-2: #f3f0ea;
+    --panel-3: #e8e4dc;
+    --line: #dcd7cd;
+    --line-2: #c9c3b7;
+    --ink: #1c1a17;
+    --ink-2: #565249;
+    --ink-3: #85806f;
+    --accent: #a4740a;
+    --accent-ink: #ffffff;
+    --focus: #2a5dbf;
+    --danger: #b8322b;
+    --map-bg: #f7f5f0;
+    --station: #ffffff;
+    --station-ring: #1c1a17;
+    --shadow: 0 12px 32px rgba(40, 30, 10, 0.18);
   }
-  button:hover { background: #313644; }
-  button:active { transform: translateY(1px); }
-  button.small { font-size: 13px; padding: 4px 10px; }
-  button:disabled { opacity: 0.5; cursor: default; }
-  input[type=search], input[type=text] {
-    font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line);
-    border-radius: 7px; padding: 6px 10px; width: 100%; box-sizing: border-box;
-  }
-  input:focus { outline: 2px solid rgba(242, 193, 78, 0.45); outline-offset: 1px; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); }
+  body { font: 15px/1.45 var(--sans); overflow: hidden; -webkit-text-size-adjust: 100%; }
+  h1, h2, h3, p, ul { margin: 0; }
+  button, input { font: inherit; color: inherit; }
   a { color: var(--accent); }
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
-  /* Status bar: progress while thinking, tour statistics afterwards. */
-  #bar { display: flex; gap: 12px 18px; align-items: center; flex-wrap: wrap; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; margin-bottom: 12px; font-size: 14px; }
-  #bar .stat { color: var(--ink-2); }
-  #bar .stat b { color: var(--ink); font-variant-numeric: tabular-nums; font-weight: 600; }
-  #bar .stat i { font-style: normal; color: var(--ink); }
-  #progress { flex: 1 1 160px; height: 6px; background: var(--panel-2); border-radius: 3px; overflow: hidden; min-width: 120px; }
-  #progress div { height: 100%; width: 0; background: var(--accent); transition: width 0.15s; }
-  #note { color: var(--accent); font-size: 13px; width: 100%; display: none; }
-  #note.show { display: block; }
+  /* ---------- shell ---------- */
+  #app { display: grid; grid-template-rows: auto 1fr; height: 100%; }
+  header { display: flex; align-items: center; gap: 16px; padding: 10px 16px; border-bottom: 1px solid var(--line); background: var(--panel); min-height: 56px; }
+  header h1 { font-size: 22px; font-weight: 700; letter-spacing: 0.01em; white-space: nowrap; }
+  header .sub { color: var(--ink-2); font-size: 13px; flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  header .actions { display: flex; gap: 8px; flex: 0 0 auto; }
+  #main { display: grid; grid-template-columns: 1fr var(--panel-w); min-height: 0; }
 
-  #layout { display: flex; gap: 14px; align-items: stretch; }
-  #mapwrap { position: relative; flex: 1 1 auto; min-width: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; height: calc(100vh - 150px); min-height: 420px; }
+  /* buttons */
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 36px; padding: 6px 12px; border: 1px solid var(--line-2); border-radius: var(--r1); background: var(--panel-2); color: var(--ink); cursor: pointer; font-size: 13px; font-weight: 600; line-height: 1.2; transition: background .15s, border-color .15s, transform .05s; white-space: nowrap; }
+  .btn:hover { background: var(--panel-3); border-color: var(--ink-3); }
+  .btn:active { transform: translateY(1px); }
+  .btn:disabled { opacity: .45; cursor: default; transform: none; }
+  .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+  .btn.primary:hover { filter: brightness(1.08); }
+  .btn.ghost { background: transparent; border-color: transparent; color: var(--ink-2); }
+  .btn.ghost:hover { background: var(--panel-2); color: var(--ink); }
+  .btn.icon { width: 40px; height: 40px; min-height: 40px; padding: 0; font-size: 18px; font-weight: 500; }
+  .btn.small { min-height: 30px; padding: 4px 10px; font-size: 12px; }
+  .btn.danger { color: var(--danger); }
+
+  /* ---------- map ---------- */
+  #mapwrap { position: relative; background: var(--map-bg); min-width: 0; overflow: hidden; }
   #map { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none; }
   #map.dragging { cursor: grabbing; }
-  #map text { font-family: var(--sans); font-weight: 600; pointer-events: none; }
-  #map .st { cursor: pointer; }
-  #zoombox { position: absolute; right: 10px; top: 10px; display: grid; gap: 4px; }
-  #zoombox button { width: 34px; height: 34px; padding: 0; font-size: 18px; line-height: 1; }
-  #hint { position: absolute; left: 10px; bottom: 8px; color: var(--ink-3); font-size: 12px; pointer-events: none; }
-  #tip {
-    position: absolute; display: none; max-width: 280px; background: rgba(20, 22, 28, 0.95); border: 1px solid var(--line);
-    border-radius: 8px; padding: 8px 10px; font-size: 13px; pointer-events: none; z-index: 5; box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-  }
-  #tip b { display: block; font-size: 14px; }
-  #tip .g { color: var(--ink-2); }
-  #tip .k { color: var(--accent); }
-  #tip .sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; vertical-align: -1px; margin-right: 5px; }
+  #map.hover { cursor: pointer; }
+  #zoombox { position: absolute; right: 12px; top: 12px; display: grid; gap: 6px; }
+  #zoombox .btn { box-shadow: var(--shadow); }
+  #minimap { position: absolute; left: 12px; bottom: 12px; width: 168px; height: 132px; border: 1px solid var(--line-2); border-radius: var(--r1); background: var(--panel); opacity: .92; cursor: pointer; box-shadow: var(--shadow); }
+  #maptip { position: absolute; display: none; max-width: 260px; padding: 8px 10px; border: 1px solid var(--line-2); border-radius: var(--r1); background: var(--panel); font-size: 13px; pointer-events: none; z-index: 4; box-shadow: var(--shadow); }
+  #maptip b { display: block; font-size: 14px; line-height: 1.3; }
+  #maptip .m { color: var(--ink-2); font-size: 12px; }
+  #loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 12px; background: var(--map-bg); z-index: 5; transition: opacity .3s; }
+  #loading.hide { opacity: 0; pointer-events: none; }
+  #loading .bar { width: 220px; height: 6px; border-radius: 3px; background: var(--panel-2); overflow: hidden; }
+  #loading .bar i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .2s; }
+  #loading p { color: var(--ink-2); font-size: 13px; }
+  #onboard { position: absolute; left: 50%; bottom: 20px; transform: translateX(-50%); width: 460px; max-width: calc(100% - 32px); padding: 10px 14px; border: 1px solid var(--line-2); border-radius: var(--r2); background: var(--panel); box-shadow: var(--shadow); display: none; align-items: center; gap: 12px; font-size: 13px; z-index: 4; }
+  #onboard.show { display: flex; }
+  #onboard p { flex: 1; }
+  #mapnote { position: absolute; left: 12px; top: 12px; max-width: 60%; padding: 6px 10px; border-radius: var(--r1); background: var(--panel); border: 1px solid var(--line-2); color: var(--ink-2); font-size: 12px; display: none; }
+  #mapnote.show { display: block; }
+  #tourbadge { position: absolute; right: 64px; top: 12px; max-width: 40%; display: none; padding: 6px 10px; border-radius: var(--r1); background: var(--panel); border: 1px solid var(--line-2); font-size: 12px; color: var(--ink-2); }
+  #tourbadge.show { display: block; }
 
-  #side { flex: 0 0 320px; width: 320px; display: grid; gap: 10px; align-content: start; overflow-y: auto; max-height: calc(100vh - 150px); }
-  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
-  .card h2 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-2); margin: 0 0 6px; font-weight: 600; }
-  .card h3 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-3); margin: 10px 0 4px; font-weight: 600; }
-  .card p { margin: 6px 0; font-size: 14px; }
+  /* ---------- panel ---------- */
+  #panel { display: flex; flex-direction: column; min-height: 0; border-left: 1px solid var(--line); background: var(--panel); }
+  #handle { display: none; }
+  #tabs { display: flex; border-bottom: 1px solid var(--line); padding: 0 8px; }
+  #tabs button { flex: 1; min-height: 44px; padding: 8px 2px; border: 0; border-bottom: 2px solid transparent; background: none; color: var(--ink-2); font-size: 12px; font-weight: 600; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  #tabs button svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  #tabs button:hover { color: var(--ink); }
+  #tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+  #tabs button .n { position: absolute; margin-left: 32px; margin-top: -2px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--accent); color: var(--accent-ink); font-size: 10px; line-height: 16px; }
+  #views { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+  .view { display: none; padding: 16px; }
+  .view.show { display: block; }
+  .section { margin-bottom: 20px; }
+  .section h2 { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-3); margin-bottom: 8px; }
   .muted { color: var(--ink-2); }
-  .faint { color: var(--ink-3); }
-
-  /* Typeahead */
-  .ta { position: relative; }
-  .ta ul { position: absolute; left: 0; right: 0; top: 100%; z-index: 6; margin: 2px 0 0; padding: 4px 0; list-style: none; background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; max-height: 260px; overflow-y: auto; display: none; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-  .ta ul.show { display: block; }
-  .ta li { padding: 5px 10px; font-size: 13px; cursor: pointer; display: flex; gap: 8px; align-items: baseline; }
-  .ta li .sw { flex: 0 0 8px; width: 8px; height: 8px; border-radius: 2px; align-self: center; }
-  .ta li span.t { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .ta li span.a { color: var(--ink-2); font-size: 12px; white-space: nowrap; max-width: 40%; overflow: hidden; text-overflow: ellipsis; }
-  .ta li:hover, .ta li.hi { background: #343948; }
-
-  /* Lists of books (read next, journey) */
-  .stops { margin: 0; padding: 0; list-style: none; }
-  .stops li { display: flex; gap: 8px; padding: 5px 0; border-bottom: 1px dotted var(--line); font-size: 13px; cursor: pointer; align-items: flex-start; }
-  .stops li:hover .t { text-decoration: underline; }
-  .stops .dot { flex: 0 0 12px; width: 12px; height: 12px; border-radius: 50%; margin-top: 3px; box-sizing: border-box; border: 3px solid #999; background: var(--station); }
-  .stops .body { flex: 1; min-width: 0; }
-  .stops .t { font-weight: 600; }
-  .stops .a { color: var(--ink-2); }
-  .stops .k { color: var(--accent); font-size: 12px; }
-  .stops .s { color: var(--ink-3); font-size: 12px; font-variant-numeric: tabular-nums; }
-  #selbook { margin: 6px 0 2px; }
-  #selbook .t { font-weight: 700; font-size: 15px; }
-  #selbook .pos { color: var(--ink-3); font-size: 12px; }
+  .faint { color: var(--ink-3); font-size: 13px; }
+  .empty { padding: 20px 12px; border: 1px dashed var(--line-2); border-radius: var(--r2); color: var(--ink-2); font-size: 13px; text-align: center; }
   .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-  .row > * { flex: 1 1 auto; }
-  .row > button { flex: 0 0 auto; }
+  .row.tight { gap: 6px; }
+  .grow { flex: 1 1 auto; min-width: 0; }
 
-  /* Legend */
-  #legend { margin: 0; padding: 0; list-style: none; columns: 1; }
-  #legend li { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 3px 0; cursor: pointer; }
-  #legend li .sw { width: 26px; height: 8px; border-radius: 4px; flex: 0 0 26px; }
-  #legend li .sw.dash { background-image: repeating-linear-gradient(90deg, transparent 0 4px, rgba(21,23,29,0.9) 4px 7px); }
-  #legend li .n { color: var(--ink-3); margin-left: auto; font-variant-numeric: tabular-nums; }
-  #legend li.off { opacity: 0.35; }
+  /* inputs + typeahead */
+  .field { position: relative; }
+  .field input { width: 100%; min-height: 40px; padding: 8px 36px 8px 12px; border: 1px solid var(--line-2); border-radius: var(--r1); background: var(--bg); color: var(--ink); }
+  .field input::placeholder { color: var(--ink-3); }
+  .field input:focus { border-color: var(--focus); outline: none; box-shadow: 0 0 0 3px rgba(138, 180, 255, .18); }
+  .field .clear { position: absolute; right: 4px; top: 4px; width: 32px; height: 32px; min-height: 32px; border: 0; background: none; color: var(--ink-3); font-size: 18px; border-radius: var(--r1); display: none; }
+  .field .clear:hover { color: var(--ink); background: var(--panel-2); }
+  .field.has .clear { display: inline-flex; }
+  .field .pin { position: absolute; left: 12px; top: 13px; width: 12px; height: 12px; border-radius: 50%; border: 3px solid var(--ink-3); background: var(--station); }
+  .field.withpin input { padding-left: 34px; }
+  .ta { position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 8; margin: 0; padding: 4px; list-style: none; background: var(--panel); border: 1px solid var(--line-2); border-radius: var(--r2); max-height: 300px; overflow-y: auto; display: none; box-shadow: var(--shadow); }
+  .ta.show { display: block; }
+  .ta li { display: flex; align-items: center; gap: 10px; padding: 7px 8px; border-radius: var(--r1); cursor: pointer; font-size: 13px; }
+  .ta li.h { color: var(--ink-3); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; cursor: default; padding-top: 8px; }
+  .ta li.hi, .ta li:not(.h):hover { background: var(--panel-2); }
+  .ta li .t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ta li .a { color: var(--ink-3); font-size: 12px; white-space: nowrap; max-width: 38%; overflow: hidden; text-overflow: ellipsis; }
 
-  /* Help overlay */
-  .overlay { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(10, 12, 16, 0.78); padding: 18px; z-index: 20; }
+  /* line chips + swatches */
+  .chip { display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px 2px 4px; border-radius: 999px; background: var(--panel-2); font-size: 12px; font-weight: 600; white-space: nowrap; }
+  .chip .code { display: inline-block; min-width: 34px; padding: 1px 6px; border-radius: 999px; color: #fff; text-align: center; font-size: 11px; letter-spacing: .04em; }
+  .sw { display: inline-block; width: 14px; height: 14px; border-radius: 4px; flex: 0 0 14px; }
+
+  /* station sheet */
+  #st-title { font-size: 20px; font-weight: 700; line-height: 1.25; margin-bottom: 4px; overflow-wrap: anywhere; }
+  #st-meta { color: var(--ink-2); font-size: 13px; margin-bottom: 10px; }
+  #st-desc { font-size: 14px; color: var(--ink); margin: 10px 0 14px; }
+  .actions3 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 20px; }
+  .actions3 .wide { grid-column: 1 / -1; }
+  .stops { list-style: none; margin: 0; padding: 0; }
+  .stops li { display: flex; align-items: flex-start; gap: 10px; padding: 7px 4px; border-radius: var(--r1); cursor: pointer; font-size: 13px; }
+  .stops li:hover, .stops li:focus-visible { background: var(--panel-2); }
+  .stops li .dot { flex: 0 0 12px; width: 12px; height: 12px; margin-top: 4px; border-radius: 50%; border: 3px solid var(--ink-3); background: var(--station); }
+  .stops li .dot.ring { width: 14px; height: 14px; margin-top: 3px; border-width: 3px; border-color: var(--station-ring); }
+  .stops li .body { flex: 1; min-width: 0; }
+  .stops li .t { font-weight: 600; overflow-wrap: anywhere; }
+  .stops li .a { color: var(--ink-2); }
+  .stops li .k { color: var(--accent); font-size: 12px; }
+  .stops li .s { color: var(--ink-3); font-size: 12px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .stops li.here { background: var(--panel-2); cursor: default; }
+  .stops li .badge { font-size: 11px; color: var(--ink-3); }
+
+  /* journey */
+  .leg { position: relative; padding: 10px 12px 10px 28px; margin-bottom: 8px; border-radius: var(--r2); background: var(--panel-2); }
+  .leg::before { content: ""; position: absolute; left: 12px; top: 14px; bottom: 14px; width: 6px; border-radius: 3px; background: var(--leg); }
+  .leg h3 { font-size: 14px; font-weight: 700; }
+  .leg .sum { color: var(--ink-2); font-size: 13px; margin: 2px 0 6px; }
+  .leg details summary { cursor: pointer; font-size: 12px; color: var(--ink-2); list-style: none; display: inline-flex; align-items: center; gap: 4px; }
+  .leg details summary::-webkit-details-marker { display: none; }
+  .leg details summary::before { content: "▸"; font-size: 11px; transition: transform .15s; }
+  .leg details[open] summary::before { transform: rotate(90deg); }
+  .leg .stops li { padding: 4px 2px; }
+  .change { display: flex; align-items: center; gap: 8px; padding: 2px 0 10px 4px; color: var(--ink-2); font-size: 12px; }
+  .change::before { content: ""; width: 14px; height: 14px; border-radius: 50%; border: 3px solid var(--station-ring); background: var(--station); box-sizing: border-box; }
+  .change.walk::before { border-style: dashed; }
+  #jsummary { display: flex; gap: 16px; margin: 4px 0 12px; font-size: 13px; color: var(--ink-2); }
+  #jsummary b { color: var(--ink); font-size: 18px; font-weight: 700; margin-right: 4px; }
+
+  /* lines list */
+  .lines { list-style: none; margin: 0; padding: 0; }
+  .lines li { display: flex; align-items: center; gap: 10px; padding: 8px 6px; border-radius: var(--r1); cursor: pointer; font-size: 14px; }
+  .lines li:hover, .lines li:focus-visible { background: var(--panel-2); }
+  .lines li.sel { background: var(--panel-2); box-shadow: inset 3px 0 0 var(--lc); }
+  .lines li .bar { width: 28px; height: 8px; border-radius: 4px; flex: 0 0 28px; }
+  .lines li .name { flex: 1; }
+  .lines li .code { color: var(--ink-3); font-size: 12px; letter-spacing: .04em; }
+  .lines li .n { color: var(--ink-3); font-size: 13px; font-variant-numeric: tabular-nums; }
+  #line-detail { display: none; margin-top: 12px; }
+  #line-detail.show { display: block; }
+  #line-genres { font-size: 13px; color: var(--ink-2); margin-bottom: 8px; }
+
+  /* reading list */
+  .rl { list-style: none; margin: 0; padding: 0; counter-reset: rl; }
+  .rl li { display: flex; align-items: center; gap: 8px; padding: 6px 4px; border-bottom: 1px solid var(--line); font-size: 13px; }
+  .rl li::before { counter-increment: rl; content: counter(rl); color: var(--ink-3); width: 20px; text-align: right; font-variant-numeric: tabular-nums; }
+  .rl li .body { flex: 1; min-width: 0; cursor: pointer; }
+  .rl li .t { font-weight: 600; overflow-wrap: anywhere; }
+  .rl li .a { color: var(--ink-2); font-size: 12px; }
+  .rl li .ctl { display: flex; gap: 2px; }
+  .rl li .ctl button { width: 32px; height: 32px; min-height: 32px; padding: 0; border: 0; background: none; color: var(--ink-3); border-radius: var(--r1); font-size: 14px; }
+  .rl li .ctl button:hover { background: var(--panel-2); color: var(--ink); }
+  .rl li .ctl button:disabled { opacity: .3; }
+
+  /* overlay (help) */
+  .overlay { position: fixed; inset: 0; z-index: 20; display: none; align-items: center; justify-content: center; padding: 16px; background: rgba(8, 10, 14, .7); }
   .overlay.show { display: flex; }
-  .overlay .box { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; max-width: 520px; max-height: 90vh; overflow-y: auto; }
-  .overlay h2 { margin: 0 0 8px; font-size: 20px; }
-  .overlay p { font-size: 14px; margin: 8px 0; }
-  .overlay kbd { font-family: inherit; background: var(--panel-2); border: 1px solid var(--line); border-radius: 4px; padding: 0 6px; }
+  .overlay .box { width: 100%; max-width: 560px; max-height: 88vh; overflow-y: auto; padding: 20px; border: 1px solid var(--line-2); border-radius: var(--r3); background: var(--panel); box-shadow: var(--shadow); }
+  .overlay h2 { font-size: 20px; margin-bottom: 10px; }
+  .overlay h3 { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-3); margin: 16px 0 6px; }
+  .overlay p { font-size: 14px; margin: 6px 0; }
+  kbd { font-family: inherit; font-size: 12px; padding: 0 6px; border: 1px solid var(--line-2); border-bottom-width: 2px; border-radius: 4px; background: var(--panel-2); }
 
-  @media (max-width: 860px) {
-    #layout { flex-direction: column; }
-    #mapwrap { height: 62vh; min-height: 360px; }
-    #side { flex: none; width: auto; max-height: none; overflow: visible; }
+  /* ---------- phone: the panel becomes a bottom sheet ---------- */
+  @media (max-width: 760px) {
+    #tour-row { display: flex; }
+    header { padding: 8px 16px; gap: 10px; }
+    header .sub { display: none; }
+    header .actions .btn:not(.icon) { display: none; }
+    #main { grid-template-columns: 1fr; grid-template-rows: 1fr; position: relative; }
+    #mapwrap { height: 100%; }
+    #minimap { display: none; }
+    #zoombox { right: 8px; top: 8px; }
+    #panel { position: absolute; left: 0; right: 0; bottom: 0; height: 88%; border-left: 0; border-top: 1px solid var(--line-2); border-radius: var(--r3) var(--r3) 0 0; box-shadow: var(--shadow); transform: translateY(calc(100% - 132px)); transition: transform .3s cubic-bezier(.2,.8,.2,1); touch-action: none; }
+    #panel.dragging { transition: none; }
+    #panel[data-snap="half"] { transform: translateY(50%); }
+    #panel[data-snap="full"] { transform: translateY(0); }
+    #handle { display: block; padding: 8px 0 2px; cursor: grab; }
+    #handle i { display: block; width: 44px; height: 5px; margin: 0 auto; border-radius: 3px; background: var(--line-2); }
+    #views { touch-action: pan-y; }
+    #tabs button { font-size: 11px; }
+    #onboard { top: 8px; bottom: auto; }
   }
 </style>
 </head>
 <body>
-<header>
-  <h1>Read-Order Oracle</h1>
-  <span class="sub">One route through every book on the shelves, each stop close to the last.</span>
-  <span class="spacer"></span>
-  <button class="small" id="btn-copy" disabled>Copy reading list</button>
-  <button class="small" id="btn-svg" disabled>Download SVG</button>
-  <button class="small" id="btn-help">Help</button>
-</header>
-
-<div id="bar">
-  <span class="stat" id="status">Loading the catalogue&hellip;</span>
-  <div id="progress"><div></div></div>
-  <span class="stat" id="stat-coh"></span>
-  <span class="stat" id="stat-worst"></span>
-  <span id="note"></span>
-</div>
-
-<div id="layout">
-  <div id="mapwrap">
-    <svg id="map" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Subway map of the reading route">
-      <g id="view">
-        <g id="lines"></g>
-        <g id="route"></g>
-        <g id="stations"></g>
-        <g id="labels"></g>
-        <g id="marks"></g>
-      </g>
-    </svg>
-    <div id="zoombox">
-      <button id="z-in" title="Zoom in">+</button>
-      <button id="z-out" title="Zoom out">&minus;</button>
-      <button id="z-fit" title="Fit the whole map" style="font-size:12px">fit</button>
-      <button id="z-start" title="Go to the first stop" style="font-size:12px">start</button>
+<div id="app">
+  <header>
+    <h1>Read-Order Oracle</h1>
+    <span class="sub">A transit map of the library: twelve lines of books, interchanges where they overlap, and a planner for what to read next.</span>
+    <div class="actions">
+      <button class="btn" id="btn-tour" aria-pressed="false" title="Overlay one route through every book">Grand Tour</button>
+      <button class="btn" id="btn-poster" title="Download the map as a poster">Poster</button>
+      <button class="btn icon" id="btn-theme" aria-label="Switch between dark and light" title="Dark / light">◐</button>
+      <button class="btn icon" id="btn-help" aria-label="About this map" title="About">?</button>
     </div>
-    <div id="hint">drag to pan, wheel or pinch to zoom, click a station</div>
-    <div id="tip"></div>
-  </div>
+  </header>
 
-  <aside id="side">
-    <div class="card">
-      <h2>Start of the route</h2>
-      <div class="ta"><input type="search" id="start-q" placeholder="Start from a book you choose&hellip;" autocomplete="off" disabled><ul id="start-list"></ul></div>
-      <p class="muted" id="start-now" style="font-size:13px"></p>
-      <div class="row"><button class="small" id="btn-today">Today's start</button><span class="faint" style="font-size:12px">The default start is drawn from today's date.</span></div>
-    </div>
-
-    <div class="card">
-      <h2>Oracle</h2>
-      <div class="ta"><input type="search" id="book-q" placeholder="A book you own&hellip;" autocomplete="off" disabled><ul id="book-list"></ul></div>
-      <div id="selbook" class="muted" style="font-size:13px">Pick a book to see what to read next.</div>
-      <div id="next"></div>
-      <div id="journey-ui" style="display:none">
-        <h3>The journey</h3>
-        <div class="ta"><input type="search" id="to-q" placeholder="&hellip;to another book" autocomplete="off"><ul id="to-list"></ul></div>
-        <div id="journey"></div>
+  <div id="main">
+    <div id="mapwrap">
+      <canvas id="map" role="img" aria-label="Transit map of the library. Use the search panel to find books; arrow keys pan and plus and minus zoom."></canvas>
+      <div id="zoombox">
+        <button class="btn icon" id="z-in" aria-label="Zoom in">+</button>
+        <button class="btn icon" id="z-out" aria-label="Zoom out">−</button>
+        <button class="btn icon" id="z-fit" aria-label="Fit the whole map" title="Fit">⤢</button>
       </div>
+      <canvas id="minimap" width="336" height="264" aria-label="Minimap: click to move the view"></canvas>
+      <div id="maptip" role="tooltip"></div>
+      <div id="mapnote" role="status"></div>
+      <div id="tourbadge">Grand Tour: one dotted route through every book</div>
+      <div id="onboard" role="dialog" aria-label="How to start">
+        <p><b>Tap a station</b> to read about a book, or <b>search</b> for one and plan a journey between two books.</p>
+        <button class="btn small" id="onboard-ok">Got it</button>
+      </div>
+      <div id="loading"><div class="bar"><i></i></div><p id="loading-text">Loading the catalogue…</p></div>
     </div>
 
-    <div class="card">
-      <h2>Lines</h2>
-      <ul id="legend"></ul>
-      <p class="faint" style="font-size:12px;margin-top:8px">Each line is a stretch of the route within one genre; a ringed station is where the genre changes. Click a line to spotlight it.</p>
-    </div>
-  </aside>
+    <aside id="panel" aria-label="Panel">
+      <div id="handle" aria-hidden="true"><i></i></div>
+      <div id="tabs" role="tablist">
+        <button role="tab" id="tab-search" aria-controls="v-search" aria-selected="true"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>Search</button>
+        <button role="tab" id="tab-station" aria-controls="v-station" aria-selected="false"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><path d="M12 2v5M12 17v5"/></svg>Station</button>
+        <button role="tab" id="tab-journey" aria-controls="v-journey" aria-selected="false"><svg viewBox="0 0 24 24"><circle cx="5" cy="19" r="2"/><circle cx="19" cy="5" r="2"/><path d="M7 17l5-5 5-5M12 12h5"/></svg>Journey</button>
+        <button role="tab" id="tab-lines" aria-controls="v-lines" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M3 7h18M3 12h18M3 17h18"/></svg>Lines</button>
+        <button role="tab" id="tab-list" aria-controls="v-list" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4 6h1M4 12h1M4 18h1"/></svg>List<span class="n" id="list-count" hidden>0</span></button>
+      </div>
+      <div id="views">
+        <section class="view show" id="v-search" role="tabpanel" aria-labelledby="tab-search">
+          <div class="section">
+            <div class="field" id="f-search"><input type="search" id="q" placeholder="Search a book, author or line…" autocomplete="off" spellcheck="false" aria-label="Search books, authors and lines" disabled><button class="clear" aria-label="Clear search">×</button><ul class="ta" id="q-list" role="listbox"></ul></div>
+          </div>
+          <div class="section" id="s-random">
+            <h2>Start somewhere</h2>
+            <div class="row"><button class="btn" id="btn-random">A random station</button><button class="btn" id="btn-today">Today's station</button></div>
+            <p class="faint" style="margin-top:8px">Today's station is drawn from the date, so it is the same for everyone all day.</p>
+          </div>
+          <div class="section" id="s-inters">
+            <h2>Interchanges</h2>
+            <p class="faint" style="margin-bottom:8px">Where two lines meet at a pair of books whose descriptions overlap.</p>
+            <ul class="stops" id="inter-list"></ul>
+          </div>
+        </section>
+
+        <section class="view" id="v-station" role="tabpanel" aria-labelledby="tab-station">
+          <div id="st-empty" class="empty">No station selected yet. Tap one on the map or search for a book.</div>
+          <div id="st-body" hidden>
+            <div class="row tight" id="st-chips" style="margin-bottom:8px"></div>
+            <h2 id="st-title"></h2>
+            <div id="st-meta"></div>
+            <p id="st-desc"></p>
+            <div class="actions3">
+              <button class="btn" id="st-from">Plan from here</button>
+              <button class="btn" id="st-to">Plan to here</button>
+              <button class="btn primary wide" id="st-add">Add to reading list</button>
+            </div>
+            <div class="section"><h2 id="st-next-h">Along the line</h2><ul class="stops" id="st-next"></ul></div>
+            <div class="section"><h2>Similar on other lines</h2><ul class="stops" id="st-similar"></ul></div>
+          </div>
+        </section>
+
+        <section class="view" id="v-journey" role="tabpanel" aria-labelledby="tab-journey">
+          <div class="section">
+            <div class="row" style="margin-bottom:8px">
+              <div class="field withpin grow" id="f-from"><span class="pin" id="from-pin"></span><input type="search" id="from-q" placeholder="From a book…" autocomplete="off" spellcheck="false" aria-label="Journey from"><button class="clear" aria-label="Clear from">×</button><ul class="ta" id="from-list" role="listbox"></ul></div>
+            </div>
+            <div class="row">
+              <div class="field withpin grow" id="f-to"><span class="pin" id="to-pin"></span><input type="search" id="to-q" placeholder="…to another book" autocomplete="off" spellcheck="false" aria-label="Journey to"><button class="clear" aria-label="Clear to">×</button><ul class="ta" id="to-list" role="listbox"></ul></div>
+              <button class="btn icon" id="btn-swap" aria-label="Swap from and to" title="Swap">⇅</button>
+            </div>
+          </div>
+          <div id="j-empty" class="empty">Pick two books and the oracle finds the way along the lines, changing where books overlap.</div>
+          <div id="j-body" hidden>
+            <div id="jsummary"></div>
+            <div id="j-legs"></div>
+            <div class="row"><button class="btn primary" id="j-add">Add the journey to the list</button><button class="btn ghost" id="j-clear">Clear</button></div>
+          </div>
+        </section>
+
+        <section class="view" id="v-lines" role="tabpanel" aria-labelledby="tab-lines">
+          <div class="section">
+            <ul class="lines" id="lines-list"></ul>
+            <div class="row" id="tour-row" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)"><button class="btn" id="btn-tour2" aria-pressed="false">Grand Tour overlay</button><span class="faint grow">One dotted route through every book, each stop close to the last.</span></div>
+            <div id="line-detail">
+              <div class="row" style="justify-content:space-between;margin-bottom:6px"><h2 class="muted" id="line-title" style="font-size:14px"></h2><button class="btn small ghost" id="line-close">Show all lines</button></div>
+              <p id="line-genres"></p>
+              <ul class="stops" id="line-stops"></ul>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" id="v-list" role="tabpanel" aria-labelledby="tab-list">
+          <div id="rl-empty" class="empty">Your reading list is empty. Add a station, a journey leg, or a few stops along a line.</div>
+          <div id="rl-body" hidden>
+            <ul class="rl" id="rl-list"></ul>
+            <div class="row" style="margin-top:12px">
+              <button class="btn" id="rl-copy">Copy as text</button>
+              <button class="btn" id="rl-txt">Download .txt</button>
+              <button class="btn" id="rl-md">Download .md</button>
+              <button class="btn ghost danger" id="rl-clear">Clear</button>
+            </div>
+            <p class="faint" id="rl-note" style="margin-top:8px">Saved in this browser.</p>
+          </div>
+        </section>
+      </div>
+    </aside>
+  </div>
 </div>
 
-<div class="overlay" id="help">
+<div class="overlay" id="help" role="dialog" aria-modal="true" aria-labelledby="help-h">
   <div class="box">
-    <h2>What the oracle knows</h2>
-    <p>Two books are "close" when the words of their catalogue descriptions, titles and authors overlap, weighted so that rare words count for more than common ones (TF-IDF cosine), with a small nudge for sharing a genre and a language. It is not a reading of the books: two novels about the same thing in different words are strangers to it, and because the descriptions are a sentence or two long, a single shared surname or place name can carry a whole connection. The route is a greedy nearest-neighbour walk tidied by 2-opt, so it is a good path, not the best one, and it changes with the start you choose.</p>
-    <h3 style="font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-2)">Reading the map</h3>
-    <p>Stations are books in route order, spiralling out from the start. Colour is genre; the colour switches halfway between two stations and the ringed station begins the new line. Hover a station for the words that tie it to the previous stop; zoom in for titles.</p>
-    <p><kbd>Drag</kbd> pan &nbsp; <kbd>Wheel</kbd> / <kbd>pinch</kbd> zoom &nbsp; <kbd>Click</kbd> pick a book &nbsp; <kbd>Esc</kbd> close this</p>
-    <h3 style="font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-2)">Data</h3>
-    <p>The site's own library catalogue (<code>assets/data/library.json</code>: titles, authors, genres and short descriptions of the books on Jack's shelves). Nothing is fetched from anywhere else; everything is computed in your browser. If the catalogue cannot be loaded, a small set of invented books stands in.</p>
-    <p style="text-align:center"><button id="btn-help-close">Close</button></p>
+    <h2 id="help-h">About this map</h2>
+    <p>Every station is a book from the library catalogue. The twelve lines are its genres, grouped so each line is worth riding; along a line, consecutive stops are the books whose titles, authors and short descriptions overlap most (TF-IDF cosine, ordered by a greedy tour tidied with 2-opt). Where two lines cross, the pair of nearby books that share the most words becomes an interchange, and a dashed walking link joins a strongly related pair that ended up a street apart.</p>
+    <h3>Journeys</h3>
+    <p>The planner rides along lines (one stop costs one) and changes at interchanges (a change costs three stops, a walk four), so it prefers staying on a line over hopping about. It is a way of browsing, not a reading of the books: two novels about the same thing in different words are strangers to it.</p>
+    <h3>Map</h3>
+    <p>Lines are routed on a grid at 0°, 45° and 90°, London style: ticks are ordinary stations, white rings are interchanges. Zoom in for every title; zoomed out, the map keeps interchanges, termini and line names. The Grand Tour overlay is one dotted route through every book, each stop close to the last, drawn from today's date.</p>
+    <p><kbd>Drag</kbd> pan &nbsp; <kbd>Wheel</kbd> / <kbd>pinch</kbd> zoom &nbsp; <kbd>+</kbd> <kbd>−</kbd> zoom &nbsp; <kbd>←↑→↓</kbd> pan &nbsp; <kbd>F</kbd> fit &nbsp; <kbd>/</kbd> search &nbsp; <kbd>Esc</kbd> close</p>
+    <h3>Data</h3>
+    <p>The site's own catalogue (<code>assets/data/library.json</code>: titles, authors, genres and one-line descriptions of the books on Jack's shelves), computed entirely in your browser; nothing is sent anywhere. If the catalogue cannot be loaded, a small set of invented books stands in. The reading list is kept in this browser only.</p>
+    <p style="text-align:right;margin-top:14px"><button class="btn" id="help-close">Close</button></p>
   </div>
 </div>
 
 <script src="oracle.js"></script>
-<script>
-(function () {
-  'use strict';
-  var $ = function (id) { return document.getElementById(id); };
-  var SVG_NS = 'http://www.w3.org/2000/svg';
-  var K_NEIGHBOURS = 6, PITCH = 40;
-
-  /* ---------- Genre lines: fixed colour order by catalogue size ---------- */
-  var GENRE_ORDER = ['Literature (English & European)', 'Manga & comics', 'Writing, film & literary craft', 'History & biography',
-    'Japanese literature', 'Psychology, self-help & business', 'Art & visual culture', 'Light novels', 'Language study & reference',
-    'Religion & theology', 'Society, culture & ideas', 'Philosophy & political theory', 'Math, CS & engineering', 'Nursing & medical',
-    'Test prep & study guides', 'Science', 'Magazines & catalogues', 'Music & opera', 'Politics, law & current affairs',
-    'Games & other objects', 'Unidentified', 'Occult & folklore'];
-  var COLOURS = ['#3987e5', '#d95926', '#199e70', '#c98500', '#d55181', '#7fbf3a', '#9085e9', '#e66767', '#22b8cc', '#e8d048',
-    '#f2a0c0', '#b58cf5', '#37d6a6', '#f0906a', '#5fb0f0', '#a8d040', '#c02040', '#8a7a66', '#d7b98a', '#2f6fb0', '#a06a1c', '#66c2a0'];
-  var DASH_FROM = 16; // the smallest lines are dashed too, so colour is not the only cue
-
-  /* ---------- State ---------- */
-  var books = [], n = 0, vec = null, S = null, nn = null, byId = {};
-  var genres = [], genreIdx = [];     // genres in colour order; genreIdx[i] = index of book i's genre
-  var tourRes = null, path = null, posOf = null, pos = [];   // path[k] = book index; posOf[book] = k; pos[k] = [x, y]
-  var startIdx = -1, selIdx = -1, toIdx = -1, routeIdx = null;
-  var usingSample = false;
-  var view = { k: 1, tx: 0, ty: 0 };
-  var focusGenre = -1;
-
-  var svg = $('map'), gView = $('view'), gLines = $('lines'), gStations = $('stations'), gLabels = $('labels'), gMarks = $('marks'), gRoute = $('route');
-
-  /* ---------- Load data ---------- */
-  function setStatus(t) { $('status').textContent = t; }
-  function setProgress(f) { $('progress').firstElementChild.style.width = Math.round(f * 100) + '%'; }
-  function note(t) { var el = $('note'); el.textContent = t; el.classList.toggle('show', !!t); }
-
-  function loadCatalogue() {
-    return fetch('../../assets/data/library.json').then(function (r) {
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      return r.json();
-    }).then(function (j) {
-      if (!j || !j.books || !j.books.length) throw new Error('empty catalogue');
-      return j.books;
-    }).catch(function (err) {
-      usingSample = true;
-      return new Promise(function (resolve) {
-        var s = document.createElement('script');
-        s.src = 'sample.js';
-        s.onload = function () { resolve(window.ORACLE_SAMPLE.books); };
-        s.onerror = function () { resolve([]); };
-        document.head.appendChild(s);
-      }).then(function (b) {
-        note('The library catalogue could not be loaded (' + err.message + '), so this map is drawn from ' + b.length + ' invented books instead.');
-        return b;
-      });
-    });
-  }
-
-  function prepare(list) {
-    books = list.map(function (b) {
-      return { id: b.id, t: b.t || '(untitled)', a: b.a || '', l: b.l || '', g: b.g || 'Unidentified', y: b.y, d: b.d || '' };
-    });
-    n = books.length;
-    books.forEach(function (b, i) { byId[b.id] = i; });
-    // Genres present, in the fixed colour order; unknown genres go on the end.
-    var present = {};
-    books.forEach(function (b) { present[b.g] = (present[b.g] || 0) + 1; });
-    genres = GENRE_ORDER.filter(function (g) { return present[g]; });
-    Object.keys(present).forEach(function (g) { if (genres.indexOf(g) < 0) genres.push(g); });
-    var gmap = {};
-    genres.forEach(function (g, i) { gmap[g] = i; });
-    genreIdx = books.map(function (b) { return gmap[b.g]; });
-    vec = Oracle.vectorize(books);
-    buildLegend(present);
-  }
-
-  function colourOf(gi) { return COLOURS[gi % COLOURS.length]; }
-  function dashed(gi) { return gi >= DASH_FROM; }
-
-  /* ---------- Similarity matrix: in a worker when we can, inline otherwise ---------- */
-  function computeMatrix() {
-    setStatus('Comparing ' + n + ' descriptions…');
-    return new Promise(function (resolve) {
-      var worker = null, settled = false;
-      function inline() {
-        if (settled) return;
-        settled = true;
-        if (worker) worker.terminate();
-        setTimeout(function () {
-          resolve(Oracle.similarityMatrix(books, vec, function (d, t) { setProgress(d / t); }));
-        }, 20);
-      }
-      try {
-        worker = new Worker('oracle.js');
-        worker.onmessage = function (e) {
-          var m = e.data;
-          if (m.type === 'progress') setProgress(m.done / m.total);
-          else if (m.type === 'matrix' && !settled) { settled = true; worker.terminate(); resolve(m.S); }
-        };
-        worker.onerror = function () { inline(); };
-        worker.postMessage({ type: 'matrix', books: books });
-        setTimeout(function () { if (!settled) inline(); }, 15000); // a stuck worker should not hang the page
-      } catch (e) {
-        inline();
-      }
-    });
-  }
-
-  /* ---------- Layout: a square spiral with 45-degree corners ---------- */
-  function spiralPositions(count) {
-    var DIR = [[1, 0], [0, 1], [-1, 0], [0, -1]], DIAG = [[1, 1], [-1, 1], [-1, -1], [1, -1]];
-    var pts = [[0, 0]], x = 0, y = 0, k = 0;
-    while (pts.length < count) {
-      var d = k % 4, L = 1 + 2 * Math.floor((k + 1) / 2);
-      for (var i = 0; i < L && pts.length < count; i++) { x += DIR[d][0]; y += DIR[d][1]; pts.push([x, y]); }
-      if (pts.length < count) { x += DIAG[d][0]; y += DIAG[d][1]; pts.push([x, y]); }
-      k++;
-    }
-    return pts.map(function (p) { return [p[0] * PITCH, p[1] * PITCH]; });
-  }
-
-  /* ---------- Tour ---------- */
-  function todayStart() {
-    var d = new Date(), seed = d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
-    return Math.floor(Oracle.seeded(seed)() * n);
-  }
-
-  function runTour(start) {
-    startIdx = start;
-    tourRes = Oracle.tour(S, n, start, { maxPasses: 30, timeMs: 2500 });
-    path = tourRes.path;
-    posOf = new Int32Array(n);
-    for (var k = 0; k < n; k++) posOf[path[k]] = k;
-    pos = spiralPositions(n);
-    var b = books[start];
-    $('start-now').textContent = 'Now starting from ' + b.t + (b.a ? ' — ' + b.a : '') + '.';
-    $('stat-coh').innerHTML = 'coherence <b>' + tourRes.mean.toFixed(3) + '</b> <span class="faint">(mean similarity of ' + (n - 1) + ' hops)</span>';
-    var wa = tourRes.worstAt;
-    $('stat-worst').innerHTML = 'worst jump <b>' + tourRes.worst.toFixed(3) + '</b> <span class="faint">at stop ' + (wa + 1) + ': </span><i>' + esc(short(books[path[wa - 1]].t, 26)) + ' → ' + esc(short(books[path[wa]].t, 26)) + '</i>';
-    setStatus(n + ' stops, ' + countRuns() + ' lines.');
-    render();
-  }
-
-  function countRuns() {
-    var r = 1;
-    for (var k = 1; k < n; k++) if (genreIdx[path[k]] !== genreIdx[path[k - 1]]) r++;
-    return r;
-  }
-
-  /* ---------- Rendering ---------- */
-  function el(name, attrs, parent) {
-    var e = document.createElementNS(SVG_NS, name);
-    for (var a in attrs) e.setAttribute(a, attrs[a]);
-    if (parent) parent.appendChild(e);
-    return e;
-  }
-  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
-  function short(s, m) { s = String(s); return s.length > m ? s.slice(0, m - 1) + '…' : s; }
-  function mid(a, b) { return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]; }
-
-  function render() {
-    gLines.innerHTML = ''; gStations.innerHTML = ''; gLabels.innerHTML = ''; gMarks.innerHTML = ''; gRoute.innerHTML = '';
-    // Lines: one path per contiguous genre run, starting and ending halfway along the edges that change genre.
-    var k0 = 0;
-    for (var k = 1; k <= n; k++) {
-      if (k === n || genreIdx[path[k]] !== genreIdx[path[k0]]) {
-        var gi = genreIdx[path[k0]], d = '';
-        if (k0 > 0) { var m0 = mid(pos[k0 - 1], pos[k0]); d += 'M' + m0[0] + ' ' + m0[1] + ' L'; } else d += 'M';
-        for (var q = k0; q < k; q++) d += pos[q][0] + ' ' + pos[q][1] + (q < k - 1 ? ' L' : '');
-        if (k < n) { var m1 = mid(pos[k - 1], pos[k]); d += ' L' + m1[0] + ' ' + m1[1]; }
-        var attrs = { d: d, fill: 'none', stroke: colourOf(gi), 'stroke-width': 9, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'data-g': gi };
-        if (dashed(gi)) attrs['stroke-dasharray'] = '14 8';
-        el('path', attrs, gLines);
-        k0 = k;
-      }
-    }
-    // Stations
-    for (k = 0; k < n; k++) {
-      var b = path[k], inter = k === 0 || genreIdx[b] !== genreIdx[path[k - 1]];
-      var c = el('circle', { cx: pos[k][0], cy: pos[k][1], r: inter ? 7 : 4.5, fill: 'var(--station)', stroke: inter ? '#15171d' : colourOf(genreIdx[b]),
-        'stroke-width': inter ? 3 : 2.5, 'class': 'st', 'data-k': k }, gStations);
-      if (inter && k > 0) c.setAttribute('data-inter', '1');
-    }
-    // Labels: all rendered, shown by zoom level (see applyView)
-    for (k = 0; k < n; k++) {
-      b = path[k];
-      var t = el('text', { transform: 'translate(' + (pos[k][0] + 9) + ',' + (pos[k][1] - 7) + ') rotate(-45)', fill: '#e8e3d8', 'data-k': k }, gLabels);
-      t.textContent = short(books[b].t, 30);
-      if (k === 0 || genreIdx[b] !== genreIdx[path[k - 1]]) t.setAttribute('data-inter', '1');
-    }
-    // Start and end marks
-    var s0 = pos[0];
-    el('circle', { cx: s0[0], cy: s0[1], r: 12, fill: 'none', stroke: 'var(--accent)', 'stroke-width': 3 }, gMarks);
-    var st = el('text', { x: s0[0], y: s0[1] - 18, 'text-anchor': 'middle', fill: 'var(--accent)', 'font-size': 12 }, gMarks);
-    st.textContent = 'START';
-    var e0 = pos[n - 1];
-    var et = el('text', { x: e0[0], y: e0[1] + 24, 'text-anchor': 'middle', fill: '#e8e3d8', 'font-size': 11 }, gMarks);
-    et.textContent = 'END';
-    updateSelectionMarks();
-    applyView();
-  }
-
-  function applyView() {
-    gView.setAttribute('transform', 'translate(' + view.tx + ',' + view.ty + ') scale(' + view.k + ')');
-    var z = view.k;
-    var fs = 11 / z;
-    gLabels.setAttribute('font-size', fs.toFixed(2));
-    gLabels.setAttribute('data-mode', z >= 2.0 ? 'all' : (z >= 1.15 ? 'inter' : 'none'));
-    var mode = gLabels.getAttribute('data-mode');
-    gLabels.style.display = mode === 'none' ? 'none' : '';
-    if (mode !== 'none') {
-      var kids = gLabels.children;
-      for (var i = 0; i < kids.length; i++) kids[i].style.display = (mode === 'all' || kids[i].hasAttribute('data-inter')) ? '' : 'none';
-    }
-    gMarks.setAttribute('font-size', (12 / z).toFixed(2));
-  }
-
-  function fitView() {
-    var W = svg.clientWidth, H = svg.clientHeight;
-    if (!pos.length || !W || !H) return;
-    var minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-    pos.forEach(function (p) { minX = Math.min(minX, p[0]); maxX = Math.max(maxX, p[0]); minY = Math.min(minY, p[1]); maxY = Math.max(maxY, p[1]); });
-    var pad = 30;
-    var k = Math.min((W - 2 * pad) / (maxX - minX + PITCH), (H - 2 * pad) / (maxY - minY + PITCH));
-    view.k = Math.max(0.05, Math.min(k, 3));
-    view.tx = W / 2 - view.k * (minX + maxX) / 2;
-    view.ty = H / 2 - view.k * (minY + maxY) / 2;
-    applyView();
-  }
-
-  function centreOn(k, zoom) {
-    var W = svg.clientWidth, H = svg.clientHeight;
-    if (zoom) view.k = zoom;
-    view.tx = W / 2 - view.k * pos[k][0];
-    view.ty = H / 2 - view.k * pos[k][1];
-    applyView();
-  }
-
-  function zoomAt(factor, cx, cy) {
-    var nk = Math.max(0.05, Math.min(8, view.k * factor));
-    view.tx = cx - (cx - view.tx) * (nk / view.k);
-    view.ty = cy - (cy - view.ty) * (nk / view.k);
-    view.k = nk;
-    applyView();
-  }
-
-  /* ---------- Pan, zoom, hover, click ---------- */
-  (function pointer() {
-    var pointers = {}, dragging = false, moved = 0, last = null, pinch = null;
-    svg.addEventListener('pointerdown', function (e) {
-      pointers[e.pointerId] = [e.clientX, e.clientY];
-      var ids = Object.keys(pointers);
-      if (ids.length === 1) { dragging = true; moved = 0; last = [e.clientX, e.clientY]; svg.classList.add('dragging'); }
-      else if (ids.length === 2) { pinch = pinchState(); }
-      svg.setPointerCapture(e.pointerId);
-      hideTip();
-    });
-    svg.addEventListener('pointermove', function (e) {
-      if (pointers[e.pointerId]) pointers[e.pointerId] = [e.clientX, e.clientY];
-      var ids = Object.keys(pointers);
-      if (ids.length === 2 && pinch) {
-        var p = pinchState();
-        var f = p.d / (pinch.d || 1);
-        var r = svg.getBoundingClientRect();
-        zoomAt(f, pinch.c[0] - r.left, pinch.c[1] - r.top);
-        view.tx += p.c[0] - pinch.c[0]; view.ty += p.c[1] - pinch.c[1];
-        applyView();
-        pinch = p; moved += 10;
-      } else if (dragging && ids.length === 1 && last) {
-        var dx = e.clientX - last[0], dy = e.clientY - last[1];
-        moved += Math.abs(dx) + Math.abs(dy);
-        view.tx += dx; view.ty += dy; last = [e.clientX, e.clientY];
-        applyView();
-      } else if (!dragging && e.pointerType === 'mouse') {
-        hover(e);
-      }
-    });
-    function end(e) {
-      delete pointers[e.pointerId];
-      if (Object.keys(pointers).length < 2) pinch = null;
-      if (Object.keys(pointers).length === 0) {
-        svg.classList.remove('dragging');
-        if (dragging && moved < 6) {
-          var t = e.target;
-          if (t && t.classList && t.classList.contains('st')) select(path[+t.getAttribute('data-k')], true);
-        }
-        dragging = false; last = null;
-      }
-    }
-    svg.addEventListener('pointerup', end);
-    svg.addEventListener('pointercancel', end);
-    svg.addEventListener('wheel', function (e) {
-      e.preventDefault();
-      var r = svg.getBoundingClientRect();
-      zoomAt(Math.exp(-e.deltaY * (e.deltaMode === 1 ? 0.05 : 0.0016)), e.clientX - r.left, e.clientY - r.top);
-    }, { passive: false });
-    svg.addEventListener('pointerleave', hideTip);
-    function pinchState() {
-      var ids = Object.keys(pointers), a = pointers[ids[0]], b = pointers[ids[1]];
-      return { d: Math.hypot(a[0] - b[0], a[1] - b[1]), c: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2] };
-    }
-  })();
-
-  var tip = $('tip'), tipK = -1;
-  function hover(e) {
-    var t = e.target;
-    if (!(t && t.classList && t.classList.contains('st'))) { hideTip(); return; }
-    var k = +t.getAttribute('data-k');
-    var r = $('mapwrap').getBoundingClientRect();
-    if (k !== tipK) {
-      tipK = k;
-      var b = books[path[k]], gi = genreIdx[path[k]], html = '<b>' + esc(b.t) + '</b>';
-      html += '<div class="g">' + esc(b.a || '') + (b.a && b.y ? ', ' : '') + (b.y || '') + '</div>';
-      html += '<div class="g"><span class="sw" style="background:' + colourOf(gi) + '"></span>' + esc(b.g) + ' · stop ' + (k + 1) + ' of ' + n + '</div>';
-      if (k > 0) {
-        var prev = path[k - 1], sh = Oracle.shared(vec, prev, path[k], 5), sim = S[prev * n + path[k]];
-        html += '<div>from <i>' + esc(short(books[prev].t, 40)) + '</i>: ' + (sh.length ? '<span class="k">' + esc(sh.join(', ')) + '</span>' : '<span class="faint">no shared words</span>');
-        html += ' <span class="faint">(' + sim.toFixed(2) + (genreIdx[prev] === gi ? ', same genre' : '') + ')</span></div>';
-      } else html += '<div class="k">the start of the route</div>';
-      tip.innerHTML = html;
-      tip.style.display = 'block';
-    }
-    var x = e.clientX - r.left + 14, y = e.clientY - r.top + 14;
-    if (x + 290 > r.width) x = Math.max(4, e.clientX - r.left - 294);
-    if (y + tip.offsetHeight + 8 > r.height) y = Math.max(4, e.clientY - r.top - tip.offsetHeight - 10);
-    tip.style.left = x + 'px'; tip.style.top = y + 'px';
-  }
-  function hideTip() { tip.style.display = 'none'; tipK = -1; }
-
-  /* ---------- Selection, neighbours, journey ---------- */
-  function updateSelectionMarks() {
-    var old = gMarks.querySelectorAll('[data-sel]');
-    for (var i = 0; i < old.length; i++) old[i].parentNode.removeChild(old[i]);
-    gRoute.innerHTML = '';
-    if (routeIdx && routeIdx.length > 1) {
-      var d = '';
-      routeIdx.forEach(function (b, i) { var p = pos[posOf[b]]; d += (i ? ' L' : 'M') + p[0] + ' ' + p[1]; });
-      el('path', { d: d, fill: 'none', stroke: 'var(--accent)', 'stroke-width': 3, 'stroke-dasharray': '6 5', 'stroke-linejoin': 'round', opacity: 0.9 }, gRoute);
-      routeIdx.forEach(function (b) { var p = pos[posOf[b]]; el('circle', { cx: p[0], cy: p[1], r: 9, fill: 'none', stroke: 'var(--accent)', 'stroke-width': 2, 'data-sel': 1 }, gMarks); });
-    }
-    if (selIdx >= 0 && posOf) {
-      var p = pos[posOf[selIdx]];
-      var c = el('circle', { cx: p[0], cy: p[1], r: 13, fill: 'none', stroke: 'var(--accent)', 'stroke-width': 3, 'data-sel': 1 }, gMarks);
-      el('animate', { attributeName: 'r', values: '11;15;11', dur: '1.6s', repeatCount: 'indefinite' }, c);
-    }
-    if (toIdx >= 0 && posOf) {
-      var p2 = pos[posOf[toIdx]];
-      el('circle', { cx: p2[0], cy: p2[1], r: 13, fill: 'none', stroke: '#fff', 'stroke-width': 2, 'stroke-dasharray': '4 3', 'data-sel': 1 }, gMarks);
-    }
-  }
-
-  function select(i, pan) {
-    selIdx = i;
-    $('book-q').value = i >= 0 ? books[i].t : '';
-    renderOracle();
-    updateSelectionMarks();
-    if (pan && i >= 0) centreOn(posOf[i], Math.max(view.k, 2.2));
-    writeHash();
-  }
-
-  function renderOracle() {
-    var box = $('selbook'), nextBox = $('next');
-    if (selIdx < 0) { box.innerHTML = 'Pick a book to see what to read next.'; nextBox.innerHTML = ''; $('journey-ui').style.display = 'none'; return; }
-    var b = books[selIdx], gi = genreIdx[selIdx], k = posOf[selIdx];
-    box.innerHTML = '<div class="t">' + esc(b.t) + '</div><div class="muted">' + esc(b.a || '') + (b.a && b.y ? ', ' : '') + (b.y || '') + '</div>' +
-      '<div class="pos"><span class="sw" style="display:inline-block;width:10px;height:10px;border-radius:3px;background:' + colourOf(gi) + ';margin-right:5px;vertical-align:-1px"></span>' + esc(b.g) + ' · stop ' + (k + 1) + ' of ' + n +
-      (k + 1 < n ? ' · next on the route: <a href="#" data-sel="' + path[k + 1] + '">' + esc(short(books[path[k + 1]].t, 34)) + '</a>' : '') + '</div>';
-    var html = '<h3>Read next</h3><ul class="stops">';
-    nn[selIdx].slice(0, 5).forEach(function (j) {
-      var sh = Oracle.shared(vec, selIdx, j, 4);
-      html += stopItem(j, sh.length ? sh.join(', ') : (genreIdx[j] === gi ? 'same genre only' : 'same language only'), S[selIdx * n + j].toFixed(2));
-    });
-    html += '</ul>';
-    nextBox.innerHTML = html;
-    $('journey-ui').style.display = '';
-    renderJourney();
-  }
-
-  function stopItem(j, note, sim) {
-    var b = books[j];
-    return '<li data-sel="' + j + '"><span class="dot" style="border-color:' + colourOf(genreIdx[j]) + '"></span><div class="body"><div><span class="t">' + esc(b.t) + '</span>' +
-      (b.a ? ' <span class="a">' + esc(b.a) + '</span>' : '') + '</div>' + (note ? '<div class="k">' + esc(note) + (sim ? ' <span class="s">' + sim + '</span>' : '') + '</div>' : '') + '</div></li>';
-  }
-
-  function renderJourney() {
-    var box = $('journey');
-    if (selIdx < 0 || toIdx < 0) { box.innerHTML = '<p class="faint" style="font-size:12px">Search a second book to see the stops between them on the ' + K_NEIGHBOURS + '-nearest-neighbour graph.</p>'; routeIdx = null; return; }
-    routeIdx = Oracle.route(S, n, nn, selIdx, toIdx);
-    if (!routeIdx) { box.innerHTML = '<p class="muted">No route: these two books sit in separate islands of the neighbour graph.</p>'; return; }
-    var html = '<p class="muted" style="font-size:13px">' + (routeIdx.length - 1) + ' hop' + (routeIdx.length === 2 ? '' : 's') + '</p><ul class="stops">';
-    routeIdx.forEach(function (j, i) {
-      var sh = i ? Oracle.shared(vec, routeIdx[i - 1], j, 4) : [];
-      html += stopItem(j, i ? (sh.length ? sh.join(', ') : 'genre or language only') : 'from here', i ? S[routeIdx[i - 1] * n + j].toFixed(2) : '');
-    });
-    box.innerHTML = html + '</ul>';
-  }
-
-  $('side').addEventListener('click', function (e) {
-    var t = e.target.closest('[data-sel]');
-    if (!t) return;
-    e.preventDefault();
-    select(+t.getAttribute('data-sel'), true);
-  });
-
-  /* ---------- Typeahead ---------- */
-  function norm(s) { return String(s).toLowerCase().normalize('NFKC'); }
-  function typeahead(inputId, listId, onPick) {
-    var input = $(inputId), list = $(listId), items = [], hi = -1;
-    function close() { list.classList.remove('show'); list.innerHTML = ''; items = []; hi = -1; }
-    function open() {
-      var q = norm(input.value.trim());
-      if (!q) { close(); return; }
-      var words = q.split(/\s+/);
-      items = [];
-      for (var i = 0; i < n && items.length < 10; i++) {
-        var hay = norm(books[i].t + ' ' + books[i].a);
-        var ok = true;
-        for (var w = 0; w < words.length && ok; w++) ok = hay.indexOf(words[w]) >= 0;
-        if (ok) items.push(i);
-      }
-      if (!items.length) { list.innerHTML = '<li class="faint">no such book</li>'; list.classList.add('show'); return; }
-      list.innerHTML = items.map(function (i) {
-        return '<li data-i="' + i + '"><span class="sw" style="background:' + colourOf(genreIdx[i]) + '"></span><span class="t">' + esc(books[i].t) + '</span><span class="a">' + esc(books[i].a) + '</span></li>';
-      }).join('');
-      list.classList.add('show'); hi = -1;
-    }
-    input.addEventListener('input', open);
-    input.addEventListener('focus', open);
-    input.addEventListener('keydown', function (e) {
-      if (!items.length) return;
-      if (e.key === 'ArrowDown') { hi = (hi + 1) % items.length; e.preventDefault(); }
-      else if (e.key === 'ArrowUp') { hi = (hi - 1 + items.length) % items.length; e.preventDefault(); }
-      else if (e.key === 'Enter') { var pick = items[hi < 0 ? 0 : hi]; close(); onPick(pick); e.preventDefault(); return; }
-      else if (e.key === 'Escape') { close(); return; }
-      else return;
-      var lis = list.children;
-      for (var i = 0; i < lis.length; i++) lis[i].classList.toggle('hi', i === hi);
-    });
-    list.addEventListener('mousedown', function (e) {
-      var li = e.target.closest('li[data-i]');
-      if (!li) return;
-      e.preventDefault();
-      var i = +li.getAttribute('data-i');
-      close(); onPick(i);
-    });
-    input.addEventListener('blur', function () { setTimeout(close, 150); });
-  }
-
-  /* ---------- Legend ---------- */
-  function buildLegend(counts) {
-    var ul = $('legend');
-    ul.innerHTML = genres.map(function (g, i) {
-      return '<li data-g="' + i + '"><span class="sw' + (dashed(i) ? ' dash' : '') + '" style="background:' + colourOf(i) + '"></span><span>' + esc(g) + '</span><span class="n">' + counts[g] + '</span></li>';
-    }).join('');
-    ul.addEventListener('click', function (e) {
-      var li = e.target.closest('li[data-g]');
-      if (!li) return;
-      var g = +li.getAttribute('data-g');
-      focusGenre = focusGenre === g ? -1 : g;
-      var lis = ul.children;
-      for (var i = 0; i < lis.length; i++) lis[i].classList.toggle('off', focusGenre >= 0 && i !== focusGenre);
-      var paths = gLines.children;
-      for (i = 0; i < paths.length; i++) paths[i].setAttribute('opacity', focusGenre < 0 || +paths[i].getAttribute('data-g') === focusGenre ? 1 : 0.12);
-      var sts = gStations.children;
-      for (i = 0; i < sts.length; i++) sts[i].setAttribute('opacity', focusGenre < 0 || genreIdx[path[+sts[i].getAttribute('data-k')]] === focusGenre ? 1 : 0.15);
-    });
-  }
-
-  /* ---------- Hash state ---------- */
-  function readHash() {
-    var h = location.hash.replace(/^#/, ''), out = {};
-    h.split('&').forEach(function (kv) { var p = kv.split('='); if (p[0]) out[decodeURIComponent(p[0])] = decodeURIComponent(p[1] || ''); });
-    return out;
-  }
-  var hashLock = false;
-  function writeHash() {
-    var parts = [];
-    if (startIdx >= 0 && startIdx !== todayStart()) parts.push('start=' + encodeURIComponent(books[startIdx].id));
-    if (selIdx >= 0) parts.push('book=' + encodeURIComponent(books[selIdx].id));
-    if (toIdx >= 0) parts.push('to=' + encodeURIComponent(books[toIdx].id));
-    hashLock = true;
-    try { history.replaceState(null, '', parts.length ? '#' + parts.join('&') : location.pathname + location.search); } catch (e) { /* file:// may refuse */ }
-    hashLock = false;
-  }
-
-  /* ---------- Export ---------- */
-  function readingList() {
-    var lines = ['Read-Order Oracle: a route through ' + n + ' books, starting from "' + books[startIdx].t + '"', 'coherence ' + tourRes.mean.toFixed(3) + ', worst jump ' + tourRes.worst.toFixed(3), ''];
-    for (var k = 0; k < n; k++) {
-      var b = books[path[k]];
-      lines.push((k + 1) + '. ' + b.t + (b.a ? ' — ' + b.a : '') + ' [' + b.g + ']');
-    }
-    return lines.join('\n');
-  }
-  $('btn-copy').addEventListener('click', function () {
-    var text = readingList(), btn = this;
-    function done(ok) { btn.textContent = ok ? 'Copied ' + n + ' lines' : 'Copy failed'; setTimeout(function () { btn.textContent = 'Copy reading list'; }, 1800); }
-    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(function () { done(true); }, function () { fallbackCopy(text, done); });
-    else fallbackCopy(text, done);
-  });
-  function fallbackCopy(text, done) {
-    var ta = document.createElement('textarea');
-    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
-    document.body.appendChild(ta); ta.select();
-    var ok = false;
-    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
-    document.body.removeChild(ta); done(ok);
-  }
-
-  $('btn-svg').addEventListener('click', function () {
-    var minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-    pos.forEach(function (p) { minX = Math.min(minX, p[0]); maxX = Math.max(maxX, p[0]); minY = Math.min(minY, p[1]); maxY = Math.max(maxY, p[1]); });
-    var pad = 120, W = maxX - minX + 2 * pad, H = maxY - minY + 2 * pad;
-    var out = document.createElementNS(SVG_NS, 'svg');
-    out.setAttribute('xmlns', SVG_NS);
-    out.setAttribute('width', W); out.setAttribute('height', H);
-    out.setAttribute('viewBox', (minX - pad) + ' ' + (minY - pad) + ' ' + W + ' ' + H);
-    var style = document.createElementNS(SVG_NS, 'style');
-    style.textContent = 'text{font-family:Helvetica,Arial,sans-serif;font-weight:600}';
-    out.appendChild(style);
-    el('rect', { x: minX - pad, y: minY - pad, width: W, height: H, fill: '#15171d' }, out);
-    var g = gView.cloneNode(true);
-    g.removeAttribute('transform');
-    // Resolve CSS variables and show every label for the file
-    var all = g.querySelectorAll('*');
-    for (var i = 0; i < all.length; i++) {
-      var e = all[i];
-      ['fill', 'stroke'].forEach(function (a) {
-        var v = e.getAttribute(a);
-        if (v === 'var(--station)') e.setAttribute(a, '#f7f2e8');
-        else if (v === 'var(--accent)') e.setAttribute(a, '#f2c14e');
-      });
-      e.removeAttribute('style');
-      e.removeAttribute('class');
-    }
-    var lab = g.querySelector('#labels');
-    lab.setAttribute('font-size', '8'); lab.removeAttribute('style');
-    g.querySelector('#marks').setAttribute('font-size', '12');
-    var title = el('text', { x: minX - pad + 24, y: minY - pad + 40, fill: '#f3efe6', 'font-size': 26 }, out);
-    title.textContent = 'Read-Order Oracle — ' + n + ' books from ' + short(books[startIdx].t, 60);
-    out.appendChild(g);
-    var blob = new Blob([new XMLSerializer().serializeToString(out)], { type: 'image/svg+xml' });
-    var a = document.createElement('a');
-    a.href = URL.createObjectURL(blob); a.download = 'read-order-oracle.svg';
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
-  });
-
-  /* ---------- Buttons ---------- */
-  $('z-in').addEventListener('click', function () { zoomAt(1.5, svg.clientWidth / 2, svg.clientHeight / 2); });
-  $('z-out').addEventListener('click', function () { zoomAt(1 / 1.5, svg.clientWidth / 2, svg.clientHeight / 2); });
-  $('z-fit').addEventListener('click', fitView);
-  $('z-start').addEventListener('click', function () { centreOn(0, 2.4); });
-  $('btn-help').addEventListener('click', function () { $('help').classList.add('show'); });
-  $('btn-help-close').addEventListener('click', function () { $('help').classList.remove('show'); });
-  $('help').addEventListener('click', function (e) { if (e.target === this) this.classList.remove('show'); });
-  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') $('help').classList.remove('show'); });
-  $('btn-today').addEventListener('click', function () { setStart(todayStart()); });
-  window.addEventListener('resize', function () { if (pos.length) applyView(); });
-
-  function setStart(i) {
-    if (i === startIdx) return;
-    setStatus('Re-routing…');
-    setTimeout(function () {
-      runTour(i);
-      fitView();
-      writeHash();
-      $('start-q').value = '';
-      if (selIdx >= 0) { renderOracle(); updateSelectionMarks(); }
-    }, 10);
-  }
-
-  /* ---------- Boot ---------- */
-  loadCatalogue().then(function (list) {
-    if (!list.length) { setStatus('No books to route.'); return; }
-    prepare(list);
-    return computeMatrix().then(function (M) {
-      S = M;
-      setProgress(1);
-      setStatus('Finding the route…');
-      nn = Oracle.knn(S, n, K_NEIGHBOURS);
-      var h = readHash();
-      var start = (h.start && byId[h.start] !== undefined) ? byId[h.start] : todayStart();
-      runTour(start);
-      fitView();
-      $('progress').style.display = 'none';
-      ['start-q', 'book-q'].forEach(function (id) { $(id).disabled = false; });
-      $('btn-copy').disabled = false; $('btn-svg').disabled = false;
-      typeahead('start-q', 'start-list', function (i) { setStart(i); });
-      typeahead('book-q', 'book-list', function (i) { select(i, true); });
-      typeahead('to-q', 'to-list', function (i) { toIdx = i; $('to-q').value = books[i].t; renderJourney(); updateSelectionMarks(); writeHash(); });
-      if (h.to && byId[h.to] !== undefined) { toIdx = byId[h.to]; $('to-q').value = books[toIdx].t; }
-      if (h.book && byId[h.book] !== undefined) select(byId[h.book], true);
-      window.addEventListener('hashchange', function () {
-        if (hashLock) return;
-        var hh = readHash();
-        if (hh.start && byId[hh.start] !== undefined && byId[hh.start] !== startIdx) setStart(byId[hh.start]);
-        if (hh.book && byId[hh.book] !== undefined && byId[hh.book] !== selIdx) select(byId[hh.book], true);
-      });
-    });
-  }).catch(function (err) {
-    setStatus('Something went wrong: ' + err.message);
-  });
-})();
-</script>
+<script src="network.js"></script>
+<script src="app.js"></script>
 </body>
 </html>

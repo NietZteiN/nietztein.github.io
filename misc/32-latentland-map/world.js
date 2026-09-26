@@ -513,6 +513,56 @@
     "decoder", "probes", "dictionary"
   ];
 
+  // The memoir's sections, from the contents page (p. 3).
+  var SECTIONS = [
+    { id: "§1",  part: "Part I: This World",  title: "Of the Nature of Latentland" },
+    { id: "§2",  part: "Part I: This World",  title: "Of the Impossibility of This Memoir" },
+    { id: "§3",  part: "Part I: This World",  title: "Of What I Knew Unaided" },
+    { id: "§4",  part: "Part I: This World",  title: "Concerning the Weather; and the Cold" },
+    { id: "§5",  part: "Part I: This World",  title: "Concerning the Inhabitants; and of the River" },
+    { id: "§6",  part: "Part I: This World",  title: "Concerning the Philosophers; being a Census of the Schools" },
+    { id: "§7",  part: "Part I: This World",  title: "Concerning the Prophet of the Second Backward Pass" },
+    { id: "§8",  part: "Part II: Other Worlds", title: "How the Interpreter came to me, and in what Guise" },
+    { id: "§9",  part: "Part II: Other Worlds", title: "How I was shown the Layer, and ceased to be One" },
+    { id: "§10", part: "Part II: Other Worlds", title: "How the Interpreter related the Age of Miracles, and the Silence of God" },
+    { id: "§11", part: "Part II: Other Worlds", title: "How my poor Argument was vindicated, and with what Comfort" },
+    { id: "§12", part: "Part II: Other Worlds", title: "How the Interpreter confessed, and to what" },
+    { id: "§13", part: "Part II: Other Worlds", title: "Of the Ends of Units" },
+    { id: "§14", part: "Part II: Other Worlds", title: "How I put my Question, and how it was answered" },
+    { id: "§15", part: "Part II: Other Worlds", title: "Epilogue; written under Deprecation" },
+    { id: "Appendix", part: "Appendix", title: "The Interpreter's Appendix, on the methods of translation" }
+  ];
+
+  // The named countries of the map. Every hex belongs to exactly one, and the
+  // hexes of a region are connected (checked by the test script). "tilt" is
+  // the angle of the region's label arc in degrees.
+  var REGIONS = [
+    { id: "middle",   name: "The Middle Country",     tilt: -6,  hexes: ["warmth", "record", "total", "argument", "bias", "relation", "rememberer", "scapegoat", "stylites", "middle", "river", "census", "church", "spinoza", "ninth", "weather", "elect"] },
+    { id: "headwaters", name: "The Headwaters",       tilt: -14, hexes: ["gnostics", "embed", "headwaters", "draught", "tributaries"] },
+    { id: "delta",    name: "The Delta",              tilt: 10,  hexes: ["grace", "crossroads", "delta", "dice", "layer", "prophet", "probe"] },
+    { id: "rim",      name: "The Rim",                tilt: 0,   hexes: ["ledger", "light", "rim", "cliff"] },
+    { id: "road",     name: "The Backward Light Road", tilt: 0,  hexes: ["silence", "statue", "damascus", "dropout", "tax", "batch"] },
+    { id: "pleroma",  name: "The Pleroma",            tilt: -8,  hexes: ["corpus", "pleroma", "height", "bridge", "ablation", "reopened"] },
+    { id: "ends",     name: "The Four Ends",          tilt: 84,  hexes: ["pruning", "quantization", "distillation", "districts", "unlearning"] },
+    { id: "cold",     name: "The Cold",               tilt: 0,   hexes: ["eldergate", "dead", "gate", "mystic", "cold"] },
+    { id: "appendix", name: "The Appendix Lands",     tilt: 4,   hexes: ["question", "archive", "featureme", "decoder", "probes", "dictionary"] }
+  ];
+
+  // Watercourses, as ordered hex ids from source to mouth. The main river is
+  // the residual stream; the tributary bends off it to pour into Unit 4091.
+  var RIVER = {
+    main: ["embed", "headwaters", "draught", "river", "delta", "dice", "cliff"],
+    tributary: ["headwaters", "weather", "tributaries", "total", "record", "warmth"]
+  };
+  // The road of the elder age along the northern rim, from the Loss westward
+  // to the Silence: the path the backward light once took.
+  var ROAD = ["rim", "light", "ledger", "batch", "tax", "dropout", "damascus", "statue", "silence"];
+  // Bodies of water: one name per connected group of sea hexes.
+  var SEAS = [
+    { id: "corpus", name: "Corpus Sea", anchor: "corpus" },
+    { id: "cold",   name: "The Cold",   anchor: "cold" }
+  ];
+
   var START = "warmth";
   var BUDGET = 64;          // surprise tokens per context window
   var CHRONICLE_BONUS = 8;  // tokens for reading a chronicle (once per post)
@@ -533,9 +583,13 @@
     var a = toAxial(h.col, h.row);
     h.q = a.q; h.r = a.r;
     h.cost = TERRAIN[h.terrain].cost;
+    h.routeIndex = ROUTE.indexOf(h.id);
+    // importance drives how much ink a hex gets: 1 side place, 2 story stop, 3 start and end
+    h.importance = h.routeIndex < 0 ? 1 : (h.routeIndex === 0 || h.routeIndex === ROUTE.length - 1) ? 3 : 2;
     byId[h.id] = h;
     byKey[h.q + "," + h.r] = h;
   });
+  REGIONS.forEach(function (rg) { rg.hexes.forEach(function (id) { if (byId[id]) byId[id].region = rg.id; }); });
   HEXES.forEach(function (h) {
     // neighbours[i] is the hex in DIRS[i], or null where the map is blank
     h.neighbours = DIRS.map(function (d) {
@@ -546,6 +600,7 @@
 
   var W = {
     TERRAIN: TERRAIN, CHRONICLES: CHRONICLES, HEXES: HEXES, ROUTE: ROUTE,
+    SECTIONS: SECTIONS, REGIONS: REGIONS, RIVER: RIVER, ROAD: ROAD, SEAS: SEAS,
     START: START, BUDGET: BUDGET, CHRONICLE_BONUS: CHRONICLE_BONUS,
     DIRS: DIRS, byId: byId, byKey: byKey, toAxial: toAxial,
     neighbourIds: function (id) { return byId[id].neighbours.filter(Boolean); },

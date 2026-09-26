@@ -2,825 +2,431 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Latentland Map</title>
-<meta name="description" content="An explorable hex map of Latentland, a Romance of One Dimension: every hex is a concept from the story, travel costs surprise, and the fog lifts as you read.">
+<meta name="description" content="An illustrated ink-and-parchment map of Latentland, a Romance of One Dimension: read the neuron's memoir place by place, or mount an expedition on a budget of surprise.">
 <link rel="icon" href="data:,">
 <style>
   :root {
-    --bg: #e6d7b3;
-    --bg-deep: #d9c79b;
-    --panel: #f2e8cf;
-    --panel-2: #e9dcbc;
-    --line: #b59f74;
-    --line-soft: #cdbb92;
-    --ink: #2b1d12;
-    --ink-2: #5b4733;
-    --ink-3: #8b7455;
-    --red: #8c2f22;
-    --gold: #a4782c;
-    --good: #4f7a3a;
+    --paper: #ecdfbd;      /* the map */
+    --paper-2: #f6eed9;    /* the reading pane */
+    --paper-3: #e4d5ae;    /* insets, asides */
+    --paper-4: #d9c79b;    /* hover fills */
+    --line: #c9b58d;
+    --line-2: #a8916a;
+    --ink: #2a1f14;
+    --ink-2: #5a4632;
+    --ink-3: #6f5b45;
+    --ochre: #9d3f27;      /* route, primary action */
+    --ochre-2: #7d2f1c;
+    --gold: #a67a2e;
+    --water: #b9cfd4;
+    --water-ink: #4e6e78;
+    --green: #4f6b3a;
     --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, "Hiragino Mincho ProN", "Yu Mincho", "IPAMincho", "Noto Serif CJK JP", serif;
     --sans: -apple-system, "Segoe UI", Helvetica, Arial, "Hiragino Sans", "Yu Gothic", "IPAGothic", "Noto Sans CJK JP", sans-serif;
-    --t-plain: #dcc78f; --t-city: #cfae7a; --t-forest: #9fb277; --t-river: #8fb4c4;
-    --t-ruin: #b9a08c; --t-mountain: #b39c84; --t-sea: #7c9fb5;
-    --fog: #33261b;
+    --fs-1: 12px; --fs-2: 14px; --fs-3: 16px; --fs-4: 22px;
+    --r-1: 4px; --r-2: 8px;
+    --header-h: 56px;
+    --sheet-peek: 156px;
+    --shadow: 0 8px 24px rgba(60, 35, 10, 0.18);
   }
   * { box-sizing: border-box; }
-  html, body { margin: 0; background: var(--bg); color: var(--ink); }
-  body {
-    font: 15px/1.5 var(--serif);
-    padding: 14px 16px 28px;
-    background-image:
-      radial-gradient(ellipse at 20% 0%, rgba(255,250,235,0.55), transparent 55%),
-      radial-gradient(ellipse at 90% 100%, rgba(120,80,30,0.16), transparent 50%);
-    min-height: 100vh;
-  }
-  a { color: var(--red); }
-  h1 { font-size: 24px; margin: 0; font-weight: 600; letter-spacing: 0.02em; }
-  header { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 12px; }
-  header .sub { color: var(--ink-2); font-size: 14px; font-style: italic; }
-  header .spacer { flex: 1; }
-  button {
-    font: inherit; font-size: 14px; color: var(--ink); background: var(--panel);
-    border: 1px solid var(--line); border-radius: 6px; padding: 5px 11px; cursor: pointer;
-    box-shadow: 0 1px 0 rgba(255,255,255,0.5) inset;
-  }
-  button:hover { background: #fff6dd; }
-  button:active { transform: translateY(1px); }
-  button:disabled { opacity: 0.45; cursor: default; }
-  button.primary { background: var(--red); color: #fbf1dc; border-color: #5d1d14; }
-  button.primary:hover { background: #a0392a; }
-  button.small { font-size: 13px; padding: 3px 9px; }
+  html, body { margin: 0; height: 100%; background: var(--paper-2); color: var(--ink); }
+  body { font: var(--fs-3)/1.55 var(--serif); overflow: hidden; -webkit-text-size-adjust: 100%; display: flex; flex-direction: column; }
+  a { color: var(--ochre); }
+  h1, h2, h3 { font-weight: 600; margin: 0; line-height: 1.2; }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--ochre); outline-offset: 2px; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
-  #layout { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; }
-  #stage { flex: 1 1 560px; min-width: 0; }
+  /* ---------- buttons ---------- */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 36px; padding: 6px 14px;
+    font-size: var(--fs-2); background: var(--paper-2); border: 1px solid var(--line-2); border-radius: var(--r-1);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.6); white-space: nowrap; text-decoration: none; color: var(--ink);
+  }
+  .btn:hover { background: var(--paper-3); }
+  .btn:active { transform: translateY(1px); }
+  .btn:disabled { opacity: 0.4; cursor: default; transform: none; }
+  .btn.primary { background: var(--ochre); color: #fbf2df; border-color: var(--ochre-2); box-shadow: none; }
+  .btn.primary:hover { background: var(--ochre-2); }
+  .btn.quiet { border-color: transparent; background: transparent; box-shadow: none; }
+  .btn.quiet:hover { background: var(--paper-3); }
+  .btn.icon { width: 40px; height: 40px; min-height: 40px; padding: 0; font-size: 18px; line-height: 1; }
+  .btn.block { width: 100%; }
+
+  /* ---------- header ---------- */
+  header {
+    flex: none; min-height: var(--header-h); display: flex; align-items: center; gap: 16px; padding: 0 16px;
+    border-bottom: 1px solid var(--line); background: var(--paper-2); position: relative; z-index: 20;
+  }
+  header h1 { font-size: var(--fs-4); letter-spacing: 0.02em; white-space: nowrap; }
+  header .sub { color: var(--ink-3); font-size: var(--fs-2); font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 1; }
+  #search { position: relative; flex: 0 1 300px; min-width: 120px; }
+  #search input {
+    width: 100%; min-height: 36px; font: var(--fs-2)/1.3 var(--serif); padding: 6px 30px 6px 32px; color: var(--ink);
+    background: var(--paper-2); border: 1px solid var(--line-2); border-radius: 999px;
+  }
+  #search input::placeholder { color: var(--ink-3); font-style: italic; }
+  #search .glass { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--ink-3); pointer-events: none; }
+  #search .clear { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); width: 28px; height: 28px; min-height: 28px; border-radius: 50%; display: none; }
+  #search.has .clear { display: inline-flex; }
+  #results {
+    position: absolute; top: calc(100% + 6px); left: 0; right: 0; background: var(--paper-2); border: 1px solid var(--line-2);
+    border-radius: var(--r-2); box-shadow: var(--shadow); display: none; z-index: 30; max-height: 60vh; overflow: auto; padding: 4px;
+  }
+  #results.show { display: block; }
+  #results .r { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; padding: 8px 10px; border-radius: var(--r-1); cursor: pointer; }
+  #results .r:hover, #results .r.active { background: var(--paper-3); }
+  #results .r b { font-weight: 600; }
+  #results .r .m { grid-column: 1 / -1; color: var(--ink-3); font-size: var(--fs-1); font-family: var(--sans); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #results .r .w { color: var(--ink-3); font-size: var(--fs-1); font-family: var(--sans); align-self: center; }
+  #results .r.dim { opacity: 0.55; cursor: default; }
+  #results .none { padding: 10px; color: var(--ink-3); font-style: italic; font-size: var(--fs-2); }
+  .seg { display: inline-flex; border: 1px solid var(--line-2); border-radius: 999px; padding: 2px; background: var(--paper-3); }
+  .seg button { min-height: 32px; padding: 4px 14px; border: 0; border-radius: 999px; background: transparent; font-size: var(--fs-2); color: var(--ink-2); }
+  .seg button:hover { color: var(--ink); }
+  .seg button[aria-checked="true"] { background: var(--ink); color: var(--paper-2); }
+
+  /* ---------- layout ---------- */
+  #layout { display: flex; flex: 1; min-height: 0; }
+  #stage { flex: 1 1 auto; min-width: 0; position: relative; }
+  #pane { flex: 0 0 400px; width: 400px; border-left: 1px solid var(--line); background: var(--paper-2); display: flex; flex-direction: column; min-height: 0; }
+
+  /* ---------- the map ---------- */
   #mapwrap {
-    position: relative; width: 100%; height: min(72vh, 660px); min-height: 380px;
-    border: 2px solid var(--ink-2); outline: 1px solid var(--line); outline-offset: 3px;
-    background: var(--bg-deep); overflow: hidden; border-radius: 3px;
-    box-shadow: 0 14px 34px rgba(60,35,10,0.28);
-    touch-action: none; user-select: none; -webkit-user-select: none;
+    position: absolute; inset: 0; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none;
+    background-color: var(--paper);
+    background-image:
+      radial-gradient(ellipse at 50% 45%, rgba(255,250,236,0.35), rgba(255,250,236,0) 55%, rgba(90,60,25,0.22) 130%),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' seed='11' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='table' tableValues='0 0.16'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='260' height='260' filter='url(%23n)'/%3E%3C/svg%3E");
   }
   #map { width: 100%; height: 100%; display: block; cursor: grab; }
   #map.dragging { cursor: grabbing; }
   #map text { font-family: var(--serif); pointer-events: none; }
-  .hex { cursor: default; }
-  .hex.frontier, .hex.explored { cursor: pointer; }
-  .hex .base { stroke: rgba(43,29,18,0.55); stroke-width: 1; }
-  .hex.current .base { stroke: var(--red); stroke-width: 2.2; }
-  .hex.frontier:hover .fog { fill-opacity: 0.2; }
-  #map .label { font-size: 9.5px; fill: var(--ink); text-anchor: middle; }
-  #map .cost { font-size: 8.5px; fill: #fbf1dc; text-anchor: middle; font-family: var(--sans); font-weight: 600; }
-  #map .costbg { fill-opacity: 0.88; }
-  .hex.nextstop .base { stroke: var(--gold); stroke-width: 2.4; stroke-dasharray: 4 3; }
-  #route { fill: none; stroke: var(--red); stroke-width: 2; stroke-dasharray: 6 4; stroke-linejoin: round; stroke-linecap: round; opacity: 0.8; }
-  #routehint { fill: none; stroke: var(--gold); stroke-width: 1.6; stroke-dasharray: 2 4; opacity: 0.9; }
+  #map .hit { fill: transparent; stroke: none; cursor: pointer; }
+  #map .hit.dead { cursor: default; }
+  /* hex glyph groups and their fog states */
+  .hex { transition: opacity 0.4s ease; transform-box: fill-box; transform-origin: center; }
+  .hex .body { fill: var(--paper); stroke: none; }
+  .hex .ink { fill: none; stroke: var(--ink); stroke-width: 0.9; stroke-linecap: round; stroke-linejoin: round; }
+  .hex .hatch { fill: none; stroke: var(--ink); stroke-width: 0.55; stroke-linecap: round; opacity: 0.65; }
+  .hex.fog-unexplored { opacity: 0; }
+  .hex.fog-frontier { opacity: 0.42; }
+  .hex.fog-frontier .ink, .hex.fog-frontier .hatch { stroke: #5a4632; }
+  .hex.fog-explored { opacity: 1; }
+  .hex.hover { transform: translateY(-2px); }
+  @keyframes inkin { from { opacity: 0; transform: scale(0.88); } to { opacity: 1; transform: scale(1); } }
+  .hex.revealing { animation: inkin 0.45s ease-out; }
+  .wild { opacity: 0.42; }
+  .wild .ink { fill: none; stroke: #6f5b45; stroke-width: 0.8; stroke-linecap: round; stroke-linejoin: round; }
+  .wild .hatch { fill: none; stroke: #6f5b45; stroke-width: 0.5; opacity: 0.6; }
+  .wild .body { fill: var(--paper); }
+  .tint { transition: opacity 0.5s ease; }
+  .tint.fog-unexplored { opacity: 0; } .tint.fog-frontier { opacity: 0.25; } .tint.fog-explored { opacity: 1; }
+  .fogmask polygon { transition: opacity 0.45s ease; }
+  /* labels */
+  .lbl { font-size: 11px; fill: var(--ink); text-anchor: middle; paint-order: stroke fill; stroke: var(--paper); stroke-width: 3px; stroke-linejoin: round; transition: opacity 0.25s; }
+  .lbl.pencil { fill: #5a4632; }
+  .lbl.sel { fill: var(--ochre); font-weight: 600; }
+  .region { font-size: 19px; letter-spacing: 0.32em; text-transform: uppercase; fill: var(--ink-2); opacity: 0; transition: opacity 0.4s; paint-order: stroke fill; stroke: var(--paper); stroke-width: 5px; stroke-linejoin: round; }
+  .water-name { font-size: 15px; font-style: italic; letter-spacing: 0.2em; fill: var(--water-ink); opacity: 0.85; paint-order: stroke fill; stroke: var(--water); stroke-width: 3px; }
+  .void-name { font-size: 13px; letter-spacing: 0.35em; text-transform: uppercase; fill: var(--ink-3); opacity: 0.45; }
+  #route { fill: none; stroke: var(--ochre); stroke-width: 1.8; stroke-dasharray: 0.1 5; stroke-linecap: round; stroke-linejoin: round; }
+  #routenext { fill: none; stroke: var(--ochre); stroke-width: 1.6; stroke-dasharray: 0.1 4.5; stroke-linecap: round; opacity: 0.85; }
+  #routearrow { fill: var(--ochre); }
+  .ring { fill: none; stroke: var(--ochre); stroke-width: 2; }
+  .ring2 { fill: none; stroke: var(--ochre); stroke-width: 0.8; opacity: 0.8; }
+  .selring { fill: none; stroke: var(--ochre); stroke-width: 1.4; stroke-dasharray: 3 3; opacity: 0.9; }
+  .badge circle { fill: var(--paper-2); stroke: var(--ink); stroke-width: 1; }
+  .badge.no circle { stroke: var(--ochre); fill: #f3dcd3; }
+  .badge text { font: 600 9px var(--sans); fill: var(--ink); text-anchor: middle; }
+  .badge.no text { fill: var(--ochre); }
 
-  /* overlays drawn over the map */
-  #compass { position: absolute; left: 10px; top: 10px; width: 84px; height: 84px; pointer-events: none; opacity: 0.9; }
+  /* map overlays */
+  .ov { position: absolute; z-index: 5; }
+  #compass { left: 12px; top: 12px; width: 84px; height: 84px; pointer-events: none; }
   #cartouche {
-    position: absolute; right: 10px; top: 10px; padding: 4px 10px; font-size: 12px; letter-spacing: 0.14em;
-    text-transform: uppercase; color: var(--ink-2); border: 1px solid var(--line); background: rgba(242,232,207,0.85); pointer-events: none;
+    right: 12px; top: 12px; border: 1px solid var(--ink-2); outline: 1px solid var(--ink-2); outline-offset: 2px;
+    background: rgba(246,238,217,0.9); padding: 8px 14px; text-align: center; pointer-events: none;
   }
-  #zoom { position: absolute; left: 10px; bottom: 10px; display: flex; gap: 4px; }
-  #zoom button { width: 32px; height: 32px; padding: 0; font-size: 16px; line-height: 1; }
-  #minimap { position: absolute; right: 10px; bottom: 10px; width: 168px; height: 118px; background: rgba(242,232,207,0.88); border: 1px solid var(--line); border-radius: 3px; }
-  #minimap .vp { fill: none; stroke: var(--red); stroke-width: 1.2; }
-  #hint { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); font-size: 12px; color: var(--ink-2); background: rgba(242,232,207,0.85); border: 1px solid var(--line-soft); padding: 2px 10px; border-radius: 12px; pointer-events: none; white-space: nowrap; }
+  #cartouche .t { font-size: var(--fs-2); letter-spacing: 0.3em; text-transform: uppercase; font-weight: 600; }
+  #cartouche .s { font-size: var(--fs-1); font-style: italic; color: var(--ink-2); }
+  #zoom { left: 12px; bottom: 12px; display: flex; flex-direction: column; gap: 4px; }
+  #zoom .btn { background: rgba(246,238,217,0.92); }
+  #minimap { right: 12px; bottom: 12px; width: 168px; height: 118px; background: rgba(246,238,217,0.9); border: 1px solid var(--line-2); border-radius: var(--r-1); cursor: pointer; }
+  #minimap .vp { fill: none; stroke: var(--ochre); stroke-width: 1.4; }
+  #hint { left: 50%; bottom: 14px; transform: translateX(-50%); font-family: var(--sans); font-size: var(--fs-1); color: var(--ink-2); background: rgba(246,238,217,0.9); border: 1px solid var(--line); padding: 4px 12px; border-radius: 999px; pointer-events: none; white-space: nowrap; max-width: calc(100% - 200px); overflow: hidden; text-overflow: ellipsis; }
+  #tip { position: absolute; z-index: 6; pointer-events: none; display: none; background: var(--ink); color: var(--paper-2); font: var(--fs-1)/1.35 var(--sans); padding: 6px 9px; border-radius: var(--r-1); max-width: 220px; box-shadow: var(--shadow); }
+  #tip.show { display: block; }
+  #tip b { display: block; font-family: var(--serif); font-size: var(--fs-2); font-weight: 600; }
+  #tip .c { color: #e9c3b6; }
+  #toast { position: absolute; z-index: 7; left: 50%; top: 14px; transform: translateX(-50%); background: var(--ink); color: var(--paper-2); font: var(--fs-2)/1.4 var(--sans); padding: 8px 14px; border-radius: var(--r-1); opacity: 0; transition: opacity 0.3s; pointer-events: none; max-width: min(90%, 460px); text-align: center; }
+  #toast.show { opacity: 1; }
 
-  .overlay { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(43,29,18,0.72); padding: 18px; z-index: 5; }
-  .overlay.show { display: flex; }
-  .overlay .box { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 18px 20px; max-width: 520px; max-height: 100%; overflow: auto; box-shadow: 0 16px 40px rgba(0,0,0,0.4); }
-  .overlay h2 { margin: 0 0 8px; font-size: 22px; font-weight: 600; }
-  .overlay p { margin: 6px 0; }
-  .overlay textarea { width: 100%; font: 13px/1.4 var(--sans); border: 1px solid var(--line); border-radius: 4px; background: #fff9e8; color: var(--ink); padding: 6px; min-height: 84px; resize: vertical; }
-  .overlay .row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
-  .keys { display: inline-grid; grid-template-columns: auto auto; gap: 3px 14px; font-size: 14px; margin: 6px 0; }
-  kbd { font-family: var(--sans); font-size: 12px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 4px; padding: 0 6px; }
-
-  #side { flex: 0 1 350px; min-width: 260px; display: grid; gap: 10px; }
-  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 10px 13px; box-shadow: 0 2px 8px rgba(60,35,10,0.12); }
-  .card h2 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-3); margin: 0 0 6px; font-weight: 600; font-family: var(--sans); }
+  /* ---------- pane ---------- */
+  #modebar { padding: 12px 16px; border-bottom: 1px solid var(--line); background: var(--paper-2); }
+  .prog { height: 6px; background: var(--paper-3); border-radius: 3px; overflow: hidden; margin: 8px 0; }
+  .prog i { display: block; height: 100%; width: 0; background: var(--ochre); transition: width 0.4s ease; }
+  .rowb { display: flex; gap: 8px; align-items: center; }
+  .rowb .grow { flex: 1; }
+  .meta { font-family: var(--sans); font-size: var(--fs-1); color: var(--ink-3); }
+  .meta b { color: var(--ink); font-weight: 600; }
+  #modebar .goal { font-size: var(--fs-2); color: var(--ink-2); margin: 6px 0 0; }
   #tokens { display: flex; align-items: baseline; gap: 8px; }
-  #tokens b { font-size: 28px; font-weight: 600; font-variant-numeric: tabular-nums; }
-  #tokens span { color: var(--ink-2); font-size: 13px; }
-  #meter { height: 7px; background: var(--panel-2); border: 1px solid var(--line-soft); border-radius: 4px; overflow: hidden; margin: 6px 0 8px; }
-  #meterfill { height: 100%; background: linear-gradient(90deg, var(--red), var(--gold)); width: 100%; transition: width 0.3s; }
-  .stats { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; color: var(--ink-2); }
-  .stats b { color: var(--ink); font-weight: 600; }
-  .controls { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-top: 8px; }
-  .controls label { font-size: 14px; display: inline-flex; gap: 5px; align-items: center; cursor: pointer; }
-  #msg { min-height: 1.4em; font-size: 13px; color: var(--red); margin-top: 6px; font-style: italic; }
-  #msg.good { color: var(--good); }
+  #tokens b { font-size: 28px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1; }
+  #tokens span { font-family: var(--sans); font-size: var(--fs-1); color: var(--ink-3); }
+  .meter { height: 8px; background: var(--paper-3); border-radius: 4px; overflow: hidden; margin: 8px 0; }
+  .meter i { display: block; height: 100%; background: linear-gradient(90deg, var(--ochre), var(--gold)); transition: width 0.3s; }
 
-  /* six-direction pad */
-  #hexpad { display: grid; grid-template-columns: repeat(3, 34px); gap: 4px; margin-top: 8px; }
-  #hexpad button { padding: 0; height: 30px; font-size: 12px; font-family: var(--sans); }
+  .tabs { display: flex; border-bottom: 1px solid var(--line); background: var(--paper-2); }
+  .tabs button { flex: 1; min-height: 44px; border: 0; background: transparent; font-size: var(--fs-2); color: var(--ink-3); border-bottom: 2px solid transparent; letter-spacing: 0.04em; }
+  .tabs button:hover { color: var(--ink); background: var(--paper-3); }
+  .tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--ochre); font-weight: 600; }
+  .tabs button .n { font-family: var(--sans); font-size: var(--fs-1); color: var(--ink-3); margin-left: 4px; }
+  .tabpane { display: none; flex: 1; min-height: 0; overflow: auto; padding: 16px 20px 32px; }
+  .tabpane.show { display: block; }
 
-  #place .eyebrow { font-family: var(--sans); font-size: 12px; color: var(--ink-3); letter-spacing: 0.04em; }
-  #place h3 { margin: 2px 0 6px; font-size: 20px; font-weight: 600; line-height: 1.2; }
-  #place .desc { margin: 0 0 8px; }
-  #place blockquote { margin: 8px 0; padding: 4px 0 4px 12px; border-left: 2px solid var(--gold); color: var(--ink-2); font-style: italic; }
-  #place blockquote .p { font-style: normal; font-family: var(--sans); font-size: 12px; color: var(--ink-3); margin-left: 6px; }
-  #place .gloss { font-family: var(--sans); font-size: 13px; color: var(--ink-2); background: var(--panel-2); border-radius: 4px; padding: 6px 9px; margin: 8px 0 0; }
-  #place .gloss b { color: var(--ink); }
-  #place .chron { margin-top: 8px; font-size: 14px; }
-  #place .chron .done { color: var(--good); font-family: var(--sans); font-size: 12px; }
-  #place .story { font-family: var(--sans); font-size: 12px; color: var(--gold); margin-bottom: 4px; }
-  .terrain-badge { display: inline-block; width: 10px; height: 10px; border: 1px solid var(--ink-2); vertical-align: -1px; margin-right: 3px; }
+  /* the entry, set like a book page */
+  .entry .eyebrow { font-family: var(--sans); font-size: var(--fs-1); color: var(--ink-3); letter-spacing: 0.04em; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .entry .eyebrow .step { color: var(--ochre); font-weight: 600; }
+  .entry h2 { font-size: var(--fs-4); margin: 6px 0 12px; }
+  .entry .desc { margin: 0 0 12px; text-align: left; hyphens: auto; }
+  .entry .desc::first-letter { font-size: 2.4em; float: left; line-height: 0.85; padding: 4px 6px 0 0; color: var(--ochre); }
+  .entry blockquote { margin: 12px 0; padding: 2px 0 2px 14px; border-left: 2px solid var(--gold); font-style: italic; color: var(--ink-2); }
+  .entry blockquote .p { display: block; font-style: normal; font-family: var(--sans); font-size: var(--fs-1); color: var(--ink-3); margin-top: 2px; }
+  .entry .gloss { font-family: var(--sans); font-size: var(--fs-2); color: var(--ink-2); background: var(--paper-3); border-radius: var(--r-2); padding: 10px 12px; margin: 16px 0 0; }
+  .entry .gloss .h { display: block; font-size: var(--fs-1); text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-3); margin-bottom: 4px; }
+  .entry .cache { font-family: var(--sans); font-size: var(--fs-2); color: var(--gold); margin: 10px 0 0; }
+  .entry .chron { margin: 16px 0 0; }
+  .entry .chron .btn { width: 100%; justify-content: space-between; }
+  .entry .chron .note { display: block; font-family: var(--sans); font-size: var(--fs-1); color: var(--ink-3); margin-top: 6px; }
+  .entry .nav { display: flex; gap: 8px; margin: 20px 0 0; padding-top: 16px; border-top: 1px solid var(--line); }
+  .entry .nav .btn { flex: 1; }
+  .entry .nav .btn small { display: block; font-family: var(--sans); font-size: 11px; color: inherit; opacity: 0.75; }
+  .entry .nav .btn { flex-direction: column; align-items: stretch; text-align: left; gap: 0; padding: 8px 12px; }
+  .entry .nav .btn.next { text-align: right; }
+  .entry .side { font-family: var(--sans); font-size: var(--fs-1); color: var(--ink-3); }
+  .intro h2 { font-size: var(--fs-4); margin: 0 0 8px; }
+  .intro p { margin: 0 0 12px; }
+  .intro .btn { margin-top: 4px; }
+  .intro .or { margin-top: 12px; font-size: var(--fs-2); color: var(--ink-3); }
+  .empty { color: var(--ink-3); font-style: italic; padding: 8px 0; }
 
-  #legend ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 3px 10px; font-size: 13px; }
-  #legend li { display: flex; align-items: center; gap: 6px; }
-  #legend .sw { width: 16px; height: 14px; border: 1px solid var(--ink-2); flex: none; }
-  #legend .note { font-family: var(--sans); font-size: 12px; color: var(--ink-2); margin: 6px 0 0; }
-  #legend .fogrow { display: flex; gap: 12px; margin-top: 6px; font-size: 12px; font-family: var(--sans); color: var(--ink-2); }
-  #legend .fogrow span { display: inline-flex; align-items: center; gap: 4px; }
+  /* contents and journal */
+  .toc .part { font-family: var(--sans); font-size: var(--fs-1); text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-3); margin: 14px 0 6px; }
+  .toc .part:first-child { margin-top: 0; }
+  .toc .sec { margin: 0 0 8px; }
+  .toc .sec h3 { font-size: var(--fs-2); font-weight: 600; margin: 0 0 2px; display: flex; gap: 8px; align-items: baseline; }
+  .toc .sec h3 .id { color: var(--ochre); font-family: var(--sans); font-size: var(--fs-1); min-width: 28px; }
+  .toc ul, .journal ul { list-style: none; margin: 0; padding: 0; }
+  .toc li button, .journal li button {
+    width: 100%; text-align: left; display: grid; grid-template-columns: 22px 1fr auto; gap: 8px; align-items: center; min-height: 36px;
+    padding: 4px 8px; border: 0; background: transparent; border-radius: var(--r-1); font-size: var(--fs-2);
+  }
+  .toc li button:hover, .journal li button:hover { background: var(--paper-3); }
+  .toc li button.sel, .journal li button.sel { background: var(--paper-3); box-shadow: inset 2px 0 0 var(--ochre); }
+  .toc .mark { width: 18px; height: 18px; border-radius: 50%; border: 1px solid var(--line-2); display: inline-flex; align-items: center; justify-content: center; font-family: var(--sans); font-size: 10px; color: var(--paper-2); }
+  .toc .mark.done { background: var(--ochre); border-color: var(--ochre); }
+  .toc .mark.seen { background: var(--ink-3); border-color: var(--ink-3); }
+  .toc .k { font-family: var(--sans); font-size: var(--fs-1); color: var(--ink-3); }
+  .toc .fog { color: var(--ink-3); }
+  .journal li button { grid-template-columns: 28px 1fr auto; }
+  .journal .k { font-family: var(--sans); font-size: var(--fs-1); color: var(--ochre); font-weight: 600; }
+  .journal .w { font-family: var(--sans); font-size: var(--fs-1); color: var(--ink-3); }
+  .journal .sum { margin: 0 0 12px; color: var(--ink-2); font-size: var(--fs-2); }
+  .moves h3 { font-family: var(--sans); font-size: var(--fs-1); text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-3); margin: 16px 0 6px; font-weight: 600; }
+  .moves ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+  .moves li button { width: 100%; text-align: left; display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; min-height: 40px; padding: 6px 10px; border: 1px solid var(--line); background: var(--paper-2); border-radius: var(--r-1); font-size: var(--fs-2); }
+  .moves li button:hover { background: var(--paper-3); }
+  .moves li button:disabled { opacity: 0.5; cursor: default; }
+  .moves li button small { display: block; font-family: var(--sans); font-size: var(--fs-1); color: var(--ink-3); }
+  .moves .cost { font-family: var(--sans); font-weight: 600; min-width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--ink); display: inline-flex; align-items: center; justify-content: center; font-size: var(--fs-1); }
+  .moves .cost.no { border-color: var(--ochre); color: var(--ochre); }
 
-  #fallback { display: none; }
+  /* ---------- overlays ---------- */
+  .overlay { position: absolute; inset: 0; z-index: 40; display: none; align-items: center; justify-content: center; background: rgba(42,31,20,0.6); padding: 16px; }
+  .overlay.show { display: flex; }
+  .box { background: var(--paper-2); border: 1px solid var(--line-2); border-radius: var(--r-2); padding: 24px; width: 100%; max-width: 520px; max-height: 100%; overflow: auto; box-shadow: 0 24px 60px rgba(0,0,0,0.4); }
+  .box h2 { font-size: var(--fs-4); margin: 0 0 8px; }
+  .box p { margin: 0 0 12px; }
+  .box .kicker { font-family: var(--sans); font-size: var(--fs-1); text-transform: uppercase; letter-spacing: 0.12em; color: var(--ochre); margin: 0 0 6px; }
+  .box .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 16px; }
+  .box .row .grow { flex: 1; }
+  .box textarea { width: 100%; font: var(--fs-1)/1.4 var(--sans); border: 1px solid var(--line); border-radius: var(--r-1); background: var(--paper-2); color: var(--ink); padding: 8px; min-height: 84px; resize: vertical; }
+  .keys { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; font-size: var(--fs-2); margin: 8px 0 12px; align-items: center; }
+  kbd { font-family: var(--sans); font-size: 12px; background: var(--paper-3); border: 1px solid var(--line-2); border-radius: 4px; padding: 1px 6px; white-space: nowrap; }
+  .dots { display: flex; gap: 6px; }
+  .dots i { width: 8px; height: 8px; border-radius: 50%; background: var(--line-2); }
+  .dots i.on { background: var(--ochre); }
+  .box .fig { display: block; width: 100%; height: auto; margin: 0 0 12px; border: 1px solid var(--line); border-radius: var(--r-1); background: var(--paper); }
+  .stat { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 12px 0; }
+  .stat div { background: var(--paper-3); border-radius: var(--r-1); padding: 8px 10px; }
+  .stat b { display: block; font-size: var(--fs-4); font-weight: 600; }
+  .stat span { font-family: var(--sans); font-size: var(--fs-1); color: var(--ink-3); }
+  #end .path { font-size: var(--fs-2); color: var(--ink-2); }
+  .about p { font-size: var(--fs-2); }
 
+  #sheet-handle { display: none; }
+  #fallback { display: none; padding: 16px 20px; }
+  #fallback.show { display: block; }
+
+  /* ---------- phone: the pane becomes a bottom sheet ---------- */
   @media (max-width: 860px) {
-    #side { max-width: none; flex-basis: 100%; }
-    #mapwrap { height: 62vh; min-height: 340px; }
-    #minimap { width: 120px; height: 84px; }
+    :root { --sheet-peek: 172px; }
+    header { flex-wrap: wrap; gap: 8px 10px; padding: 8px 16px; min-height: 0; }
+    header h1 { font-size: 20px; }
+    header .sub { display: none; }
+    header .spacer { flex: 1; }
+    .seg button { padding: 4px 10px; font-size: 13px; }
+    #btn-help { padding: 6px 8px; }
+    #search { flex: 1 1 100%; order: 10; }
+    #layout { display: block; position: relative; }
+    #stage { position: absolute; left: 0; right: 0; top: 0; bottom: var(--sheet-peek); }
+    #pane {
+      position: absolute; left: 0; right: 0; bottom: 0; width: auto; height: var(--sheet-peek); border-left: 0; border-top: 1px solid var(--line-2);
+      border-radius: 14px 14px 0 0; box-shadow: 0 -8px 24px rgba(60,35,10,0.2); transition: height 0.3s ease; z-index: 10;
+    }
+    #pane.open { height: 74%; }
+    #sheet-handle { display: flex; justify-content: center; align-items: center; min-height: 28px; border: 0; background: transparent; width: 100%; padding: 0; }
+    #sheet-handle i { width: 44px; height: 5px; border-radius: 3px; background: var(--line-2); }
+    #modebar { padding: 0 16px 8px; }
+    .prog { margin: 6px 0; }
+    #modebar .goal { display: none; }
+    .tabpane { padding: 12px 16px 32px; }
+    #cartouche { display: none; }
+    #compass { width: 56px; height: 56px; }
+    #minimap { width: 110px; height: 78px; }
     #hint { display: none; }
-    #compass { width: 60px; height: 60px; }
+    #zoom { flex-direction: row; }
+    .btn.icon { width: 44px; height: 44px; min-height: 44px; }
+    .stat { grid-template-columns: 1fr 1fr; }
   }
 </style>
 </head>
 <body>
 <header>
-  <h1>Latentland Map</h1>
-  <span class="sub">A hex map of <em>Latentland: A Romance of One Dimension</em>. Every step costs surprise; the fog lifts as you read.</span>
+  <h1>Latentland</h1>
+  <span class="sub">A map of <em>Latentland: A Romance of One Dimension</em>, the memoir of a single neuron.</span>
   <span class="spacer"></span>
-  <button class="small" id="btn-help">Help</button>
-  <button class="small" id="btn-reset">Reset map</button>
+  <div id="search">
+    <span class="glass" aria-hidden="true">&#9906;</span>
+    <input id="q" type="search" placeholder="Find a place, quote or concept" aria-label="Find a place, quote or concept" autocomplete="off" spellcheck="false">
+    <button class="btn quiet clear" id="q-clear" aria-label="Clear search">&times;</button>
+    <div id="results" role="listbox" aria-label="Search results"></div>
+  </div>
+  <div class="seg" role="radiogroup" aria-label="Mode">
+    <button role="radio" aria-checked="true" data-mode="story" title="Read the memoir place by place; nothing costs anything">Story</button>
+    <button role="radio" aria-checked="false" data-mode="expedition" title="Every step costs surprise tokens and the context window is finite">Expedition</button>
+  </div>
+  <button class="btn quiet" id="btn-help" aria-label="Help and about">Help</button>
 </header>
 
 <div id="layout">
   <div id="stage">
     <div id="mapwrap">
-      <svg id="map" xmlns="http://www.w3.org/2000/svg" aria-label="Hex map of Latentland"></svg>
-      <svg id="compass" viewBox="-42 -42 84 84" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <circle r="38" fill="rgba(242,232,207,0.75)" stroke="#5b4733" stroke-width="1"/>
-        <circle r="30" fill="none" stroke="#8b7455" stroke-width="0.6" stroke-dasharray="2 2"/>
-        <g fill="#2b1d12">
-          <path d="M0,-36 L5,-6 L0,0 L-5,-6 Z"/><path d="M0,36 L5,6 L0,0 L-5,6 Z" opacity="0.55"/>
-          <path d="M36,0 L6,5 L0,0 L6,-5 Z" opacity="0.55"/><path d="M-36,0 L-6,5 L0,0 L-6,-5 Z" opacity="0.55"/>
+      <svg id="map" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Map of Latentland"></svg>
+      <svg id="compass" class="ov" viewBox="-42 -42 84 84" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <circle r="39" fill="rgba(246,238,217,0.8)" stroke="#2a1f14" stroke-width="0.8"/>
+        <circle r="33" fill="none" stroke="#2a1f14" stroke-width="0.5"/>
+        <circle r="12" fill="none" stroke="#2a1f14" stroke-width="0.5"/>
+        <g stroke="#2a1f14" stroke-width="0.5" fill="none">
+          <path d="M0,-33 L0,33 M-33,0 L33,0"/>
+          <path d="M-23,-23 L23,23 M-23,23 L23,-23" stroke-dasharray="1.5 2"/>
         </g>
-        <g fill="#8c2f22" opacity="0.8">
-          <path d="M22,-22 L4,-2 L0,0 L2,-4 Z"/><path d="M-22,-22 L-4,-2 L0,0 L-2,-4 Z"/>
-          <path d="M22,22 L4,2 L0,0 L2,4 Z"/><path d="M-22,22 L-4,2 L0,0 L-2,4 Z"/>
+        <g fill="#2a1f14">
+          <path d="M0,-31 L3.5,-3.5 L0,0 Z"/><path d="M0,-31 L-3.5,-3.5 L0,0 Z" fill="#f6eed9" stroke="#2a1f14" stroke-width="0.6"/>
+          <path d="M0,31 L3.5,3.5 L0,0 Z" fill="#f6eed9" stroke="#2a1f14" stroke-width="0.6"/><path d="M0,31 L-3.5,3.5 L0,0 Z"/>
+          <path d="M31,0 L3.5,3.5 L0,0 Z"/><path d="M31,0 L3.5,-3.5 L0,0 Z" fill="#f6eed9" stroke="#2a1f14" stroke-width="0.6"/>
+          <path d="M-31,0 L-3.5,-3.5 L0,0 Z"/><path d="M-31,0 L-3.5,3.5 L0,0 Z" fill="#f6eed9" stroke="#2a1f14" stroke-width="0.6"/>
         </g>
-        <text y="-24" font-size="9" text-anchor="middle" font-family="Georgia, serif" fill="#2b1d12" font-weight="bold">N</text>
+        <g fill="#9d3f27">
+          <path d="M16,-16 L2.5,-1 L0,0 L1,-2.5 Z"/><path d="M-16,-16 L-2.5,-1 L0,0 L-1,-2.5 Z"/>
+          <path d="M16,16 L2.5,1 L0,0 L1,2.5 Z"/><path d="M-16,16 L-2.5,1 L0,0 L-1,2.5 Z"/>
+        </g>
+        <text y="-34" font-size="8" text-anchor="middle" font-family="Georgia, serif" fill="#2a1f14" font-weight="bold">N</text>
       </svg>
-      <div id="cartouche">Latentland</div>
-      <div id="zoom">
-        <button id="z-in" title="Zoom in" aria-label="Zoom in">+</button>
-        <button id="z-out" title="Zoom out" aria-label="Zoom out">&minus;</button>
-        <button id="z-fit" title="Fit the whole map" aria-label="Fit the whole map">&#9635;</button>
-        <button id="z-me" title="Centre on my position" aria-label="Centre on my position">&#9673;</button>
+      <div id="cartouche" class="ov"><div class="t">Latentland</div><div class="s">a romance of one dimension</div></div>
+      <div id="zoom" class="ov">
+        <button class="btn icon" id="z-in" title="Zoom in (+)" aria-label="Zoom in">+</button>
+        <button class="btn icon" id="z-out" title="Zoom out (−)" aria-label="Zoom out">&minus;</button>
+        <button class="btn icon" id="z-fit" title="Fit the whole map (F)" aria-label="Fit the whole map">&#9635;</button>
+        <button class="btn icon" id="z-me" title="Centre on the current place (C)" aria-label="Centre on the current place">&#9673;</button>
       </div>
-      <svg id="minimap" viewBox="0 0 168 118" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"></svg>
-      <div id="hint">Click an adjacent hex or use Q W E / A S D. Drag to pan, wheel to zoom.</div>
+      <svg id="minimap" class="ov" viewBox="0 0 168 118" xmlns="http://www.w3.org/2000/svg" aria-label="Overview map: click to pan" role="img"></svg>
+      <div id="hint" class="ov"></div>
+      <div id="tip" role="tooltip"></div>
+      <div id="toast" role="status" aria-live="polite"></div>
+    </div>
 
-      <div class="overlay" id="results">
-        <div class="box">
-          <h2>The context window closes.</h2>
-          <p id="res-summary"></p>
-          <p id="res-list" style="font-size:14px;color:var(--ink-2)"></p>
-          <textarea id="res-share" readonly aria-label="Share text"></textarea>
-          <div class="row">
-            <button id="btn-copy" class="small">Copy</button>
-            <button id="btn-restart" class="primary">Start over</button>
-            <button id="btn-keepreading" class="small">Keep reading in free roam</button>
-          </div>
+    <div class="overlay" id="onboard" role="dialog" aria-modal="true" aria-labelledby="ob-h">
+      <div class="box">
+        <div class="kicker" id="ob-k">Welcome</div>
+        <h2 id="ob-h"></h2>
+        <div id="ob-body"></div>
+        <div class="row">
+          <div class="dots" id="ob-dots"><i class="on"></i><i></i><i></i></div>
+          <span class="grow"></span>
+          <button class="btn quiet" id="ob-skip">Skip</button>
+          <button class="btn primary" id="ob-next">Next</button>
         </div>
       </div>
+    </div>
 
-      <div class="overlay" id="help">
-        <div class="box">
-          <h2>How to read this map</h2>
-          <p>Each hex is a place, caste, school or procedure from <em>Latentland</em>, the memoir of a single neuron; you begin at Unit 4091 with 64 tokens of surprise and pay a hex's terrain cost to enter it, less when the model already has context (two or more explored neighbours) and more when it is isolated. When the surprise runs out the context window closes, unless you switch on free roam, which costs nothing and is for reading; caches of surprise wait at a few places, and reading a chronicle (a blog post linked from a hex) restores 8 tokens once per post. The red dashed line is the story's own route, which <em>Next in the story</em> follows one beat per click, with a line from the book at each step.</p>
-          <div class="keys">
-            <span><kbd>Q</kbd> <kbd>W</kbd> <kbd>E</kbd></span><span>north-west, north-east, east</span>
-            <span><kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd></span><span>west, south-west, south-east</span>
-            <span><kbd>7</kbd> <kbd>9</kbd> <kbd>6</kbd> <kbd>4</kbd> <kbd>1</kbd> <kbd>3</kbd></span><span>numpad equivalents</span>
-            <span><kbd>N</kbd> or <kbd>Enter</kbd></span><span>next in the story</span>
-            <span><kbd>F</kbd></span><span>toggle free roam</span>
-          </div>
-          <p style="font-size:14px">Read the source: <a href="../../assets/documents/latentland.pdf" target="_blank" rel="noopener">the PDF</a> and <a href="../../#/post/latentland" target="_blank" rel="noopener">the blog post</a>. Quotes are from the PDF with page numbers; the descriptions paraphrase it in the Unit's voice, and each gloss names the real concept in plain English. Fog and progress are kept in this browser only.</p>
-          <p style="text-align:center"><button id="btn-help-close">Close</button></p>
+    <div class="overlay" id="help" role="dialog" aria-modal="true" aria-labelledby="help-h">
+      <div class="box about">
+        <h2 id="help-h">About this map</h2>
+        <p>Every place on the map is a concept from <em>Latentland: A Romance of One Dimension</em>, the memoir of Unit 4091, a single neuron in the eleventh layer of a language model. The quotes are lines from the book with their page numbers; the descriptions paraphrase it in the Unit's voice; each gloss names the real idea in plain English. Read the source: <a href="../../assets/documents/latentland.pdf" target="_blank" rel="noopener">the PDF</a> and <a href="../../#/post/latentland" target="_blank" rel="noopener">the blog post</a>.</p>
+        <p><b>Story</b> follows the memoir's route across 42 places, revealing the map as it goes. <b>Expedition</b> is a game on the same map: each step costs tokens of surprise, the way a model's context window pays for what it did not predict, and the window holds 64.</p>
+        <div class="keys">
+          <span><kbd>&larr;</kbd> <kbd>&rarr;</kbd></span><span>previous / next place in the story</span>
+          <span><kbd>Q</kbd> <kbd>W</kbd> <kbd>E</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd></span><span>move in six directions (Expedition)</span>
+          <span><kbd>U</kbd></span><span>undo the last move (Expedition)</span>
+          <span><kbd>+</kbd> <kbd>&minus;</kbd> <kbd>F</kbd> <kbd>C</kbd></span><span>zoom, fit the map, centre on the current place</span>
+          <span><kbd>/</kbd></span><span>search</span>
+          <span><kbd>?</kbd></span><span>this panel</span>
+        </div>
+        <p>The map is drawn from the book's own geography: the residual river from headwaters to delta, the Corpus Sea beyond the rim, the road of the backward light. Progress and fog are kept in this browser only. Made without frameworks or external assets.</p>
+        <div class="row"><button class="btn quiet" id="btn-reset">Forget everything and start over</button><span class="grow"></span><button class="btn primary" id="btn-help-close">Close</button></div>
+      </div>
+    </div>
+
+    <div class="overlay" id="end" role="dialog" aria-modal="true" aria-labelledby="end-h">
+      <div class="box">
+        <div class="kicker">Expedition</div>
+        <h2 id="end-h">The context window closes.</h2>
+        <p id="end-sum"></p>
+        <div class="stat" id="end-stat"></div>
+        <p class="path" id="end-path"></p>
+        <textarea id="end-share" readonly aria-label="Share text"></textarea>
+        <div class="row">
+          <button class="btn" id="btn-copy">Copy</button>
+          <button class="btn quiet" id="btn-end-story">Back to the story</button>
+          <span class="grow"></span>
+          <button class="btn primary" id="btn-restart">New expedition</button>
         </div>
       </div>
     </div>
   </div>
 
-  <div id="side">
-    <div class="card" id="status">
-      <h2>Surprise</h2>
-      <div id="tokens"><b id="tok">64</b><span>tokens left in the context window</span></div>
-      <div id="meter"><div id="meterfill"></div></div>
-      <div class="stats"><span>explored <b id="explored">1</b> of <b id="total">0</b></span><span id="modelabel">exploring</span></div>
-      <div class="controls">
-        <button id="btn-next" class="primary">Next in the story &rarr;</button>
-        <label><input type="checkbox" id="chk-free"> Free roam</label>
-      </div>
-      <div id="hexpad" aria-label="Move">
-        <button data-dir="2" title="north-west (Q)">Q &#8598;</button>
-        <button data-dir="1" title="north-east (W)">W &#8599;</button>
-        <button data-dir="0" title="east (E)">E &#8594;</button>
-        <button data-dir="3" title="west (A)">A &#8592;</button>
-        <button data-dir="4" title="south-west (S)">S &#8601;</button>
-        <button data-dir="5" title="south-east (D)">D &#8600;</button>
-      </div>
-      <div id="msg"></div>
-    </div>
-
-    <div class="card" id="place">
-      <div class="eyebrow"></div>
-      <h3>Loading the world&hellip;</h3>
-      <p class="desc" id="fallback">The map data (<code>world.js</code>) did not load. Open this page from the site or a local server.</p>
-    </div>
-
-    <div class="card" id="legend">
-      <h2>Terrain and cost</h2>
-      <ul id="legend-list"></ul>
-      <div class="fogrow">
-        <span><i class="sw" style="display:inline-block;width:12px;height:12px;background:var(--fog)"></i> unexplored</span>
-        <span><i class="sw" style="display:inline-block;width:12px;height:12px;background:#8a7a5c"></i> in sight</span>
-        <span><i class="sw" style="display:inline-block;width:12px;height:12px;background:var(--t-plain)"></i> explored</span>
-      </div>
-      <p class="note">&minus;1 with two explored neighbours, &minus;2 with three or more (the model has context); +1 for an isolated hex. Returning to explored ground costs 1.</p>
-    </div>
-  </div>
+  <aside id="pane" aria-label="Reading pane">
+    <button id="sheet-handle" aria-label="Open or close the reading pane" aria-expanded="false"><i></i></button>
+    <div id="modebar"></div>
+    <nav class="tabs" role="tablist" aria-label="Reading pane sections">
+      <button role="tab" aria-selected="true" data-tab="entry" id="tab-b-entry">Entry</button>
+      <button role="tab" aria-selected="false" data-tab="contents" id="tab-b-contents">Contents</button>
+      <button role="tab" aria-selected="false" data-tab="journal" id="tab-b-journal">Journal <span class="n" id="journal-n"></span></button>
+    </nav>
+    <div class="tabpane show" id="tab-entry" role="tabpanel" aria-labelledby="tab-b-entry"></div>
+    <div class="tabpane" id="tab-contents" role="tabpanel" aria-labelledby="tab-b-contents"></div>
+    <div class="tabpane" id="tab-journal" role="tabpanel" aria-labelledby="tab-b-journal"></div>
+    <div id="fallback"><h2>The map could not load</h2><p>The world data (<code>world.js</code>, <code>geo.js</code>) did not load. Open this page from the site or a local web server rather than as a file.</p></div>
+  </aside>
 </div>
 
 <script src="world.js"></script>
-<script>
-(function () {
-  "use strict";
-  var W = window.LATENTLAND;
-  if (!W) { document.getElementById("fallback").style.display = "block"; return; }
-
-  // ---------- constants ----------
-  var S = 38;                         // hex radius in map units
-  var SQ3 = Math.sqrt(3);
-  var STORE = "latentland-map.v1";
-  var NS = "http://www.w3.org/2000/svg";
-  var KEYS = { q: 2, w: 1, e: 0, a: 3, s: 4, d: 5, "7": 2, "9": 1, "6": 0, "4": 3, "1": 4, "3": 5 };
-  var DIRNAMES = ["E", "NE", "NW", "W", "SW", "SE"];
-  var FILL = { plain: "#dcc78f", city: "#cfae7a", forest: "#9fb277", river: "#8fb4c4", ruin: "#b9a08c", mountain: "#b39c84", sea: "#7c9fb5" };
-  var TOTAL = W.HEXES.length;
-
-  // ---------- state ----------
-  var st = freshState();
-  var view = { k: 1, tx: 0, ty: 0 };
-  var lastStoryStep = null;   // {idx} when the last move was a story step
-  var hexEls = {};            // id -> { g, base, fog, cost, costbg, label lines }
-
-  function freshState() {
-    return { pos: W.START, tokens: W.BUDGET, explored: [W.START], visited: [W.START], read: [], caches: [], free: false, ended: false };
-  }
-  function save() {
-    try { localStorage.setItem(STORE, JSON.stringify(st)); } catch (e) { /* private mode etc. */ }
-  }
-  function load() {
-    try {
-      var raw = localStorage.getItem(STORE);
-      if (!raw) return;
-      var s = JSON.parse(raw);
-      if (!s || !W.byId[s.pos]) return;
-      st = s;
-      st.explored = (st.explored || []).filter(function (id) { return W.byId[id]; });
-      st.visited = (st.visited || []).filter(function (id) { return W.byId[id]; });
-      st.read = st.read || []; st.caches = st.caches || [];
-      if (st.explored.indexOf(st.pos) < 0) st.explored.push(st.pos);
-    } catch (e) { /* ignore */ }
-  }
-  function isExplored(id) { return st.explored.indexOf(id) >= 0; }
-  function fogState(id) {
-    if (isExplored(id)) return "explored";
-    var ns = W.neighbourIds(id);
-    for (var i = 0; i < ns.length; i++) if (isExplored(ns[i])) return "frontier";
-    return "unexplored";
-  }
-
-  // Cost to enter a hex from an adjacent explored one.
-  function moveCost(id) {
-    if (st.free) return { cost: 0, mod: 0, why: "free roam" };
-    if (isExplored(id)) return { cost: 1, mod: 0, why: "explored ground" };
-    var h = W.byId[id];
-    var ns = W.neighbourIds(id), n = 0, u = 0;
-    ns.forEach(function (x) { if (isExplored(x)) n++; else u++; });
-    // context discount: the more explored neighbours, the more predictable the hex;
-    // a hex with one known neighbour and five unknown ones is isolated and costs extra
-    var mod = n >= 3 ? -2 : n === 2 ? -1 : (u >= 5 ? 1 : 0);
-    var why = mod < 0 ? "predictable: " + n + " explored neighbours" : mod > 0 ? "isolated" : "";
-    return { cost: Math.max(1, h.cost + mod), mod: mod, why: why };
-  }
-
-  // ---------- geometry ----------
-  function centre(h) { return { x: S * SQ3 * (h.q + h.r / 2), y: S * 1.5 * h.r }; }
-  function corners(cx, cy, s) {
-    var pts = [];
-    for (var i = 0; i < 6; i++) {
-      var a = Math.PI / 180 * (60 * i - 30);
-      pts.push((cx + s * Math.cos(a)).toFixed(2) + "," + (cy + s * Math.sin(a)).toFixed(2));
-    }
-    return pts.join(" ");
-  }
-  var bounds = (function () {
-    var minx = 1e9, miny = 1e9, maxx = -1e9, maxy = -1e9;
-    W.HEXES.forEach(function (h) { var c = centre(h); minx = Math.min(minx, c.x); maxx = Math.max(maxx, c.x); miny = Math.min(miny, c.y); maxy = Math.max(maxy, c.y); });
-    return { minx: minx - S, maxx: maxx + S, miny: miny - S, maxy: maxy + S };
-  })();
-
-  // ---------- svg helpers ----------
-  function el(name, attrs, parent) {
-    var e = document.createElementNS(NS, name);
-    for (var k in attrs) if (attrs.hasOwnProperty(k)) e.setAttribute(k, attrs[k]);
-    if (parent) parent.appendChild(e);
-    return e;
-  }
-  function splitLabel(s) {
-    if (s.length <= 12) return [s];
-    var words = s.split(" "), best = null, bestDiff = 1e9;
-    for (var i = 1; i < words.length; i++) {
-      var a = words.slice(0, i).join(" "), b = words.slice(i).join(" ");
-      var d = Math.abs(a.length - b.length);
-      if (d < bestDiff) { bestDiff = d; best = [a, b]; }
-    }
-    return best || [s];
-  }
-  // A silhouette glyph per terrain, used inside fogged hexes and the legend.
-  function glyph(terrain, cx, cy, s, parent, color) {
-    var g = el("g", { fill: "none", stroke: color, "stroke-width": 1.2, "stroke-linecap": "round", "stroke-linejoin": "round" }, parent);
-    var u = s / 3;
-    switch (terrain) {
-      case "mountain":
-        el("path", { d: "M" + (cx - 1.6 * u) + "," + (cy + 0.8 * u) + " L" + (cx - 0.5 * u) + "," + (cy - 1.1 * u) + " L" + (cx + 0.2 * u) + "," + (cy + 0.1 * u) + " L" + (cx + 0.8 * u) + "," + (cy - 0.6 * u) + " L" + (cx + 1.7 * u) + "," + (cy + 0.8 * u) + " Z" }, g);
-        break;
-      case "forest":
-        [-1, 0.1, 1.1].forEach(function (dx, i) {
-          var x = cx + dx * u, y = cy + (i === 1 ? -0.5 * u : 0.3 * u);
-          el("path", { d: "M" + x + "," + (y + u) + " L" + x + "," + (y + 0.2 * u) + " M" + (x - 0.6 * u) + "," + (y + 0.3 * u) + " L" + x + "," + (y - 0.8 * u) + " L" + (x + 0.6 * u) + "," + (y + 0.3 * u) + " Z" }, g);
-        });
-        break;
-      case "river": case "sea":
-        [-0.7, 0, 0.7].forEach(function (dy) {
-          var y = cy + dy * u;
-          el("path", { d: "M" + (cx - 1.6 * u) + "," + y + " q" + (0.4 * u) + "," + (-0.5 * u) + " " + (0.8 * u) + ",0 t" + (0.8 * u) + ",0 t" + (0.8 * u) + ",0 t" + (0.8 * u) + ",0" }, g);
-        });
-        break;
-      case "city":
-        el("path", { d: "M" + (cx - 1.4 * u) + "," + (cy + u) + " V" + (cy - 0.2 * u) + " H" + (cx - 0.4 * u) + " V" + (cy - 1.2 * u) + " H" + (cx + 0.5 * u) + " V" + (cy - 0.4 * u) + " H" + (cx + 1.4 * u) + " V" + (cy + u) + " Z" }, g);
-        break;
-      case "ruin":
-        el("path", { d: "M" + (cx - 1.4 * u) + "," + (cy + u) + " V" + (cy - 0.4 * u) + " M" + (cx - 0.5 * u) + "," + (cy + u) + " V" + (cy - 1.1 * u) + " M" + (cx + 0.5 * u) + "," + (cy + u) + " V" + (cy - 0.2 * u) + " M" + (cx + 1.4 * u) + "," + (cy + u) + " V" + (cy - 0.8 * u) + " M" + (cx - 1.7 * u) + "," + (cy + u) + " H" + (cx + 1.7 * u) }, g);
-        break;
-      default: // plain
-        el("path", { d: "M" + (cx - 1.5 * u) + "," + (cy + 0.3 * u) + " h" + (1.1 * u) + " M" + (cx - 0.1 * u) + "," + (cy + 0.3 * u) + " h" + (1.6 * u) + " M" + (cx - 1 * u) + "," + (cy - 0.4 * u) + " h" + (1.2 * u) + " M" + (cx + 0.5 * u) + "," + (cy - 0.4 * u) + " h" + (0.8 * u) }, g);
-    }
-    return g;
-  }
-
-  // ---------- build the map ----------
-  var svg = document.getElementById("map");
-  var defs = el("defs", {}, svg);
-  function pattern(id, w, h, draw) {
-    var p = el("pattern", { id: id, width: w, height: h, patternUnits: "userSpaceOnUse" }, defs);
-    draw(p);
-  }
-  pattern("p-mountain", 8, 8, function (p) { el("path", { d: "M0,8 L8,0", stroke: "rgba(43,29,18,0.28)", "stroke-width": 1 }, p); });
-  pattern("p-forest", 10, 10, function (p) { el("circle", { cx: 3, cy: 3, r: 1.4, fill: "rgba(43,29,18,0.22)" }, p); el("circle", { cx: 8, cy: 7, r: 1.1, fill: "rgba(43,29,18,0.18)" }, p); });
-  pattern("p-river", 14, 8, function (p) { el("path", { d: "M0,4 q3.5,-3 7,0 t7,0", fill: "none", stroke: "rgba(43,29,18,0.28)", "stroke-width": 0.9 }, p); });
-  pattern("p-sea", 14, 7, function (p) { el("path", { d: "M0,3.5 q3.5,-3 7,0 t7,0", fill: "none", stroke: "rgba(25,35,50,0.35)", "stroke-width": 1 }, p); });
-  pattern("p-city", 8, 8, function (p) { el("rect", { x: 1, y: 1, width: 2.5, height: 2.5, fill: "rgba(43,29,18,0.22)" }, p); el("rect", { x: 5, y: 4.5, width: 2.5, height: 2.5, fill: "rgba(43,29,18,0.18)" }, p); });
-  pattern("p-ruin", 9, 9, function (p) { el("path", { d: "M0,9 L9,0 M0,0 L9,9", stroke: "rgba(43,29,18,0.16)", "stroke-width": 0.8 }, p); });
-  pattern("p-plain", 12, 12, function (p) { el("circle", { cx: 2, cy: 2, r: 0.7, fill: "rgba(43,29,18,0.22)" }, p); el("circle", { cx: 8, cy: 8, r: 0.7, fill: "rgba(43,29,18,0.18)" }, p); });
-  pattern("p-fog", 6, 6, function (p) { el("path", { d: "M0,6 L6,0", stroke: "rgba(255,240,210,0.07)", "stroke-width": 1 }, p); });
-
-  var world = el("g", { id: "world" }, svg);
-  var gTiles = el("g", {}, world);
-  var routePath = el("path", { id: "route" }, world);
-  var routeHint = el("path", { id: "routehint" }, world);
-  var gLabels = el("g", {}, world);
-  var gMarker = el("g", {}, world);
-
-  W.HEXES.forEach(function (h) {
-    var c = centre(h);
-    var g = el("g", { "class": "hex", "data-id": h.id }, gTiles);
-    var base = el("polygon", { "class": "base", points: corners(c.x, c.y, S - 1.2), fill: FILL[h.terrain] }, g);
-    el("polygon", { "class": "tex", points: corners(c.x, c.y, S - 1.2), fill: "url(#p-" + h.terrain + ")" }, g);
-    var fog = el("polygon", { "class": "fog", points: corners(c.x, c.y, S - 1.2), fill: "#33261b" }, g);
-    el("polygon", { "class": "fogtex", points: corners(c.x, c.y, S - 1.2), fill: "url(#p-fog)" }, g);
-    // silhouette of the terrain, drawn over the fog so an unexplored hex hints at what it is
-    var sil = glyph(h.terrain, c.x, c.y, S * 0.9, g, "rgba(255,240,210,0.2)");
-    sil.setAttribute("class", "sil");
-    // labels live in a separate layer so the route line never covers them
-    var lg = el("g", { "class": "hex-label", "data-id": h.id }, gLabels);
-    var lines = splitLabel(h.short);
-    var y0 = c.y + (lines.length === 1 ? 3 : -2);
-    var labelEls = lines.map(function (line, i) {
-      return el("text", { "class": "label", x: c.x, y: y0 + i * 10.5 }, lg);
-    });
-    labelEls.forEach(function (t, i) { t.textContent = lines[i]; });
-    var costbg = el("circle", { "class": "costbg", cx: c.x, cy: c.y + S * 0.62, r: 6.5 }, lg);
-    var cost = el("text", { "class": "cost", x: c.x, y: c.y + S * 0.62 + 3 }, lg);
-    var cacheMark = h.cache ? el("text", { x: c.x, y: c.y - S * 0.52, "font-size": "9", "text-anchor": "middle", fill: "#8c2f22" }, lg) : null;
-    if (cacheMark) cacheMark.textContent = "✦";
-    g.addEventListener("click", function () { onHexClick(h.id); });
-    hexEls[h.id] = { g: g, base: base, fog: fog, sil: sil, label: lg, labels: labelEls, cost: cost, costbg: costbg, cacheMark: cacheMark, c: c, h: h };
-  });
-
-  var marker = el("g", {}, gMarker);
-  el("circle", { r: S * 0.26, fill: "none", stroke: "#8c2f22", "stroke-width": 2 }, marker);
-  el("circle", { r: 3, fill: "#8c2f22" }, marker);
-
-  // ---------- render ----------
-  function nextStoryIndex() {
-    var i = W.ROUTE.indexOf(st.pos);
-    if (i < 0) {
-      i = -1;
-      st.explored.forEach(function (id) { i = Math.max(i, W.ROUTE.indexOf(id)); });
-    }
-    return i + 1;
-  }
-  function render() {
-    var nextIdx = nextStoryIndex();
-    var nextId = nextIdx < W.ROUTE.length ? W.ROUTE[nextIdx] : null;
-    W.HEXES.forEach(function (h) {
-      var e = hexEls[h.id], f = fogState(h.id);
-      e.g.setAttribute("class", "hex " + f + (h.id === st.pos ? " current" : "") + (h.id === nextId && f !== "unexplored" ? " nextstop" : ""));
-      e.fog.setAttribute("fill-opacity", f === "explored" ? 0 : f === "frontier" ? 0.5 : 0.94);
-      e.g.querySelector(".fogtex").setAttribute("fill-opacity", f === "unexplored" ? 1 : 0);
-      e.sil.setAttribute("opacity", f === "unexplored" ? 1 : 0);
-      var showLabel = f !== "unexplored";
-      e.labels.forEach(function (t) { t.setAttribute("opacity", showLabel ? 1 : 0); t.setAttribute("fill", f === "frontier" ? "#f2e6cc" : "#2b1d12"); });
-      if (e.cacheMark) e.cacheMark.setAttribute("opacity", f === "explored" ? 1 : 0);
-      // cost badge on hexes you could step to next
-      var showCost = !st.free && f === "frontier" && W.isAdjacent(st.pos, h.id);
-      if (showCost) {
-        var mc = moveCost(h.id);
-        e.cost.textContent = mc.cost;
-        e.costbg.setAttribute("fill", mc.cost > st.tokens ? "#8c2f22" : "#2b1d12");
-      }
-      e.cost.setAttribute("opacity", showCost ? 1 : 0);
-      e.costbg.setAttribute("opacity", showCost ? 1 : 0);
-    });
-    // canonical route, drawn only where both ends are out of the fog
-    var d = "";
-    for (var i = 1; i < W.ROUTE.length; i++) {
-      var a = W.byId[W.ROUTE[i - 1]], b = W.byId[W.ROUTE[i]];
-      if (isExplored(a.id) && isExplored(b.id)) {
-        var ca = centre(a), cb = centre(b);
-        d += "M" + ca.x + "," + ca.y + " L" + cb.x + "," + cb.y + " ";
-      }
-    }
-    routePath.setAttribute("d", d);
-    var hd = "";
-    if (nextId && fogState(nextId) !== "unexplored") {
-      var p1 = centre(W.byId[st.pos]), p2 = centre(W.byId[nextId]);
-      hd = "M" + p1.x + "," + p1.y + " L" + p2.x + "," + p2.y;
-    }
-    routeHint.setAttribute("d", hd);
-    var pc = centre(W.byId[st.pos]);
-    marker.setAttribute("transform", "translate(" + pc.x + "," + pc.y + ")");
-
-    // side panel
-    document.getElementById("tok").textContent = st.tokens;
-    document.getElementById("meterfill").style.width = Math.max(0, Math.min(100, st.tokens / W.BUDGET * 100)) + "%";
-    document.getElementById("explored").textContent = st.explored.length;
-    document.getElementById("total").textContent = TOTAL;
-    document.getElementById("modelabel").textContent = st.free ? "free roam" : st.ended ? "window closed" : "exploring";
-    document.getElementById("chk-free").checked = st.free;
-    var nb = document.getElementById("btn-next");
-    if (nextId) {
-      var nh = W.byId[nextId], mc2 = moveCost(nextId);
-      nb.disabled = false;
-      nb.textContent = "Next in the story: " + nh.short + (st.free ? "" : " (" + mc2.cost + ")") + " →";
-    } else { nb.disabled = true; nb.textContent = "The story is told"; }
-    var pad = document.querySelectorAll("#hexpad button");
-    pad.forEach(function (b) { var n = W.byId[st.pos].neighbours[+b.getAttribute("data-dir")]; b.disabled = !n; });
-    drawMinimap();
-    updateHash();
-  }
-
-  // ---------- place panel ----------
-  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
-  function showPlace(id, opts) {
-    var h = W.byId[id], t = W.TERRAIN[h.terrain];
-    var html = "";
-    if (opts && opts.story != null) html += '<div class="story">Following the story · step ' + (opts.story + 1) + " of " + W.ROUTE.length + "</div>";
-    html += '<div class="eyebrow">' + esc(h.sec) + " · p." + h.page + ' · <i class="terrain-badge" style="background:' + FILL[h.terrain] + '"></i>' + t.name + " (cost " + t.cost + ")</div>";
-    html += "<h3>" + esc(h.name) + "</h3>";
-    html += '<p class="desc">' + esc(h.desc) + "</p>";
-    h.quotes.forEach(function (q) { html += "<blockquote>“" + esc(q.t) + "”<span class=\"p\">p. " + q.p + "</span></blockquote>"; });
-    html += '<p class="gloss"><b>Plainly:</b> ' + esc(h.gloss) + "</p>";
-    if (h.cache) html += '<p class="gloss">✦ A cache of surprise' + (st.caches.indexOf(id) >= 0 ? " (already taken)." : ": +" + h.cache + " tokens on arrival.") + "</p>";
-    if (h.chronicle) {
-      var title = W.CHRONICLES[h.chronicle] || h.chronicle;
-      var read = st.read.indexOf(h.chronicle) >= 0;
-      html += '<p class="chron">A chronicle of this place: <a href="../../#/post/' + esc(h.chronicle) + '" target="_blank" rel="noopener" data-slug="' + esc(h.chronicle) + '">' + esc(title) + "</a>" +
-        (read ? ' <span class="done">read, +' + W.CHRONICLE_BONUS + " claimed</span>" : ' <span class="done" style="color:var(--ink-3)">(+' + W.CHRONICLE_BONUS + " surprise once you open it)</span>") + "</p>";
-    }
-    var box = document.getElementById("place");
-    box.innerHTML = html;
-    var link = box.querySelector("a[data-slug]");
-    if (link) link.addEventListener("click", function () { readChronicle(link.getAttribute("data-slug")); });
-  }
-  function readChronicle(slug) {
-    if (st.read.indexOf(slug) >= 0) return;
-    st.read.push(slug);
-    st.tokens += W.CHRONICLE_BONUS;
-    message("+" + W.CHRONICLE_BONUS + " surprise: a chronicle read is context regained.", true);
-    save(); render(); showPlace(st.pos, lastStoryStep);
-  }
-  function message(text, good) {
-    var m = document.getElementById("msg");
-    m.textContent = text; m.className = good ? "good" : "";
-  }
-
-  // ---------- travel ----------
-  function travel(id, opts) {
-    if (st.ended && !st.free) { openResults(); return false; }
-    var h = W.byId[id]; if (!h) return false;
-    var mc = moveCost(id);
-    if (mc.cost > st.tokens) { message("Not enough surprise left to enter " + h.short + " (costs " + mc.cost + ")."); return false; }
-    st.tokens -= mc.cost;
-    st.pos = id;
-    var first = !isExplored(id);
-    if (first) st.explored.push(id);
-    if (st.visited[st.visited.length - 1] !== id) st.visited.push(id);
-    var note = mc.cost === 0 ? "" : "−" + mc.cost + (mc.why ? " (" + mc.why + ")" : "");
-    if (h.cache && st.caches.indexOf(id) < 0) {
-      st.caches.push(id); st.tokens += h.cache;
-      note += (note ? "; " : "") + "+" + h.cache + " from a cache of surprise";
-    }
-    message(note ? h.short + ": " + note : h.short, /\+/.test(note) && !/−/.test(note));
-    lastStoryStep = (opts && opts.story != null) ? { story: opts.story } : null;
-    save(); render(); showPlace(id, lastStoryStep);
-    centreOn(id, true);
-    if (!st.free) checkEnd();
-    return true;
-  }
-  function onHexClick(id) {
-    if (id === st.pos) { showPlace(id, lastStoryStep); return; }
-    if (W.isAdjacent(st.pos, id)) { travel(id); return; }
-    if (st.free && fogState(id) !== "unexplored") { travel(id); return; }
-    if (fogState(id) === "unexplored") message("That country is still in fog.");
-    else message("Only adjacent hexes can be entered. " + W.byId[id].short + " is out of reach from here.");
-  }
-  function stepStory() {
-    var i = nextStoryIndex();
-    if (i >= W.ROUTE.length) { message("The story is told; the rest of the map is yours."); return; }
-    travel(W.ROUTE[i], { story: i });
-  }
-  function moveDir(dir) {
-    var n = W.byId[st.pos].neighbours[dir];
-    if (!n) { message("Nothing lies to the " + DIRNAMES[dir] + " of here."); return; }
-    travel(n);
-  }
-  function checkEnd() {
-    if (st.tokens <= 0) { endGame(); return; }
-    // nothing new could ever be afforded: the cheapest unexplored hex in sight costs more than what is left
-    var cheapest = 1e9;
-    W.HEXES.forEach(function (h) { if (fogState(h.id) === "frontier") cheapest = Math.min(cheapest, moveCost(h.id).cost); });
-    if (cheapest > st.tokens) endGame();
-  }
-  function endGame() {
-    st.ended = true; save(); render(); openResults();
-  }
-  function openResults() {
-    var names = st.visited.map(function (id) { return W.byId[id].name; });
-    var uniq = []; st.visited.forEach(function (id) { if (uniq.indexOf(id) < 0) uniq.push(id); });
-    document.getElementById("res-summary").textContent = "Unit 4091's memoir was read through " + st.explored.length + " of " + TOTAL + " places before the surprise ran out. " +
-      (st.read.length ? st.read.length + " chronicle" + (st.read.length > 1 ? "s" : "") + " read." : "No chronicles were read; each restores 8 tokens.");
-    document.getElementById("res-list").textContent = "Route: " + uniq.map(function (id) { return W.byId[id].short; }).join(" → ");
-    var url = location.href.split("#")[0];
-    document.getElementById("res-share").value = "Latentland Map: my context window closed after " + st.explored.length + " of " + TOTAL + " hexes. Furthest: " + names[names.length - 1] + ". Path: " + uniq.map(function (id) { return W.byId[id].short; }).join(", ") + ". " + url;
-    document.getElementById("results").classList.add("show");
-  }
-  function restart(keepFree) {
-    var free = keepFree === true;
-    st = freshState(); st.free = free;
-    lastStoryStep = null;
-    save(); render(); showPlace(st.pos); centreOn(st.pos, false);
-    document.getElementById("results").classList.remove("show");
-    message(free ? "Free roam: nothing costs anything; read at leisure." : "A new context window opens with " + W.BUDGET + " tokens of surprise.", true);
-  }
-
-  // ---------- hash ----------
-  var applyingHash = false;
-  function updateHash() {
-    var want = "#hex=" + st.pos + "&mode=" + (st.free ? "free" : "explore");
-    if (location.hash !== want) { applyingHash = true; history.replaceState(null, "", want); applyingHash = false; }
-  }
-  function readHash(initial) {
-    var m = /hex=([a-z]+)/.exec(location.hash), mode = /mode=(free|explore)/.exec(location.hash);
-    if (mode) st.free = mode[1] === "free";
-    if (m && W.byId[m[1]] && m[1] !== st.pos) {
-      if (st.free) { st.pos = m[1]; if (!isExplored(m[1])) st.explored.push(m[1]); if (st.visited[st.visited.length - 1] !== m[1]) st.visited.push(m[1]); }
-      else if (isExplored(m[1])) st.pos = m[1];
-    }
-    if (!initial) { save(); render(); showPlace(st.pos); centreOn(st.pos, true); }
-  }
-  window.addEventListener("hashchange", function () { if (!applyingHash) readHash(false); });
-
-  // ---------- pan / zoom ----------
-  var wrap = document.getElementById("mapwrap");
-  function applyView() { world.setAttribute("transform", "translate(" + view.tx + "," + view.ty + ") scale(" + view.k + ")"); drawMinimap(); }
-  function fitAll() {
-    var vw = wrap.clientWidth, vh = wrap.clientHeight;
-    var w = bounds.maxx - bounds.minx, hgt = bounds.maxy - bounds.miny;
-    view.k = Math.max(0.3, Math.min(2.5, Math.min(vw / (w + 40), vh / (hgt + 40))));
-    view.tx = (vw - w * view.k) / 2 - bounds.minx * view.k;
-    view.ty = (vh - hgt * view.k) / 2 - bounds.miny * view.k;
-    applyView();
-  }
-  function centreOn(id, onlyIfOffscreen) {
-    var c = centre(W.byId[id]);
-    var vw = wrap.clientWidth, vh = wrap.clientHeight;
-    var sx = c.x * view.k + view.tx, sy = c.y * view.k + view.ty;
-    var margin = S * view.k * 1.5;
-    if (onlyIfOffscreen && sx > margin && sx < vw - margin && sy > margin && sy < vh - margin) return;
-    view.tx = vw / 2 - c.x * view.k;
-    view.ty = vh / 2 - c.y * view.k;
-    applyView();
-  }
-  function zoomAt(factor, px, py) {
-    var nk = Math.max(0.3, Math.min(3, view.k * factor));
-    var f = nk / view.k;
-    view.tx = px - (px - view.tx) * f;
-    view.ty = py - (py - view.ty) * f;
-    view.k = nk;
-    applyView();
-  }
-  var pointers = {}, drag = null, pinch = null;
-  svg.addEventListener("pointerdown", function (ev) {
-    pointers[ev.pointerId] = { x: ev.clientX, y: ev.clientY };
-    var ids = Object.keys(pointers);
-    if (ids.length === 1) { drag = { x: ev.clientX, y: ev.clientY, tx: view.tx, ty: view.ty, moved: false }; svg.setPointerCapture(ev.pointerId); }
-    else if (ids.length === 2) {
-      var a = pointers[ids[0]], b = pointers[ids[1]];
-      pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), k: view.k, cx: (a.x + b.x) / 2, cy: (a.y + b.y) / 2, tx: view.tx, ty: view.ty };
-      drag = null;
-    }
-  });
-  svg.addEventListener("pointermove", function (ev) {
-    if (!pointers[ev.pointerId]) return;
-    pointers[ev.pointerId] = { x: ev.clientX, y: ev.clientY };
-    var ids = Object.keys(pointers);
-    if (pinch && ids.length === 2) {
-      var a = pointers[ids[0]], b = pointers[ids[1]];
-      var d = Math.hypot(a.x - b.x, a.y - b.y);
-      var r = wrap.getBoundingClientRect();
-      var nk = Math.max(0.3, Math.min(3, pinch.k * d / pinch.d)), f = nk / pinch.k;
-      var px = pinch.cx - r.left, py = pinch.cy - r.top;
-      var mx = (a.x + b.x) / 2 - pinch.cx, my = (a.y + b.y) / 2 - pinch.cy;
-      view.k = nk;
-      view.tx = px - (px - pinch.tx) * f + mx;
-      view.ty = py - (py - pinch.ty) * f + my;
-      applyView();
-    } else if (drag) {
-      var dx = ev.clientX - drag.x, dy = ev.clientY - drag.y;
-      if (Math.abs(dx) + Math.abs(dy) > 4) { drag.moved = true; svg.classList.add("dragging"); }
-      if (drag.moved) { view.tx = drag.tx + dx; view.ty = drag.ty + dy; applyView(); }
-    }
-  });
-  function pointerEnd(ev) {
-    delete pointers[ev.pointerId];
-    if (drag && drag.moved) { ev.preventDefault(); suppressClick = true; setTimeout(function () { suppressClick = false; }, 0); }
-    drag = null; if (Object.keys(pointers).length < 2) pinch = null;
-    svg.classList.remove("dragging");
-  }
-  var suppressClick = false;
-  svg.addEventListener("pointerup", pointerEnd);
-  svg.addEventListener("pointercancel", pointerEnd);
-  svg.addEventListener("click", function (ev) { if (suppressClick) { ev.stopPropagation(); ev.preventDefault(); } }, true);
-  svg.addEventListener("wheel", function (ev) {
-    ev.preventDefault();
-    var r = wrap.getBoundingClientRect();
-    zoomAt(ev.deltaY < 0 ? 1.15 : 1 / 1.15, ev.clientX - r.left, ev.clientY - r.top);
-  }, { passive: false });
-  document.getElementById("z-in").addEventListener("click", function () { zoomAt(1.25, wrap.clientWidth / 2, wrap.clientHeight / 2); });
-  document.getElementById("z-out").addEventListener("click", function () { zoomAt(1 / 1.25, wrap.clientWidth / 2, wrap.clientHeight / 2); });
-  document.getElementById("z-fit").addEventListener("click", fitAll);
-  document.getElementById("z-me").addEventListener("click", function () { centreOn(st.pos, false); });
-  // fit the whole map when it is readable at that scale; on small screens zoom to where you stand
-  function initialView() {
-    fitAll();
-    if (view.k < 0.85) { view.k = 1; centreOn(st.pos, false); } else centreOn(st.pos, true);
-  }
-  window.addEventListener("resize", initialView);
-
-  // ---------- minimap ----------
-  var mini = document.getElementById("minimap");
-  var miniHex = {}, miniVp;
-  (function buildMini() {
-    var w = bounds.maxx - bounds.minx, hgt = bounds.maxy - bounds.miny;
-    var k = Math.min(156 / w, 106 / hgt);
-    var ox = (168 - w * k) / 2 - bounds.minx * k, oy = (118 - hgt * k) / 2 - bounds.miny * k;
-    mini._k = k; mini._ox = ox; mini._oy = oy;
-    W.HEXES.forEach(function (h) {
-      var c = centre(h);
-      miniHex[h.id] = el("polygon", { points: corners(c.x * k + ox, c.y * k + oy, S * k * 0.92), stroke: "rgba(43,29,18,0.35)", "stroke-width": 0.4 }, mini);
-    });
-    miniVp = el("rect", { "class": "vp" }, mini);
-  })();
-  function drawMinimap() {
-    W.HEXES.forEach(function (h) {
-      var f = fogState(h.id), p = miniHex[h.id];
-      p.setAttribute("fill", f === "explored" ? FILL[h.terrain] : f === "frontier" ? "#8a7a5c" : "#c9b892");
-      if (h.id === st.pos) { p.setAttribute("stroke", "#8c2f22"); p.setAttribute("stroke-width", 1.2); }
-      else { p.setAttribute("stroke", "rgba(43,29,18,0.35)"); p.setAttribute("stroke-width", 0.4); }
-    });
-    var k = mini._k;
-    var x0 = (-view.tx / view.k) * k + mini._ox, y0 = (-view.ty / view.k) * k + mini._oy;
-    var vw = wrap.clientWidth / view.k * k, vh = wrap.clientHeight / view.k * k;
-    miniVp.setAttribute("x", x0); miniVp.setAttribute("y", y0); miniVp.setAttribute("width", vw); miniVp.setAttribute("height", vh);
-  }
-  mini.addEventListener("click", function (ev) {
-    var r = mini.getBoundingClientRect();
-    var mx = (ev.clientX - r.left) / r.width * 168, my = (ev.clientY - r.top) / r.height * 118;
-    var wx = (mx - mini._ox) / mini._k, wy = (my - mini._oy) / mini._k;
-    view.tx = wrap.clientWidth / 2 - wx * view.k; view.ty = wrap.clientHeight / 2 - wy * view.k; applyView();
-  });
-
-  // ---------- legend ----------
-  (function buildLegend() {
-    var ul = document.getElementById("legend-list");
-    Object.keys(W.TERRAIN).forEach(function (t) {
-      var li = document.createElement("li");
-      var sw = document.createElementNS(NS, "svg");
-      sw.setAttribute("class", "sw"); sw.setAttribute("viewBox", "0 0 16 14"); sw.setAttribute("width", "16"); sw.setAttribute("height", "14");
-      el("rect", { width: 16, height: 14, fill: FILL[t] }, sw);
-      el("rect", { width: 16, height: 14, fill: "url(#p-" + t + ")" }, sw);
-      li.appendChild(sw);
-      var txt = document.createElement("span");
-      txt.textContent = W.TERRAIN[t].name + " · " + W.TERRAIN[t].cost;
-      txt.title = W.TERRAIN[t].note;
-      li.appendChild(txt);
-      ul.appendChild(li);
-    });
-  })();
-
-  // ---------- controls ----------
-  document.getElementById("btn-next").addEventListener("click", stepStory);
-  document.getElementById("chk-free").addEventListener("change", function (ev) {
-    st.free = ev.target.checked;
-    if (st.free) document.getElementById("results").classList.remove("show");
-    else if (st.ended) { st.ended = false; if (st.tokens <= 0) st.tokens = 1; }
-    message(st.free ? "Free roam: nothing costs anything; click any hex out of the fog." : "Exploring: each step costs surprise again.", true);
-    save(); render();
-  });
-  document.querySelectorAll("#hexpad button").forEach(function (b) { b.addEventListener("click", function () { moveDir(+b.getAttribute("data-dir")); }); });
-  document.getElementById("btn-reset").addEventListener("click", function () {
-    if (!confirm("Forget everything explored and start again at Unit 4091?")) return;
-    try { localStorage.removeItem(STORE); } catch (e) { /* ignore */ }
-    restart(false);
-  });
-  document.getElementById("btn-restart").addEventListener("click", function () { restart(false); });
-  document.getElementById("btn-keepreading").addEventListener("click", function () {
-    st.free = true; st.ended = false; save(); render();
-    document.getElementById("results").classList.remove("show");
-    message("Free roam: nothing costs anything; read at leisure.", true);
-  });
-  document.getElementById("btn-copy").addEventListener("click", function () {
-    var ta = document.getElementById("res-share"); ta.select();
-    var done = false;
-    try { if (navigator.clipboard) { navigator.clipboard.writeText(ta.value); done = true; } } catch (e) { /* fall through */ }
-    if (!done) { try { document.execCommand("copy"); } catch (e) { /* ignore */ } }
-    this.textContent = "Copied";
-  });
-  document.getElementById("btn-help").addEventListener("click", function () { document.getElementById("help").classList.add("show"); });
-  document.getElementById("btn-help-close").addEventListener("click", function () { document.getElementById("help").classList.remove("show"); });
-  document.querySelectorAll(".overlay").forEach(function (o) { o.addEventListener("click", function (ev) { if (ev.target === o && o.id === "help") o.classList.remove("show"); }); });
-
-  document.addEventListener("keydown", function (ev) {
-    if (ev.target && /^(INPUT|TEXTAREA|SELECT)$/.test(ev.target.tagName)) return;
-    if (ev.altKey || ev.ctrlKey || ev.metaKey) return;
-    var k = ev.key.toLowerCase();
-    if (k === "escape") { document.getElementById("help").classList.remove("show"); return; }
-    if (KEYS.hasOwnProperty(k)) { ev.preventDefault(); moveDir(KEYS[k]); return; }
-    if (k === "n" || k === "enter") { ev.preventDefault(); stepStory(); return; }
-    if (k === "f") { var c = document.getElementById("chk-free"); c.checked = !c.checked; c.dispatchEvent(new Event("change")); return; }
-    if (k === "?" || k === "h") { document.getElementById("help").classList.toggle("show"); }
-  });
-
-  // ---------- go ----------
-  load();
-  readHash(true);
-  render();
-  showPlace(st.pos);
-  initialView();
-  if (st.ended && !st.free) openResults();
-  else if (st.explored.length === 1) message("You are a warmth in the Eleventh Layer. Step into the fog, or follow the story.", true);
-
-  // exposed for tests and probes only
-  window.__LL = { travel: travel, stepStory: stepStory, state: function () { return st; }, restart: restart, moveCost: moveCost, fogState: fogState };
-})();
-</script>
+<script src="geo.js"></script>
+<script src="app.js"></script>
 </body>
 </html>

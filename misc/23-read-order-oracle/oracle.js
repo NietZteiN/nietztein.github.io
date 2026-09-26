@@ -261,7 +261,7 @@
     };
   }
 
-  var Oracle = { tokenize: tokenize, stem: stem, vectorize: vectorize, similarityMatrix: similarityMatrix,
+  var Oracle = { tokenize: tokenize, stem: stem, vectorize: vectorize, similarityMatrix: similarityMatrix, dot: dot,
     shared: shared, tour: tour, score: score, knn: knn, route: route, seeded: seeded, langs: langs,
     GENRE_BONUS: GENRE_BONUS, LANG_BONUS: LANG_BONUS };
 
