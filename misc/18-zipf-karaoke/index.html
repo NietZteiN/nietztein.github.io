@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zipf Karaoke</title>
+<meta name="description" content="Words fade in proportion to how common they are, then the text is sung word by word and each word decays at its own rate.">
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    --bg: #121016;
+    --panel: #1b1821;
+    --panel-2: #262030;
+    --line: #3a3346;
+    --ink: #efe8dc;
+    --ink-2: #a79e93;
+    --ink-3: #6d655f;
+    --gold: #e9b95a;
+    --teal: #7fd1c3;
+    --coral: #e8875a;
+    --red: #e05a5a;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif CJK JP", serif;
+  }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); }
+  body {
+    font: 15px/1.45 -apple-system, "Segoe UI", Helvetica, Arial, "Hiragino Sans", "Yu Gothic", "IPAGothic", "Noto Sans CJK JP", sans-serif;
+    padding: 14px 16px 28px;
+    overflow-x: hidden;
+  }
+  h1 { font-size: 22px; margin: 0; font-weight: 600; letter-spacing: 0.01em; }
+  header { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 12px; }
+  header .sub { color: var(--ink-2); font-size: 14px; }
+  header .spacer { flex: 1; }
+  button, select, textarea {
+    font: inherit; color: var(--ink); background: var(--panel-2); border: 1px solid var(--line);
+    border-radius: 7px; padding: 6px 12px;
+  }
+  button { cursor: pointer; }
+  button:hover { background: #322a3e; }
+  button:active { transform: translateY(1px); }
+  button.small { font-size: 13px; padding: 4px 10px; }
+  button.on { border-color: var(--gold); color: var(--gold); }
+  select { width: 100%; padding: 6px 8px; }
+  textarea { width: 100%; min-height: 160px; resize: vertical; font-family: var(--serif); font-size: 15px; line-height: 1.4; }
+  a { color: var(--teal); }
+
+  #layout { display: flex; gap: 18px; align-items: flex-start; flex-wrap: wrap; }
+  #stagecol { flex: 1 1 560px; min-width: 0; display: grid; gap: 10px; }
+  #side { flex: 1 1 250px; min-width: 250px; max-width: 330px; display: grid; gap: 10px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+  .card h2 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-2); margin: 0 0 6px; font-weight: 600; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 6px; }
+  .row label { color: var(--ink-2); font-size: 13px; }
+  .note { color: var(--ink-2); font-size: 12.5px; margin-top: 6px; min-height: 1.2em; }
+  .note.warn { color: var(--coral); }
+  details summary { cursor: pointer; color: var(--ink-2); font-size: 13px; user-select: none; }
+  details[open] summary { margin-bottom: 6px; }
+
+  /* the stage */
+  #stage { padding: 22px 26px 26px; min-height: 300px; }
+  #stagehead { display: flex; justify-content: space-between; gap: 10px; color: var(--ink-2); font-size: 13px; margin-bottom: 14px; flex-wrap: wrap; }
+  #text { font-family: var(--serif); font-size: clamp(19px, 2.4vw, 27px); line-height: 1.55; }
+  #text p { margin: 0 0 1.1em; }
+  #text p:last-child { margin-bottom: 0; }
+  .w { display: inline; transition: opacity 0.18s linear; cursor: default; border-radius: 3px; }
+  .w:hover { text-decoration: underline dotted var(--ink-3); }
+  .w.cur { color: var(--gold); text-shadow: 0 0 14px rgba(233, 185, 90, 0.45); transition: none; }
+  .w.pk { text-shadow: 0 0 12px rgba(127, 209, 195, 0.6); }
+  .pu { color: var(--ink-2); }
+  body.playing .w { transition: none; }
+  /* token lens */
+  .tk { padding: 0 0.02em; border-bottom: 2px solid transparent; }
+  .tk.a { border-bottom-color: rgba(233, 185, 90, 0.55); }
+  .tk.b { border-bottom-color: rgba(127, 209, 195, 0.55); }
+  .n2 { color: #f0d08a; }
+  .n3 { color: var(--coral); font-size: 1.06em; }
+  .n4 { color: var(--red); font-size: 1.12em; }
+  .n5 { color: #ff6a8a; font-size: 1.18em; }
+
+  /* slider */
+  input[type=range] { width: 100%; accent-color: var(--gold); margin: 4px 0; }
+  .ends { display: flex; justify-content: space-between; color: var(--ink-3); font-size: 11.5px; letter-spacing: 0.03em; text-transform: uppercase; }
+  .readout { font-variant-numeric: tabular-nums; color: var(--ink-2); font-size: 13px; }
+  .radios { display: flex; gap: 12px; margin: 2px 0 8px; }
+  .radios label { display: flex; align-items: center; gap: 5px; cursor: pointer; }
+  input[type=radio] { accent-color: var(--gold); margin: 0; }
+
+  /* stats strip */
+  #stats { display: flex; gap: 14px 22px; align-items: center; flex-wrap: wrap; padding: 8px 12px; }
+  #stats .stat { display: flex; flex-direction: column; min-width: 90px; }
+  #stats .stat b { font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.2; }
+  #stats .stat span { color: var(--ink-2); font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.06em; }
+  #plot { flex: 0 0 auto; margin-left: auto; }
+  #plot svg { display: block; width: 240px; height: 96px; }
+  #plot circle { fill: var(--ink-2); }
+  #plot circle.hi { fill: var(--gold); }
+  #plot .ref { stroke: var(--ink-3); stroke-dasharray: 2 3; }
+  #plot .ax { stroke: var(--line); }
+  #plot text { fill: var(--ink-3); font-size: 9px; font-family: inherit; }
+  #tokkey { display: none; gap: 10px; font-size: 12px; color: var(--ink-2); flex-basis: 100%; }
+  body[data-lens="tok"] #tokkey { display: flex; }
+
+  #help p { margin: 6px 0; color: var(--ink); font-size: 14px; max-width: 70ch; }
+  #help p.src { color: var(--ink-2); font-size: 12.5px; }
+  kbd { font-family: inherit; background: var(--panel-2); border: 1px solid var(--line); border-radius: 4px; padding: 0 6px; font-size: 12px; }
+
+  @media (max-width: 760px) {
+    #side { max-width: none; }
+    #stage { padding: 16px 16px 20px; }
+    #plot { margin-left: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) { .w { transition: none; } }
+</style>
+</head>
+<body data-lens="freq">
+<header>
+  <h1>Zipf Karaoke</h1>
+  <span class="sub">Words fade by how common they are; press play and each one decays at its own rate.</span>
+  <span class="spacer"></span>
+  <button class="small" id="btn-help">What is this?</button>
+</header>
+
+<div id="layout">
+  <div id="stagecol">
+    <div id="stage" class="card">
+      <div id="stagehead"><span id="stagetitle"></span><span id="stagestatus"></span></div>
+      <div id="text"></div>
+    </div>
+
+    <div id="stats" class="card">
+      <div class="stat"><b id="st-visible">0 / 0</b><span>words visible</span></div>
+      <div class="stat"><b id="st-share">100%</b><span>meaning retained</span></div>
+      <div class="stat"><b id="st-thr">all</b><span id="st-thr-label">threshold</span></div>
+      <div id="plot" title="Rank against count for the words of this text, both on log scales. A straight line of slope -1 is Zipf's law."></div>
+      <div id="tokkey"><span><b style="color:var(--ink)">1</b> token</span><span class="n2">2</span><span class="n3">3</span><span class="n4">4</span><span class="n5">5+</span><span>pieces underlined in alternating colours</span></div>
+    </div>
+
+    <details id="help" class="card">
+      <summary>What is this?</summary>
+      <p>Zipf's law says a word's frequency is roughly inversely proportional to its rank, so a handful of words ("the", "of", "and") do most of the work while the long tail of rare words carries most of the surprise. The slider fades words by their log rank in a corpus: push it right and only the rare, information-heavy words remain; push it left and only the grammatical skeleton of function words survives. Press play and the text is sung word by word, each word pitched by its rarity and lingering for a time set by its frequency, so a common word vanishes within a beat while a rare one holds for the rest of the song.</p>
+      <p>The Tokens lens shows the same text as a language model chops it: each word is coloured by how many BPE pieces it becomes. "Common in..." swaps the frequency table, so a word rare in general English can be common in this blog. Everything (text, lens, corpus, slider, tempo) lives in the URL, so the address bar is a link to what you see. <kbd>Space</kbd> plays and pauses; click a word to hear its note.</p>
+      <p class="src">Frequencies: the top 50,000 words of Peter Norvig's count_1w.txt (Google Web Trillion Word Corpus, MIT licence). Tokenizer: gpt-tokenizer (cl100k_base) from jsDelivr, with a length-based estimate if the CDN is unreachable. Texts: public domain.</p>
+    </details>
+  </div>
+
+  <div id="side">
+    <div class="card">
+      <h2>Text</h2>
+      <select id="songbook" aria-label="songbook"></select>
+      <details id="editwrap" style="margin-top:8px">
+        <summary>Edit text</summary>
+        <textarea id="textarea" spellcheck="false" aria-label="text"></textarea>
+      </details>
+    </div>
+
+    <div class="card">
+      <h2>Lens</h2>
+      <div class="radios">
+        <label><input type="radio" name="lens" value="freq" checked> Frequency</label>
+        <label><input type="radio" name="lens" value="tok"> Tokens</label>
+      </div>
+      <div class="row" id="corpusrow"><label for="corpus">Common in&hellip;</label><select id="corpus" style="flex:1"></select></div>
+      <input type="range" id="slider" min="-1" max="1" step="0.01" value="0" aria-label="fade">
+      <div class="ends"><span>keep common</span><span>show all</span><span>keep rare</span></div>
+      <div class="readout" id="readout"></div>
+      <div class="note" id="lensnote"></div>
+    </div>
+
+    <div class="card">
+      <h2>Karaoke</h2>
+      <div class="row">
+        <button id="btn-play">Play</button>
+        <button id="btn-reset">Reset</button>
+        <button id="btn-mute" title="mute the notes">Sound on</button>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <label for="tempo">Tempo</label>
+        <input type="range" id="tempo" min="40" max="400" step="5" value="150" style="flex:1" aria-label="tempo">
+        <span class="readout" id="tempoval">150 wpm</span>
+      </div>
+      <div class="note">Common words go low and vanish within a beat; rare words ring high and stay.</div>
+    </div>
+  </div>
+</div>
+
+<script src="zipf.js"></script>
+<script src="freq.js"></script>
+<script src="songbook.js"></script>
+<script>
+(function () {
+  'use strict';
+  var Z = window.Zipf;
+  var $ = function (id) { return document.getElementById(id); };
+
+  /* ---------- corpora registry ----------
+     Each entry: { id, label, load: () -> Promise<corpus>, corpus, available, reason }.
+     Add another corpus by pushing an entry with its own loader. */
+  var CORPORA = [
+    {
+      id: 'en', label: 'General English', available: true,
+      load: function () {
+        var F = window.ZIPF_FREQ;
+        return Promise.resolve(Z.corpusFromWordString(F.id, F.label, F.note, F.words));
+      }
+    },
+    {
+      id: 'blog', label: "Jack's blog", available: true,
+      load: function () {
+        return fetch('../../blog/index.json').then(function (r) {
+          if (!r.ok) throw new Error('index ' + r.status);
+          return r.json();
+        }).then(function (index) {
+          return Promise.all(index.map(function (p) {
+            return fetch('../../blog/posts/' + p.file).then(function (r) { return r.ok ? r.text() : ''; });
+          })).then(function (texts) {
+            var all = texts.map(Z.stripMarkdown).join('\n');
+            var c = Z.corpusFromText('blog', "Jack's blog", '', all);
+            c.note = index.length + ' posts, ' + c.tokens.toLocaleString() + ' running words, ' + c.size.toLocaleString() + ' distinct';
+            return c;
+          });
+        });
+      }
+    }
+  ];
+  function corpusEntry(id) { for (var i = 0; i < CORPORA.length; i++) if (CORPORA[i].id === id) return CORPORA[i]; return CORPORA[0]; }
+  function loadCorpus(entry) {
+    if (!entry.promise) {
+      entry.promise = entry.load().then(function (c) { entry.corpus = c; return c; }, function (err) {
+        entry.available = false; entry.reason = String(err && err.message || err); entry.promise = null; throw err;
+      });
+    }
+    return entry.promise;
+  }
+
+  /* ---------- state ---------- */
+  var S = {
+    songId: 'jabberwocky', text: '', lens: 'freq', corpusId: 'en', s: 0, wpm: 150, muted: false
+  };
+  var doc = null;        // tokenised text
+  var els = [];          // span per word, by word index
+  var uFreq = [];        // frequency u per word
+  var uTok = [];         // token-count u per word
+  var nTok = [];         // token count per word
+  var corpus = null;     // active corpus object
+  var zipf = null;       // rank-frequency series for the plot
+  var tokenizer = null;  // { encode, decode } or 'fallback'
+  var tokenizerPromise = null;
+
+  /* ---------- songbook UI ---------- */
+  var SB = window.ZIPF_SONGBOOK;
+  function songById(id) { for (var i = 0; i < SB.length; i++) if (SB[i].id === id) return SB[i]; return null; }
+  function fillSongbook() {
+    var sel = $('songbook');
+    SB.forEach(function (s) {
+      var o = document.createElement('option');
+      o.value = s.id; o.textContent = s.title + ' — ' + s.author;
+      sel.appendChild(o);
+    });
+    var o = document.createElement('option'); o.value = 'custom'; o.textContent = 'Your own text'; sel.appendChild(o);
+  }
+  function fillCorpora() {
+    var sel = $('corpus');
+    CORPORA.forEach(function (c) {
+      var o = document.createElement('option'); o.value = c.id; o.textContent = c.label; sel.appendChild(o);
+    });
+  }
+
+  /* ---------- rendering the text ---------- */
+  function buildText() {
+    doc = Z.tokenize(S.text);
+    els = [];
+    var root = $('text');
+    root.textContent = '';
+    doc.paras.forEach(function (lines) {
+      var p = document.createElement('p');
+      lines.forEach(function (line, li) {
+        if (li) p.appendChild(document.createElement('br'));
+        line.forEach(function (tok, ti) {
+          if (ti) p.appendChild(document.createTextNode(' '));
+          var sp = document.createElement('span');
+          if (tok.kind === 'word') {
+            sp.className = 'w'; sp.dataset.i = tok.i; sp.textContent = tok.text;
+            els[tok.i] = sp;
+          } else { sp.className = 'pu'; sp.textContent = tok.text; }
+          p.appendChild(sp);
+        });
+      });
+      root.appendChild(p);
+    });
+    zipf = Z.zipfSeries(doc.words);
+    if (!doc.words.length) root.innerHTML = '<span class="pu">Type or paste some text.</span>';
+  }
+
+  // Per-word u values for the active corpus (and token lens if loaded).
+  function computeU() {
+    uFreq = doc.words.map(function (w) { return Z.wordU(corpus, w); });
+    if (S.lens === 'tok') computeTokens();
+  }
+  function activeU() { return S.lens === 'tok' ? uTok : uFreq; }
+
+  function computeTokens() {
+    nTok = doc.words.map(function (w, i) {
+      if (tokenizer && tokenizer !== 'fallback') {
+        try { return tokenizer.encode(' ' + w.core).length || 1; } catch (e) { return 1; }
+      }
+      return Z.estimateTokens(w.core, uFreq[i]);
+    });
+    uTok = nTok.map(Z.tokenU);
+  }
+
+  // Word span contents for the current lens: plain text, or BPE pieces underlined.
+  function decorateWords() {
+    doc.words.forEach(function (w, i) {
+      var sp = els[i];
+      sp.className = 'w';
+      sp.title = '';
+      if (S.lens === 'tok') {
+        var n = nTok[i];
+        sp.classList.add('n' + Math.min(5, Math.max(1, n)));
+        var pieces = null;
+        if (tokenizer && tokenizer !== 'fallback') {
+          try {
+            var ids = tokenizer.encode(' ' + w.core);
+            pieces = ids.map(function (id) { return tokenizer.decode([id]); });
+            if (pieces.join('') !== ' ' + w.core) pieces = null;
+          } catch (e) { pieces = null; }
+        }
+        sp.textContent = '';
+        sp.appendChild(document.createTextNode(w.pre));
+        if (pieces) {
+          pieces.forEach(function (pc, k) {
+            var t = document.createElement('span');
+            t.className = 'tk ' + (k % 2 ? 'b' : 'a');
+            t.textContent = k === 0 ? pc.replace(/^ /, '') : pc;
+            sp.appendChild(t);
+          });
+        } else sp.appendChild(document.createTextNode(w.core));
+        sp.appendChild(document.createTextNode(w.post));
+        sp.title = n + (n === 1 ? ' token' : ' tokens') + (tokenizer === 'fallback' ? ' (estimated)' : '');
+      } else {
+        sp.textContent = w.text;
+        var r = null;
+        for (var k = 0; k < w.parts.length; k++) { var rr = corpus.rank(w.parts[k]); if (rr === null) { r = null; break; } r = Math.max(r || 0, rr); }
+        sp.title = r === null ? 'not in the top ' + corpus.size.toLocaleString() : 'rank ' + r.toLocaleString() + ' in ' + corpus.label;
+      }
+    });
+  }
+
+  /* ---------- opacities ---------- */
+  var opac = [];
+  function applyStatic() {
+    var U = activeU();
+    opac = U.map(function (u) { return Z.fade(u, S.s); });
+    paint(-1);
+  }
+  function paint(cur) {
+    for (var i = 0; i < els.length; i++) {
+      els[i].style.opacity = opac[i].toFixed(3);
+      if (i === cur) els[i].classList.add('cur'); else if (els[i].classList.contains('cur')) els[i].classList.remove('cur');
+    }
+    updateStats(cur);
+  }
+
+  /* ---------- stats and the Zipf plot ---------- */
+  function updateStats(cur) {
+    var st = Z.stats(activeU(), opac);
+    $('st-visible').textContent = st.visible + ' / ' + st.total;
+    $('st-share').textContent = Math.round(st.share * 100) + '%';
+    var t = Z.threshold(S.s);
+    if (t === null) { $('st-thr').textContent = 'all'; $('st-thr-label').textContent = 'nothing fades'; }
+    else if (S.lens === 'tok') {
+      var nt = 1 + t * 4 / 0.95; $('st-thr').textContent = '≈ ' + Math.max(1, Math.round(nt)) + ' tok';
+      $('st-thr-label').textContent = S.s > 0 ? 'fewer pieces fade' : 'more pieces fade';
+    } else {
+      $('st-thr').textContent = '#' + corpus.rankAtU(t).toLocaleString();
+      $('st-thr-label').textContent = S.s > 0 ? 'commoner fades' : 'rarer fades';
+    }
+    var key = cur >= 0 && doc.words[cur] ? doc.words[cur].key : (hoverKey || null);
+    drawPlot(key);
+  }
+
+  var plotBuilt = null, plotDots = {};
+  function drawPlot(hiKey) {
+    if (!zipf) return;
+    var wrap = $('plot');
+    if (plotBuilt !== zipf) {
+      plotBuilt = zipf; plotDots = {};
+      var W = 240, H = 96, L = 26, B = 14, T = 6, R = 6;
+      var series = zipf.series;
+      var ns = 'http://www.w3.org/2000/svg';
+      var svg = document.createElementNS(ns, 'svg');
+      svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+      svg.setAttribute('role', 'img');
+      svg.setAttribute('aria-label', 'Zipf plot of this text');
+      if (!series.length) { wrap.textContent = ''; wrap.appendChild(svg); return; }
+      var maxR = Math.log10(series.length) || 1, maxC = Math.log10(series[0].count) || 1;
+      var x = function (r) { return L + Math.log10(r) / Math.max(maxR, 0.3) * (W - L - R); };
+      var y = function (c) { return H - B - Math.log10(c) / Math.max(maxC, 0.3) * (H - B - T); };
+      var el = function (n, a) { var e = document.createElementNS(ns, n); for (var k in a) e.setAttribute(k, a[k]); return e; };
+      svg.appendChild(el('line', { x1: L, y1: H - B, x2: W - R, y2: H - B, 'class': 'ax' }));
+      svg.appendChild(el('line', { x1: L, y1: T, x2: L, y2: H - B, 'class': 'ax' }));
+      // reference: exact Zipf, count = count1 / rank
+      var refEnd = Math.min(series.length, series[0].count);
+      if (refEnd > 1) svg.appendChild(el('line', { x1: x(1), y1: y(series[0].count), x2: x(refEnd), y2: y(series[0].count / refEnd), 'class': 'ref' }));
+      var tx = el('text', { x: W - R, y: H - 3, 'text-anchor': 'end' }); tx.textContent = 'rank (log)'; svg.appendChild(tx);
+      var ty = el('text', { x: 3, y: T + 8 }); ty.textContent = 'count'; svg.appendChild(ty);
+      // dots: every word for short texts, thinned in the tail for long ones
+      var step = series.length > 400 ? Math.ceil(series.length / 400) : 1;
+      series.forEach(function (d, i) {
+        if (i > 40 && i % step) return;
+        var c = el('circle', { cx: x(d.rank).toFixed(1), cy: y(d.count).toFixed(1), r: 2 });
+        var title = document.createElementNS(ns, 'title'); title.textContent = d.key + ': ' + d.count + ' (rank ' + d.rank + ')';
+        c.appendChild(title);
+        svg.appendChild(c);
+        plotDots[d.key] = c;
+      });
+      wrap.textContent = ''; wrap.appendChild(svg);
+    }
+    if (plotHi && plotHi !== plotDots[hiKey]) { plotHi.classList.remove('hi'); plotHi.setAttribute('r', 2); plotHi = null; }
+    var d = hiKey && plotDots[hiKey];
+    if (d && d !== plotHi) { d.classList.add('hi'); d.setAttribute('r', 3.5); d.parentNode.appendChild(d); plotHi = d; }
+  }
+  var plotHi = null, hoverKey = null;
+
+  /* ---------- the slider readout ---------- */
+  function updateReadout() {
+    var s = S.s;
+    var r = $('readout');
+    if (s === 0) { r.textContent = 'Everything visible.'; return; }
+    var t = Z.threshold(s);
+    if (S.lens === 'tok') {
+      r.textContent = (s > 0 ? 'Fading words of fewer than about ' : 'Fading words of more than about ') + Math.max(1, Math.round(1 + t * 4 / 0.95)) + ' tokens.';
+    } else {
+      var rank = corpus.rankAtU(t).toLocaleString();
+      r.textContent = s > 0 ? 'Fading words commoner than rank ' + rank + '.' : 'Fading words rarer than rank ' + rank + '.';
+    }
+  }
+
+  /* ---------- tokenizer (loaded on demand) ---------- */
+  function ensureTokenizer() {
+    if (tokenizerPromise) return tokenizerPromise;
+    setLensNote('Loading the cl100k_base tokenizer from jsDelivr…');
+    tokenizerPromise = import('https://cdn.jsdelivr.net/npm/gpt-tokenizer@4/esm/encoding/cl100k_base.js')
+      .then(function (m) {
+        if (typeof m.encode !== 'function') throw new Error('no encode export');
+        tokenizer = { encode: m.encode, decode: m.decode };
+        setLensNote('cl100k_base (GPT-4 family) via gpt-tokenizer. Hover a word for its token count.');
+      })
+      .catch(function (err) {
+        tokenizer = 'fallback';
+        setLensNote('Tokenizer CDN (jsDelivr) unavailable, so token counts are estimated from word length and rarity.', true);
+      });
+    return tokenizerPromise;
+  }
+  function setLensNote(msg, warn) { var n = $('lensnote'); n.textContent = msg; n.className = 'note' + (warn ? ' warn' : ''); }
+
+  /* ---------- playback ---------- */
+  var P = { running: false, beatsBefore: 0, startedAt: 0, idx: -1, ended: false, raf: 0 };
+  function beatMs() { return 60000 / S.wpm; }
+  function elapsedBeats() { return P.beatsBefore + (P.running ? (performance.now() - P.startedAt) / beatMs() : 0); }
+
+  function play() {
+    if (!doc.words.length) return;
+    if (P.ended) resetPlayback(false);
+    audioStart();
+    P.running = true; P.startedAt = performance.now();
+    document.body.classList.add('playing');
+    $('btn-play').textContent = 'Pause';
+    $('stagestatus').textContent = 'singing';
+    P.raf = requestAnimationFrame(frame);
+  }
+  function pause() {
+    if (!P.running) return;
+    P.beatsBefore = elapsedBeats(); P.running = false;
+    cancelAnimationFrame(P.raf);
+    document.body.classList.remove('playing');
+    $('btn-play').textContent = 'Resume';
+    $('stagestatus').textContent = 'paused';
+  }
+  function resetPlayback(repaint) {
+    cancelAnimationFrame(P.raf);
+    P.running = false; P.beatsBefore = 0; P.idx = -1; P.ended = false;
+    document.body.classList.remove('playing');
+    $('btn-play').textContent = 'Play';
+    $('stagestatus').textContent = '';
+    if (repaint !== false) applyStatic();
+  }
+  function frame() {
+    if (!P.running) return;
+    var eb = elapsedBeats();
+    var U = activeU();
+    var target = Math.min(doc.words.length - 1, Math.floor(eb));
+    while (P.idx < target) { P.idx++; note(U[P.idx]); }
+    for (var i = 0; i < els.length; i++) {
+      opac[i] = i > P.idx ? 0.07 : Z.decay(eb - i, U[i]) * Z.fade(U[i], S.s);
+    }
+    var cur = eb - P.idx < 1 ? P.idx : -1;
+    paint(cur);
+    if (P.idx >= doc.words.length - 1 && eb > doc.words.length + 1.5) {
+      P.running = false; P.ended = true; P.beatsBefore = eb;
+      document.body.classList.remove('playing');
+      $('btn-play').textContent = 'Replay';
+      $('stagestatus').textContent = 'ended — what remains is what was rare';
+      return;
+    }
+    P.raf = requestAnimationFrame(frame);
+  }
+
+  /* ---------- audio ---------- */
+  var actx = null, master = null;
+  function audioStart() {
+    if (!actx) {
+      try {
+        var AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return;
+        actx = new AC();
+        var lp = actx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 2600;
+        master = actx.createGain(); master.gain.value = S.muted ? 0 : 1;
+        lp.connect(master); master.connect(actx.destination);
+        actx._lp = lp;
+      } catch (e) { actx = null; return; }
+    }
+    if (actx.state === 'suspended') actx.resume();
+  }
+  function note(u) {
+    if (!actx || S.muted) return;
+    var t = actx.currentTime;
+    var osc = actx.createOscillator(), g = actx.createGain();
+    osc.type = u > 0.6 ? 'triangle' : 'sine';
+    osc.frequency.value = Z.hz(Z.midi(u));
+    var dur = 0.14 + u * 0.9;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(0.16, t + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    osc.connect(g); g.connect(actx._lp);
+    osc.start(t); osc.stop(t + dur + 0.03);
+  }
+  function setMuted(m) {
+    S.muted = m;
+    if (master) master.gain.value = m ? 0 : 1;
+    var b = $('btn-mute'); b.textContent = m ? 'Muted' : 'Sound on'; b.classList.toggle('on', m);
+  }
+
+  /* ---------- hash state ---------- */
+  var hashTimer = 0;
+  function writeHash() {
+    clearTimeout(hashTimer);
+    hashTimer = setTimeout(function () {
+      var q = new URLSearchParams();
+      if (S.songId !== 'custom') q.set('song', S.songId);
+      else {
+        var enc = encodeURIComponent(S.text);
+        if (enc.length <= 4000) q.set('t', S.text); else q.set('t', S.text.slice(0, 1200));
+      }
+      if (S.lens !== 'freq') q.set('lens', S.lens);
+      if (S.corpusId !== 'en') q.set('c', S.corpusId);
+      if (S.s) q.set('s', S.s.toFixed(2));
+      if (S.wpm !== 150) q.set('wpm', S.wpm);
+      var h = '#' + q.toString();
+      if (h !== location.hash) history.replaceState(null, '', h === '#' ? location.pathname : h);
+    }, 150);
+  }
+  function readHash() {
+    var h = location.hash.replace(/^#/, '');
+    if (!h) return;
+    var q;
+    try { q = new URLSearchParams(h); } catch (e) { return; }
+    if (q.get('t') !== null) { S.songId = 'custom'; S.text = q.get('t'); }
+    else if (q.get('song') && songById(q.get('song'))) S.songId = q.get('song');
+    if (q.get('lens') === 'tok') S.lens = 'tok';
+    if (q.get('c') && CORPORA.some(function (c) { return c.id === q.get('c'); })) S.corpusId = q.get('c');
+    var s = parseFloat(q.get('s')); if (isFinite(s)) S.s = Math.max(-1, Math.min(1, s));
+    var w = parseInt(q.get('wpm'), 10); if (isFinite(w)) S.wpm = Math.max(40, Math.min(400, w));
+  }
+
+  /* ---------- wiring ---------- */
+  function setText(text, songId) {
+    S.text = text; S.songId = songId;
+    var song = songById(songId);
+    $('stagetitle').textContent = song ? song.title + ' — ' + song.author + ', ' + song.year : 'Your own text';
+    resetPlayback(false);
+    buildText();
+    refresh();
+    writeHash();
+  }
+  // Recompute everything derived from text + lens + corpus and repaint.
+  function refresh() {
+    if (!corpus) return;
+    computeU();
+    decorateWords();
+    document.body.dataset.lens = S.lens;
+    updateReadout();
+    if (P.ended || P.beatsBefore > 0) { resetPlayback(false); }
+    applyStatic();
+  }
+
+  function selectCorpus(id) {
+    var entry = corpusEntry(id);
+    $('corpus').value = entry.id;
+    if (entry.corpus) { corpus = entry.corpus; S.corpusId = entry.id; refresh(); writeHash(); noteCorpus(entry); return; }
+    setLensNote('Loading ' + entry.label + '…');
+    loadCorpus(entry).then(function (c) {
+      if ($('corpus').value !== entry.id) return; // user moved on
+      corpus = c; S.corpusId = entry.id; refresh(); writeHash(); noteCorpus(entry);
+    }).catch(function () {
+      markUnavailable(entry);
+      selectCorpus('en');
+    });
+  }
+  function noteCorpus(entry) {
+    if (S.lens === 'tok') return;
+    setLensNote(entry.id === 'en' ? 'Ranks from the Google Web Trillion Word Corpus (Norvig). Hover a word for its rank.' : 'Ranks from ' + entry.corpus.note + '. Hover a word for its rank.');
+  }
+  function markUnavailable(entry) {
+    var opt = $('corpus').querySelector('option[value="' + entry.id + '"]');
+    if (opt) { opt.disabled = true; opt.textContent = entry.label + ' (unavailable)'; }
+    $('corpusrow').title = entry.label + ' could not be fetched: ' + (entry.reason || 'offline or file://');
+    setLensNote(entry.label + ' is unavailable here (' + (entry.reason || 'the posts could not be fetched') + ').', true);
+  }
+
+  function init() {
+    fillSongbook(); fillCorpora();
+    readHash();
+    if (S.songId !== 'custom') S.text = songById(S.songId).text;
+    $('songbook').value = S.songId;
+    $('textarea').value = S.text;
+    $('slider').value = S.s;
+    $('tempo').value = S.wpm; $('tempoval').textContent = S.wpm + ' wpm';
+    document.querySelector('input[name=lens][value=' + S.lens + ']').checked = true;
+    var song = songById(S.songId);
+    $('stagetitle').textContent = song ? song.title + ' — ' + song.author + ', ' + song.year : 'Your own text';
+    buildText();
+
+    // Probe the blog once so its option can be disabled early when offline.
+    var blog = corpusEntry('blog');
+    fetch('../../blog/index.json').then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); })
+      .catch(function (err) { blog.available = false; blog.reason = String(err && err.message || err); markUnavailable(blog); if (S.corpusId === 'blog') S.corpusId = 'en'; });
+
+    // Corpus first (General English is synchronous in practice), then the lens.
+    loadCorpus(corpusEntry('en')).then(function (c) {
+      corpus = c;
+      if (S.corpusId !== 'en') selectCorpus(S.corpusId); else { refresh(); noteCorpus(corpusEntry('en')); }
+      if (S.lens === 'tok') ensureTokenizer().then(refresh);
+    });
+
+    $('songbook').addEventListener('change', function () {
+      var id = this.value;
+      if (id === 'custom') { $('editwrap').open = true; $('textarea').focus(); setText($('textarea').value, 'custom'); return; }
+      var s = songById(id);
+      $('textarea').value = s.text;
+      S.wpm = s.wpm; $('tempo').value = s.wpm; $('tempoval').textContent = s.wpm + ' wpm';
+      setText(s.text, id);
+    });
+    var taTimer = 0;
+    $('textarea').addEventListener('input', function () {
+      clearTimeout(taTimer);
+      var v = this.value;
+      taTimer = setTimeout(function () {
+        var match = null;
+        SB.forEach(function (s) { if (s.text === v) match = s.id; });
+        $('songbook').value = match || 'custom';
+        setText(v, match || 'custom');
+      }, 200);
+    });
+    $('slider').addEventListener('input', function () {
+      S.s = parseFloat(this.value);
+      if (Math.abs(S.s) < 0.03) { S.s = 0; }
+      updateReadout();
+      if (!P.running) applyStatic();
+      writeHash();
+    });
+    $('slider').addEventListener('dblclick', function () { this.value = 0; S.s = 0; updateReadout(); if (!P.running) applyStatic(); writeHash(); });
+    Array.prototype.forEach.call(document.querySelectorAll('input[name=lens]'), function (r) {
+      r.addEventListener('change', function () {
+        if (!this.checked) return;
+        S.lens = this.value;
+        if (S.lens === 'tok') ensureTokenizer().then(refresh); else noteCorpus(corpusEntry(S.corpusId));
+        refresh(); writeHash();
+      });
+    });
+    $('corpus').addEventListener('change', function () { selectCorpus(this.value); });
+    $('tempo').addEventListener('input', function () {
+      if (P.running) { P.beatsBefore = elapsedBeats(); P.startedAt = performance.now(); }
+      S.wpm = parseInt(this.value, 10);
+      $('tempoval').textContent = S.wpm + ' wpm';
+      writeHash();
+    });
+    $('btn-play').addEventListener('click', function () { if (P.running) pause(); else play(); });
+    $('btn-reset').addEventListener('click', function () { resetPlayback(true); });
+    $('btn-mute').addEventListener('click', function () { setMuted(!S.muted); });
+    $('btn-help').addEventListener('click', function () {
+      var h = $('help'); h.open = !h.open; if (h.open) h.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.code !== 'Space' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'BUTTON') return;
+      e.preventDefault(); if (P.running) pause(); else play();
+    });
+    // Click a word to hear its note; hover to find it on the plot.
+    $('text').addEventListener('click', function (e) {
+      var sp = e.target.closest('.w'); if (!sp) return;
+      audioStart(); var i = +sp.dataset.i; note(activeU()[i]);
+      sp.classList.add('pk'); setTimeout(function () { sp.classList.remove('pk'); }, 350);
+    });
+    $('text').addEventListener('mouseover', function (e) {
+      var sp = e.target.closest('.w'); if (!sp) return;
+      hoverKey = doc.words[+sp.dataset.i].key; if (!P.running) drawPlot(hoverKey);
+    });
+    $('text').addEventListener('mouseleave', function () { hoverKey = null; if (!P.running) drawPlot(null); });
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>

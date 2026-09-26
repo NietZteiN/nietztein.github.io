@@ -1,0 +1,1184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Site Reverse Engineer</title>
+<link rel="icon" href="data:,">
+<style>
+  /* Third of the obfuscation trilogy: the playground's teal and the game's
+     dark blue-grey, with an amber accent of its own. */
+  :root {
+    --bg: #12151c;
+    --panel: #1b1f29;
+    --panel-2: #232837;
+    --code-bg: #0b0d12;
+    --line: #2d3344;
+    --text: #e6e9f0;
+    --muted: #8b93a7;
+    --accent: #f2b35c;
+    --accent-ink: #1a1206;
+    --accent-2: #4cc9c0;
+    --ok: #9ece6a;
+    --bad: #f7768e;
+    --warn: #e0af68;
+    --add-fg: #7ee787;
+    --add-bg: #10251a;
+    --del-fg: #ff9a9a;
+    --del-bg: #2a1517;
+    --radius: 10px;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, "Hiragino Sans", "Yu Gothic", "Noto Sans CJK JP", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--sans); }
+  body { min-height: 100vh; line-height: 1.45; font-size: 14px; }
+  a { color: var(--accent-2); }
+  header.top {
+    display: flex; align-items: center; flex-wrap: wrap; gap: 8px 18px;
+    padding: 12px 16px; border-bottom: 1px solid var(--line); background: var(--panel);
+    position: sticky; top: 0; z-index: 5;
+  }
+  header.top h1 { font-size: 18px; margin: 0; font-weight: 600; letter-spacing: 0.2px; white-space: nowrap; }
+  header.top h1 span { color: var(--accent); }
+  header.top .sub { color: var(--muted); font-size: 12.5px; }
+  header.top .spacer { flex: 1; }
+  header.top nav { display: flex; gap: 4px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 3px; }
+  header.top nav button { border: none; background: transparent; padding: 5px 11px; border-radius: 6px; color: var(--muted); }
+  header.top nav button.on { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+  header.top a.back { color: var(--muted); font-size: 12.5px; text-decoration: none; }
+  header.top a.back:hover { color: var(--accent); }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 16px 16px 48px; }
+  .wrap > *, .screen > * { max-width: 100%; }
+
+  button {
+    background: var(--panel-2); color: var(--text); border: 1px solid var(--line); border-radius: 8px;
+    padding: 7px 13px; font-size: 13.5px; font-family: inherit; cursor: pointer; transition: background 0.12s, transform 0.05s;
+  }
+  button:hover { background: #2b3142; border-color: #3a4256; }
+  button:active { transform: translateY(1px); }
+  button.primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; font-weight: 600; }
+  button.primary:hover { background: #ffc677; }
+  button.small { padding: 4px 9px; font-size: 12px; }
+  button.tiny { padding: 3px 7px; font-size: 11px; }
+  button:disabled { opacity: 0.45; cursor: not-allowed; }
+  input[type=text], input[type=number], select, textarea {
+    width: 100%; background: var(--panel-2); color: var(--text); border: 1px solid var(--line);
+    border-radius: 6px; padding: 7px 9px; font-size: 13.5px; font-family: inherit;
+  }
+  input:focus, select:focus, textarea:focus, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  label.field { display: block; font-size: 12.5px; color: var(--muted); margin: 8px 0 0; }
+  label.field > span { display: block; margin-bottom: 4px; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .row.between { justify-content: space-between; }
+  .muted { color: var(--muted); }
+  .small { font-size: 12.5px; }
+  kbd { font-family: var(--mono); font-size: 11px; background: var(--panel-2); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 1px 5px; color: var(--muted); }
+  code { font-family: var(--mono); font-size: 0.93em; color: var(--accent-2); }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 14px; }
+  .card h2 { margin: 0 0 10px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--muted); font-weight: 600; }
+  .card h3 { font-size: 15px; margin: 0 0 8px; font-weight: 600; }
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* File tabs */
+  .filebar { display: flex; align-items: center; gap: 10px 14px; flex-wrap: wrap; padding: 10px 14px; }
+  .tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tab { display: inline-flex; align-items: baseline; gap: 7px; font-family: var(--mono); font-size: 12.5px; }
+  .tab .n { color: var(--muted); font-size: 11px; }
+  .tab.on { border-color: var(--accent); color: var(--accent); }
+  .tab.fallback .n::after { content: " excerpt"; color: var(--warn); }
+  .filebar .note { color: var(--muted); font-size: 12px; flex: 1; min-width: 200px; }
+  .banner { background: var(--del-bg); color: var(--del-fg); border: 1px solid #5a2a2e; border-radius: 8px; padding: 10px 12px; margin-bottom: 14px; display: none; }
+
+  /* Ladder layout */
+  .cols { display: grid; grid-template-columns: 330px minmax(0, 1fr); gap: 14px; align-items: start; }
+  .side { position: sticky; top: 64px; max-height: calc(100vh - 80px); overflow-y: auto; }
+  .fn-meta { color: var(--muted); font-size: 12px; margin-top: 6px; min-height: 2.6em; }
+  .fn-meta b { color: var(--text); font-weight: 500; }
+  .tf-list { display: flex; flex-direction: column; gap: 6px; }
+  .tf { border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); padding: 8px 9px; }
+  .tf-head { display: flex; align-items: center; gap: 8px; }
+  .tf-head .name { font-weight: 600; font-size: 13px; flex: 1; }
+  .tf-head input[type=checkbox] { width: 15px; height: 15px; accent-color: var(--accent); }
+  .tf .desc { color: var(--muted); font-size: 11.5px; margin: 5px 0 0; }
+  .tf .opts { display: none; margin-top: 6px; }
+  .tf.on .opts { display: flex; gap: 8px; flex-wrap: wrap; }
+  .tf .opts label { font-size: 11.5px; color: var(--muted); display: flex; align-items: center; gap: 4px; }
+  .tf .opts select, .tf .opts input { width: auto; padding: 3px 6px; font-size: 12px; }
+  .move { display: flex; flex-direction: column; gap: 2px; }
+  .stats table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+  .stats th, .stats td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  .stats th { color: var(--muted); font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .stats td.num, .stats th.num { text-align: right; font-family: var(--mono); }
+  .stats .tbl { overflow-x: auto; }
+  .score { display: inline-block; min-width: 34px; text-align: center; border-radius: 999px; padding: 1px 8px; font-family: var(--mono); font-weight: 600; font-size: 12px; }
+  .score.ok { background: #1f3a1e; color: var(--ok); }
+  .score.warn { background: #3d3118; color: var(--warn); }
+  .score.bad { background: #3b1c24; color: var(--bad); }
+  .cards { display: flex; flex-direction: column; gap: 12px; }
+  .rung { border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; background: var(--panel); }
+  .rung-head { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: var(--panel-2); border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  .rung-head .step { font-size: 11px; color: var(--accent-ink); background: var(--accent); border-radius: 20px; padding: 2px 9px; font-weight: 700; }
+  .rung-head .title { font-weight: 600; font-size: 13px; flex: 1; font-family: var(--mono); }
+  .rung-head .meta { color: var(--muted); font-size: 11.5px; font-family: var(--mono); }
+  pre.code, pre.diff {
+    margin: 0; padding: 12px 14px; overflow: auto; max-height: 60vh; font-family: var(--mono);
+    font-size: 12.5px; line-height: 1.5; white-space: pre; tab-size: 4; background: var(--code-bg);
+  }
+  pre.diff .add { color: var(--add-fg); background: var(--add-bg); display: block; }
+  pre.diff .del { color: var(--del-fg); background: var(--del-bg); display: block; }
+  pre.diff .ctx { color: var(--muted); display: block; }
+  .code-panel { background: var(--code-bg); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; max-width: 100%; }
+  .code-panel pre { margin: 0; padding: 12px 0; overflow: auto; max-height: 56vh; font-family: var(--mono); font-size: 13px; line-height: 1.5; }
+  .code-line { display: flex; }
+  .code-line .ln { width: 44px; flex: 0 0 44px; text-align: right; padding-right: 12px; color: #4a5268; user-select: none; }
+  .code-line .src { white-space: pre; padding-right: 16px; tab-size: 4; }
+  mark { background: #4a3a12; color: var(--accent); border-radius: 3px; padding: 0 2px; }
+  .empty-note { color: var(--muted); font-size: 13px; padding: 16px 0; }
+
+  /* Game */
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px 20px; }
+  .checks { display: flex; gap: 12px; flex-wrap: wrap; font-size: 13px; }
+  .checks label { display: flex; gap: 6px; align-items: center; cursor: pointer; }
+  .round-head { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; }
+  .round-head > div:first-child { flex: 1 1 240px; min-width: 0; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+  .chip { font-size: 11.5px; padding: 2px 9px; border-radius: 999px; background: var(--panel-2); border: 1px solid var(--line); color: var(--muted); }
+  .chip.type { color: var(--accent-2); border-color: #2f6f6a; }
+  .chip.d1, .chip.d2 { color: var(--ok); border-color: #3f5a2e; }
+  .chip.d3 { color: var(--warn); border-color: #6b5430; }
+  .chip.d4, .chip.d5 { color: var(--bad); border-color: #6e3644; }
+  .hud { display: flex; gap: 16px; align-items: baseline; font-family: var(--mono); }
+  .hud .timer { font-size: 34px; font-weight: 600; color: var(--warn); font-variant-numeric: tabular-nums; min-width: 70px; text-align: right; }
+  .hud .timer.low { color: var(--bad); }
+  .hud .sc { font-size: 13px; color: var(--muted); }
+  .hud .sc b { color: var(--text); font-size: 16px; }
+  .question { font-size: 16px; font-weight: 600; margin: 14px 0 10px; }
+  .choices { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 8px; }
+  .choice { text-align: left; font-size: 13px; padding: 9px 12px; display: flex; gap: 10px; align-items: flex-start; }
+  .choice .key { color: var(--accent); font-weight: 700; font-family: var(--mono); flex: 0 0 auto; }
+  .choice .body { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+  .choice .body small { display: block; color: var(--muted); font-size: 11.5px; }
+  .choice.correct { border-color: var(--ok); background: #1f2f1e; }
+  .choice.wrong { border-color: var(--bad); background: #331c24; }
+  .feedback { margin-top: 12px; display: none; }
+  .verdict { font-size: 24px; font-weight: 700; margin: 0 0 4px; }
+  .verdict.ok { color: var(--ok); }
+  .verdict.bad { color: var(--bad); }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+  .tile { background: var(--panel-2); border-radius: 8px; padding: 10px 12px; }
+  .tile .v { font-size: 26px; font-weight: 700; font-family: var(--mono); }
+  .tile .k { color: var(--muted); font-size: 12px; }
+  .share { font-family: var(--mono); font-size: 12.5px; min-height: 96px; }
+  .track { display: flex; gap: 4px; flex-wrap: wrap; margin: 8px 0; }
+  .track span { width: 18px; height: 18px; border-radius: 4px; background: var(--panel-2); border: 1px solid var(--line); }
+  .track span.ok { background: var(--ok); border-color: var(--ok); }
+  .track span.bad { background: var(--bad); border-color: var(--bad); }
+
+  /* Deobfuscate me */
+  .deob-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
+  textarea.editor { font-family: var(--mono); font-size: 12.5px; line-height: 1.5; min-height: 420px; height: 56vh; resize: vertical; tab-size: 4; white-space: pre; background: var(--code-bg); }
+  .meter { height: 12px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 999px; overflow: hidden; flex: 1; min-width: 140px; }
+  .meter i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--bad), var(--warn), var(--ok)); transition: width 0.2s; }
+  .meter-row { display: flex; gap: 12px; align-items: center; margin: 8px 0; }
+  .meter-row b { font-family: var(--mono); min-width: 52px; text-align: right; font-size: 16px; }
+
+  /* Help overlay */
+  .overlay { position: fixed; inset: 0; background: rgba(6, 8, 12, 0.72); display: none; align-items: center; justify-content: center; padding: 16px; z-index: 20; }
+  .overlay.show { display: flex; }
+  .overlay .box { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 20px; max-width: 560px; }
+  .overlay .box p { margin: 8px 0; font-size: 14px; }
+  .toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: var(--panel-2); border: 1px solid var(--line); padding: 8px 14px; border-radius: 8px; font-size: 13px; opacity: 0; transition: opacity 0.2s; pointer-events: none; z-index: 30; }
+  .toast.show { opacity: 1; }
+
+  @media (max-width: 900px) {
+    .cols, .deob-cols { grid-template-columns: 1fr; }
+    .side { position: static; max-height: none; }
+    header.top .sub { display: none; }
+    .hud .timer { font-size: 26px; }
+  }
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>Site <span>Reverse Engineer</span></h1>
+  <span class="sub">this site's own JavaScript, obfuscated live, and a game to read it back</span>
+  <span class="spacer"></span>
+  <nav id="modes">
+    <button data-mode="ladder">Ladder</button>
+    <button data-mode="game">Game</button>
+    <button data-mode="deob">Deobfuscate me</button>
+  </nav>
+  <button class="small" id="btn-help">Help</button>
+  <a class="back" href="../../#/misc">Back to the site</a>
+</header>
+
+<div class="wrap">
+  <div class="banner" id="banner"></div>
+  <div class="card filebar">
+    <div class="tabs" id="file-tabs"></div>
+    <div class="note" id="load-note">Fetching the site scripts...</div>
+  </div>
+
+  <!-- ================================================================ -->
+  <section id="screen-ladder" class="screen">
+    <div class="cols">
+      <aside class="card side">
+        <h2>Slice</h2>
+        <input type="text" id="fn-filter" placeholder="filter functions" autocomplete="off">
+        <label class="field"><span>Function</span><select id="fn-select" size="7"></select></label>
+        <div class="fn-meta" id="fn-meta"></div>
+        <h2 style="margin-top:14px">Transforms</h2>
+        <p class="muted small" style="margin:0 0 8px">Applied top to bottom, each on the result of the last. Pick by hand, or roll a chain of a given difficulty from the seed.</p>
+        <div class="tf-list" id="tf-list"></div>
+        <div class="row" style="margin-top:10px">
+          <label class="field" style="margin:0;flex:1"><span>Seed</span><input type="text" id="seed" value=""></label>
+          <label class="field" style="margin:0;width:110px"><span>Difficulty</span>
+            <select id="ladder-diff"><option value="1">1</option><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option><option value="5">5</option></select>
+          </label>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <button id="btn-roll" class="small">Roll chain</button>
+          <button id="btn-build" class="primary">Build ladder</button>
+        </div>
+      </aside>
+      <main>
+        <div class="card stats" id="stats" style="display:none">
+          <h2>Rungs</h2>
+          <div class="tbl"><table id="stats-table"></table></div>
+          <p class="muted small" style="margin:8px 0 0">Readability blends the share of word-like identifiers, mean identifier length, how human the string literals look, and size growth. Entropy is bits per character across identifier names.</p>
+        </div>
+        <div class="cards" id="cards"><div class="empty-note">Pick a function on the left and press Build ladder.</div></div>
+      </main>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section id="screen-game" class="screen">
+    <div id="g-settings">
+      <div class="card">
+        <h3>Guess your way back through the site's code</h3>
+        <p class="muted small" style="margin:0 0 12px">Each round shows a real function from this site, run through a chain of obfuscation transforms, and asks one of four questions about it. Sixty seconds a round; speed and streaks earn extra points.</p>
+        <div class="grid">
+          <label class="field"><span>Rounds</span><input type="number" id="g-rounds" min="1" max="30" value="8"></label>
+          <label class="field"><span>Difficulty (transforms per round)</span>
+            <select id="g-diff"><option value="1">1 · one transform</option><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option><option value="5">5 · everything</option></select>
+          </label>
+          <label class="field"><span>Seed</span>
+            <div class="row">
+              <select id="g-seedmode" style="flex:1"><option value="daily">Daily puzzle</option><option value="random">Random</option><option value="custom">Custom</option></select>
+              <input type="text" id="g-seed" style="flex:1" placeholder="seed">
+            </div>
+          </label>
+        </div>
+        <label class="field"><span>Question types</span></label>
+        <div class="checks">
+          <label><input type="checkbox" id="q-file" checked> which file?</label>
+          <label><input type="checkbox" id="q-purpose" checked> what does it do?</label>
+          <label><input type="checkbox" id="q-transform" checked> which transform?</label>
+          <label><input type="checkbox" id="q-identifier" checked> original identifier?</label>
+        </div>
+        <div class="row between" style="margin-top:16px">
+          <button class="primary" id="btn-start">Start <kbd>Enter</kbd></button>
+          <span class="muted small" id="g-pool"></span>
+        </div>
+      </div>
+    </div>
+
+    <div id="g-round" style="display:none">
+      <div class="round-head">
+        <div>
+          <div style="font-size:15px;font-weight:600" id="g-title">Round 1 of 8</div>
+          <div class="chips" id="g-chips"></div>
+        </div>
+        <div class="hud">
+          <span class="sc">score <b id="g-score">0</b></span>
+          <span class="sc">streak <b id="g-streak">0</b></span>
+          <span class="timer" id="g-timer">60</span>
+        </div>
+      </div>
+      <div class="code-panel"><pre id="g-code"></pre></div>
+      <div class="card" style="margin-top:12px">
+        <div class="question" id="g-question"></div>
+        <div class="choices" id="g-choices"></div>
+        <div class="feedback" id="g-feedback">
+          <p class="verdict" id="g-verdict"></p>
+          <div id="g-explain" class="small"></div>
+          <div class="row" style="margin-top:10px">
+            <button class="small" id="btn-show-orig">Show original</button>
+            <button class="small" id="btn-open-ladder">Open in ladder</button>
+          </div>
+          <div class="code-panel" id="g-orig-panel" style="display:none;margin-top:8px"><pre id="g-orig"></pre></div>
+          <div class="row between" style="margin-top:12px">
+            <button class="primary" id="btn-next">Next <kbd>Enter</kbd></button>
+            <button class="small" id="btn-quit">End game</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="g-end" style="display:none">
+      <div class="card">
+        <h3>Results</h3>
+        <div class="tiles" id="g-tiles"></div>
+        <div class="track" id="g-track"></div>
+      </div>
+      <div class="card">
+        <h2>Share</h2>
+        <textarea class="share" id="g-share" readonly></textarea>
+        <div class="row" style="margin-top:8px">
+          <button id="btn-copy-share">Copy</button>
+          <button class="primary" id="btn-again">Play again</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section id="screen-deob" class="screen">
+    <div class="card">
+      <div class="row">
+        <label class="field" style="margin:0;flex:2;min-width:200px"><span>Function</span><select id="d-fn"></select></label>
+        <label class="field" style="margin:0;width:110px"><span>Difficulty</span>
+          <select id="d-diff"><option value="1">1</option><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option><option value="5">5</option></select>
+        </label>
+        <label class="field" style="margin:0;flex:1;min-width:140px"><span>Seed</span><input type="text" id="d-seed"></label>
+        <button class="primary" id="btn-scramble" style="align-self:flex-end">Scramble</button>
+      </div>
+      <div class="meter-row">
+        <span class="small muted">Distance to original</span>
+        <div class="meter"><i id="d-bar"></i></div>
+        <b id="d-pct">--</b>
+        <span class="small muted" id="d-detail"></span>
+      </div>
+      <p class="muted small" style="margin:0" id="d-chips"></p>
+    </div>
+    <div class="deob-cols">
+      <div>
+        <div class="row between" style="margin-bottom:6px">
+          <span class="small muted">Edit this back into readable code. Names, structure and strings all count; whitespace and comments do not.</span>
+          <button class="small" id="btn-d-reset">Reset</button>
+        </div>
+        <textarea class="editor" id="d-editor" spellcheck="false" autocomplete="off" placeholder="Press Scramble to get an obfuscated slice."></textarea>
+      </div>
+      <div>
+        <div class="row between" style="margin-bottom:6px">
+          <span class="small muted" id="d-orig-label">The original (as the parser prints it)</span>
+          <button class="small" id="btn-reveal">Reveal</button>
+        </div>
+        <div class="code-panel"><pre id="d-orig"><div class="empty-note" style="padding:14px">Hidden until you reveal it.</div></pre></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="overlay" id="help">
+  <div class="box">
+    <h3>Site Reverse Engineer</h3>
+    <p>This page fetches the JavaScript that runs nietztein.github.io (<code>main.js</code>, <code>blog.js</code>, <code>bookshelf.js</code>, <code>palette.js</code>), cuts it into functions with a brace-matching scanner, and pushes any slice through the Obfuscation Playground's transforms one rung at a time. The Game deals eight rounds of real, obfuscated site code and asks which file it came from, what it does, which transform hit it, or what a renamed identifier used to be, with a daily seed so everyone gets the same puzzle. Deobfuscate me hands you a scrambled slice in a text box and measures, as you type, how far you still are from the original at the token level.</p>
+    <p class="muted small">The site code being obfuscated here is Jack V. Le's own and, like the rest of the repository, is published under the Creative Commons Attribution-ShareAlike 4.0 licence (LICENSE-CC-BY-SA-4.0 at the repository root). The transforms are loaded from <a href="../04-obfuscation-playground/">the playground</a> (misc/04), which is built on acorn, acorn-walk and astring (MIT). Obfuscated output keeps behaviour but is not meant to run anywhere.</p>
+    <p class="muted small">Shortcuts in the game: <kbd>1</kbd> to <kbd>4</kbd> answer, <kbd>Enter</kbd> next. The URL hash carries mode, file, function, difficulty and seed, so a link reproduces a puzzle.</p>
+    <p><button id="btn-help-close" class="primary">Close</button></p>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<!-- Parser, walker and generator vendored (MIT) by the playground; the transforms themselves. -->
+<script src="../04-obfuscation-playground/vendor/acorn.js"></script>
+<script src="../04-obfuscation-playground/vendor/walk.js"></script>
+<script src="../04-obfuscation-playground/vendor/astring.min.js"></script>
+<script src="../04-obfuscation-playground/js_transforms.js"></script>
+<script src="engine.js"></script>
+<script src="fallback.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  const $ = (id) => document.getElementById(id);
+  const FILES = [
+    { name: "main.js", blurb: "site shell: hash router, sections, theme toggle, analytics" },
+    { name: "blog.js", blurb: "blog index and post rendering, dates, comments, syntax theme" },
+    { name: "bookshelf.js", blurb: "the library as spines: shelves, search, sorting, drag-and-drop" },
+    { name: "palette.js", blurb: "the Ctrl+K command palette: sections, posts, links, actions" },
+  ];
+  const ROUND_SECONDS = 60;
+
+  // ----------------------------------------------------------------------- //
+  // State
+  // ----------------------------------------------------------------------- //
+  const state = {
+    mode: "ladder",
+    files: {},            // name -> { text, lines, fns, fallback }
+    file: "main.js",
+    fn: null,             // function name in the current file
+    seed: todayKey(),
+    difficulty: 3,
+    tfOrder: SRE.TRANSFORMS.map((t) => t.name),
+    tf: {},               // name -> { on, options }
+    ladder: null,
+    game: null,
+    deob: null,
+  };
+  SRE.TRANSFORMS.forEach((t) => {
+    state.tf[t.name] = { on: false, options: defaultOptions(t.name) };
+  });
+  function defaultOptions(name) {
+    if (name === "rename_identifiers") return { mode: "uninformative", style: "sequential" };
+    if (name === "string_encoding") return { method: "base64" };
+    if (name === "dead_code_insertion") return { density: 0.5 };
+    if (name === "expression_rewriting") return { constants: true, mul: true, bool: true };
+    return {};
+  }
+  function todayKey() {
+    return new Date().toISOString().slice(0, 10);
+  }
+  function toast(msg) {
+    const el = $("toast");
+    el.textContent = msg;
+    el.classList.add("show");
+    clearTimeout(toast.h);
+    toast.h = setTimeout(() => el.classList.remove("show"), 1800);
+  }
+  const ready = typeof window.JSObf === "object" && window.JSObf && typeof window.SRE === "object";
+
+  // ----------------------------------------------------------------------- //
+  // Hash state:  #m=game&f=main.js&fn=applyTheme&d=3&s=2026-09-25
+  // ----------------------------------------------------------------------- //
+  function readHash() {
+    const h = location.hash.replace(/^#/, "");
+    const p = new URLSearchParams(h);
+    if (p.get("m") && ["ladder", "game", "deob"].indexOf(p.get("m")) >= 0) state.mode = p.get("m");
+    if (p.get("f") && FILES.some((f) => f.name === p.get("f"))) state.file = p.get("f");
+    if (p.get("fn")) state.fn = p.get("fn");
+    const d = parseInt(p.get("d"), 10);
+    if (d >= 1 && d <= 5) state.difficulty = d;
+    if (p.get("s")) state.seed = p.get("s");
+  }
+  function writeHash() {
+    const p = new URLSearchParams();
+    p.set("m", state.mode);
+    p.set("f", state.file);
+    if (state.fn) p.set("fn", state.fn);
+    p.set("d", String(state.difficulty));
+    p.set("s", state.seed);
+    const next = "#" + p.toString();
+    if (location.hash !== next) history.replaceState(null, "", next);
+  }
+
+  // ----------------------------------------------------------------------- //
+  // Loading the site scripts
+  // ----------------------------------------------------------------------- //
+  function installFile(name, text, fallback) {
+    const fns = SRE.listFunctions(text);
+    state.files[name] = { text: text, lines: text.split("\n").length, fns: fns, fallback: fallback };
+  }
+  async function loadFiles() {
+    const fb = window.SRE_FALLBACK || {};
+    let failed = 0;
+    if (location.protocol === "file:") {
+      FILES.forEach((f) => installFile(f.name, fb[f.name] || "", true));
+      failed = FILES.length;
+    } else {
+      const results = await Promise.allSettled(FILES.map((f) =>
+        fetch("../../assets/js/" + f.name, { cache: "no-store" }).then((r) => {
+          if (!r.ok) throw new Error("HTTP " + r.status);
+          return r.text();
+        })));
+      results.forEach((r, i) => {
+        if (r.status === "fulfilled" && r.value.length > 200) installFile(FILES[i].name, r.value, false);
+        else { installFile(FILES[i].name, fb[FILES[i].name] || "", true); failed++; }
+      });
+    }
+    const note = $("load-note");
+    if (failed === 0) {
+      const total = FILES.reduce((a, f) => a + state.files[f.name].lines, 0);
+      const fnCount = FILES.reduce((a, f) => a + state.files[f.name].fns.length, 0);
+      note.textContent = "Live copy of ../../assets/js: " + total.toLocaleString() + " lines, " + fnCount + " named functions found.";
+    } else {
+      note.textContent = (failed === FILES.length ? "Could not fetch the site scripts (file:// or offline), so these are short bundled excerpts of the real code." : failed + " of the four scripts could not be fetched; bundled excerpts stand in for them.");
+    }
+  }
+  function renderTabs() {
+    const tabs = $("file-tabs");
+    tabs.textContent = "";
+    FILES.forEach((f) => {
+      const info = state.files[f.name];
+      const b = document.createElement("button");
+      b.className = "tab" + (state.file === f.name ? " on" : "") + (info && info.fallback ? " fallback" : "");
+      b.innerHTML = '<span class="nm"></span><span class="n"></span>';
+      b.firstChild.textContent = f.name;
+      b.lastChild.textContent = info ? info.lines + " lines" : "...";
+      b.title = f.blurb;
+      b.addEventListener("click", () => { setFile(f.name); });
+      tabs.appendChild(b);
+    });
+  }
+  function setFile(name) {
+    state.file = name;
+    state.fn = null;
+    renderTabs();
+    renderFnSelect();
+    writeHash();
+  }
+  function currentFns() {
+    const f = state.files[state.file];
+    return f ? f.fns : [];
+  }
+  function currentFn() {
+    const fns = currentFns();
+    return fns.find((x) => x.name === state.fn) || fns[0] || null;
+  }
+
+  // ----------------------------------------------------------------------- //
+  // Function pickers (ladder and deob share the selection)
+  // ----------------------------------------------------------------------- //
+  function fnOption(fn) {
+    const op = document.createElement("option");
+    op.value = fn.name;
+    op.textContent = fn.name + "  (L" + fn.line0 + "-" + fn.line1 + ", " + fn.lines + " lines)";
+    return op;
+  }
+  function renderFnSelect() {
+    const filter = $("fn-filter").value.trim().toLowerCase();
+    const sel = $("fn-select");
+    sel.textContent = "";
+    const fns = currentFns();
+    let any = false;
+    fns.forEach((fn) => {
+      if (filter && fn.name.toLowerCase().indexOf(filter) < 0) return;
+      const op = fnOption(fn);
+      if (currentFn() === fn) { op.selected = true; any = true; }
+      sel.appendChild(op);
+    });
+    if (!any && sel.options.length) sel.options[0].selected = true;
+    const d = $("d-fn");
+    d.textContent = "";
+    fns.forEach((fn) => { const op = fnOption(fn); if (currentFn() === fn) op.selected = true; d.appendChild(op); });
+    renderFnMeta();
+  }
+  function renderFnMeta() {
+    const fn = currentFn();
+    const box = $("fn-meta");
+    if (!fn) { box.textContent = "No functions found in this file."; return; }
+    box.innerHTML = "";
+    const b = document.createElement("b");
+    b.textContent = fn.name + "()";
+    box.appendChild(b);
+    box.appendChild(document.createTextNode(" " + state.file + " lines " + fn.line0 + "-" + fn.line1 + ", " + fn.lines + " lines, nesting depth " + fn.depth + (fn.kind !== "declaration" ? ", " + fn.kind : "") + (fn.comment ? ". " + fn.comment : "")));
+  }
+  $("fn-filter").addEventListener("input", renderFnSelect);
+  $("fn-select").addEventListener("change", () => { state.fn = $("fn-select").value; renderFnMeta(); $("d-fn").value = state.fn; writeHash(); });
+  $("d-fn").addEventListener("change", () => { state.fn = $("d-fn").value; renderFnSelect(); writeHash(); });
+
+  // ----------------------------------------------------------------------- //
+  // Ladder mode
+  // ----------------------------------------------------------------------- //
+  function renderTransformList() {
+    const list = $("tf-list");
+    list.textContent = "";
+    state.tfOrder.forEach((name, idx) => {
+      const def = SRE.TRANSFORMS.find((t) => t.name === name);
+      const st = state.tf[name];
+      const div = document.createElement("div");
+      div.className = "tf" + (st.on ? " on" : "");
+      const head = document.createElement("div");
+      head.className = "tf-head";
+      const cb = document.createElement("input");
+      cb.type = "checkbox"; cb.checked = st.on;
+      cb.addEventListener("change", () => { st.on = cb.checked; div.classList.toggle("on", st.on); });
+      const nm = document.createElement("span");
+      nm.className = "name"; nm.textContent = def.label;
+      const move = document.createElement("div");
+      move.className = "move";
+      const up = document.createElement("button");
+      up.className = "tiny"; up.textContent = "↑"; up.title = "move up";
+      up.addEventListener("click", () => { if (idx > 0) { [state.tfOrder[idx - 1], state.tfOrder[idx]] = [state.tfOrder[idx], state.tfOrder[idx - 1]]; renderTransformList(); } });
+      const down = document.createElement("button");
+      down.className = "tiny"; down.textContent = "↓"; down.title = "move down";
+      down.addEventListener("click", () => { if (idx < state.tfOrder.length - 1) { [state.tfOrder[idx + 1], state.tfOrder[idx]] = [state.tfOrder[idx], state.tfOrder[idx + 1]]; renderTransformList(); } });
+      move.append(up, down);
+      head.append(cb, nm, move);
+      div.appendChild(head);
+      const desc = document.createElement("div");
+      desc.className = "desc"; desc.textContent = def.desc;
+      div.appendChild(desc);
+      const opts = document.createElement("div");
+      opts.className = "opts";
+      const addSelect = (key, values) => {
+        const lab = document.createElement("label");
+        lab.textContent = key;
+        const sel = document.createElement("select");
+        values.forEach((v) => { const op = document.createElement("option"); op.value = v; op.textContent = v; if (st.options[key] === v) op.selected = true; sel.appendChild(op); });
+        sel.addEventListener("change", () => { st.options[key] = sel.value; });
+        lab.appendChild(sel); opts.appendChild(lab);
+      };
+      const addBool = (key) => {
+        const lab = document.createElement("label");
+        const inp = document.createElement("input");
+        inp.type = "checkbox"; inp.checked = !!st.options[key];
+        inp.addEventListener("change", () => { st.options[key] = inp.checked; });
+        lab.append(inp, document.createTextNode(key)); opts.appendChild(lab);
+      };
+      if (name === "rename_identifiers") { addSelect("mode", ["uninformative", "adversarial"]); addSelect("style", ["sequential", "lookalike"]); }
+      else if (name === "string_encoding") addSelect("method", ["base64", "xor"]);
+      else if (name === "dead_code_insertion") {
+        const lab = document.createElement("label");
+        lab.textContent = "density";
+        const inp = document.createElement("input");
+        inp.type = "number"; inp.min = 0; inp.max = 1; inp.step = 0.1; inp.value = st.options.density;
+        inp.addEventListener("change", () => { st.options.density = Math.max(0, Math.min(1, parseFloat(inp.value) || 0)); });
+        lab.appendChild(inp); opts.appendChild(lab);
+      } else if (name === "expression_rewriting") { addBool("constants"); addBool("mul"); addBool("bool"); }
+      div.appendChild(opts);
+      list.appendChild(div);
+    });
+  }
+  function collectSpecs() {
+    return state.tfOrder.filter((n) => state.tf[n].on).map((n) => ({ name: n, options: Object.assign({}, state.tf[n].options) }));
+  }
+  // Roll a chain of the chosen difficulty from the seed and reflect it in the list.
+  function rollChain() {
+    state.difficulty = parseInt($("ladder-diff").value, 10) || 3;
+    state.seed = $("seed").value.trim() || todayKey();
+    const rng = SRE.makeRng(state.seed + ":ladder:" + state.difficulty);
+    applyChain(SRE.chainFor(rng, state.difficulty, false));
+    writeHash();
+  }
+  // Tick exactly the transforms of a chain, in its order, and redraw the list.
+  function applyChain(chain) {
+    SRE.TRANSFORMS.forEach((t) => { state.tf[t.name].on = false; });
+    chain.forEach((spec) => { state.tf[spec.name].on = true; Object.assign(state.tf[spec.name].options, spec.options); });
+    state.tfOrder = chain.map((s) => s.name).concat(state.tfOrder.filter((n) => !chain.some((s) => s.name === n)));
+    renderTransformList();
+  }
+
+  // LCS line diff, as in the playground (misc/04) so the rungs read the same way.
+  function diffLines(aText, bText) {
+    const a = aText.split("\n"), b = bText.split("\n");
+    const n = a.length, m = b.length;
+    const dp = Array.from({ length: n + 1 }, () => new Int32Array(m + 1));
+    for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--)
+      dp[i][j] = a[i] === b[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+    const out = [];
+    let i = 0, j = 0;
+    while (i < n && j < m) {
+      if (a[i] === b[j]) { out.push({ t: "ctx", s: a[i] }); i++; j++; }
+      else if (dp[i + 1][j] >= dp[i][j + 1]) { out.push({ t: "del", s: a[i] }); i++; }
+      else { out.push({ t: "add", s: b[j] }); j++; }
+    }
+    while (i < n) { out.push({ t: "del", s: a[i] }); i++; }
+    while (j < m) { out.push({ t: "add", s: b[j] }); j++; }
+    return out;
+  }
+  function renderDiff(prev, code) {
+    const frag = document.createDocumentFragment();
+    diffLines(prev, code).forEach((r) => {
+      const span = document.createElement("span");
+      span.className = r.t;
+      span.textContent = (r.t === "add" ? "+ " : r.t === "del" ? "- " : "  ") + r.s;
+      frag.appendChild(span);
+    });
+    return frag;
+  }
+  function scoreChip(score) {
+    const s = document.createElement("span");
+    s.className = "score " + (score >= 65 ? "ok" : score >= 40 ? "warn" : "bad");
+    s.textContent = score;
+    return s;
+  }
+  function buildLadder() {
+    if (!ready) return;
+    const fn = currentFn();
+    if (!fn) return toast("No function selected");
+    state.seed = $("seed").value.trim() || todayKey();
+    const specs = collectSpecs();
+    const cards = $("cards");
+    if (!specs.length) { cards.innerHTML = '<div class="empty-note">No transforms selected. Tick at least one, or press Roll chain.</div>'; $("stats").style.display = "none"; return; }
+    let lad;
+    try { lad = SRE.runLadder(JSObf, fn.code, specs, state.seed); }
+    catch (err) { cards.innerHTML = ""; const d = document.createElement("div"); d.className = "banner"; d.style.display = "block"; d.textContent = "Parse or transform error: " + err.message; cards.appendChild(d); return; }
+    state.ladder = lad;
+    writeHash();
+    // Stats table
+    const base = lad.rungs[0].code.length;
+    const table = $("stats-table");
+    table.textContent = "";
+    const head = document.createElement("tr");
+    ["Rung", "Transform", "Bytes", "Growth", "Readability", "Entropy", "Mean id", "Strings"].forEach((h, i) => { const th = document.createElement("th"); th.textContent = h; if (i >= 2) th.className = "num"; head.appendChild(th); });
+    table.appendChild(head);
+    const metrics = lad.rungs.map((r) => SRE.readability(r.code, base));
+    lad.rungs.forEach((r, i) => {
+      const m = metrics[i];
+      const tr = document.createElement("tr");
+      const cells = [String(i), r.name + (i > 0 && r.code === lad.rungs[i - 1].code ? "  (no change)" : ""), m.bytes.toLocaleString(), "x" + m.growth.toFixed(2), null, m.entropy.toFixed(2) + " b", m.avgIdLen.toFixed(1), Math.round(m.stringShare * 100) + "%"];
+      cells.forEach((c, k) => {
+        const td = document.createElement("td");
+        if (k >= 2) td.className = "num";
+        if (k === 4) td.appendChild(scoreChip(m.score)); else td.textContent = c;
+        tr.appendChild(td);
+      });
+      table.appendChild(tr);
+    });
+    $("stats").style.display = "";
+    // Cards
+    cards.textContent = "";
+    lad.rungs.forEach((r, i) => {
+      const card = document.createElement("div");
+      card.className = "rung";
+      const h = document.createElement("div");
+      h.className = "rung-head";
+      const step = document.createElement("span"); step.className = "step"; step.textContent = i;
+      const title = document.createElement("span"); title.className = "title"; title.textContent = i === 0 ? fn.name + "()  original" : r.name;
+      const meta = document.createElement("span"); meta.className = "meta";
+      const unchanged = i > 0 && r.code === lad.rungs[i - 1].code;
+      meta.textContent = (unchanged ? "no change (skipped by the transform), " : "") + metrics[i].bytes + " B, x" + metrics[i].growth.toFixed(2) + ", readability ";
+      meta.appendChild(scoreChip(metrics[i].score));
+      h.append(step, title, meta);
+      const body = document.createElement("div");
+      const showCode = () => { body.textContent = ""; const pre = document.createElement("pre"); pre.className = "code"; pre.textContent = r.code; body.appendChild(pre); };
+      const showDiff = () => { body.textContent = ""; const pre = document.createElement("pre"); pre.className = "diff"; pre.appendChild(renderDiff(lad.rungs[i - 1].code, r.code)); body.appendChild(pre); };
+      if (i > 0) {
+        const tg = document.createElement("button");
+        tg.className = "tiny"; tg.textContent = "Show code";
+        let diff = true;
+        tg.addEventListener("click", () => { diff = !diff; if (diff) { showDiff(); tg.textContent = "Show code"; } else { showCode(); tg.textContent = "Show diff"; } });
+        h.appendChild(tg);
+      }
+      if (i === lad.rungs.length - 1 && lad.renameMap && lad.renameMap.size) {
+        const rm = document.createElement("button");
+        rm.className = "tiny"; rm.textContent = "Rename map";
+        rm.addEventListener("click", () => {
+          body.textContent = "";
+          const pre = document.createElement("pre"); pre.className = "code";
+          pre.textContent = [...lad.renameMap.entries()].map(([a, b]) => b.padEnd(14) + "  was  " + a).join("\n");
+          body.appendChild(pre);
+        });
+        h.appendChild(rm);
+      }
+      const cp = document.createElement("button");
+      cp.className = "tiny"; cp.textContent = "Copy";
+      cp.addEventListener("click", () => copyText(r.code, cp));
+      h.appendChild(cp);
+      card.append(h, body);
+      cards.appendChild(card);
+      if (i > 0) showDiff(); else showCode();
+    });
+  }
+  function copyText(text, btn) {
+    const done = () => { if (btn) { const t = btn.textContent; btn.textContent = "Copied"; setTimeout(() => { btn.textContent = t; }, 1200); } };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, () => fallbackCopy(text, done));
+    else fallbackCopy(text, done);
+  }
+  function fallbackCopy(text, done) {
+    const ta = document.createElement("textarea");
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); } catch (e) { /* ignore */ }
+    document.body.removeChild(ta); done();
+  }
+  $("btn-build").addEventListener("click", buildLadder);
+  $("btn-roll").addEventListener("click", rollChain);
+  $("ladder-diff").addEventListener("change", () => { state.difficulty = parseInt($("ladder-diff").value, 10); writeHash(); });
+  $("seed").addEventListener("change", () => { state.seed = $("seed").value.trim() || todayKey(); writeHash(); });
+
+  // ----------------------------------------------------------------------- //
+  // Code rendering with line numbers (optionally highlighting one identifier)
+  // ----------------------------------------------------------------------- //
+  function renderCode(pre, code, highlight) {
+    pre.textContent = "";
+    const re = highlight ? new RegExp("(^|[^A-Za-z0-9_$])(" + highlight.replace(/[$]/g, "\\$") + ")(?![A-Za-z0-9_$])", "g") : null;
+    code.replace(/\n$/, "").split("\n").forEach((line, i) => {
+      const row = document.createElement("div");
+      row.className = "code-line";
+      const ln = document.createElement("span"); ln.className = "ln"; ln.textContent = String(i + 1);
+      const src = document.createElement("span"); src.className = "src";
+      if (re) {
+        let last = 0, m;
+        re.lastIndex = 0;
+        while ((m = re.exec(line))) {
+          const at = m.index + m[1].length;
+          src.appendChild(document.createTextNode(line.slice(last, at)));
+          const mk = document.createElement("mark"); mk.textContent = m[2]; src.appendChild(mk);
+          last = at + m[2].length;
+        }
+        src.appendChild(document.createTextNode(line.slice(last)));
+      } else src.textContent = line;
+      row.append(ln, src);
+      pre.appendChild(row);
+    });
+  }
+
+  // ----------------------------------------------------------------------- //
+  // Game mode
+  // ----------------------------------------------------------------------- //
+  const QTYPES = {
+    file: "which file?",
+    purpose: "what does it do?",
+    transform: "which transform?",
+    identifier: "original identifier?",
+  };
+  const JUNK = /^(_dead_|_dec_|_state_)/;
+  function eligible(fileName) {
+    const f = state.files[fileName];
+    return f ? f.fns.filter((fn) => fn.lines >= 4 && fn.lines <= 60 && fn.code.length <= 3200) : [];
+  }
+  function gameSeed() {
+    const mode = $("g-seedmode").value;
+    if (mode === "daily") return todayKey();
+    if (mode === "random") return Math.random().toString(36).slice(2, 8);
+    return $("g-seed").value.trim() || todayKey();
+  }
+  function enabledTypes() {
+    return Object.keys(QTYPES).filter((k) => $("q-" + k).checked);
+  }
+
+  // Build one round deterministically from (seed, index, difficulty).
+  function makeRound(seed, index, difficulty, types) {
+    const rng = SRE.makeRng(seed + "#" + index + "#" + difficulty);
+    const fileNames = FILES.map((f) => f.name).filter((n) => eligible(n).length);
+    for (let attempt = 0; attempt < 8; attempt++) {
+      const type = SRE.pick(rng, types);
+      const fileName = SRE.pick(rng, fileNames);
+      const fn = SRE.pick(rng, eligible(fileName));
+      const needRename = type === "purpose" || type === "identifier";
+      const count = type === "transform" ? Math.min(difficulty, 2) : difficulty;
+      const chain = SRE.chainFor(rng, count, needRename);
+      let lad;
+      try { lad = SRE.runLadder(JSObf, fn.code, chain, seed + ":" + index); } catch (e) { continue; }
+      const obf = lad.rungs[lad.rungs.length - 1].code;
+      const round = { index: index, type: type, file: fileName, fn: fn, chain: chain, ladder: lad, code: obf, highlight: null };
+      const others = state.files[fileName].fns.filter((x) => x.name !== fn.name);
+      if (type === "file") {
+        round.question = "Which file is this function from?";
+        round.options = FILES.map((f) => ({ text: f.name, sub: f.blurb, ok: f.name === fileName }));
+      } else if (type === "purpose") {
+        if (others.length < 3) continue;
+        round.question = "What does this function do?";
+        const wrong = SRE.shuffle(rng, others.slice()).slice(0, 3);
+        round.options = [fn].concat(wrong).map((x) => ({ text: x.name + "()", sub: x.comment ? x.comment.slice(0, 110) : x.label, ok: x === fn }));
+      } else if (type === "transform") {
+        const inChain = chain.map((s) => s.name);
+        const correct = SRE.pick(rng, inChain);
+        const outside = SRE.shuffle(rng, SRE.TRANSFORMS.map((t) => t.name).filter((n) => inChain.indexOf(n) < 0)).slice(0, 3);
+        round.question = inChain.length === 1 ? "Which transform was applied?" : "Which of these transforms was applied? (" + inChain.length + " were)";
+        round.options = [correct].concat(outside).map((n) => { const t = SRE.TRANSFORMS.find((x) => x.name === n); return { text: t.label, sub: t.desc, ok: n === correct }; });
+      } else {
+        const map = lad.renameMap;
+        const keys = map ? [...map.keys()].filter((k) => !JUNK.test(k)) : [];
+        if (keys.length < 1) continue;
+        const original = SRE.pick(rng, keys);
+        round.highlight = map.get(original);
+        round.question = "What was " + round.highlight + " originally called?";
+        let pool = keys.filter((k) => k !== original);
+        others.forEach((x) => { if (pool.indexOf(x.name) < 0 && x.name !== original) pool.push(x.name); });
+        ["value", "index", "count", "node", "result", "items", "key", "text", "list", "opts"].forEach((g) => { if (pool.indexOf(g) < 0 && g !== original) pool.push(g); });
+        pool = SRE.shuffle(rng, pool).slice(0, 3);
+        round.options = [original].concat(pool).map((n) => ({ text: n, sub: "", ok: n === original }));
+      }
+      SRE.shuffle(rng, round.options);
+      return round;
+    }
+    return null;
+  }
+
+  function startGame() {
+    if (!ready) return;
+    const types = enabledTypes();
+    if (!types.length) return toast("Tick at least one question type");
+    const rounds = Math.max(1, Math.min(30, parseInt($("g-rounds").value, 10) || 8));
+    state.difficulty = parseInt($("g-diff").value, 10) || 3;
+    state.seed = gameSeed();
+    if ($("g-seedmode").value !== "daily") $("g-seed").value = state.seed;
+    writeHash();
+    const list = [];
+    for (let i = 0; i < rounds; i++) {
+      const r = makeRound(state.seed, i, state.difficulty, types);
+      if (r) list.push(r);
+    }
+    if (!list.length) return toast("Could not build any rounds");
+    state.game = { rounds: list, i: 0, score: 0, streak: 0, best: 0, results: [], answered: false, timer: null, startedAt: 0, left: ROUND_SECONDS };
+    $("g-settings").style.display = "none";
+    $("g-end").style.display = "none";
+    $("g-round").style.display = "";
+    showRound();
+  }
+  function stopTimer() {
+    const g = state.game;
+    if (g && g.timer) { clearInterval(g.timer); g.timer = null; }
+  }
+  function showRound() {
+    const g = state.game;
+    const r = g.rounds[g.i];
+    g.answered = false;
+    g.startedAt = performance.now();
+    g.left = ROUND_SECONDS;
+    $("g-title").textContent = "Round " + (g.i + 1) + " of " + g.rounds.length;
+    const chips = $("g-chips");
+    chips.textContent = "";
+    const add = (text, cls) => { const c = document.createElement("span"); c.className = "chip " + (cls || ""); c.textContent = text; chips.appendChild(c); };
+    add(QTYPES[r.type], "type");
+    add("difficulty " + state.difficulty, "d" + state.difficulty);
+    if (r.type === "transform") add(r.chain.length + " transform" + (r.chain.length === 1 ? "" : "s") + " hidden");
+    else r.chain.forEach((s) => add(SRE.TRANSFORMS.find((t) => t.name === s.name).label.toLowerCase()));
+    if (r.type !== "file") add(r.file);
+    $("g-score").textContent = g.score;
+    $("g-streak").textContent = g.streak;
+    renderCode($("g-code"), r.code, r.highlight);
+    $("g-question").textContent = r.question;
+    const holder = $("g-choices");
+    holder.textContent = "";
+    r.options.forEach((o, i) => {
+      const b = document.createElement("button");
+      b.className = "choice";
+      const key = document.createElement("span"); key.className = "key"; key.textContent = String(i + 1);
+      const body = document.createElement("span"); body.className = "body"; body.textContent = o.text;
+      if (o.sub) { const s = document.createElement("small"); s.textContent = o.sub; body.appendChild(s); }
+      b.append(key, body);
+      b.addEventListener("click", () => answer(i));
+      holder.appendChild(b);
+    });
+    $("g-feedback").style.display = "none";
+    $("g-orig-panel").style.display = "none";
+    $("btn-show-orig").textContent = "Show original";
+    const t = $("g-timer");
+    t.textContent = String(ROUND_SECONDS);
+    t.classList.remove("low");
+    stopTimer();
+    g.timer = setInterval(() => {
+      const left = Math.max(0, ROUND_SECONDS - (performance.now() - g.startedAt) / 1000);
+      g.left = left;
+      t.textContent = String(Math.ceil(left));
+      t.classList.toggle("low", left <= 10);
+      if (left <= 0) answer(-1);
+    }, 200);
+    window.scrollTo(0, 0);
+  }
+  function answer(i) {
+    const g = state.game;
+    if (!g || g.answered) return;
+    g.answered = true;
+    stopTimer();
+    const r = g.rounds[g.i];
+    const elapsed = (performance.now() - g.startedAt) / 1000;
+    const correct = i >= 0 && !!r.options[i].ok;
+    let points = 0;
+    if (correct) {
+      g.streak++;
+      g.best = Math.max(g.best, g.streak);
+      points = 100 + Math.max(0, Math.round(ROUND_SECONDS - elapsed)) + 10 * (g.streak - 1);
+      g.score += points;
+    } else g.streak = 0;
+    g.results.push({ correct: correct, points: points, seconds: elapsed, type: r.type });
+    document.querySelectorAll("#g-choices .choice").forEach((b, j) => {
+      b.disabled = true;
+      if (r.options[j].ok) b.classList.add("correct");
+      else if (j === i) b.classList.add("wrong");
+    });
+    $("g-score").textContent = g.score;
+    $("g-streak").textContent = g.streak;
+    const v = $("g-verdict");
+    v.textContent = i < 0 ? "Out of time" : correct ? "Correct, +" + points : "Not quite";
+    v.className = "verdict " + (correct ? "ok" : "bad");
+    const ex = $("g-explain");
+    ex.textContent = "";
+    const chainText = r.chain.map((s) => { const t = SRE.TRANSFORMS.find((x) => x.name === s.name); const k = Object.keys(s.options); return t.label.toLowerCase() + (k.length ? " (" + k.map((q) => q + "=" + s.options[q]).join(", ") + ")" : ""); }).join(" then ");
+    const p1 = document.createElement("p");
+    p1.style.margin = "4px 0";
+    p1.innerHTML = "This is <code></code> from <b></b>, lines " + r.fn.line0 + "-" + r.fn.line1 + ". ";
+    p1.querySelector("code").textContent = r.fn.name + "()";
+    p1.querySelector("b").textContent = r.file;
+    if (r.fn.comment) p1.appendChild(document.createTextNode(r.fn.comment));
+    const p2 = document.createElement("p");
+    p2.style.margin = "4px 0";
+    p2.className = "muted";
+    p2.textContent = "Chain: " + chainText + ".";
+    ex.append(p1, p2);
+    if (r.ladder.renameMap && r.ladder.renameMap.size) {
+      const p3 = document.createElement("p");
+      p3.style.margin = "4px 0";
+      p3.className = "muted";
+      p3.textContent = "Renames: " + [...r.ladder.renameMap.entries()].filter(([a]) => !JUNK.test(a)).map(([a, b]) => b + " was " + a).join(", ") + ".";
+      ex.appendChild(p3);
+    }
+    renderCode($("g-orig"), r.fn.code);
+    $("btn-next").textContent = g.i + 1 >= g.rounds.length ? "See results" : "Next";
+    $("btn-next").appendChild(Object.assign(document.createElement("kbd"), { textContent: "Enter" }));
+    $("g-feedback").style.display = "";
+    $("btn-next").focus();
+  }
+  function nextRound() {
+    const g = state.game;
+    if (!g || !g.answered) return;
+    g.i++;
+    if (g.i >= g.rounds.length) endGame();
+    else showRound();
+  }
+  function endGame() {
+    const g = state.game;
+    stopTimer();
+    const n = g.results.length;
+    const correct = g.results.filter((r) => r.correct).length;
+    const meanS = n ? g.results.reduce((a, r) => a + r.seconds, 0) / n : 0;
+    const tiles = $("g-tiles");
+    tiles.textContent = "";
+    [[g.score, "points"], [correct + " / " + n, "correct"], [g.best, "best streak"], [meanS.toFixed(1) + " s", "mean time"]].forEach(([v, k]) => {
+      const d = document.createElement("div");
+      d.className = "tile";
+      const a = document.createElement("div"); a.className = "v"; a.textContent = v;
+      const b = document.createElement("div"); b.className = "k"; b.textContent = k;
+      d.append(a, b); tiles.appendChild(d);
+    });
+    const track = $("g-track");
+    track.textContent = "";
+    g.results.forEach((r) => { const s = document.createElement("span"); s.className = r.correct ? "ok" : "bad"; s.title = QTYPES[r.type]; track.appendChild(s); });
+    const seedMode = $("g-seedmode").value;
+    const url = location.href.split("#")[0] + "#m=game&d=" + state.difficulty + "&s=" + encodeURIComponent(state.seed);
+    $("g-share").value = "Site Reverse Engineer " + (seedMode === "daily" ? "daily " : "") + state.seed + " (difficulty " + state.difficulty + ")\n"
+      + correct + "/" + n + " correct, " + g.score + " points, best streak " + g.best + "\n"
+      + g.results.map((r) => (r.correct ? "■" : "□")).join("") + "\n" + url;
+    $("g-round").style.display = "none";
+    $("g-end").style.display = "";
+    window.scrollTo(0, 0);
+  }
+  function updatePool() {
+    const n = FILES.reduce((a, f) => a + eligible(f.name).length, 0);
+    $("g-pool").textContent = n + " functions of 4 to 60 lines in play";
+  }
+  $("btn-start").addEventListener("click", startGame);
+  $("btn-next").addEventListener("click", nextRound);
+  $("btn-quit").addEventListener("click", () => { if (state.game && state.game.results.length) endGame(); else { stopTimer(); $("g-round").style.display = "none"; $("g-settings").style.display = ""; } });
+  $("btn-again").addEventListener("click", () => { $("g-end").style.display = "none"; $("g-settings").style.display = ""; });
+  $("btn-copy-share").addEventListener("click", () => copyText($("g-share").value, $("btn-copy-share")));
+  $("btn-show-orig").addEventListener("click", () => {
+    const p = $("g-orig-panel");
+    const open = p.style.display === "none";
+    p.style.display = open ? "" : "none";
+    $("btn-show-orig").textContent = open ? "Hide original" : "Show original";
+  });
+  $("btn-open-ladder").addEventListener("click", () => {
+    const g = state.game;
+    if (!g) return;
+    const r = g.rounds[g.i];
+    state.file = r.file; state.fn = r.fn.name;
+    applyChain(r.chain);
+    $("seed").value = state.seed + ":" + r.index;
+    renderTabs(); renderFnSelect();
+    setMode("ladder");
+    buildLadder();
+  });
+  $("g-seedmode").addEventListener("change", () => { $("g-seed").style.display = $("g-seedmode").value === "custom" ? "" : "none"; });
+  $("g-diff").addEventListener("change", () => { state.difficulty = parseInt($("g-diff").value, 10); writeHash(); });
+
+  // ----------------------------------------------------------------------- //
+  // Deobfuscate-me mode
+  // ----------------------------------------------------------------------- //
+  function scramble() {
+    if (!ready) return;
+    const fn = currentFn();
+    if (!fn) return toast("No function selected");
+    const d = parseInt($("d-diff").value, 10) || 3;
+    const seed = $("d-seed").value.trim() || todayKey();
+    state.difficulty = d; state.seed = seed;
+    writeHash();
+    const rng = SRE.makeRng(seed + ":deob:" + fn.name + ":" + d);
+    const chain = SRE.chainFor(rng, d, true);
+    let lad;
+    try { lad = SRE.runLadder(JSObf, fn.code, chain, seed + ":deob"); }
+    catch (err) { return toast("Transform error: " + err.message); }
+    state.deob = { fn: fn, chain: chain, ladder: lad, original: lad.rungs[0].code, obf: lad.rungs[lad.rungs.length - 1].code, revealed: false };
+    $("d-editor").value = state.deob.obf;
+    $("d-chips").textContent = "Chain: " + chain.map((s) => SRE.TRANSFORMS.find((t) => t.name === s.name).label.toLowerCase()).join(" then ") + ". Original: " + fn.name + "() from " + state.file + ", " + fn.lines + " lines.";
+    $("d-orig").innerHTML = '<div class="empty-note" style="padding:14px">Hidden until you reveal it.</div>';
+    $("btn-reveal").textContent = "Reveal";
+    updateMeter();
+  }
+  function updateMeter() {
+    const d = state.deob;
+    if (!d) { $("d-pct").textContent = "--"; $("d-bar").style.width = "0"; $("d-detail").textContent = ""; return; }
+    const res = SRE.tokenDistance($("d-editor").value, d.original);
+    const sim = Math.round(100 * (1 - res.normalised));
+    $("d-pct").textContent = sim + "%";
+    $("d-bar").style.width = sim + "%";
+    $("d-detail").textContent = res.distance + " token edit" + (res.distance === 1 ? "" : "s") + " away (" + res.a + " vs " + res.b + " tokens)" + (res.distance === 0 ? ". Identical." : "");
+  }
+  let meterTimer = null;
+  $("d-editor").addEventListener("input", () => { clearTimeout(meterTimer); meterTimer = setTimeout(updateMeter, 150); });
+  $("btn-scramble").addEventListener("click", scramble);
+  $("btn-d-reset").addEventListener("click", () => { if (state.deob) { $("d-editor").value = state.deob.obf; updateMeter(); } });
+  $("btn-reveal").addEventListener("click", () => {
+    const d = state.deob;
+    if (!d) return toast("Scramble something first");
+    if (d.revealed) { d.revealed = false; $("d-orig").innerHTML = '<div class="empty-note" style="padding:14px">Hidden until you reveal it.</div>'; $("btn-reveal").textContent = "Reveal"; return; }
+    d.revealed = true;
+    renderCode($("d-orig"), d.original);
+    $("btn-reveal").textContent = "Hide";
+  });
+  $("d-diff").addEventListener("change", () => { state.difficulty = parseInt($("d-diff").value, 10); writeHash(); });
+
+  // ----------------------------------------------------------------------- //
+  // Modes, help, keyboard, boot
+  // ----------------------------------------------------------------------- //
+  function setMode(mode) {
+    state.mode = mode;
+    document.querySelectorAll("#modes button").forEach((b) => b.classList.toggle("on", b.dataset.mode === mode));
+    document.querySelectorAll(".screen").forEach((s) => s.classList.toggle("active", s.id === "screen-" + mode));
+    if (mode !== "game") stopTimer();
+    if (mode === "game") updatePool();
+    writeHash();
+  }
+  document.querySelectorAll("#modes button").forEach((b) => b.addEventListener("click", () => setMode(b.dataset.mode)));
+  $("btn-help").addEventListener("click", () => $("help").classList.add("show"));
+  $("btn-help-close").addEventListener("click", () => $("help").classList.remove("show"));
+  $("help").addEventListener("click", (e) => { if (e.target === $("help")) $("help").classList.remove("show"); });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") $("help").classList.remove("show");
+    if (state.mode !== "game") return;
+    const t = e.target;
+    const typing = t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT");
+    const g = state.game;
+    if ($("g-settings").style.display !== "none") {
+      if (e.key === "Enter" && !(t && t.tagName === "BUTTON")) { e.preventDefault(); startGame(); }
+      return;
+    }
+    if (g && $("g-round").style.display !== "none") {
+      if (!typing && /^[1-4]$/.test(e.key) && !g.answered) { const i = parseInt(e.key, 10) - 1; if (i < g.rounds[g.i].options.length) answer(i); }
+      if (e.key === "Enter" && g.answered && !(t && t.tagName === "BUTTON" && t.id !== "btn-next")) { e.preventDefault(); nextRound(); }
+    }
+  });
+
+  async function boot() {
+    readHash();
+    if (!ready) {
+      const b = $("banner");
+      b.style.display = "block";
+      b.textContent = "The parser and transforms from ../04-obfuscation-playground/ did not load, so nothing can be obfuscated here. The site scripts are still listed below.";
+      ["btn-build", "btn-roll", "btn-start", "btn-scramble"].forEach((id) => { $(id).disabled = true; });
+    }
+    await loadFiles();
+    if (!state.fn) {
+      const mid = currentFns().find((fn) => fn.lines >= 8 && fn.lines <= 30);
+      if (mid) state.fn = mid.name;
+    }
+    renderTabs();
+    renderFnSelect();
+    renderTransformList();
+    $("seed").value = state.seed;
+    $("d-seed").value = state.seed;
+    $("ladder-diff").value = String(state.difficulty);
+    $("g-diff").value = String(state.difficulty);
+    $("d-diff").value = String(state.difficulty);
+    if (state.seed !== todayKey()) { $("g-seedmode").value = "custom"; $("g-seed").value = state.seed; }
+    $("g-seed").style.display = $("g-seedmode").value === "custom" ? "" : "none";
+    // Default chain: the seed's difficulty-3 roll, so the first build has something to show.
+    if (ready) {
+      const rng = SRE.makeRng(state.seed + ":ladder:" + state.difficulty);
+      applyChain(SRE.chainFor(rng, state.difficulty, false));
+    }
+    setMode(state.mode);
+    if (ready && state.mode === "ladder" && currentFn()) buildLadder();
+  }
+  boot();
+})();
+</script>
+</body>
+</html>

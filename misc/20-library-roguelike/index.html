@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Library Roguelike</title>
+<meta name="description" content="A text roguelike whose dungeon is a real library: every room is a shelf, every monster is a book on it. One dungeon per day.">
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    --bg: #110f0c;
+    --panel: #1b1712;
+    --panel-2: #26201a;
+    --line: #3c3226;
+    --ink: #ece3d3;
+    --ink-2: #a89881;
+    --ink-3: #6f6353;
+    --amber: #f0b64a;
+    --good: #7fd48e;
+    --bad: #ec6b5e;
+    --you: #9fcbef;
+    --mono: ui-monospace, "Cascadia Mono", "SF Mono", Menlo, Consolas, "Liberation Mono", "BIZ UDGothic", "MS Gothic", "Noto Sans Mono CJK JP", "Hiragino Sans", monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); }
+  body {
+    font: 14px/1.5 var(--mono);
+    padding: 14px 16px 28px;
+    overflow-x: hidden;
+  }
+  h1 { font-size: 22px; margin: 0; font-weight: 600; letter-spacing: 0.01em; }
+  header { display: flex; align-items: baseline; gap: 12px 14px; flex-wrap: wrap; margin-bottom: 12px; }
+  header .sub { color: var(--ink-2); font-size: 13px; }
+  header .spacer { flex: 1; }
+  button {
+    font: inherit; color: var(--ink); background: var(--panel-2); border: 1px solid var(--line);
+    border-radius: 6px; padding: 6px 12px; cursor: pointer; touch-action: manipulation;
+  }
+  button:hover { background: #322a22; }
+  button:active { transform: translateY(1px); }
+  button:disabled { opacity: 0.4; cursor: default; transform: none; }
+  button.small { font-size: 12px; padding: 4px 10px; }
+  kbd { display: inline-block; min-width: 1.4em; text-align: center; font-family: inherit; background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; color: var(--amber); margin-right: 6px; font-size: 12px; }
+
+  #layout { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; }
+  #main { flex: 1 1 560px; min-width: 0; display: grid; gap: 10px; }
+  #side { flex: 0 1 300px; min-width: 240px; display: grid; gap: 10px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; min-width: 0; }
+  .card h2 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-2); margin: 0 0 6px; font-weight: 600; }
+  pre { margin: 0; font: inherit; white-space: pre-wrap; word-break: break-word; }
+
+  /* Room: the shelf, drawn as ASCII spines */
+  #room-title { color: var(--amber); }
+  #room-title span { color: var(--ink-2); }
+  #spines { display: flex; flex-wrap: wrap; gap: 4px 0; margin-top: 6px; line-height: 1.3; }
+  .spine { white-space: pre; color: var(--ink-2); }
+  .spine.current { color: var(--amber); font-weight: 600; }
+  .spine.dead { color: var(--ink-3); }
+  .spine.boss { text-decoration: underline; text-decoration-color: var(--bad); }
+  #shelf-line { color: var(--ink-3); overflow: hidden; white-space: nowrap; }
+
+  /* Enemy card */
+  #enemy-name { font-weight: 600; font-size: 15px; }
+  #enemy-name .boss { color: var(--bad); }
+  #enemy-meta { color: var(--ink-2); font-size: 13px; }
+  #enemy-bar { margin: 4px 0; }
+  .bar { letter-spacing: 0.02em; }
+  .bar .on { color: var(--bad); }
+  .bar .off { color: var(--ink-3); }
+  #status .bar .on { color: var(--good); }
+  #status .at .on { color: var(--amber); }
+  #enemy-desc { color: var(--ink-2); font-size: 13px; margin-top: 4px; }
+  .status-tags { color: var(--amber); font-size: 13px; }
+
+  /* Message log */
+  #log {
+    background: #0c0a08; border: 1px solid var(--line); border-radius: 8px;
+    height: 300px; overflow-y: auto; padding: 8px 10px; font-size: 13px;
+  }
+  #log div { padding: 1px 0; }
+  #log .sys { color: var(--ink-2); }
+  #log .room { color: var(--amber); }
+  #log .meet { color: var(--ink); }
+  #log .you { color: var(--you); }
+  #log .enemy { color: #e9a79c; }
+  #log .win { color: var(--good); }
+  #log .death { color: var(--bad); font-weight: 600; }
+  #log .victory { color: var(--good); font-weight: 600; }
+  #log .summary { color: var(--ink); background: var(--panel-2); border-left: 3px solid var(--amber); padding: 6px 8px; margin: 4px 0; white-space: pre-wrap; }
+
+  /* Verbs */
+  #verbs { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+  #verbs button { padding: 10px 6px; font-size: 13px; text-align: center; line-height: 1.3; }
+  #verbs button b { display: block; font-weight: 600; }
+  #verbs button small { color: var(--ink-2); font-size: 11px; }
+  #verbs button.scrambled { border-color: var(--amber); }
+  #verbs button.next { border-color: var(--good); }
+  #verbs button.copy { grid-column: span 2; }
+  #verbs.over { grid-template-columns: repeat(2, 1fr); }
+
+  /* Side cards */
+  #skills, #bag { font-size: 13px; }
+  #skills div, #bag div { display: flex; justify-content: space-between; gap: 8px; border-bottom: 1px dotted var(--line); padding: 2px 0; }
+  #skills div span:first-child { white-space: nowrap; }
+  #skills div span:last-child { color: var(--ink-2); text-align: right; font-size: 12px; }
+  #bag button { padding: 1px 8px; font-size: 12px; flex: none; }
+  #bag .title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  .muted { color: var(--ink-2); font-size: 13px; }
+  #map { font-size: 13px; line-height: 1.45; }
+  #map .cur { color: var(--amber); font-weight: 600; }
+  #map .done { color: var(--good); }
+  #map .fled { color: var(--ink-2); }
+  #map .boss { color: var(--bad); }
+  #map .legend { color: var(--ink-3); font-size: 12px; margin-top: 4px; }
+  #board { font-size: 13px; }
+  #board div { display: flex; justify-content: space-between; gap: 8px; border-bottom: 1px dotted var(--line); padding: 2px 0; white-space: nowrap; font-size: 12px; }
+  #board .today { color: var(--amber); }
+  #source { color: var(--ink-2); font-size: 13px; }
+  #note { color: var(--amber); font-size: 13px; }
+
+  /* Help overlay */
+  #help { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(8, 6, 4, 0.82); padding: 16px; z-index: 10; }
+  #help.show { display: flex; }
+  #help .box { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px 20px; max-width: 620px; max-height: 92vh; overflow-y: auto; }
+  #help h2 { margin: 0 0 10px; font-size: 18px; font-weight: 600; }
+  #help p { margin: 6px 0; font-size: 13px; }
+  #help p b { color: var(--amber); font-weight: 600; }
+  #help .close { text-align: right; margin-top: 12px; }
+
+  @media (max-width: 760px) {
+    #side { flex-basis: 100%; }
+    #verbs { grid-template-columns: repeat(3, 1fr); }
+    #log { height: 240px; }
+    header .sub { flex-basis: 100%; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Library Roguelike</h1>
+  <span class="sub" id="sub">Loading the catalogue.</span>
+  <span class="spacer"></span>
+  <button class="small" id="btn-daily" title="Replay today's dungeon">Daily</button>
+  <button class="small" id="btn-random" title="A random seed; does not count for the daily">New random run</button>
+  <button class="small" id="btn-help" title="Rules">?</button>
+</header>
+
+<div id="layout">
+  <div id="main">
+    <div class="card" id="room">
+      <h2>Shelf</h2>
+      <div id="room-title">Waiting for the catalogue.</div>
+      <div id="spines"></div>
+      <div id="shelf-line"></div>
+    </div>
+
+    <div class="card" id="enemy">
+      <h2>Facing</h2>
+      <div id="enemy-name">Nothing yet.</div>
+      <div id="enemy-meta"></div>
+      <pre id="enemy-bar"></pre>
+      <div id="enemy-desc"></div>
+    </div>
+
+    <div id="log" aria-live="polite"></div>
+
+    <div id="verbs"></div>
+  </div>
+
+  <div id="side">
+    <div class="card">
+      <h2>Reader</h2>
+      <pre id="status"></pre>
+      <div id="skills"><span class="muted">No skills yet. Read a defeated book to learn one.</span></div>
+    </div>
+    <div class="card">
+      <h2>Bag</h2>
+      <div id="bag"><span class="muted">Empty.</span></div>
+    </div>
+    <div class="card">
+      <h2>Map</h2>
+      <pre id="map"></pre>
+    </div>
+    <div class="card">
+      <h2>Best daily runs</h2>
+      <div id="board"><span class="muted">No runs recorded on this browser yet.</span></div>
+    </div>
+    <div class="card">
+      <h2>Catalogue</h2>
+      <div id="source">Loading.</div>
+      <div id="note"></div>
+    </div>
+  </div>
+</div>
+
+<div id="help" role="dialog" aria-modal="true" aria-labelledby="help-title">
+  <div class="box">
+    <h2 id="help-title">How the library fights</h2>
+    <p><b>The dungeon is a real library.</b> Every room is one shelf of one bookcase; every monster is a book that stands on it. Everyone gets the same eight shelves per UTC day.</p>
+    <p><b>Verbs.</b> <kbd>1</kbd>Attack: read it aggressively (4 to 6). <kbd>2</kbd>Skim: 1 to 2 damage, +2 Attention. <kbd>3</kbd>Shelve: spend 2 Attention to bind a book for 2 turns; likelier when its title sits alphabetically next to the last book you met, because shelves want order. <kbd>4</kbd>Flee: skip the rest of the shelf, taking one parting hit.</p>
+    <p><b>Genre decides how a book fights.</b> Textbooks are armoured, Verse crits, Scripture heals itself, Novels summon sequels, Folios dazzle, Chronicles counter a repeated verb, Grammars scramble your keys, Panels hit fast and weak, Treatises drain Attention. Partly legible books are Damaged and cannot be shelved.</p>
+    <p><b>Thickness is HP</b> (title and description length, weighted by type). Books published in or before 1970 have seniority and strike first.</p>
+    <p><b>Defeated books go in your bag.</b> <kbd>5</kbd>Read one to learn the skill of its genre and heal 3. Reading is free once a shelf is cleared; in a fight it costs a turn.</p>
+    <p><b>The last shelf ends with its thickest book.</b> Close it to escape. Dying prints a summary you can copy, and daily runs are kept on a local leaderboard.</p>
+    <div class="close"><button id="btn-help-close">Start reading</button></div>
+  </div>
+</div>
+
+<script src="sample.js"></script>
+<script src="engine.js"></script>
+<script src="ui.js"></script>
+</body>
+</html>

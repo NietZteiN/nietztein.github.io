@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tide Table for Prose</title>
+<meta name="description" content="A clock whose face is a paragraph. Every minute one word turns into a synonym; by evening the morning sentence is gone.">
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    --bg: #0b171d;
+    --bg-2: #122430;
+    --panel: rgba(255, 255, 255, 0.045);
+    --panel-2: rgba(255, 255, 255, 0.09);
+    --line: rgba(236, 228, 210, 0.14);
+    --ink: #ece4d2;
+    --ink-2: #a89f8c;
+    --ink-3: rgba(236, 228, 210, 0.38);
+    --foam: #8fd3c0;      /* turned words in diff view, the tide fill */
+    --lamp: #ffd98a;      /* the freshly turned word */
+    --old: rgba(236, 228, 210, 0.42);
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif CJK JP", "Times New Roman", serif;
+    --sans: -apple-system, "Segoe UI", Helvetica, Arial, "Hiragino Sans", "Yu Gothic", "Noto Sans CJK JP", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); }
+  body {
+    font: 15px/1.45 var(--sans);
+    background: linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
+    background-attachment: fixed;
+    min-height: 100vh; display: flex; flex-direction: column;
+    padding: 14px 16px 24px; overflow-x: hidden;
+  }
+  a { color: inherit; }
+  h1 { font-size: 22px; margin: 0; font-weight: 600; letter-spacing: 0.01em; }
+  header { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 10px; }
+  header .sub { color: var(--ink-2); font-size: 14px; }
+  header .spacer { flex: 1; }
+  header .tools { display: flex; gap: 6px; flex-wrap: wrap; }
+  button {
+    font: inherit; color: var(--ink); background: var(--panel-2); border: 1px solid var(--line);
+    border-radius: 7px; padding: 6px 12px; cursor: pointer; line-height: 1.2;
+  }
+  button:hover { background: rgba(255,255,255,0.14); }
+  button:active { transform: translateY(1px); }
+  button.on { background: var(--foam); color: #0b171d; border-color: transparent; }
+  button.small { font-size: 13px; padding: 4px 10px; }
+  button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 1px solid var(--foam); outline-offset: 1px; }
+
+  /* the face */
+  main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px 0 12px; }
+  #face { width: 100%; max-width: 44em; }
+  .meta { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; color: var(--ink-2); font-size: 13px; letter-spacing: 0.03em; margin-bottom: 14px; }
+  .meta #clock { font-variant-numeric: tabular-nums; font-size: 15px; color: var(--ink); }
+  .meta #clock .mode { font-size: 12px; color: var(--ink-3); margin-left: 8px; letter-spacing: 0.06em; text-transform: uppercase; }
+  #para {
+    font-family: var(--serif); font-size: clamp(1.15rem, 1.1rem + 1vw, 1.7rem); line-height: 1.75;
+    margin: 0; text-wrap: pretty; hyphens: manual; word-wrap: break-word;
+  }
+  #para .w { transition: color 2.5s ease, text-shadow 2.5s ease; }
+  #para .fresh { animation: lamp 5s ease-out; }
+  @keyframes lamp {
+    0%   { color: var(--lamp); text-shadow: 0 0 10px rgba(255, 217, 138, 0.9), 0 0 24px rgba(255, 217, 138, 0.5); }
+    35%  { color: var(--lamp); text-shadow: 0 0 8px rgba(255, 217, 138, 0.6), 0 0 18px rgba(255, 217, 138, 0.3); }
+    100% { color: inherit; text-shadow: none; }
+  }
+  /* diff view */
+  #para.diff .turn { color: var(--foam); }
+  #para.diff .turn .fresh { color: var(--lamp); }
+  #para.diff .turn s { color: var(--old); text-decoration-color: rgba(236, 228, 210, 0.35); margin-right: 0.25em; font-size: 0.82em; }
+  #para:not(.diff) s { display: none; }
+
+  /* tide gauge */
+  #gauge { margin-top: 22px; }
+  #gauge .bar { position: relative; height: 4px; background: var(--panel-2); border-radius: 2px; overflow: hidden; }
+  #gauge .fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: linear-gradient(90deg, rgba(143,211,192,0.45), var(--foam)); border-radius: 2px; transition: width 0.6s ease; }
+  #gauge .labels { display: flex; justify-content: space-between; font-size: 12px; color: var(--ink-3); margin-top: 6px; letter-spacing: 0.04em; }
+  #foot { margin-top: 10px; color: var(--ink-2); font-size: 14px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  #foot .warn { color: var(--lamp); }
+
+  /* controls */
+  #controls { width: 100%; max-width: 44em; margin: 18px auto 0; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+  .card h2 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-2); margin: 0 0 8px; font-weight: 600; }
+  .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .row + .row { margin-top: 8px; }
+  #slider { flex: 1 1 220px; min-width: 160px; accent-color: var(--foam); margin: 0; }
+  #slider-time { font-variant-numeric: tabular-nums; min-width: 3.2em; text-align: right; }
+  .day-nav { display: flex; gap: 4px; }
+  #textpanel { margin-top: 10px; display: none; }
+  #textpanel.show { display: block; }
+  select, input[type=text], textarea {
+    font: inherit; color: var(--ink); background: rgba(0,0,0,0.25); border: 1px solid var(--line); border-radius: 7px; padding: 6px 8px;
+  }
+  select { max-width: 100%; }
+  textarea { width: 100%; min-height: 6em; resize: vertical; font-family: var(--serif); font-size: 15px; line-height: 1.5; }
+  input[type=text] { width: 9em; }
+  label { color: var(--ink-2); font-size: 13px; }
+  .hint { color: var(--ink-3); font-size: 12px; }
+  #copied { color: var(--foam); font-size: 13px; }
+
+  /* help overlay */
+  .overlay { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(6, 12, 16, 0.82); padding: 18px; z-index: 5; }
+  .overlay.show { display: flex; }
+  .overlay .box { max-width: 460px; background: var(--bg-2); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; }
+  .overlay h2 { margin: 0 0 8px; font-size: 20px; font-weight: 600; }
+  .overlay p { margin: 8px 0; font-size: 14px; color: var(--ink); }
+  .overlay p.lic { color: var(--ink-2); font-size: 13px; }
+  .overlay .keys { display: inline-grid; grid-template-columns: auto auto; gap: 3px 14px; margin: 8px 0; font-size: 13px; color: var(--ink-2); }
+  kbd { font-family: inherit; background: var(--panel-2); border: 1px solid var(--line); border-radius: 4px; padding: 0 6px; color: var(--ink); }
+
+  @media (max-width: 640px) {
+    main { padding-top: 6px; }
+    #para { line-height: 1.65; }
+    .meta { margin-bottom: 10px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #para .fresh { animation: none; color: var(--lamp); }
+    #gauge .fill { transition: none; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Tide Table for Prose</h1>
+  <span class="sub">A paragraph that rewrites itself one word a minute. High tide at 23:59.</span>
+  <span class="spacer"></span>
+  <span class="tools">
+    <button id="btn-diff" class="small" title="show the original words struck through (D)">diff</button>
+    <button id="btn-text" class="small" title="choose or paste a paragraph, set a seed (T)">text</button>
+    <button id="btn-help" class="small" title="what is this? (?)">?</button>
+  </span>
+</header>
+
+<main>
+  <div id="face">
+    <div class="meta">
+      <span id="source"></span>
+      <span id="clock"><span id="hm">00:00</span><span class="mode" id="mode">live</span></span>
+    </div>
+    <p id="para" aria-live="polite"></p>
+    <div id="gauge" aria-hidden="true">
+      <div class="bar"><div class="fill" id="fill"></div></div>
+      <div class="labels"><span id="gauge-left">low tide</span><span id="gauge-mid"></span><span>high tide 23:59</span></div>
+    </div>
+    <div id="foot"><span id="turned"></span><span id="date"></span></div>
+  </div>
+</main>
+
+<div id="controls">
+  <div class="card">
+    <div class="row">
+      <span class="day-nav">
+        <button id="btn-prev" class="small" title="yesterday">&#9664; yesterday</button>
+        <button id="btn-now" class="small" title="back to the live clock (N)">now</button>
+        <button id="btn-next" class="small" title="tomorrow">tomorrow &#9654;</button>
+      </span>
+      <input id="slider" type="range" min="0" max="1439" value="0" step="1" aria-label="time of day">
+      <span id="slider-time">00:00</span>
+    </div>
+  </div>
+  <div class="card" id="textpanel">
+    <h2>Paragraph</h2>
+    <div class="row">
+      <select id="pick" aria-label="source paragraph"></select>
+      <label>seed <input id="seed" type="text" maxlength="40" placeholder="optional" spellcheck="false"></label>
+    </div>
+    <div class="row" id="customrow" style="display:none">
+      <textarea id="custom" maxlength="2000" placeholder="Paste a paragraph of your own (up to 2000 characters)"></textarea>
+    </div>
+    <div class="row">
+      <button id="btn-apply" class="small">apply</button>
+      <button id="btn-share" class="small" title="copy a link that opens on exactly this minute">copy link to this moment</button>
+      <span id="copied"></span>
+    </div>
+    <div class="row"><span class="hint">The link carries the paragraph (or your text), the seed, the date and the minute, so it shows everyone the same drift.</span></div>
+  </div>
+</div>
+
+<div class="overlay" id="help">
+  <div class="box">
+    <h2>Tide Table for Prose</h2>
+    <p>A clock whose face is a single paragraph: every minute since midnight one word has been swapped for a synonym, so the morning sentence is unrecognisable by evening and comes back whole at midnight. The drift is deterministic per day, paragraph and seed, so a shared link shows everyone the same slowly failing text. Scrub the day with the slider, step with the arrow keys, and switch on diff to see what each word used to be.</p>
+    <div class="keys">
+      <span><kbd>&larr;</kbd> <kbd>&rarr;</kbd></span><span>one minute back / forward</span>
+      <span><kbd>N</kbd></span><span>return to now</span>
+      <span><kbd>D</kbd></span><span>diff view</span>
+      <span><kbd>T</kbd></span><span>text panel</span>
+    </div>
+    <p class="lic">Synonyms come from Moby Thesaurus II by Grady Ward (public domain, Project Gutenberg #3202), trimmed to about 6,900 common headwords using Peter Norvig's word-frequency list from the Google Web Trillion Word Corpus. The openings are all public-domain texts. Nothing leaves your browser.</p>
+    <p><button id="btn-close" class="small">close</button></p>
+  </div>
+</div>
+
+<script src="thesaurus.js"></script>
+<script src="tide.js"></script>
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var T = window.TIDE;
+  var DATA = window.TIDE_THESAURUS ? { table: window.TIDE_THESAURUS, forms: window.TIDE_FORMS || {} } : null;
+  var CUSTOM_MAX = 2000;
+
+  /* ---------- state ---------- */
+  var state = {
+    pid: 'moby',        // paragraph id, or 'custom'
+    custom: '',         // custom paragraph text
+    seed: '',           // user seed
+    dayOffset: 0,       // days from today (yesterday / tomorrow arrows or a dated link)
+    live: true,         // follow the clock
+    minute: 0,          // minute shown when not live
+    diff: false
+  };
+  var lastResult = null;      // cached drift result for cheap forward stepping
+  var lastShownMinute = -1;   // to know when the fresh-word glow should fire
+  var lastShownKey = '';
+
+  /* ---------- date helpers ---------- */
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+  function dateFor(offset) { var d = new Date(); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() + offset); return d; }
+  function dateKey(d) { return '' + d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate()); }
+  function offsetForKey(key) {
+    var m = /^(\d{4})(\d{2})(\d{2})$/.exec(key);
+    if (!m) return 0;
+    var target = new Date(+m[1], +m[2] - 1, +m[3], 12, 0, 0, 0);
+    var today = dateFor(0);
+    return Math.round((target - today) / 86400000);
+  }
+  function nowMinute() { var d = new Date(); return d.getHours() * 60 + d.getMinutes(); }
+  function hhmm(min) { return pad(Math.floor(min / 60)) + ':' + pad(min % 60); }
+  function niceDate(d) {
+    return d.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  }
+
+  /* ---------- paragraph selection ---------- */
+  function paragraph() {
+    if (state.pid === 'custom') return { id: 'custom', title: 'Your paragraph', author: '', text: state.custom };
+    for (var i = 0; i < T.PARAGRAPHS.length; i++) if (T.PARAGRAPHS[i].id === state.pid) return T.PARAGRAPHS[i];
+    return T.PARAGRAPHS[0];
+  }
+  // A dated paragraph choice: rotate through the bundled openings by day when no explicit choice was made.
+  function defaultPid(d) {
+    var days = Math.floor(d.getTime() / 86400000);
+    return T.PARAGRAPHS[((days % T.PARAGRAPHS.length) + T.PARAGRAPHS.length) % T.PARAGRAPHS.length].id;
+  }
+
+  /* ---------- hash state ---------- */
+  function readHash() {
+    var h = location.hash.replace(/^#/, '');
+    var q = new URLSearchParams(h);
+    var picked = false;
+    if (q.has('t') && q.get('t').trim()) { state.pid = 'custom'; state.custom = q.get('t').slice(0, CUSTOM_MAX); picked = true; }
+    else if (q.has('p')) { state.pid = q.get('p'); picked = true; }
+    state.seed = (q.get('s') || '').slice(0, 40);
+    if (q.has('d')) state.dayOffset = offsetForKey(q.get('d'));
+    if (q.has('m')) { var m = parseInt(q.get('m'), 10); if (!isNaN(m)) { state.live = false; state.minute = Math.max(0, Math.min(1439, m)); } }
+    state.diff = q.get('diff') === '1';
+    if (!picked) state.pid = defaultPid(dateFor(state.dayOffset));
+    if (state.pid !== 'custom' && !T.PARAGRAPHS.some(function (p) { return p.id === state.pid; })) state.pid = T.PARAGRAPHS[0].id;
+  }
+  function writeHash(withMinute) {
+    var q = new URLSearchParams();
+    if (state.pid === 'custom') q.set('t', state.custom); else q.set('p', state.pid);
+    if (state.seed) q.set('s', state.seed);
+    if (state.dayOffset !== 0 || withMinute) q.set('d', dateKey(dateFor(state.dayOffset)));
+    if (withMinute) q.set('m', String(state.live ? nowMinute() : state.minute));
+    if (state.diff) q.set('diff', '1');
+    var s = '#' + q.toString();
+    if (s !== location.hash) history.replaceState(null, '', s);
+    return location.href.replace(/#.*$/, '') + s;
+  }
+
+  /* ---------- rendering ---------- */
+  function esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+  function render() {
+    var p = paragraph();
+    var minute = state.live ? nowMinute() : state.minute;
+    var d = dateFor(state.dayOffset);
+    var key = dateKey(d) + '|' + p.id + '|' + state.seed + '|' + (p.id === 'custom' ? p.text : '');
+    var res;
+    if (DATA && T) {
+      var seed = T.makeSeed(dateKey(d), p.id === 'custom' ? 'custom:' + T.hashString(p.text) : p.id, state.seed);
+      var prev = (lastResult && lastShownKey === key) ? lastResult : null;
+      res = T.drift(p.text, seed, minute, DATA, prev);
+    } else {
+      // The synonym table failed to load: show the paragraph untouched and say so.
+      var toks = T ? T.tokenize(p.text) : [{ text: p.text, isWord: false }];
+      res = { tokens: toks, minute: minute, last: -1, changed: 0, words: 0, turns: 0, depth: 0 };
+    }
+    // Glow the most recent word only when the shown moment actually moved (not when toggling diff etc.).
+    var freshIdx = (key !== lastShownKey || minute !== lastShownMinute) ? res.last : -1;
+    lastResult = res; lastShownKey = key; lastShownMinute = minute;
+
+    // paragraph
+    var html = '';
+    for (var i = 0; i < res.tokens.length; i++) {
+      var t = res.tokens[i];
+      if (!t.isWord) { html += esc(t.text); continue; }
+      var turned = t.word !== t.orig;
+      var cls = 'w' + (i === freshIdx ? ' fresh' : '');
+      if (turned) html += '<span class="turn"><s>' + esc(t.orig) + '</s><span class="' + cls + '">' + esc(t.word) + '</span></span>';
+      else html += '<span class="' + cls + '">' + esc(t.word) + '</span>';
+    }
+    if (!p.text.trim()) html = '<span class="hint">Paste a paragraph in the text panel.</span>';
+    $('para').innerHTML = html;
+    $('para').classList.toggle('diff', state.diff);
+
+    // chrome
+    $('source').textContent = p.title + (p.author ? ' — ' + p.author : '');
+    $('hm').textContent = hhmm(minute);
+    $('mode').textContent = state.live ? 'live' : 'scrubbing';
+    $('date').textContent = niceDate(d) + (state.dayOffset === 0 ? '' : (state.dayOffset > 0 ? ' (+' + state.dayOffset + ')' : ' (' + state.dayOffset + ')'));
+    $('fill').style.width = (res.depth * 100).toFixed(1) + '%';
+    $('gauge-mid').textContent = Math.round(res.depth * 100) + '% drifted';
+    if (!DATA) {
+      $('turned').innerHTML = '<span class="warn">The synonym table (thesaurus.js) did not load, so the tide is still.</span>';
+    } else if (!res.words) {
+      $('turned').textContent = '';
+    } else {
+      $('turned').textContent = res.changed + ' of ' + res.words + ' words have turned since midnight' + (res.turns > res.changed ? ' (' + res.turns + ' turns).' : '.');
+    }
+    $('slider').value = minute;
+    $('slider-time').textContent = hhmm(minute);
+    $('btn-diff').classList.toggle('on', state.diff);
+    $('btn-now').classList.toggle('on', state.live && state.dayOffset === 0);
+    writeHash(false);
+  }
+
+  /* ---------- controls ---------- */
+  function setMinute(m) {
+    state.live = false;
+    state.minute = Math.max(0, Math.min(1439, m));
+    render();
+  }
+  $('slider').addEventListener('input', function () { setMinute(parseInt(this.value, 10)); });
+  $('btn-now').addEventListener('click', function () { state.live = true; state.dayOffset = 0; render(); });
+  $('btn-prev').addEventListener('click', function () { state.dayOffset--; if (state.live) { state.live = false; state.minute = nowMinute(); } render(); });
+  $('btn-next').addEventListener('click', function () { state.dayOffset++; if (state.live) { state.live = false; state.minute = nowMinute(); } render(); });
+  $('btn-diff').addEventListener('click', function () { state.diff = !state.diff; render(); });
+  $('btn-text').addEventListener('click', function () { $('textpanel').classList.toggle('show'); $('btn-text').classList.toggle('on', $('textpanel').classList.contains('show')); });
+  $('btn-help').addEventListener('click', function () { $('help').classList.add('show'); });
+  $('btn-close').addEventListener('click', function () { $('help').classList.remove('show'); });
+  $('help').addEventListener('click', function (e) { if (e.target === this) this.classList.remove('show'); });
+
+  // text panel
+  var pick = $('pick');
+  T.PARAGRAPHS.forEach(function (p) {
+    var o = document.createElement('option'); o.value = p.id; o.textContent = p.title + ' — ' + p.author; pick.appendChild(o);
+  });
+  var oc = document.createElement('option'); oc.value = 'custom'; oc.textContent = 'Your own paragraph…'; pick.appendChild(oc);
+  pick.addEventListener('change', function () { $('customrow').style.display = pick.value === 'custom' ? '' : 'none'; if (pick.value === 'custom') $('custom').focus(); });
+  function syncPanel() {
+    pick.value = state.pid;
+    $('customrow').style.display = state.pid === 'custom' ? '' : 'none';
+    $('custom').value = state.custom;
+    $('seed').value = state.seed;
+  }
+  $('btn-apply').addEventListener('click', function () {
+    state.pid = pick.value;
+    if (state.pid === 'custom') {
+      state.custom = $('custom').value.replace(/\s+/g, ' ').trim().slice(0, CUSTOM_MAX);
+      if (!state.custom) { $('custom').focus(); return; }
+    }
+    state.seed = $('seed').value.trim().slice(0, 40);
+    render();
+  });
+  $('btn-share').addEventListener('click', function () {
+    var url = writeHash(true);
+    var done = function (ok) { $('copied').textContent = ok ? 'copied' : url; setTimeout(function () { $('copied').textContent = ''; }, 4000); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(function () { done(true); }, function () { done(false); });
+    else done(false);
+  });
+
+  // keyboard
+  document.addEventListener('keydown', function (e) {
+    var tag = (e.target.tagName || '').toLowerCase();
+    if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+    if (e.key === 'ArrowLeft') { setMinute((state.live ? nowMinute() : state.minute) - 1); e.preventDefault(); }
+    else if (e.key === 'ArrowRight') { setMinute((state.live ? nowMinute() : state.minute) + 1); e.preventDefault(); }
+    else if (e.key === 'n' || e.key === 'N') $('btn-now').click();
+    else if (e.key === 'd' || e.key === 'D') $('btn-diff').click();
+    else if (e.key === 't' || e.key === 'T') $('btn-text').click();
+    else if (e.key === '?') $('help').classList.toggle('show');
+    else if (e.key === 'Escape') $('help').classList.remove('show');
+  });
+  window.addEventListener('hashchange', function () { readHash(); syncPanel(); render(); });
+
+  /* ---------- clock ---------- */
+  var shownMinute = -1;
+  function tick() {
+    if (!state.live) return;
+    var m = nowMinute();
+    if (m !== shownMinute) { shownMinute = m; render(); }
+  }
+  setInterval(tick, 1000);
+
+  /* ---------- boot ---------- */
+  if (!T) {
+    $('para').textContent = 'tide.js failed to load.';
+    return;
+  }
+  readHash();
+  syncPanel();
+  render();
+})();
+</script>
+</body>
+</html>

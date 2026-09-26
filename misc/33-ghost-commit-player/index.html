@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ghost Commit Player</title>
+<meta name="description" content="Paste any public GitHub repository and watch its history replayed as a silent film: commit messages as intertitles, the file tree growing between them.">
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    --bg: #0e0c0a;
+    --panel: #1a1613;
+    --panel-2: #241f1a;
+    --line: #3a3128;
+    --ink: #efe6d3;
+    --ink-2: #b3a68f;
+    --ink-3: #7d715e;
+    --cream: #f1e3c2;
+    --gold: #d9b45f;
+    --good: #6fd08a;
+    --warn: #f2c14e;
+    --bad: #e8635a;
+    --info: #7fc7ff;
+    --deco: "Copperplate", "Copperplate Gothic Light", "Bodoni MT", "Didot", "Playfair Display", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Hiragino Mincho ProN", "Yu Mincho", "IPAMincho", "Noto Serif CJK JP", serif;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); }
+  body {
+    font: 15px/1.45 -apple-system, "Segoe UI", Helvetica, Arial, "Hiragino Sans", "Yu Gothic", "IPAGothic", "Noto Sans CJK JP", sans-serif;
+    padding: 14px 16px 28px; overflow-x: hidden;
+  }
+  a { color: var(--gold); }
+  h1 { font-size: 22px; margin: 0; font-weight: 600; letter-spacing: 0.01em; font-family: var(--deco); }
+  header { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 12px; }
+  header .sub { color: var(--ink-2); font-size: 14px; }
+  header .spacer { flex: 1; }
+  button, select, input {
+    font: inherit; color: var(--ink); background: var(--panel-2); border: 1px solid var(--line);
+    border-radius: 7px; padding: 6px 12px;
+  }
+  button { cursor: pointer; }
+  button:hover { background: #30281f; }
+  button:active { transform: translateY(1px); }
+  button.small { font-size: 13px; padding: 4px 10px; }
+  button.on { border-color: var(--gold); color: var(--gold); }
+  button.primary { background: var(--gold); color: #1a1207; border-color: var(--gold); font-weight: 600; }
+  button.primary:hover { background: #e6c46f; }
+  button:disabled { opacity: .5; cursor: default; }
+  input[type=number] { width: 64px; padding: 6px 6px; }
+  input[type=text], input[type=password] { cursor: text; }
+  label { color: var(--ink-2); font-size: 13px; display: inline-flex; align-items: center; gap: 6px; }
+  kbd { font-family: inherit; background: var(--panel-2); border: 1px solid var(--line); border-radius: 4px; padding: 0 6px; font-size: 13px; }
+
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+  .card h2 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-2); margin: 0 0 6px; font-weight: 600; }
+
+  /* ---- loader ---- */
+  #loader { margin-bottom: 14px; }
+  #form { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; }
+  #repo { flex: 1 1 260px; min-width: 200px; }
+  #token { flex: 0 1 190px; font-family: var(--mono); font-size: 13px; }
+  #status-row { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 8px; font-size: 13px; color: var(--ink-2); min-height: 1.4em; }
+  #status.err { color: var(--bad); }
+  #status.ok { color: var(--good); }
+  #rate { margin-left: auto; font-variant-numeric: tabular-nums; }
+  #rate.low { color: var(--warn); }
+  #rate.out { color: var(--bad); }
+
+  /* ---- layout ---- */
+  #layout { display: flex; gap: 16px; align-items: flex-start; }
+  #stage { flex: 1 1 560px; min-width: 0; }
+  #side { flex: 0 0 280px; display: grid; gap: 10px; }
+
+  /* ---- projector ---- */
+  #projector {
+    position: relative; width: 100%; aspect-ratio: 16 / 9; background: #0a0908; border-radius: 8px; overflow: hidden;
+    border: 1px solid var(--line); box-shadow: 0 14px 40px rgba(0,0,0,.55);
+  }
+  #projector canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  #projector.bw canvas, #projector.bw #caption { filter: grayscale(1) contrast(1.08) brightness(1.05); }
+  #projector.flicker .lit { animation: flicker 3.7s steps(1) infinite; }
+  #projector .lit { position: absolute; inset: 0; }
+  @keyframes flicker {
+    0%, 100% { opacity: 1; } 7% { opacity: .94; } 9% { opacity: 1; } 31% { opacity: .97; } 33% { opacity: 1; }
+    58% { opacity: .9; } 60% { opacity: 1; } 84% { opacity: .95; } 86% { opacity: 1; }
+  }
+  #projector .vignette { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,.72) 100%); }
+  #projector .grain-layer { position: absolute; inset: -60px; pointer-events: none; opacity: 0; background-repeat: repeat; }
+  #projector.grain .grain-layer { opacity: .16; animation: grain .6s steps(4) infinite; }
+  @keyframes grain { 0% { transform: translate(0,0); } 25% { transform: translate(-22px, 14px); } 50% { transform: translate(18px, -26px); } 75% { transform: translate(-9px, -12px); } 100% { transform: translate(0,0); } }
+  #flash { position: absolute; inset: 0; background: #f6ecd6; opacity: 0; pointer-events: none; }
+  #flash.on { animation: flash .3s ease-out; }
+  @keyframes flash { from { opacity: .35; } to { opacity: 0; } }
+
+  /* intertitle card */
+  #card { position: absolute; inset: 0; background: #050403; display: none; align-items: center; justify-content: center; padding: 4%; text-align: center; color: var(--cream); }
+  #card.show { display: flex; }
+  #card.show .frame { animation: irisin .7s ease-out; }
+  @keyframes irisin { from { opacity: 0; transform: scale(1.02); } to { opacity: 1; transform: none; } }
+  #card .frame { width: 100%; height: 100%; border: 2px solid var(--cream); outline: 1px solid var(--cream); outline-offset: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 3% 6%; position: relative; }
+  #card .frame::before, #card .frame::after { content: "\2726"; position: absolute; left: 50%; transform: translateX(-50%); font-size: 12px; color: var(--cream); background: #050403; padding: 0 8px; }
+  #card .frame::before { top: -9px; } #card .frame::after { bottom: -9px; }
+  #card .t { font-family: var(--deco); font-weight: 700; font-size: clamp(17px, 2.8vw, 34px); line-height: 1.2; text-transform: uppercase; letter-spacing: .06em; max-width: 26ch; word-break: break-word; overflow-wrap: anywhere; }
+  #card .t.long { text-transform: none; letter-spacing: .01em; font-size: clamp(14px, 2vw, 24px); max-width: 44ch; }
+  #card .t.small { font-size: clamp(13px, 1.4vw, 17px); max-width: 60ch; }
+  #card .rule { width: 34%; height: 1px; background: var(--cream); margin: 3% 0 2.5%; position: relative; }
+  #card .rule::after { content: ""; position: absolute; left: 50%; top: -3px; width: 7px; height: 7px; background: #050403; border: 1px solid var(--cream); transform: translateX(-50%) rotate(45deg); }
+  #card .by { font-family: var(--deco); font-size: clamp(12px, 1.6vw, 18px); letter-spacing: .12em; text-transform: uppercase; }
+  #card .when { font-family: var(--deco); font-size: clamp(11px, 1.3vw, 15px); font-style: italic; color: #d8c9a4; margin-top: .3em; }
+  #card .n { position: absolute; bottom: 6px; right: 10px; font-family: var(--mono); font-size: 10px; letter-spacing: .1em; color: #a89a7d; }
+  #card .n b { color: var(--cream); font-weight: 600; }
+  #card .sub { font-size: clamp(12px, 1.4vw, 15px); color: #cbbd9c; margin-top: 2%; max-width: 50ch; }
+
+  /* lower-third caption over the tree */
+  #caption { position: absolute; left: 0; right: 0; bottom: 0; padding: 10px 14px 8px; background: linear-gradient(transparent, rgba(5,4,3,.85)); pointer-events: none; font-size: 13px; }
+  #caption .t { font-family: var(--deco); font-weight: 600; font-size: clamp(13px, 1.7vw, 18px); color: var(--cream); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #caption .m { color: var(--ink-2); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #caption .m b { color: var(--ink); font-weight: 500; }
+  #caption .add { color: var(--good); } #caption .del { color: var(--bad); } #caption .mod { color: var(--warn); }
+  #corner { position: absolute; left: 12px; top: 8px; font-family: var(--mono); font-size: 10px; letter-spacing: .14em; color: #8f826a; pointer-events: none; }
+  #corner i { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--bad); margin-right: 6px; opacity: .25; }
+  #projector.playing #corner i { opacity: 1; animation: blink 1s steps(2) infinite; }
+  @keyframes blink { 50% { opacity: .2; } }
+  #timecode { position: absolute; right: 12px; top: 8px; font-family: var(--mono); font-size: 11px; letter-spacing: .1em; color: #cbbd9c; background: rgba(0,0,0,.5); padding: 1px 6px; border-radius: 3px; pointer-events: none; }
+  #tip { position: absolute; z-index: 3; pointer-events: none; display: none; max-width: 320px; background: #0c0a08; border: 1px solid var(--line); border-radius: 5px; padding: 5px 8px; font-size: 12px; box-shadow: 0 6px 20px rgba(0,0,0,.5); }
+  #tip .p { font-family: var(--mono); font-size: 11px; color: var(--cream); word-break: break-all; }
+  #tip .s { color: var(--ink-2); }
+
+  /* ---- controls ---- */
+  #controls { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; margin-top: 10px; }
+  #controls .grp { display: inline-flex; gap: 4px; }
+  #controls .spacer { flex: 1; }
+  #pos { font-family: var(--mono); font-size: 12px; color: var(--ink-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  #btn-play { min-width: 76px; }
+
+  /* ---- scrub bar ---- */
+  #scrub { position: relative; height: 30px; margin-top: 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; cursor: ew-resize; overflow: hidden; touch-action: none; }
+  #scrub .fill { position: absolute; left: 0; top: 0; bottom: 0; background: rgba(217,180,95,.13); pointer-events: none; }
+  #scrub .tick { position: absolute; bottom: 6px; width: 2px; height: 8px; margin-left: -1px; background: var(--ink-3); border-radius: 1px; }
+  #scrub .tick.det { height: 16px; background: var(--gold); opacity: .8; }
+  #scrub .head { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: var(--cream); box-shadow: 0 0 6px rgba(241,227,194,.6); pointer-events: none; }
+  #scrub .head::before { content: ""; position: absolute; left: -5px; top: 0; border: 6px solid transparent; border-top: 7px solid var(--cream); border-bottom: 0; }
+
+  /* ---- film strip ---- */
+  #strip-wrap { margin-top: 10px; min-width: 0; max-width: 100%; background: #060504; border-radius: 6px; padding: 16px 0; position: relative; }
+  #strip-wrap::before, #strip-wrap::after {
+    content: ""; position: absolute; left: 0; right: 0; height: 8px;
+    background-image: radial-gradient(ellipse 4px 3px at 50% 50%, #d9cba6 0 3px, transparent 3.5px);
+    background-size: 22px 8px; background-repeat: repeat-x; opacity: .8;
+  }
+  #strip-wrap::before { top: 4px; } #strip-wrap::after { bottom: 4px; }
+  #strip { display: flex; gap: 5px; overflow-x: auto; padding: 0 8px; scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+  #strip .cell {
+    flex: 0 0 96px; height: 58px; background: #0b0908; border: 1px solid #5a4d38; border-radius: 2px; padding: 5px 6px; cursor: pointer;
+    color: var(--cream); font-family: var(--deco); font-size: 9.5px; line-height: 1.25; text-align: center; overflow: hidden; position: relative;
+    display: flex; align-items: center; justify-content: center;
+  }
+  #strip .cell span { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  #strip .cell i { position: absolute; left: 3px; top: 2px; font-style: normal; font-family: var(--mono); font-size: 8px; color: #7d715e; }
+  #strip .cell.det::after { content: ""; position: absolute; right: 4px; top: 4px; width: 4px; height: 4px; border-radius: 50%; background: var(--gold); }
+  #strip .cell:hover { border-color: var(--ink-2); }
+  #strip .cell.cur { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold), 0 0 10px rgba(217,180,95,.45); }
+
+  /* ---- sidebar ---- */
+  .stats { display: grid; grid-template-columns: 1fr auto; gap: 3px 12px; font-size: 14px; }
+  .stats div { display: contents; }
+  .stats span { border-bottom: 1px dotted var(--line); padding: 2px 0; color: var(--ink-2); }
+  .stats b { border-bottom: 1px dotted var(--line); padding: 2px 0; font-variant-numeric: tabular-nums; font-weight: 600; text-align: right; }
+  #reel .name { font-family: var(--deco); font-size: 17px; font-weight: 600; word-break: break-word; }
+  #reel .desc { color: var(--ink-2); font-size: 13px; margin: 4px 0 6px; }
+  #reel .meta { font-size: 12px; color: var(--ink-3); }
+  .bars { display: grid; gap: 4px; font-size: 13px; }
+  .bars .row { display: grid; grid-template-columns: minmax(0, 1fr) 40px; align-items: center; gap: 8px; }
+  .bars .nm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; position: relative; padding: 2px 6px; }
+  .bars .nm i { position: absolute; left: 0; top: 0; bottom: 0; background: rgba(217,180,95,.18); border-radius: 3px; z-index: 0; }
+  .bars .nm span { position: relative; }
+  .bars .ct { text-align: right; font-variant-numeric: tabular-nums; color: var(--ink-2); }
+  #spark svg { display: block; width: 100%; height: 64px; }
+  #spark .axis { display: flex; justify-content: space-between; font-size: 11px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+  #spark .note { font-size: 11px; color: var(--ink-3); margin-top: 2px; }
+  #legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; color: var(--ink-2); }
+  #legend i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+
+  /* ---- help overlay ---- */
+  .overlay { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(8,6,4,.8); padding: 18px; z-index: 10; }
+  .overlay.show { display: flex; }
+  .overlay .box { max-width: 560px; max-height: 90vh; overflow: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px 20px; }
+  .overlay h2 { margin: 0 0 8px; font-family: var(--deco); font-size: 22px; font-weight: 600; }
+  .overlay h3 { margin: 14px 0 4px; font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-2); }
+  .overlay p { margin: 6px 0; font-size: 14px; }
+  .overlay .keys { display: grid; grid-template-columns: auto 1fr; gap: 3px 14px; font-size: 14px; margin: 6px 0; }
+
+  @media (max-width: 900px) {
+    #layout { flex-direction: column; align-items: stretch; }
+    #stage { flex: 0 0 auto; width: 100%; }
+    #side { flex: 1 1 auto; width: 100%; grid-template-columns: 1fr 1fr; }
+    #side .card.wide { grid-column: 1 / -1; }
+  }
+  @media (max-width: 560px) {
+    #side { grid-template-columns: 1fr; }
+    #strip .cell { flex-basis: 80px; height: 52px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #projector.flicker .lit, #projector.grain .grain-layer { animation: none; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Ghost Commit Player</h1>
+  <span class="sub">Any public GitHub repo, replayed as a silent film: commit messages as intertitles, the file tree growing between them.</span>
+  <span class="spacer"></span>
+  <button class="small" id="btn-help">Help</button>
+</header>
+
+<section class="card" id="loader">
+  <form id="form" autocomplete="off">
+    <input type="text" id="repo" placeholder="owner/repo or https://github.com/owner/repo" spellcheck="false" aria-label="Repository">
+    <label title="How many commits to fetch from the default branch (newest first)">commits <input type="number" id="cap" min="10" max="300" step="10" value="100"></label>
+    <label title="Which commits get file-level detail (one request each)">details
+      <select id="detail-mode"><option value="sample">sampled</option><option value="last">newest</option><option value="first">oldest</option></select>
+      <input type="number" id="detail-n" min="0" max="300" step="5" value="40">
+    </label>
+    <label title="One extra request: the file tree just before the first commit in range, so the film opens on the real codebase"><input type="checkbox" id="opening" checked> opening tree</label>
+    <input type="password" id="token" placeholder="token (optional)" aria-label="GitHub personal token, optional" title="A GitHub personal access token raises the limit to 5000 requests an hour. Kept only in this tab's sessionStorage and sent only to api.github.com.">
+    <button type="submit" class="primary" id="btn-load">Roll film</button>
+    <button type="button" id="btn-site" title="NietZteiN/nietztein.github.io">This site's repo</button>
+    <button type="button" id="btn-demo" title="A bundled, invented history that needs no network">Demo</button>
+  </form>
+  <div id="status-row"><span id="status"></span><span id="rate" title="GitHub API requests left this hour"></span></div>
+</section>
+
+<div id="layout">
+  <div id="stage">
+    <div id="projector" class="flicker">
+      <div class="lit">
+        <canvas id="tree"></canvas>
+        <div id="caption"></div>
+        <div id="card" role="status" aria-live="polite"></div>
+      </div>
+      <div class="vignette"></div>
+      <div class="grain-layer"></div>
+      <div id="flash"></div>
+      <div id="corner"><i></i>GHOST REEL</div>
+      <div id="timecode">00:00:00:00</div>
+      <div id="tip"></div>
+    </div>
+
+    <div id="controls">
+      <div class="grp">
+        <button class="small" id="btn-first" title="Home">&#9198;</button>
+        <button class="small" id="btn-prev" title="Left arrow">&#9664;</button>
+        <button class="small" id="btn-play" title="Space">Play</button>
+        <button class="small" id="btn-next" title="Right arrow">&#9654;</button>
+        <button class="small" id="btn-last" title="End">&#9197;</button>
+      </div>
+      <label>speed <select id="speed"><option value="1">1x</option><option value="2">2x</option><option value="4">4x</option><option value="8">8x</option></select></label>
+      <button class="small" id="btn-card" title="T: show this commit's title card">Title card</button>
+      <div class="grp">
+        <button class="small" id="btn-grain" title="G: film grain">Grain</button>
+        <button class="small" id="btn-bw" title="B: black and white">B&amp;W</button>
+        <button class="small on" id="btn-labels" title="L: file names on the tree">Labels</button>
+      </div>
+      <span class="spacer"></span>
+      <span id="pos"></span>
+    </div>
+
+    <div id="scrub" aria-label="Scrub through commits"><div class="fill"></div><div class="ticks"></div><div class="head"></div></div>
+
+    <div id="strip-wrap"><div id="strip"></div></div>
+  </div>
+
+  <aside id="side">
+    <div class="card" id="reel"><h2>Reel</h2><div class="name">&hellip;</div></div>
+    <div class="card"><h2>Numbers</h2><div class="stats" id="numbers"></div></div>
+    <div class="card"><h2>Top contributors</h2><div class="bars" id="contrib"></div></div>
+    <div class="card wide"><h2>Commits per week</h2><div id="spark"></div></div>
+    <div class="card wide"><h2>Tree legend</h2><div id="legend"></div></div>
+  </aside>
+</div>
+
+<div class="overlay" id="help">
+  <div class="box">
+    <h2>Ghost Commit Player</h2>
+    <p>Paste a public GitHub repository and the page fetches its recent commits and replays them as a silent film: each commit message becomes an intertitle, and between the cards the file tree is drawn as a treemap where new files fade in green, edited files pulse amber and deleted files fade out red. Blocks are grouped by directory and sized by lines (log scale), so a ten-thousand-line file does not swallow the frame. Scrub the bar, click a card on the film strip, or let it play at up to 8x.</p>
+    <h3>The rate limit</h3>
+    <p>Without a token GitHub allows 60 API requests an hour per IP. The commit list costs one request per hundred commits, the opening tree one more, and every commit whose file changes you want to see costs one request of its own; that is why only a chosen number of commits get details (sampled evenly, or the newest or oldest), and the rest appear as intertitles alone. Responses are cached in this tab, so reloading the same repo is free until the tab closes. A personal access token (no scopes needed for public repos) raises the limit to 5000 an hour.</p>
+    <h3>Privacy</h3>
+    <p>The token is kept only in this tab's sessionStorage and is sent only to <code>api.github.com</code> in the Authorization header; nothing else on this page or site ever sees it, and closing the tab forgets it. The page has no backend.</p>
+    <h3>Keys</h3>
+    <div class="keys">
+      <span><kbd>Space</kbd></span><span>play / pause</span>
+      <span><kbd>&larr;</kbd> <kbd>&rarr;</kbd></span><span>step one commit (<kbd>Shift</kbd> for ten)</span>
+      <span><kbd>Home</kbd> <kbd>End</kbd></span><span>first / last commit</span>
+      <span><kbd>T</kbd></span><span>title card</span>
+      <span><kbd>G</kbd> <kbd>B</kbd> <kbd>L</kbd></span><span>grain, black and white, labels</span>
+      <span><kbd>?</kbd></span><span>this panel</span>
+    </div>
+    <h3>Data</h3>
+    <p>Public data from the GitHub REST API; the demo reel is an invented repository. The projector borrows its vignette, flash cut and title card from this site's git film timeline toy (misc/08).</p>
+    <p><button id="btn-help-close">Close</button></p>
+  </div>
+</div>
+
+<script src="film.js"></script>
+<script src="demo.js"></script>
+<script>
+'use strict';
+(function () {
+  const $ = id => document.getElementById(id);
+  const F = window.GhostFilm;
+  if (!F) { $('status').textContent = 'film.js failed to load.'; $('status').className = 'err'; return; }
+  const esc = F.escapeHtml;
+
+  // ------------------------------------------------------------ constants
+  const API = 'https://api.github.com';
+  const SITE_REPO = 'NietZteiN/nietztein.github.io';
+  const MAX_CAP_ANON = 300, MAX_CAP_TOKEN = 1000;
+  const TITLE_MS = 2000, TREE_MS = 1900, TREE_THIN_MS = 750;   // per commit at 1x
+  const TREE_CAP = 2500;                                        // largest files kept from an opening tree
+
+  // ------------------------------------------------------------ state
+  const state = {
+    film: null, source: 'demo', repo: null,
+    index: 0, playing: false, phase: 'tree', phaseStart: 0, speed: 1,
+    cap: 100, detailMode: 'sample', detailN: 40, opening: true,
+    cardShown: false, loadSeq: 0, pendingIndex: -1,
+  };
+  const rate = { remaining: null, limit: null, reset: null };
+
+  const projector = new F.Projector($('tree'));
+
+  // ------------------------------------------------------------ hash state
+  function readHash() {
+    const p = new URLSearchParams(location.hash.replace(/^#/, ''));
+    const num = (k, d, lo, hi) => { const v = parseInt(p.get(k), 10); return isNaN(v) ? d : Math.max(lo, Math.min(hi, v)); };
+    return {
+      repo: p.get('repo') || '',
+      cap: num('cap', 100, 10, MAX_CAP_TOKEN),
+      speed: [1, 2, 4, 8].includes(num('speed', 1, 1, 8)) ? num('speed', 1, 1, 8) : 1,
+      i: num('i', -1, 0, 100000),
+      detail: num('detail', 40, 0, 1000),
+      mode: ['sample', 'last', 'first'].includes(p.get('mode')) ? p.get('mode') : 'sample',
+    };
+  }
+  let hashTimer = 0;
+  function writeHash() {
+    clearTimeout(hashTimer);
+    hashTimer = setTimeout(() => {
+      const p = new URLSearchParams();
+      if (state.source === 'repo' && state.repo) { p.set('repo', state.repo.full); p.set('cap', state.cap); if (state.detailN !== 40) p.set('detail', state.detailN); if (state.detailMode !== 'sample') p.set('mode', state.detailMode); }
+      if (state.speed !== 1) p.set('speed', state.speed);
+      if (state.film) p.set('i', state.index);
+      const h = '#' + p.toString().replace(/%2F/g, '/');   // keep owner/repo readable
+      if (h !== location.hash) history.replaceState(null, '', h === '#' ? location.pathname + location.search : h);
+    }, 120);
+  }
+
+  // ------------------------------------------------------------ GitHub fetching
+  function GhError(kind, message) { this.kind = kind; this.message = message; }
+
+  function cacheGet(key) { try { const v = sessionStorage.getItem('ghost:' + key); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
+  function cachePut(key, val) { try { sessionStorage.setItem('ghost:' + key, JSON.stringify(val)); } catch (e) { /* quota: fine, just no cache */ } }
+  function getToken() { return ($('token').value || '').trim(); }
+
+  function readRate(res) {
+    const rem = res.headers.get('x-ratelimit-remaining'), lim = res.headers.get('x-ratelimit-limit'), rs = res.headers.get('x-ratelimit-reset');
+    if (rem != null) rate.remaining = parseInt(rem, 10);
+    if (lim != null) rate.limit = parseInt(lim, 10);
+    if (rs != null) rate.reset = parseInt(rs, 10);
+    renderRate();
+  }
+  function renderRate() {
+    const el = $('rate');
+    if (rate.remaining == null) { el.textContent = ''; el.className = ''; return; }
+    const reset = rate.reset ? new Date(rate.reset * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+    el.textContent = 'API: ' + rate.remaining + ' / ' + rate.limit + ' requests left' + (reset ? ', resets ' + reset : '');
+    el.className = rate.remaining === 0 ? 'out' : rate.remaining < 10 ? 'low' : '';
+  }
+
+  /** GET an API path; `trim` reduces the JSON before it is cached and returned. Cached responses cost nothing. */
+  async function ghGet(path, trim) {
+    const hit = cacheGet(path);
+    if (hit) return hit;
+    const headers = { 'Accept': 'application/vnd.github+json' };
+    const token = getToken();
+    if (token) headers.Authorization = 'Bearer ' + token;
+    let res;
+    try { res = await fetch(API + path, { headers }); }
+    catch (e) { throw new GhError('network', 'Could not reach api.github.com (offline, or blocked).'); }
+    readRate(res);
+    if (!res.ok) {
+      if (res.status === 404) throw new GhError('notfound', 'Repository not found. It may be private, misspelled, or gone.');
+      if (res.status === 401) throw new GhError('auth', 'GitHub rejected the token (401). Clear it or paste a valid one.');
+      if ((res.status === 403 || res.status === 429) && rate.remaining === 0) throw new GhError('rate', rateMessage());
+      if (res.status === 403 || res.status === 429) throw new GhError('rate', 'GitHub refused the request (' + res.status + '); probably a secondary rate limit. Wait a minute and retry, or add a token.');
+      if (res.status === 409) throw new GhError('empty', 'This repository has no commits yet.');
+      throw new GhError('http', 'GitHub answered ' + res.status + ' ' + res.statusText + '.');
+    }
+    const json = await res.json();
+    const out = trim ? trim(json) : json;
+    cachePut(path, out);
+    return out;
+  }
+  function rateMessage() {
+    const reset = rate.reset ? new Date(rate.reset * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'in under an hour';
+    return 'Rate limit exhausted (' + (rate.limit || 60) + ' requests an hour without a token). It resets at ' + reset + '; paste a personal token above to raise it to 5000.';
+  }
+  async function refreshRate() {
+    // GET /rate_limit does not count against the limit
+    try {
+      const headers = { 'Accept': 'application/vnd.github+json' };
+      const token = getToken();
+      if (token) headers.Authorization = 'Bearer ' + token;
+      const res = await fetch(API + '/rate_limit', { headers });
+      readRate(res);
+    } catch (e) { /* offline; the first real request will tell */ }
+  }
+
+  function chooseDetailIndices(n, k, mode) {
+    k = Math.max(0, Math.min(n, k));
+    if (!k) return [];
+    if (mode === 'last') return Array.from({ length: k }, (_, j) => n - k + j);
+    if (mode === 'first') return Array.from({ length: k }, (_, j) => j);
+    const set = new Set();
+    for (let j = 0; j < k; j++) set.add(k === 1 ? 0 : Math.round(j * (n - 1) / (k - 1)));
+    return [...set].sort((a, b) => a - b);
+  }
+
+  async function loadRepo(spec) {
+    const seq = ++state.loadSeq;
+    const stale = () => seq !== state.loadSeq;
+    stopPlay();
+    const full = spec.full;
+    setStatus('Looking up ' + full + '…');
+    showMessageCard(full, 'Fetching the reel…');
+    $('btn-load').disabled = true;
+    try {
+      await refreshRate();
+      const meta = await ghGet('/repos/' + full, r => ({ full_name: r.full_name, description: r.description, stargazers_count: r.stargazers_count, default_branch: r.default_branch, html_url: r.html_url }));
+      if (stale()) return;
+      const branch = meta.default_branch || 'HEAD';
+      const cap = state.cap;
+      const pages = Math.ceil(cap / 100);
+      let list = [];
+      for (let p = 1; p <= pages; p++) {
+        setStatus('Fetching commits of ' + full + ' (page ' + p + ' of up to ' + pages + ')…');
+        showMessageCard(full, 'Commit list, page ' + p);
+        const page = await ghGet('/repos/' + full + '/commits?sha=' + encodeURIComponent(branch) + '&per_page=100&page=' + p, items => items.map(F.normalizeListItem));
+        if (stale()) return;
+        list = list.concat(page);
+        if (page.length < 100) break;
+      }
+      if (!list.length) throw new GhError('empty', 'No commits found on ' + branch + '.');
+      list = list.slice(0, cap).reverse();           // chronological
+      const commits = list.map(c => Object.assign({}, c));
+
+      // which commits get file details; respect the remaining budget
+      let want = chooseDetailIndices(commits.length, state.detailN, state.detailMode);
+      const uncached = want.filter(i => !cacheGet('/repos/' + full + '/commits/' + commits[i].sha));
+      const needsOpening = state.opening && commits[0].parents.length > 0;
+      const openingCached = needsOpening && !!cacheGet('/repos/' + full + '/git/trees/' + commits[0].parents[0] + '?recursive=1');
+      let note = '';
+      if (rate.remaining != null) {
+        const budget = rate.remaining - (needsOpening && !openingCached ? 1 : 0);
+        if (uncached.length > budget) {
+          const keep = new Set(uncached.slice(0, Math.max(0, budget)));
+          want = want.filter(i => keep.has(i) || !uncached.includes(i));
+          note = ' Only ' + want.length + ' commits could get details: ' + (rate.remaining) + ' requests left this hour (a token raises the limit).';
+        }
+      }
+
+      // opening tree: the state just before the first commit in range
+      let baseline = null, openingInfo = '';
+      if (needsOpening) {
+        setStatus('Fetching the opening tree…');
+        showMessageCard(full, 'Opening tree');
+        try {
+          const tree = await ghGet('/repos/' + full + '/git/trees/' + commits[0].parents[0] + '?recursive=1', t => F.normalizeTree(t, TREE_CAP));
+          if (stale()) return;
+          baseline = tree.files;
+          openingInfo = tree.truncated ? 'opening tree trimmed to the ' + tree.files.length + ' largest of ' + tree.total + ' files' : 'opening tree of ' + tree.files.length + ' files';
+        } catch (e) {
+          if (e.kind === 'rate') { note += ' The opening tree could not be fetched: ' + e.message; } else throw e;
+        }
+      }
+
+      // hydrate details, three at a time
+      let done = 0, rateHit = null;
+      const queue = want.slice();
+      const worker = async () => {
+        while (queue.length && !rateHit) {
+          const i = queue.shift();
+          try {
+            const d = await ghGet('/repos/' + full + '/commits/' + commits[i].sha, F.normalizeDetail);
+            if (stale()) return;
+            commits[i].files = d.files; commits[i].stats = d.stats;
+          } catch (e) {
+            if (e.kind === 'rate') { rateHit = e; break; }
+            // a single bad commit should not sink the film
+          }
+          done++;
+          if (done % 3 === 0 || !queue.length) { setStatus('Fetching file changes… ' + done + ' / ' + want.length); showMessageCard(full, 'File changes ' + done + ' / ' + want.length); }
+        }
+      };
+      await Promise.all([worker(), worker(), worker()]);
+      if (stale()) return;
+      if (rateHit) note += ' ' + rateHit.message + ' (' + done + ' of ' + want.length + ' commits got details.)';
+
+      const film = F.buildFilm({ repo: meta, commits: commits, baseline: baseline });
+      film.openingInfo = openingInfo;
+      state.repo = spec; state.source = 'repo';
+      mount(film);
+      setStatus(commits.length + ' commits on ' + branch + ', ' + film.detailed + ' with file details.' + (openingInfo ? ' ' + cap1(openingInfo) + '.' : '') + note, note ? '' : 'ok');
+    } catch (e) {
+      if (stale()) return;
+      const msg = e instanceof GhError ? e.message : 'Unexpected error: ' + (e && e.message ? e.message : e);
+      setStatus(msg, 'err');
+      if (!state.film) showMessageCard('No reel', msg); else hideCard();
+    } finally {
+      if (!stale()) $('btn-load').disabled = false;
+    }
+  }
+  const cap1 = s => s.charAt(0).toUpperCase() + s.slice(1);
+
+  function loadDemo() {
+    stopPlay();
+    state.loadSeq++;
+    if (!window.GHOST_DEMO) { setStatus('demo.js did not load, so there is no bundled reel.', 'err'); showMessageCard('No reel', 'demo.js did not load'); return; }
+    state.source = 'demo'; state.repo = null;
+    const film = F.buildFilm(window.GHOST_DEMO);
+    film.openingInfo = '';
+    mount(film);
+    setStatus('Demo reel: an invented repository, ' + film.frames.length + ' commits, all with file details. Paste a real repo above to roll your own.');
+  }
+
+  function setStatus(msg, cls) { $('status').textContent = msg; $('status').className = cls || ''; }
+
+  // ------------------------------------------------------------ mounting a film
+  function mount(film) {
+    state.film = film;
+    projector.setFilm(film);
+    projector.resize();
+    renderStrip(); renderScrub(); renderSide(); renderLegend();
+    const idx = state.pendingIndex >= 0 ? state.pendingIndex : 0;   // set from the hash at boot
+    state.pendingIndex = -1;
+    hideCard();
+    showFrame(Math.min(idx, film.frames.length - 1), false);
+    document.title = 'Ghost Commit Player · ' + film.repo.full_name;
+  }
+
+  function showFrame(i, animate) {
+    const film = state.film; if (!film) return;
+    const N = film.frames.length;
+    i = Math.max(0, Math.min(N - 1, i));
+    state.index = i;
+    projector.show(i, animate);
+    renderCaption(film.frames[i]);
+    $('pos').textContent = (i + 1) + ' / ' + N + (film.frames[i].detailed ? '' : ' · no details');
+    $('timecode').textContent = timecode(i);
+    const head = $('scrub').querySelector('.head'), fill = $('scrub').querySelector('.fill');
+    const pct = ((i + 0.5) / N * 100) + '%';
+    head.style.left = pct; fill.style.width = pct;
+    const cells = $('strip').children;
+    for (let k = 0; k < cells.length; k++) cells[k].classList.toggle('cur', k === i);
+    if (cells[i]) {   // centre the current cell in the strip without scrolling the page
+      const strip = $('strip');
+      const target = cells[i].offsetLeft - strip.clientWidth / 2 + cells[i].offsetWidth / 2;
+      if (state.playing && strip.scrollTo) strip.scrollTo({ left: target, behavior: 'smooth' }); else strip.scrollLeft = target;
+    }
+    writeHash();
+  }
+
+  function timecode(i) {
+    // one commit = one frame at 24 fps, the way 08 burns in its timecode
+    const s = Math.floor(i / 24), f = i % 24, pad = n => String(n).padStart(2, '0');
+    return pad(Math.floor(s / 3600)) + ':' + pad(Math.floor(s / 60) % 60) + ':' + pad(s % 60) + ':' + pad(f);
+  }
+
+  function fmtDate(iso, long) {
+    const d = new Date(iso);
+    if (isNaN(d)) return iso || '';
+    return d.toLocaleDateString(undefined, long ? { year: 'numeric', month: 'long', day: 'numeric' } : { year: 'numeric', month: 'short', day: 'numeric' });
+  }
+
+  function renderCaption(frame) {
+    const c = frame.commit;
+    let files = '';
+    if (frame.detailed) {
+      const n = { add: 0, mod: 0, del: 0, ren: 0 };
+      frame.events.forEach(e => n[e.kind]++);
+      const parts = [];
+      if (n.add) parts.push('<span class="add">+' + n.add + ' new</span>');
+      if (n.mod) parts.push('<span class="mod">' + n.mod + ' edited</span>');
+      if (n.ren) parts.push(n.ren + ' renamed');
+      if (n.del) parts.push('<span class="del">' + n.del + ' removed</span>');
+      if (c.stats) parts.push('<span class="add">+' + c.stats.additions + '</span> <span class="del">-' + c.stats.deletions + '</span> lines');
+      files = parts.length ? ' · ' + parts.join(', ') : ' · no file changes recorded';
+    } else files = ' · details not fetched for this commit';
+    $('caption').innerHTML = '<div class="t">' + esc(c.title) + '</div>' +
+      '<div class="m"><b>' + esc(c.author) + '</b> · ' + esc(fmtDate(c.date)) + ' · ' + esc(c.short) + files + ' · ' + frame.files + ' files in tree</div>';
+  }
+
+  // ------------------------------------------------------------ intertitles
+  function showCard(i) {
+    const film = state.film; if (!film) return;
+    const c = film.frames[i].commit;
+    const t = c.title;
+    const cls = t.length > 140 ? 'small' : t.length > 60 ? 'long' : '';
+    const stat = film.frames[i].detailed && c.files ? c.files.length + (c.files.length === 1 ? ' file' : ' files') + (c.stats ? ' +' + c.stats.additions + ' −' + c.stats.deletions : '') : '';
+    fillCard('<div class="t ' + cls + '">' + esc(t) + '</div><div class="rule"></div>' +
+      '<div class="by">' + esc(c.author) + '</div><div class="when">' + esc(fmtDate(c.date, true)) + '</div>' +
+      '<div class="n">No. <b>' + (i + 1) + '</b> of ' + film.frames.length + ' · ' + esc(c.short) + (stat ? ' · ' + esc(stat) : '') + '</div>');
+  }
+  function showMessageCard(title, sub) {
+    fillCard('<div class="t ' + (title.length > 30 ? 'long' : '') + '">' + esc(title) + '</div>' + (sub ? '<div class="rule"></div><div class="sub">' + esc(sub) + '</div>' : ''));
+  }
+  function showEndCard() {
+    const film = state.film;
+    const s = film.stats;
+    fillCard('<div class="t">Fin</div><div class="rule"></div><div class="sub">' + esc(film.repo.full_name) + ' · ' + s.commits + ' commits · ' +
+      s.contributors.length + (s.contributors.length === 1 ? ' contributor' : ' contributors') + ' · ' + esc(fmtDate(s.span.from)) + ' → ' + esc(fmtDate(s.span.to)) + '</div>');
+  }
+  function fillCard(html) {
+    const card = $('card');
+    card.innerHTML = '<div class="frame">' + html + '</div>';
+    card.classList.remove('show'); void card.offsetWidth; card.classList.add('show');
+    state.cardShown = true;
+  }
+  function hideCard() { $('card').classList.remove('show'); state.cardShown = false; }
+  function flashCut() { const fl = $('flash'); fl.classList.remove('on'); void fl.offsetWidth; fl.classList.add('on'); }
+
+  // ------------------------------------------------------------ playback
+  function startPlay() {
+    const film = state.film; if (!film) return;
+    if (state.index >= film.frames.length - 1 && state.phase === 'done') state.index = 0;
+    state.playing = true; state.phase = 'title'; state.phaseStart = performance.now();
+    $('btn-play').textContent = 'Pause'; $('btn-play').classList.add('on');
+    $('projector').classList.add('playing');
+    showCard(state.index);
+    requestAnimationFrame(tick);
+  }
+  function stopPlay() {
+    if (!state.playing) return;
+    state.playing = false;
+    $('btn-play').textContent = 'Play'; $('btn-play').classList.remove('on');
+    $('projector').classList.remove('playing');
+  }
+  function togglePlay() { state.playing ? (stopPlay(), hideCard()) : startPlay(); }
+
+  function tick(now) {
+    if (!state.playing) return;
+    const film = state.film, N = film.frames.length;
+    const frame = film.frames[state.index];
+    const dur = (state.phase === 'title' ? TITLE_MS : frame.detailed ? TREE_MS : TREE_THIN_MS) / state.speed;
+    if (now - state.phaseStart >= dur) {
+      if (state.phase === 'title') {
+        hideCard(); flashCut();
+        state.phase = 'tree';
+        showFrame(state.index, true);
+      } else if (state.index >= N - 1) {
+        state.phase = 'done';
+        stopPlay(); showEndCard();
+        return;
+      } else {
+        state.phase = 'title';
+        state.index++;
+        showCard(state.index);
+        $('pos').textContent = (state.index + 1) + ' / ' + N;
+      }
+      state.phaseStart = now;
+    }
+    requestAnimationFrame(tick);
+  }
+
+  function step(d, animate) {
+    stopPlay(); hideCard();
+    const target = state.index + d;
+    showFrame(target, animate == null ? Math.abs(d) === 1 : animate);
+  }
+
+  // continuous draw loop for the treemap animation
+  function loop(now) {
+    if (!document.hidden) projector.draw(now);
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+
+  // ------------------------------------------------------------ strip, scrub, side
+  function renderStrip() {
+    const film = state.film;
+    $('strip').innerHTML = film.frames.map((f, i) => '<div class="cell' + (f.detailed ? ' det' : '') + '" data-i="' + i + '" title="' + esc(f.commit.title) + ' — ' + esc(f.commit.author) + ', ' + esc(fmtDate(f.commit.date)) + '"><i>' + (i + 1) + '</i><span>' + esc(f.commit.title) + '</span></div>').join('');
+  }
+  $('strip').addEventListener('click', e => {
+    const cell = e.target.closest('.cell'); if (!cell) return;
+    stopPlay();
+    const i = +cell.dataset.i;
+    showFrame(i, Math.abs(i - state.index) === 1);
+    showCard(i);
+  });
+
+  function renderScrub() {
+    const film = state.film, N = film.frames.length;
+    $('scrub').querySelector('.ticks').innerHTML = film.frames.map((f, i) => '<span class="tick' + (f.detailed ? ' det' : '') + '" style="left:' + ((i + 0.5) / N * 100) + '%"></span>').join('');
+  }
+  (function scrubEvents() {
+    const el = $('scrub');
+    let down = false;
+    const at = e => { const r = el.getBoundingClientRect(); const N = state.film ? state.film.frames.length : 1; return Math.max(0, Math.min(N - 1, Math.floor((e.clientX - r.left) / r.width * N))); };
+    el.addEventListener('pointerdown', e => { if (!state.film) return; down = true; el.setPointerCapture(e.pointerId); stopPlay(); hideCard(); showFrame(at(e), false); });
+    el.addEventListener('pointermove', e => { if (down) showFrame(at(e), false); });
+    const up = () => { down = false; };
+    el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
+  })();
+
+  function renderSide() {
+    const film = state.film, r = film.repo, s = film.stats;
+    const link = r.html_url ? '<a href="' + esc(r.html_url) + '" target="_blank" rel="noopener">' + esc(r.full_name) + '</a>' : esc(r.full_name);
+    $('reel').innerHTML = '<h2>Reel</h2><div class="name">' + link + '</div>' +
+      (r.description ? '<div class="desc">' + esc(r.description) + '</div>' : '') +
+      '<div class="meta">' + (r.html_url ? '★ ' + (r.stargazers_count | 0) + ' · ' : '') + 'branch ' + esc(r.default_branch || 'main') + '<br>' +
+      esc(fmtDate(s.span.from)) + ' → ' + esc(fmtDate(s.span.to)) + (film.openingInfo ? '<br>' + esc(film.openingInfo) : '') + '</div>';
+    const last = film.frames[film.frames.length - 1];
+    $('numbers').innerHTML =
+      row('commits', s.commits) + row('with file details', film.detailed) + row('contributors', s.contributors.length) +
+      row('files touched', s.filesTouched) + row('files at the end', last.files) +
+      row('busiest day', s.busiestDay ? esc(fmtDate(s.busiestDay.day)) + ' (' + s.busiestDay.count + ')' : '-') +
+      row('longest gap', s.longestGap ? F.formatGap(s.longestGap.seconds) : '-');
+    const max = s.top.length ? s.top[0].count : 1;
+    $('contrib').innerHTML = s.top.map(t => '<div class="row"><div class="nm"><i style="width:' + (t.count / max * 100) + '%"></i><span>' + esc(t.name) + '</span></div><div class="ct">' + t.count + '</div></div>').join('') || '<div class="ct">-</div>';
+    renderSpark(s);
+  }
+  function row(k, v) { return '<div><span>' + k + '</span><b>' + v + '</b></div>'; }
+
+  function renderSpark(s) {
+    const W = 260, H = 56, n = s.weeks.length;
+    const max = Math.max(1, ...s.weeks.map(w => w.count));
+    const gap = n <= 60 ? 1 : 0;
+    const bw = W / n;
+    const bars = s.weeks.map((w, i) => {
+      const h = w.count ? Math.max(1.5, w.count / max * (H - 4)) : 0;
+      const x = i * bw + gap / 2, width = Math.max(0.5, bw - gap);
+      const label = 'week of ' + fmtDate(new Date(w.start * 1000).toISOString()) + (s.weeksPerBin > 1 ? ' (+' + (s.weeksPerBin - 1) + ' more)' : '') + ': ' + w.count + (w.count === 1 ? ' commit' : ' commits');
+      return '<rect x="' + x.toFixed(2) + '" y="' + (H - h).toFixed(2) + '" width="' + width.toFixed(2) + '" height="' + h.toFixed(2) + '" rx="' + (width > 3 ? 1 : 0) + '" fill="' + (w.count ? 'var(--gold)' : 'var(--line)') + '"' + (w.count ? '' : ' height="1" y="' + (H - 1) + '"') + '><title>' + esc(label) + '</title></rect>';
+    }).join('');
+    $('spark').innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" role="img" aria-label="Commits per week">' + bars + '</svg>' +
+      '<div class="axis"><span>' + esc(fmtDate(s.span.from)) + '</span><span>peak ' + max + '</span><span>' + esc(fmtDate(s.span.to)) + '</span></div>' +
+      (s.weeksPerBin > 1 ? '<div class="note">each bar is ' + s.weeksPerBin + ' weeks</div>' : '');
+  }
+
+  function renderLegend() {
+    const slots = projector.slots;
+    const items = [...slots].map(([name, col]) => '<span><i style="background:' + col + '"></i>' + esc(name) + '/</span>');
+    items.push('<span><i style="background:#8a857a"></i>root' + (slots.size > F.DIR_COLOURS.length ? ' and other directories' : '') + '</span>');
+    items.push('<span><i style="background:' + F.EVENT_COLOURS.add + '"></i>added</span><span><i style="background:' + F.EVENT_COLOURS.mod + '"></i>edited</span><span><i style="background:' + F.EVENT_COLOURS.del + '"></i>removed</span><span><i style="background:' + F.EVENT_COLOURS.ren + '"></i>renamed</span>');
+    $('legend').innerHTML = items.join('');
+  }
+
+  // ------------------------------------------------------------ tree hover tooltip
+  (function hover() {
+    const canvas = $('tree'), tip = $('tip');
+    canvas.addEventListener('pointermove', e => {
+      if (state.cardShown) { tip.style.display = 'none'; return; }
+      const r = canvas.getBoundingClientRect();
+      const it = projector.hitTest(e.clientX - r.left, e.clientY - r.top);
+      projector.hover = it ? it.path : null;
+      if (!it) { tip.style.display = 'none'; return; }
+      const state0 = projector.walker.at(state.index).get(it.path);
+      const born = state0 && state0.born >= 0 ? state.film.frames[state0.born].commit : null;
+      tip.innerHTML = '<div class="p">' + esc(it.path) + '</div><div class="s">~' + it.lines + ' lines' +
+        (born ? ' · since ' + esc(born.short) + ' (' + esc(fmtDate(born.date)) + ')' : state0 && state0.born === -1 ? ' · in the opening tree' : '') + '</div>';
+      tip.style.display = 'block';
+      const pr = $('projector').getBoundingClientRect();
+      tip.style.left = Math.max(4, Math.min(pr.width - 330, e.clientX - pr.left + 14)) + 'px';
+      tip.style.top = Math.min(pr.height - 50, e.clientY - pr.top + 14) + 'px';
+    });
+    canvas.addEventListener('pointerleave', () => { tip.style.display = 'none'; projector.hover = null; });
+  })();
+
+  // ------------------------------------------------------------ grain texture
+  (function makeGrain() {
+    const c = document.createElement('canvas'); c.width = 160; c.height = 160;
+    const ctx = c.getContext('2d'); const img = ctx.createImageData(160, 160);
+    for (let i = 0; i < img.data.length; i += 4) { const v = 120 + Math.random() * 135 | 0; img.data[i] = img.data[i + 1] = img.data[i + 2] = v; img.data[i + 3] = Math.random() < 0.5 ? 255 : 0; }
+    ctx.putImageData(img, 0, 0);
+    document.querySelector('.grain-layer').style.backgroundImage = 'url(' + c.toDataURL() + ')';
+  })();
+
+  // ------------------------------------------------------------ controls
+  $('btn-play').addEventListener('click', togglePlay);
+  $('btn-prev').addEventListener('click', () => step(-1));
+  $('btn-next').addEventListener('click', () => step(1));
+  $('btn-first').addEventListener('click', () => { stopPlay(); hideCard(); showFrame(0, false); });
+  $('btn-last').addEventListener('click', () => { stopPlay(); hideCard(); showFrame(1e9, false); });
+  $('btn-card').addEventListener('click', () => { if (!state.film) return; stopPlay(); if (state.cardShown) hideCard(); else showCard(state.index); });
+  $('card').addEventListener('click', () => { if (!state.playing) hideCard(); });
+  $('speed').addEventListener('change', () => { state.speed = +$('speed').value || 1; writeHash(); });
+  const toggle = (id, cls, key) => { $(id).addEventListener('click', () => { const on = $('projector').classList.toggle(cls); $(id).classList.toggle('on', on); if (cls === 'labels') projector.showLabels = on; try { localStorage.setItem('ghost:' + key, on ? '1' : '0'); } catch (e) { } }); };
+  toggle('btn-grain', 'grain', 'grain'); toggle('btn-bw', 'bw', 'bw'); toggle('btn-labels', 'labels', 'labels');
+  $('projector').classList.add('labels');
+  try {
+    if (localStorage.getItem('ghost:grain') === '1') $('btn-grain').click();
+    if (localStorage.getItem('ghost:bw') === '1') $('btn-bw').click();
+    if (localStorage.getItem('ghost:labels') === '0') $('btn-labels').click();
+  } catch (e) { }
+
+  $('btn-help').addEventListener('click', () => $('help').classList.add('show'));
+  $('btn-help-close').addEventListener('click', () => $('help').classList.remove('show'));
+  $('help').addEventListener('click', e => { if (e.target === $('help')) $('help').classList.remove('show'); });
+
+  window.addEventListener('keydown', e => {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') return;
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    const n = e.shiftKey ? 10 : 1;
+    if (e.key === 'ArrowRight') step(n);
+    else if (e.key === 'ArrowLeft') step(-n);
+    else if (e.key === 'Home') $('btn-first').click();
+    else if (e.key === 'End') $('btn-last').click();
+    else if (e.key === ' ') togglePlay();
+    else if (e.key === 't' || e.key === 'T') $('btn-card').click();
+    else if (e.key === 'g' || e.key === 'G') $('btn-grain').click();
+    else if (e.key === 'b' || e.key === 'B') $('btn-bw').click();
+    else if (e.key === 'l' || e.key === 'L') $('btn-labels').click();
+    else if (e.key === '?') $('help').classList.toggle('show');
+    else if (e.key === 'Escape') { $('help').classList.remove('show'); if (!state.playing) hideCard(); }
+    else return;
+    e.preventDefault();
+  });
+
+  // loader form
+  function readForm() {
+    const token = getToken();
+    const maxCap = token ? MAX_CAP_TOKEN : MAX_CAP_ANON;
+    $('cap').max = maxCap;
+    state.cap = Math.max(10, Math.min(maxCap, parseInt($('cap').value, 10) || 100));
+    $('cap').value = state.cap;
+    state.detailN = Math.max(0, Math.min(state.cap, parseInt($('detail-n').value, 10) || 0));
+    $('detail-n').value = state.detailN;
+    state.detailMode = $('detail-mode').value;
+    state.opening = $('opening').checked;
+  }
+  $('form').addEventListener('submit', e => {
+    e.preventDefault();
+    const spec = F.parseRepoSpec($('repo').value);
+    if (!spec) { setStatus('That does not look like a GitHub repository. Try owner/repo or a github.com URL.', 'err'); return; }
+    $('repo').value = spec.full;
+    readForm();
+    loadRepo(spec);
+  });
+  $('btn-site').addEventListener('click', () => { $('repo').value = SITE_REPO; readForm(); loadRepo(F.parseRepoSpec(SITE_REPO)); });
+  $('btn-demo').addEventListener('click', () => { $('repo').value = ''; loadDemo(); writeHash(); });
+  $('token').addEventListener('change', () => { try { const t = getToken(); if (t) sessionStorage.setItem('ghost:token', t); else sessionStorage.removeItem('ghost:token'); } catch (e) { } });
+  try { const t = sessionStorage.getItem('ghost:token'); if (t) $('token').value = t; } catch (e) { }
+
+  // resize
+  let resizeTimer = 0;
+  const onResize = () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => projector.resize(), 60); };
+  if (window.ResizeObserver) new ResizeObserver(onResize).observe($('projector')); else window.addEventListener('resize', onResize);
+
+  // ------------------------------------------------------------ boot
+  (function boot() {
+    const h = readHash();
+    state.speed = h.speed; $('speed').value = String(h.speed);
+    $('cap').value = h.cap; $('detail-n').value = h.detail; $('detail-mode').value = h.mode;
+    const spec = h.repo ? F.parseRepoSpec(h.repo) : null;
+    if (spec) { $('repo').value = spec.full; readForm(); loadDemo(); state.pendingIndex = h.i; loadRepo(spec); }
+    else { state.pendingIndex = h.i; loadDemo(); }
+  })();
+
+  // handle for scripted checks
+  window.ghost = { state, projector, showFrame, showCard, hideCard, startPlay, stopPlay, loadRepo, loadDemo };
+})();
+</script>
+</body>
+</html>

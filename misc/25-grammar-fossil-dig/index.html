@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Grammar Fossil Dig</title>
+<meta name="description" content="Paste English text and dig down through its word strata: modern loans on top, Latin and Greek, Norman French, Old Norse, and the Old English bedrock.">
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    --bg: #1b1410;
+    --panel: #2a1f18;
+    --panel-2: #372a20;
+    --line: #4d3b2c;
+    --ink: #efe5d5;
+    --ink-2: #b9a88f;
+    --ink-3: #7d6d58;
+    --gold: #e6b85a;
+    /* stratum colours (used in the collapsed reading view and the stats) */
+    --c-g: #dcc8a4;
+    --c-n: #9cbcd8;
+    --c-f: #e2a556;
+    --c-l: #e5806c;
+    --c-k: #c9a1e6;
+    --c-o: #8ed09a;
+    --c-m: #f3d35c;
+    --c-u: #6f6255;
+    /* layer base colours */
+    --topsoil: #3a281b;
+    --clay: #7b3b2c;
+    --sandstone: #b78a48;
+    --shale: #46525f;
+    --bedrock: #2b2827;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif CJK JP", "Times New Roman", serif;
+    --sans: -apple-system, "Segoe UI", Helvetica, Arial, "Hiragino Sans", "Yu Gothic", "IPAGothic", "Noto Sans CJK JP", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); }
+  body { font: 15px/1.5 var(--sans); padding: 14px 16px 40px; overflow-x: hidden; }
+  a { color: var(--gold); }
+  h1 { font-size: 22px; margin: 0; font-weight: 600; letter-spacing: 0.01em; }
+  header { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 12px; }
+  header .sub { color: var(--ink-2); font-size: 14px; }
+  header .spacer { flex: 1; }
+  button, select {
+    font: inherit; color: var(--ink); background: var(--panel-2); border: 1px solid var(--line);
+    border-radius: 7px; padding: 6px 12px; cursor: pointer;
+  }
+  button:hover, select:hover { background: #45352a; }
+  button:active { transform: translateY(1px); }
+  button.small { font-size: 13px; padding: 4px 10px; }
+  button.on { background: var(--gold); color: #2a1a08; border-color: var(--gold); }
+  select { max-width: 100%; min-width: 0; }
+  @media (max-width: 600px) { #preset { width: 100%; } }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+  .card h2 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-2); margin: 0 0 6px; font-weight: 600; }
+
+  /* ---- layout: input on top, then the dig with a sticky stats column on wide screens */
+  #controls { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; margin-bottom: 14px; }
+  .card { min-width: 0; }
+  #input textarea {
+    width: 100%; min-height: 96px; resize: vertical; font: 15px/1.5 var(--serif); color: var(--ink);
+    background: #211913; border: 1px solid var(--line); border-radius: 7px; padding: 8px 10px;
+  }
+  #input textarea:focus { outline: 1px solid var(--gold); }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 8px; }
+  .row .note { color: var(--ink-3); font-size: 12.5px; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
+  .seg button { border: 0; border-radius: 0; }
+  .seg button + button { border-left: 1px solid var(--line); }
+
+  #main { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: start; }
+  #main > div { min-width: 0; }
+  #side { position: sticky; top: 12px; display: grid; gap: 10px; }
+  @media (max-width: 860px) {
+    #main { grid-template-columns: 1fr; }
+    #side { position: static; }
+  }
+
+  /* ---- the dig: stacked sediment layers */
+  #dig { border-radius: 10px; overflow: hidden; border: 1px solid var(--line); position: relative; }
+  .layer { position: relative; padding: 18px 18px 26px; font-family: var(--serif); font-size: 17px; line-height: 1.75; }
+  .layer + .layer { padding-top: 30px; }
+  .layer .edge { position: absolute; left: 0; right: 0; top: -1px; height: 16px; pointer-events: none; }
+  .ldr { display: flex; gap: 10px 16px; flex-wrap: wrap; align-items: baseline; font-family: var(--sans); margin-bottom: 8px; }
+  .ldr .lname { font-variant: small-caps; letter-spacing: 0.12em; font-size: 17px; font-weight: 600; text-transform: lowercase; }
+  .ldr .ldates { font-size: 12.5px; opacity: 0.8; letter-spacing: 0.04em; }
+  .ldr .lcount { font-size: 12.5px; margin-left: auto; font-variant-numeric: tabular-nums; opacity: 0.9; }
+  .ldr .lstrata { font-size: 12px; opacity: 0.75; }
+  .lblurb { font-family: var(--sans); font-size: 12.5px; opacity: 0.72; margin: -4px 0 10px; max-width: 60em; line-height: 1.4; }
+  .ltext { max-width: 62em; }
+  .layer .w { cursor: help; border-radius: 3px; padding: 0 1px; }
+  .layer .w:hover { outline: 1px solid currentColor; }
+  .layer .ghost { color: transparent; cursor: default; position: relative; }
+  .layer .ghost::after { content: ""; position: absolute; left: 1px; right: 1px; bottom: 5px; border-bottom: 1px solid currentColor; opacity: 0.22; }
+  .layer .ghost.s-u::after { border-bottom-style: dashed; opacity: 0.18; }
+  .layer .w.on { font-weight: 600; }
+  .layer .w.guessed { text-decoration: underline dashed; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+
+  .layer-topsoil { background-color: var(--topsoil); color: #e9dcc7;
+    background-image: radial-gradient(circle at 20% 30%, rgba(0,0,0,0.35) 1px, transparent 2.2px), radial-gradient(circle at 70% 65%, rgba(255,255,255,0.05) 1px, transparent 2px), radial-gradient(circle at 45% 85%, rgba(0,0,0,0.25) 1.5px, transparent 3px);
+    background-size: 23px 19px, 31px 27px, 47px 41px; }
+  .layer-clay { background-color: var(--clay); color: #f7e3d6;
+    background-image: repeating-linear-gradient(176deg, rgba(0,0,0,0.10) 0 5px, transparent 5px 15px), repeating-linear-gradient(2deg, rgba(255,255,255,0.04) 0 2px, transparent 2px 23px); }
+  .layer-sandstone { background-color: var(--sandstone); color: #2b1a0a;
+    background-image: repeating-linear-gradient(0deg, rgba(0,0,0,0.07) 0 2px, transparent 2px 9px), radial-gradient(circle at 30% 40%, rgba(255,255,255,0.12) 1px, transparent 2px);
+    background-size: auto, 17px 13px; }
+  .layer-shale { background-color: var(--shale); color: #e6ecf2;
+    background-image: repeating-linear-gradient(0deg, rgba(0,0,0,0.16) 0 1px, transparent 1px 6px), repeating-linear-gradient(0deg, rgba(255,255,255,0.05) 0 1px, transparent 1px 14px); }
+  .layer-bedrock { background-color: var(--bedrock); color: #e5dfd6;
+    background-image: radial-gradient(circle at 25% 35%, rgba(255,255,255,0.09) 1px, transparent 2px), radial-gradient(circle at 75% 70%, rgba(0,0,0,0.5) 1.5px, transparent 3px), radial-gradient(circle at 50% 10%, rgba(255,255,255,0.05) 1px, transparent 2.5px);
+    background-size: 19px 17px, 29px 23px, 41px 37px; }
+  /* Greek and modern coinages are marked apart inside their shared layer */
+  .layer-clay .w.s-k { color: #ead4ff; }
+  .layer-topsoil .w.s-m { color: #ffe066; }
+  .layer-clay .w.s-l.on, .layer-topsoil .w.s-o.on { background: rgba(255,255,255,0.10); }
+  .lempty { font-family: var(--sans); font-size: 13px; opacity: 0.7; font-style: italic; }
+
+  /* ---- collapsed (reading) view: one panel, words coloured by stratum */
+  #reading { display: none; font-family: var(--serif); font-size: 18px; line-height: 1.8; padding: 18px 20px 22px; }
+  #reading .ltext { max-width: 64em; }
+  body.collapsed #dig { display: none; }
+  body.collapsed #reading { display: block; }
+  #reading .w { cursor: help; border-radius: 3px; padding: 0 1px; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 4px; text-decoration-color: color-mix(in srgb, currentColor 55%, transparent); }
+  #reading .w:hover { background: rgba(255,255,255,0.08); }
+  #reading .w.guessed { text-decoration-style: dashed; }
+  .s-g { color: var(--c-g); } .s-n { color: var(--c-n); } .s-f { color: var(--c-f); } .s-l { color: var(--c-l); }
+  .s-k { color: var(--c-k); } .s-o { color: var(--c-o); } .s-m { color: var(--c-m); }
+  #reading .s-u { color: var(--ink-3); text-decoration-style: dotted; }
+  #legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-family: var(--sans); font-size: 12.5px; margin-bottom: 12px; color: var(--ink-2); }
+  #legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; background: currentColor; }
+
+  /* ---- stats card */
+  .bars { display: grid; gap: 5px; }
+  .bar { display: grid; grid-template-columns: 92px 1fr 44px; gap: 8px; align-items: center; font-size: 13px; }
+  .bar .lab { color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bar .trk { height: 10px; background: #1e1611; border-radius: 3px; overflow: hidden; }
+  .bar .fil { height: 100%; border-radius: 3px; }
+  .bar .val { text-align: right; font-variant-numeric: tabular-nums; color: var(--ink-2); }
+  .big { display: flex; align-items: baseline; gap: 10px; margin: 4px 0 2px; }
+  .big b { font-size: 30px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--gold); }
+  .big span { font-size: 12.5px; color: var(--ink-2); line-height: 1.3; }
+  .cmp { display: grid; gap: 6px; }
+  .cmp .crow { display: grid; grid-template-columns: 92px 1fr; gap: 8px; align-items: center; font-size: 12.5px; }
+  .cmp .crow .lab { color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cmp .stk { display: flex; height: 12px; border-radius: 3px; overflow: hidden; background: #1e1611; }
+  .cmp .stk i { display: block; height: 100%; }
+  .cmp .crow.me .lab { color: var(--ink); font-weight: 600; }
+  .cover { font-size: 12.5px; color: var(--ink-3); margin-top: 6px; }
+
+  /* ---- inspector (tooltip; bottom sheet on touch screens) */
+  #inspector {
+    position: absolute; z-index: 20; display: none; max-width: 320px; background: #120d0a; color: var(--ink);
+    border: 1px solid var(--line); border-radius: 8px; padding: 8px 11px; font: 13px/1.45 var(--sans); box-shadow: 0 10px 28px rgba(0,0,0,0.5);
+  }
+  #inspector.show { display: block; }
+  #inspector .iw { font-family: var(--serif); font-size: 17px; }
+  #inspector .is { font-variant: small-caps; letter-spacing: 0.08em; text-transform: lowercase; font-weight: 600; font-size: 14px; }
+  #inspector .id { color: var(--ink-2); margin-top: 2px; }
+  #inspector .id i { font-style: italic; color: var(--ink); }
+  #inspector .ig { color: var(--ink-3); margin-top: 3px; font-size: 12px; }
+  @media (hover: none), (max-width: 600px) {
+    #inspector { position: fixed; left: 8px; right: 8px; bottom: 8px; max-width: none; top: auto !important; }
+  }
+
+  /* ---- help overlay */
+  .overlay { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(12, 8, 5, 0.8); padding: 18px; z-index: 30; }
+  .overlay.show { display: flex; }
+  .overlay .box { max-width: 520px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; }
+  .overlay h2 { margin: 0 0 8px; font-size: 20px; font-weight: 600; }
+  .overlay p { margin: 6px 0; font-size: 14px; }
+  .overlay p.credit { color: var(--ink-2); font-size: 13px; }
+  #msg { color: var(--gold); font-size: 13px; min-height: 1.2em; margin: 4px 0 0; }
+  .depth { font-family: var(--sans); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); text-align: center; padding: 6px 0 8px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Grammar Fossil Dig</h1>
+  <span class="sub">Paste English and dig down through its word strata, from modern topsoil to the Old English bedrock.</span>
+  <span class="spacer"></span>
+  <button class="small" id="btn-help">Help</button>
+</header>
+
+<div id="controls">
+  <div class="card" id="input">
+    <h2>Text to dig</h2>
+    <textarea id="text" maxlength="4096" spellcheck="false" placeholder="Paste a paragraph of English here, or pick a sample below."></textarea>
+    <div class="row">
+      <select id="preset" title="sample texts"></select>
+      <button id="btn-dig">Dig</button>
+      <span class="seg" role="group" aria-label="view">
+        <button id="btn-layers" class="on" title="sediment layers, one per stratum">Layers</button>
+        <button id="btn-collapse" title="one coloured reading view">Collapse</button>
+      </span>
+      <span class="note">up to 4 KB; the text lives in the link.</span>
+    </div>
+    <div id="msg"></div>
+  </div>
+</div>
+
+<div id="main">
+  <div>
+    <div id="dig"></div>
+    <div class="card" id="reading"><div id="legend"></div><div class="ltext" id="reading-text"></div></div>
+  </div>
+  <div id="side">
+    <div class="card" id="stats">
+      <h2>Strata</h2>
+      <div class="bars" id="bars"></div>
+      <div class="big"><b id="germ">0%</b><span>Germanic index<br>share of classified words that are Old English or Norse</span></div>
+      <div class="cover" id="cover"></div>
+    </div>
+    <div class="card">
+      <h2>Compared with typical prose</h2>
+      <div class="cmp" id="cmp"></div>
+      <div class="cover">Stacked by stratum, left to right: Old English, Norse, French, Latin, Greek, other loans, modern; unknown words left out.</div>
+    </div>
+  </div>
+</div>
+
+<div id="inspector" role="tooltip"></div>
+
+<div class="overlay" id="help">
+  <div class="box">
+    <h2>Grammar Fossil Dig</h2>
+    <p>Every word in your text is sorted by where English got it, and the text is then drawn once per stratum: the top layer keeps only the modern coinages and far-flung loans, the next only the learned Latin and Greek, then the Norman French, then the Old Norse, and at the bottom the Old English bedrock, with the other words left as faint blanks so each layer still reads in place.</p>
+    <p>Hover or tap a word to see its stratum, the language it came from and the recorded source form; Collapse switches to a single reading view with every word coloured, and the stats card gives the shares and a Germanic index next to three reference texts.</p>
+    <p>A word counts by its nearest recorded donor, so a Latin word that came through Old French is French here, and the inspector shows the deeper source; words outside the list are stemmed to a known root, or guessed from their ending (dashed underline), or left unknown.</p>
+    <p class="credit">Data: about 21,500 frequent English words classified from <a href="https://github.com/droher/etymology-db" target="_blank" rel="noopener">etymology-db</a> (2023-12), a parse of English Wiktionary's etymology templates, licensed CC BY-SA 3.0; the word list is the most frequent English words in Peter Norvig's count_1w.txt (Google Books n-grams). Sample texts are public domain; the Chaucer rendering and the paper abstract were written for this page. Wiktionary's parse is not perfect, so expect the odd misfiled fossil.</p>
+    <p><button id="btn-close">Close</button></p>
+  </div>
+</div>
+
+<script src="strata.js"></script>
+<script src="presets.js"></script>
+<script src="dig.js"></script>
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var Dig = window.FossilDig;
+  var PRESETS = window.FOSSIL_PRESETS || [];
+  var HAS_DATA = false;
+  var STRATA_ORDER = ['g', 'n', 'f', 'l', 'k', 'o', 'm'];
+  var COLORS = { g: 'var(--c-g)', n: 'var(--c-n)', f: 'var(--c-f)', l: 'var(--c-l)', k: 'var(--c-k)', o: 'var(--c-o)', m: 'var(--c-m)', u: 'var(--c-u)' };
+  var state = { text: '', view: 'layers', preset: '' };
+  var analysis = null;
+  var refs = [];  // reference analyses for the comparison bars
+
+  // ---- data
+  try {
+    if (window.FOSSIL_STRATA) HAS_DATA = Dig.load(window.FOSSIL_STRATA) > 0;
+  } catch (e) { HAS_DATA = false; }
+  if (!HAS_DATA) $('msg').textContent = 'The word data (strata.js) did not load, so every word is guessed from its ending or left unknown.';
+
+  // ---- presets
+  PRESETS.forEach(function (p) {
+    var o = document.createElement('option'); o.value = p.id; o.textContent = p.name; $('preset').appendChild(o);
+  });
+  var custom = document.createElement('option'); custom.value = ''; custom.textContent = 'Your own text'; $('preset').appendChild(custom);
+  PRESETS.filter(function (p) { return p.ref; }).forEach(function (p) { refs.push({ name: p.ref, a: Dig.analyze(p.text) }); });
+
+  // ---- hash state: #p=<preset> or #t=<text>, plus &v=collapsed
+  function readHash() {
+    var h = location.hash.replace(/^#/, ''), out = {};
+    h.split('&').forEach(function (kv) {
+      var i = kv.indexOf('='); if (i < 0) return;
+      try { out[kv.slice(0, i)] = decodeURIComponent(kv.slice(i + 1)); } catch (e) { /* bad escape */ }
+    });
+    return out;
+  }
+  function writeHash() {
+    var parts = [];
+    var p = PRESETS.find(function (x) { return x.text === state.text; });
+    if (p) parts.push('p=' + p.id); else if (state.text) parts.push('t=' + encodeURIComponent(state.text.slice(0, 4096)));
+    if (state.view === 'collapsed') parts.push('v=collapsed');
+    var h = '#' + parts.join('&');
+    if (h !== location.hash) history.replaceState(null, '', h || '#');
+  }
+
+  // ---- rendering helpers
+  function esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function wordSpan(tok, visible) {
+    var info = tok.info, cls = 'w s-' + info.s;
+    if (!visible) cls += ' ghost';
+    if (info.guessed) cls += ' guessed';
+    return '<span class="' + cls + '" data-w="' + esc(tok.w) + '">' + esc(tok.t) + '</span>';
+  }
+  function renderTokens(tokens, isVisible) {
+    var html = '';
+    tokens.forEach(function (tok) {
+      if (!tok.w) html += esc(tok.t).replace(/\n/g, '<br>');
+      else html += wordSpan(tok, isVisible(tok));
+    });
+    return html;
+  }
+  function pct(x) { return (100 * x).toFixed(x < 0.095 && x > 0 ? 1 : 0) + '%'; }
+  // a jagged edge between layers, drawn as an inline SVG so the boundary looks dug rather than ruled
+  function edge(color, seed) {
+    var pts = [], n = 40, x, y;
+    for (var i = 0; i <= n; i++) {
+      x = (i / n * 100).toFixed(1);
+      var r = Math.abs(Math.sin(seed * 12.9898 + i * 78.233) * 43758.5453) % 1;
+      y = (2 + r * 10).toFixed(1);
+      pts.push(x + ',' + y);
+    }
+    return '<svg class="edge" viewBox="0 0 100 16" preserveAspectRatio="none"><path d="M0,0 L100,0 L' + pts.reverse().join(' L') + ' Z" fill="' + color + '"/></svg>';
+  }
+  var LAYER_COLORS = { topsoil: 'var(--topsoil)', clay: 'var(--clay)', sandstone: 'var(--sandstone)', shale: 'var(--shale)', bedrock: 'var(--bedrock)' };
+
+  function renderDig() {
+    var a = analysis, html = '';
+    Dig.LAYERS.forEach(function (L, idx) {
+      var set = {}; L.strata.forEach(function (s) { set[s] = true; });
+      var count = 0; L.strata.forEach(function (s) { count += a.counts[s]; });
+      var share = a.total ? count / a.total : 0;
+      var names = L.strata.map(function (s) { return Dig.STRATA[s].name.toLowerCase(); }).join(' and ');
+      html += '<section class="layer layer-' + L.id + '" data-layer="' + L.id + '">';
+      if (idx > 0) html += edge(LAYER_COLORS[Dig.LAYERS[idx - 1].id], idx);
+      html += '<div class="ldr"><span class="lname">' + L.name + '</span><span class="ldates">' + L.dates + '</span><span class="lstrata">' + names + '</span>' +
+        '<span class="lcount">' + count + (count === 1 ? ' word' : ' words') + ' &middot; ' + pct(share) + '</span></div>';
+      html += '<div class="lblurb">' + L.blurb + '</div>';
+      if (count === 0) html += '<div class="lempty">Nothing from this stratum in the text.</div>';
+      html += '<div class="ltext">' + renderTokens(a.tokens, function (t) { return !!set[t.info.s]; }) + '</div>';
+      html += '</section>';
+    });
+    $('dig').innerHTML = html + '<div class="depth layer-bedrock" style="padding:8px 0 12px">deeper than this there is only Proto-Germanic</div>';
+  }
+  function renderReading() {
+    var a = analysis, leg = '';
+    STRATA_ORDER.concat(['u']).forEach(function (s) {
+      leg += '<span class="s-' + s + '">' + Dig.STRATA[s].name + ' ' + a.counts[s] + '</span>';
+    });
+    $('legend').innerHTML = leg;
+    $('reading-text').innerHTML = renderTokens(a.tokens, function () { return true; });
+  }
+  function stackBar(an) {
+    var known = an.known || 1, h = '<span class="stk">';
+    STRATA_ORDER.forEach(function (s) {
+      var w = 100 * an.counts[s] / known;
+      if (w > 0) h += '<i style="width:' + w.toFixed(2) + '%;background:' + COLORS[s] + '" title="' + Dig.STRATA[s].name + ' ' + w.toFixed(0) + '%"></i>';
+    });
+    return h + '</span>';
+  }
+  function renderStats() {
+    var a = analysis, h = '';
+    STRATA_ORDER.concat(['u']).forEach(function (s) {
+      h += '<div class="bar"><span class="lab">' + Dig.STRATA[s].name + '</span><span class="trk"><span class="fil" style="width:' + (100 * a.pct[s]).toFixed(1) + '%;background:' + COLORS[s] + '"></span></span><span class="val">' + pct(a.pct[s]) + '</span></div>';
+    });
+    $('bars').innerHTML = h;
+    $('germ').textContent = a.total ? pct(a.germanic) : '–';
+    $('cover').textContent = a.total ? (a.total + ' words: ' + (a.total - a.known) + ' unknown, ' + a.guessed + ' guessed from the ending.') : 'No words yet.';
+    var c = '<div class="crow me"><span class="lab">This text</span>' + stackBar(a) + '</div>';
+    refs.forEach(function (r) { c += '<div class="crow"><span class="lab">' + r.name + '</span>' + stackBar(r.a) + '</div>'; });
+    $('cmp').innerHTML = c;
+  }
+
+  function dig() {
+    state.text = $('text').value;
+    analysis = Dig.analyze(state.text);
+    renderDig(); renderReading(); renderStats(); writeHash();
+    hideInspector();
+  }
+  function setView(v) {
+    state.view = v;
+    document.body.classList.toggle('collapsed', v === 'collapsed');
+    $('btn-layers').classList.toggle('on', v === 'layers');
+    $('btn-collapse').classList.toggle('on', v === 'collapsed');
+    writeHash();
+  }
+
+  // ---- inspector
+  var pinned = null;
+  function describe(w, info) {
+    var S = Dig.STRATA[info.s], L = S.layer >= 0 ? Dig.LAYERS[S.layer] : null;
+    var h = '<div class="iw">' + esc(w) + '</div>';
+    h += '<div class="is s-' + info.s + '">' + S.name + (L ? ' &middot; ' + L.name.toLowerCase() : '') + '</div>';
+    var d = '';
+    if (info.s === 'u') d = 'No etymology in the data for this word.';
+    else if (info.guessed) d = 'Not in the word list; guessed from the ending.';
+    else {
+      if (info.note && !info.lang) d = info.note.charAt(0).toUpperCase() + info.note.slice(1);
+      else {
+        d = (info.rel ? 'related to ' : 'from ') + esc(info.lang) + (info.form ? ' <i>' + esc(info.form) + '</i>' : (info.via || info.stem ? '' : ' <i>' + esc(w) + '</i>'));
+        if (info.deep) d += ', earlier ' + esc(info.deep.lang) + (info.deep.form ? ' <i>' + esc(info.deep.form) + '</i>' : '');
+        if (info.note) d += ' (' + esc(info.note) + ')';
+      }
+    }
+    h += '<div class="id">' + d + '</div>';
+    var g = [];
+    if (info.stem && info.stem !== w.toLowerCase()) g.push((info.derived ? 'formed on ' : 'form of ') + (info.prefix ? info.prefix + '- + ' : '') + info.stem);
+    if (info.via) g.push('built on the root ' + info.chain.join(', then '));
+    if (g.length) h += '<div class="ig">' + esc(g.join('; ')) + '</div>';
+    return h;
+  }
+  function showInspector(el) {
+    var w = el.getAttribute('data-w'), info = Dig.lookup(w);
+    var ins = $('inspector');
+    ins.innerHTML = describe(el.textContent, info);
+    ins.classList.add('show');
+    if (window.matchMedia('(hover: none), (max-width: 600px)').matches) return;
+    var r = el.getBoundingClientRect(), top = r.bottom + window.scrollY + 6, left = r.left + window.scrollX;
+    ins.style.top = top + 'px';
+    ins.style.left = Math.max(8, Math.min(left, window.innerWidth - ins.offsetWidth - 12)) + 'px';
+  }
+  function hideInspector() { $('inspector').classList.remove('show'); pinned = null; }
+  function onOver(e) {
+    var el = e.target.closest && e.target.closest('.w');
+    if (!el || el.classList.contains('ghost') || pinned) return;
+    showInspector(el);
+  }
+  function onOut(e) {
+    if (pinned) return;
+    var el = e.target.closest && e.target.closest('.w');
+    if (el && !(e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest('#inspector'))) $('inspector').classList.remove('show');
+  }
+  function onClick(e) {
+    var el = e.target.closest && e.target.closest('.w');
+    if (el && !el.classList.contains('ghost')) {
+      if (pinned === el) { hideInspector(); return; }
+      pinned = el; showInspector(el); e.stopPropagation(); return;
+    }
+    if (!(e.target.closest && e.target.closest('#inspector'))) hideInspector();
+  }
+  ['dig', 'reading'].forEach(function (id) {
+    $(id).addEventListener('mouseover', onOver);
+    $(id).addEventListener('mouseout', onOut);
+  });
+  document.addEventListener('click', onClick);
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { hideInspector(); $('help').classList.remove('show'); } });
+
+  // ---- controls
+  $('btn-dig').addEventListener('click', dig);
+  var timer = null;
+  $('text').addEventListener('input', function () {
+    $('preset').value = '';
+    clearTimeout(timer); timer = setTimeout(dig, 600);
+  });
+  $('preset').addEventListener('change', function () {
+    var p = PRESETS.find(function (x) { return x.id === $('preset').value; });
+    if (p) { $('text').value = p.text; dig(); }
+  });
+  $('btn-layers').addEventListener('click', function () { setView('layers'); });
+  $('btn-collapse').addEventListener('click', function () { setView('collapsed'); });
+  $('btn-help').addEventListener('click', function () { $('help').classList.add('show'); });
+  $('btn-close').addEventListener('click', function () { $('help').classList.remove('show'); });
+  $('help').addEventListener('click', function (e) { if (e.target === $('help')) $('help').classList.remove('show'); });
+
+  // ---- start from the hash, else the first preset
+  var h = readHash();
+  var start = PRESETS.find(function (x) { return x.id === h.p; });
+  if (h.t) { $('text').value = h.t.slice(0, 4096); $('preset').value = ''; }
+  else { start = start || PRESETS[0]; if (start) { $('text').value = start.text; $('preset').value = start.id; } }
+  setView(h.v === 'collapsed' ? 'collapsed' : 'layers');
+  dig();
+})();
+</script>
+</body>
+</html>

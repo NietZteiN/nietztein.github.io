@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Read-Order Oracle</title>
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    --bg: #15171d;
+    --panel: #1e2129;
+    --panel-2: #272b35;
+    --line: #363b48;
+    --ink: #f3efe6;
+    --ink-2: #aab0bd;
+    --ink-3: #6f7685;
+    --accent: #f2c14e;
+    --good: #5fd08a;
+    --bad: #e8635a;
+    --station: #f7f2e8;
+    --station-ring: #15171d;
+    --sans: -apple-system, "Segoe UI", Helvetica, Arial, "Hiragino Sans", "Yu Gothic", "IPAGothic", "Noto Sans CJK JP", sans-serif;
+  }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); }
+  body { font: 15px/1.45 var(--sans); padding: 14px 16px 24px; }
+  h1 { font-size: 22px; margin: 0; font-weight: 700; letter-spacing: 0.01em; }
+  header { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+  header .sub { color: var(--ink-2); font-size: 14px; }
+  header .spacer { flex: 1; }
+  button {
+    font: inherit; color: var(--ink); background: var(--panel-2); border: 1px solid var(--line);
+    border-radius: 7px; padding: 6px 12px; cursor: pointer;
+  }
+  button:hover { background: #313644; }
+  button:active { transform: translateY(1px); }
+  button.small { font-size: 13px; padding: 4px 10px; }
+  button:disabled { opacity: 0.5; cursor: default; }
+  input[type=search], input[type=text] {
+    font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line);
+    border-radius: 7px; padding: 6px 10px; width: 100%; box-sizing: border-box;
+  }
+  input:focus { outline: 2px solid rgba(242, 193, 78, 0.45); outline-offset: 1px; }
+  a { color: var(--accent); }
+
+  /* Status bar: progress while thinking, tour statistics afterwards. */
+  #bar { display: flex; gap: 12px 18px; align-items: center; flex-wrap: wrap; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; margin-bottom: 12px; font-size: 14px; }
+  #bar .stat { color: var(--ink-2); }
+  #bar .stat b { color: var(--ink); font-variant-numeric: tabular-nums; font-weight: 600; }
+  #bar .stat i { font-style: normal; color: var(--ink); }
+  #progress { flex: 1 1 160px; height: 6px; background: var(--panel-2); border-radius: 3px; overflow: hidden; min-width: 120px; }
+  #progress div { height: 100%; width: 0; background: var(--accent); transition: width 0.15s; }
+  #note { color: var(--accent); font-size: 13px; width: 100%; display: none; }
+  #note.show { display: block; }
+
+  #layout { display: flex; gap: 14px; align-items: stretch; }
+  #mapwrap { position: relative; flex: 1 1 auto; min-width: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; height: calc(100vh - 150px); min-height: 420px; }
+  #map { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none; }
+  #map.dragging { cursor: grabbing; }
+  #map text { font-family: var(--sans); font-weight: 600; pointer-events: none; }
+  #map .st { cursor: pointer; }
+  #zoombox { position: absolute; right: 10px; top: 10px; display: grid; gap: 4px; }
+  #zoombox button { width: 34px; height: 34px; padding: 0; font-size: 18px; line-height: 1; }
+  #hint { position: absolute; left: 10px; bottom: 8px; color: var(--ink-3); font-size: 12px; pointer-events: none; }
+  #tip {
+    position: absolute; display: none; max-width: 280px; background: rgba(20, 22, 28, 0.95); border: 1px solid var(--line);
+    border-radius: 8px; padding: 8px 10px; font-size: 13px; pointer-events: none; z-index: 5; box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  }
+  #tip b { display: block; font-size: 14px; }
+  #tip .g { color: var(--ink-2); }
+  #tip .k { color: var(--accent); }
+  #tip .sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; vertical-align: -1px; margin-right: 5px; }
+
+  #side { flex: 0 0 320px; width: 320px; display: grid; gap: 10px; align-content: start; overflow-y: auto; max-height: calc(100vh - 150px); }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+  .card h2 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-2); margin: 0 0 6px; font-weight: 600; }
+  .card h3 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-3); margin: 10px 0 4px; font-weight: 600; }
+  .card p { margin: 6px 0; font-size: 14px; }
+  .muted { color: var(--ink-2); }
+  .faint { color: var(--ink-3); }
+
+  /* Typeahead */
+  .ta { position: relative; }
+  .ta ul { position: absolute; left: 0; right: 0; top: 100%; z-index: 6; margin: 2px 0 0; padding: 4px 0; list-style: none; background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; max-height: 260px; overflow-y: auto; display: none; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+  .ta ul.show { display: block; }
+  .ta li { padding: 5px 10px; font-size: 13px; cursor: pointer; display: flex; gap: 8px; align-items: baseline; }
+  .ta li .sw { flex: 0 0 8px; width: 8px; height: 8px; border-radius: 2px; align-self: center; }
+  .ta li span.t { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ta li span.a { color: var(--ink-2); font-size: 12px; white-space: nowrap; max-width: 40%; overflow: hidden; text-overflow: ellipsis; }
+  .ta li:hover, .ta li.hi { background: #343948; }
+
+  /* Lists of books (read next, journey) */
+  .stops { margin: 0; padding: 0; list-style: none; }
+  .stops li { display: flex; gap: 8px; padding: 5px 0; border-bottom: 1px dotted var(--line); font-size: 13px; cursor: pointer; align-items: flex-start; }
+  .stops li:hover .t { text-decoration: underline; }
+  .stops .dot { flex: 0 0 12px; width: 12px; height: 12px; border-radius: 50%; margin-top: 3px; box-sizing: border-box; border: 3px solid #999; background: var(--station); }
+  .stops .body { flex: 1; min-width: 0; }
+  .stops .t { font-weight: 600; }
+  .stops .a { color: var(--ink-2); }
+  .stops .k { color: var(--accent); font-size: 12px; }
+  .stops .s { color: var(--ink-3); font-size: 12px; font-variant-numeric: tabular-nums; }
+  #selbook { margin: 6px 0 2px; }
+  #selbook .t { font-weight: 700; font-size: 15px; }
+  #selbook .pos { color: var(--ink-3); font-size: 12px; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .row > * { flex: 1 1 auto; }
+  .row > button { flex: 0 0 auto; }
+
+  /* Legend */
+  #legend { margin: 0; padding: 0; list-style: none; columns: 1; }
+  #legend li { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 3px 0; cursor: pointer; }
+  #legend li .sw { width: 26px; height: 8px; border-radius: 4px; flex: 0 0 26px; }
+  #legend li .sw.dash { background-image: repeating-linear-gradient(90deg, transparent 0 4px, rgba(21,23,29,0.9) 4px 7px); }
+  #legend li .n { color: var(--ink-3); margin-left: auto; font-variant-numeric: tabular-nums; }
+  #legend li.off { opacity: 0.35; }
+
+  /* Help overlay */
+  .overlay { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(10, 12, 16, 0.78); padding: 18px; z-index: 20; }
+  .overlay.show { display: flex; }
+  .overlay .box { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; max-width: 520px; max-height: 90vh; overflow-y: auto; }
+  .overlay h2 { margin: 0 0 8px; font-size: 20px; }
+  .overlay p { font-size: 14px; margin: 8px 0; }
+  .overlay kbd { font-family: inherit; background: var(--panel-2); border: 1px solid var(--line); border-radius: 4px; padding: 0 6px; }
+
+  @media (max-width: 860px) {
+    #layout { flex-direction: column; }
+    #mapwrap { height: 62vh; min-height: 360px; }
+    #side { flex: none; width: auto; max-height: none; overflow: visible; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Read-Order Oracle</h1>
+  <span class="sub">One route through every book on the shelves, each stop close to the last.</span>
+  <span class="spacer"></span>
+  <button class="small" id="btn-copy" disabled>Copy reading list</button>
+  <button class="small" id="btn-svg" disabled>Download SVG</button>
+  <button class="small" id="btn-help">Help</button>
+</header>
+
+<div id="bar">
+  <span class="stat" id="status">Loading the catalogue&hellip;</span>
+  <div id="progress"><div></div></div>
+  <span class="stat" id="stat-coh"></span>
+  <span class="stat" id="stat-worst"></span>
+  <span id="note"></span>
+</div>
+
+<div id="layout">
+  <div id="mapwrap">
+    <svg id="map" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Subway map of the reading route">
+      <g id="view">
+        <g id="lines"></g>
+        <g id="route"></g>
+        <g id="stations"></g>
+        <g id="labels"></g>
+        <g id="marks"></g>
+      </g>
+    </svg>
+    <div id="zoombox">
+      <button id="z-in" title="Zoom in">+</button>
+      <button id="z-out" title="Zoom out">&minus;</button>
+      <button id="z-fit" title="Fit the whole map" style="font-size:12px">fit</button>
+      <button id="z-start" title="Go to the first stop" style="font-size:12px">start</button>
+    </div>
+    <div id="hint">drag to pan, wheel or pinch to zoom, click a station</div>
+    <div id="tip"></div>
+  </div>
+
+  <aside id="side">
+    <div class="card">
+      <h2>Start of the route</h2>
+      <div class="ta"><input type="search" id="start-q" placeholder="Start from a book you choose&hellip;" autocomplete="off" disabled><ul id="start-list"></ul></div>
+      <p class="muted" id="start-now" style="font-size:13px"></p>
+      <div class="row"><button class="small" id="btn-today">Today's start</button><span class="faint" style="font-size:12px">The default start is drawn from today's date.</span></div>
+    </div>
+
+    <div class="card">
+      <h2>Oracle</h2>
+      <div class="ta"><input type="search" id="book-q" placeholder="A book you own&hellip;" autocomplete="off" disabled><ul id="book-list"></ul></div>
+      <div id="selbook" class="muted" style="font-size:13px">Pick a book to see what to read next.</div>
+      <div id="next"></div>
+      <div id="journey-ui" style="display:none">
+        <h3>The journey</h3>
+        <div class="ta"><input type="search" id="to-q" placeholder="&hellip;to another book" autocomplete="off"><ul id="to-list"></ul></div>
+        <div id="journey"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Lines</h2>
+      <ul id="legend"></ul>
+      <p class="faint" style="font-size:12px;margin-top:8px">Each line is a stretch of the route within one genre; a ringed station is where the genre changes. Click a line to spotlight it.</p>
+    </div>
+  </aside>
+</div>
+
+<div class="overlay" id="help">
+  <div class="box">
+    <h2>What the oracle knows</h2>
+    <p>Two books are "close" when the words of their catalogue descriptions, titles and authors overlap, weighted so that rare words count for more than common ones (TF-IDF cosine), with a small nudge for sharing a genre and a language. It is not a reading of the books: two novels about the same thing in different words are strangers to it, and because the descriptions are a sentence or two long, a single shared surname or place name can carry a whole connection. The route is a greedy nearest-neighbour walk tidied by 2-opt, so it is a good path, not the best one, and it changes with the start you choose.</p>
+    <h3 style="font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-2)">Reading the map</h3>
+    <p>Stations are books in route order, spiralling out from the start. Colour is genre; the colour switches halfway between two stations and the ringed station begins the new line. Hover a station for the words that tie it to the previous stop; zoom in for titles.</p>
+    <p><kbd>Drag</kbd> pan &nbsp; <kbd>Wheel</kbd> / <kbd>pinch</kbd> zoom &nbsp; <kbd>Click</kbd> pick a book &nbsp; <kbd>Esc</kbd> close this</p>
+    <h3 style="font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-2)">Data</h3>
+    <p>The site's own library catalogue (<code>assets/data/library.json</code>: titles, authors, genres and short descriptions of the books on Jack's shelves). Nothing is fetched from anywhere else; everything is computed in your browser. If the catalogue cannot be loaded, a small set of invented books stands in.</p>
+    <p style="text-align:center"><button id="btn-help-close">Close</button></p>
+  </div>
+</div>
+
+<script src="oracle.js"></script>
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var SVG_NS = 'http://www.w3.org/2000/svg';
+  var K_NEIGHBOURS = 6, PITCH = 40;
+
+  /* ---------- Genre lines: fixed colour order by catalogue size ---------- */
+  var GENRE_ORDER = ['Literature (English & European)', 'Manga & comics', 'Writing, film & literary craft', 'History & biography',
+    'Japanese literature', 'Psychology, self-help & business', 'Art & visual culture', 'Light novels', 'Language study & reference',
+    'Religion & theology', 'Society, culture & ideas', 'Philosophy & political theory', 'Math, CS & engineering', 'Nursing & medical',
+    'Test prep & study guides', 'Science', 'Magazines & catalogues', 'Music & opera', 'Politics, law & current affairs',
+    'Games & other objects', 'Unidentified', 'Occult & folklore'];
+  var COLOURS = ['#3987e5', '#d95926', '#199e70', '#c98500', '#d55181', '#7fbf3a', '#9085e9', '#e66767', '#22b8cc', '#e8d048',
+    '#f2a0c0', '#b58cf5', '#37d6a6', '#f0906a', '#5fb0f0', '#a8d040', '#c02040', '#8a7a66', '#d7b98a', '#2f6fb0', '#a06a1c', '#66c2a0'];
+  var DASH_FROM = 16; // the smallest lines are dashed too, so colour is not the only cue
+
+  /* ---------- State ---------- */
+  var books = [], n = 0, vec = null, S = null, nn = null, byId = {};
+  var genres = [], genreIdx = [];     // genres in colour order; genreIdx[i] = index of book i's genre
+  var tourRes = null, path = null, posOf = null, pos = [];   // path[k] = book index; posOf[book] = k; pos[k] = [x, y]
+  var startIdx = -1, selIdx = -1, toIdx = -1, routeIdx = null;
+  var usingSample = false;
+  var view = { k: 1, tx: 0, ty: 0 };
+  var focusGenre = -1;
+
+  var svg = $('map'), gView = $('view'), gLines = $('lines'), gStations = $('stations'), gLabels = $('labels'), gMarks = $('marks'), gRoute = $('route');
+
+  /* ---------- Load data ---------- */
+  function setStatus(t) { $('status').textContent = t; }
+  function setProgress(f) { $('progress').firstElementChild.style.width = Math.round(f * 100) + '%'; }
+  function note(t) { var el = $('note'); el.textContent = t; el.classList.toggle('show', !!t); }
+
+  function loadCatalogue() {
+    return fetch('../../assets/data/library.json').then(function (r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    }).then(function (j) {
+      if (!j || !j.books || !j.books.length) throw new Error('empty catalogue');
+      return j.books;
+    }).catch(function (err) {
+      usingSample = true;
+      return new Promise(function (resolve) {
+        var s = document.createElement('script');
+        s.src = 'sample.js';
+        s.onload = function () { resolve(window.ORACLE_SAMPLE.books); };
+        s.onerror = function () { resolve([]); };
+        document.head.appendChild(s);
+      }).then(function (b) {
+        note('The library catalogue could not be loaded (' + err.message + '), so this map is drawn from ' + b.length + ' invented books instead.');
+        return b;
+      });
+    });
+  }
+
+  function prepare(list) {
+    books = list.map(function (b) {
+      return { id: b.id, t: b.t || '(untitled)', a: b.a || '', l: b.l || '', g: b.g || 'Unidentified', y: b.y, d: b.d || '' };
+    });
+    n = books.length;
+    books.forEach(function (b, i) { byId[b.id] = i; });
+    // Genres present, in the fixed colour order; unknown genres go on the end.
+    var present = {};
+    books.forEach(function (b) { present[b.g] = (present[b.g] || 0) + 1; });
+    genres = GENRE_ORDER.filter(function (g) { return present[g]; });
+    Object.keys(present).forEach(function (g) { if (genres.indexOf(g) < 0) genres.push(g); });
+    var gmap = {};
+    genres.forEach(function (g, i) { gmap[g] = i; });
+    genreIdx = books.map(function (b) { return gmap[b.g]; });
+    vec = Oracle.vectorize(books);
+    buildLegend(present);
+  }
+
+  function colourOf(gi) { return COLOURS[gi % COLOURS.length]; }
+  function dashed(gi) { return gi >= DASH_FROM; }
+
+  /* ---------- Similarity matrix: in a worker when we can, inline otherwise ---------- */
+  function computeMatrix() {
+    setStatus('Comparing ' + n + ' descriptions…');
+    return new Promise(function (resolve) {
+      var worker = null, settled = false;
+      function inline() {
+        if (settled) return;
+        settled = true;
+        if (worker) worker.terminate();
+        setTimeout(function () {
+          resolve(Oracle.similarityMatrix(books, vec, function (d, t) { setProgress(d / t); }));
+        }, 20);
+      }
+      try {
+        worker = new Worker('oracle.js');
+        worker.onmessage = function (e) {
+          var m = e.data;
+          if (m.type === 'progress') setProgress(m.done / m.total);
+          else if (m.type === 'matrix' && !settled) { settled = true; worker.terminate(); resolve(m.S); }
+        };
+        worker.onerror = function () { inline(); };
+        worker.postMessage({ type: 'matrix', books: books });
+        setTimeout(function () { if (!settled) inline(); }, 15000); // a stuck worker should not hang the page
+      } catch (e) {
+        inline();
+      }
+    });
+  }
+
+  /* ---------- Layout: a square spiral with 45-degree corners ---------- */
+  function spiralPositions(count) {
+    var DIR = [[1, 0], [0, 1], [-1, 0], [0, -1]], DIAG = [[1, 1], [-1, 1], [-1, -1], [1, -1]];
+    var pts = [[0, 0]], x = 0, y = 0, k = 0;
+    while (pts.length < count) {
+      var d = k % 4, L = 1 + 2 * Math.floor((k + 1) / 2);
+      for (var i = 0; i < L && pts.length < count; i++) { x += DIR[d][0]; y += DIR[d][1]; pts.push([x, y]); }
+      if (pts.length < count) { x += DIAG[d][0]; y += DIAG[d][1]; pts.push([x, y]); }
+      k++;
+    }
+    return pts.map(function (p) { return [p[0] * PITCH, p[1] * PITCH]; });
+  }
+
+  /* ---------- Tour ---------- */
+  function todayStart() {
+    var d = new Date(), seed = d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+    return Math.floor(Oracle.seeded(seed)() * n);
+  }
+
+  function runTour(start) {
+    startIdx = start;
+    tourRes = Oracle.tour(S, n, start, { maxPasses: 30, timeMs: 2500 });
+    path = tourRes.path;
+    posOf = new Int32Array(n);
+    for (var k = 0; k < n; k++) posOf[path[k]] = k;
+    pos = spiralPositions(n);
+    var b = books[start];
+    $('start-now').textContent = 'Now starting from ' + b.t + (b.a ? ' — ' + b.a : '') + '.';
+    $('stat-coh').innerHTML = 'coherence <b>' + tourRes.mean.toFixed(3) + '</b> <span class="faint">(mean similarity of ' + (n - 1) + ' hops)</span>';
+    var wa = tourRes.worstAt;
+    $('stat-worst').innerHTML = 'worst jump <b>' + tourRes.worst.toFixed(3) + '</b> <span class="faint">at stop ' + (wa + 1) + ': </span><i>' + esc(short(books[path[wa - 1]].t, 26)) + ' → ' + esc(short(books[path[wa]].t, 26)) + '</i>';
+    setStatus(n + ' stops, ' + countRuns() + ' lines.');
+    render();
+  }
+
+  function countRuns() {
+    var r = 1;
+    for (var k = 1; k < n; k++) if (genreIdx[path[k]] !== genreIdx[path[k - 1]]) r++;
+    return r;
+  }
+
+  /* ---------- Rendering ---------- */
+  function el(name, attrs, parent) {
+    var e = document.createElementNS(SVG_NS, name);
+    for (var a in attrs) e.setAttribute(a, attrs[a]);
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function short(s, m) { s = String(s); return s.length > m ? s.slice(0, m - 1) + '…' : s; }
+  function mid(a, b) { return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]; }
+
+  function render() {
+    gLines.innerHTML = ''; gStations.innerHTML = ''; gLabels.innerHTML = ''; gMarks.innerHTML = ''; gRoute.innerHTML = '';
+    // Lines: one path per contiguous genre run, starting and ending halfway along the edges that change genre.
+    var k0 = 0;
+    for (var k = 1; k <= n; k++) {
+      if (k === n || genreIdx[path[k]] !== genreIdx[path[k0]]) {
+        var gi = genreIdx[path[k0]], d = '';
+        if (k0 > 0) { var m0 = mid(pos[k0 - 1], pos[k0]); d += 'M' + m0[0] + ' ' + m0[1] + ' L'; } else d += 'M';
+        for (var q = k0; q < k; q++) d += pos[q][0] + ' ' + pos[q][1] + (q < k - 1 ? ' L' : '');
+        if (k < n) { var m1 = mid(pos[k - 1], pos[k]); d += ' L' + m1[0] + ' ' + m1[1]; }
+        var attrs = { d: d, fill: 'none', stroke: colourOf(gi), 'stroke-width': 9, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'data-g': gi };
+        if (dashed(gi)) attrs['stroke-dasharray'] = '14 8';
+        el('path', attrs, gLines);
+        k0 = k;
+      }
+    }
+    // Stations
+    for (k = 0; k < n; k++) {
+      var b = path[k], inter = k === 0 || genreIdx[b] !== genreIdx[path[k - 1]];
+      var c = el('circle', { cx: pos[k][0], cy: pos[k][1], r: inter ? 7 : 4.5, fill: 'var(--station)', stroke: inter ? '#15171d' : colourOf(genreIdx[b]),
+        'stroke-width': inter ? 3 : 2.5, 'class': 'st', 'data-k': k }, gStations);
+      if (inter && k > 0) c.setAttribute('data-inter', '1');
+    }
+    // Labels: all rendered, shown by zoom level (see applyView)
+    for (k = 0; k < n; k++) {
+      b = path[k];
+      var t = el('text', { transform: 'translate(' + (pos[k][0] + 9) + ',' + (pos[k][1] - 7) + ') rotate(-45)', fill: '#e8e3d8', 'data-k': k }, gLabels);
+      t.textContent = short(books[b].t, 30);
+      if (k === 0 || genreIdx[b] !== genreIdx[path[k - 1]]) t.setAttribute('data-inter', '1');
+    }
+    // Start and end marks
+    var s0 = pos[0];
+    el('circle', { cx: s0[0], cy: s0[1], r: 12, fill: 'none', stroke: 'var(--accent)', 'stroke-width': 3 }, gMarks);
+    var st = el('text', { x: s0[0], y: s0[1] - 18, 'text-anchor': 'middle', fill: 'var(--accent)', 'font-size': 12 }, gMarks);
+    st.textContent = 'START';
+    var e0 = pos[n - 1];
+    var et = el('text', { x: e0[0], y: e0[1] + 24, 'text-anchor': 'middle', fill: '#e8e3d8', 'font-size': 11 }, gMarks);
+    et.textContent = 'END';
+    updateSelectionMarks();
+    applyView();
+  }
+
+  function applyView() {
+    gView.setAttribute('transform', 'translate(' + view.tx + ',' + view.ty + ') scale(' + view.k + ')');
+    var z = view.k;
+    var fs = 11 / z;
+    gLabels.setAttribute('font-size', fs.toFixed(2));
+    gLabels.setAttribute('data-mode', z >= 2.0 ? 'all' : (z >= 1.15 ? 'inter' : 'none'));
+    var mode = gLabels.getAttribute('data-mode');
+    gLabels.style.display = mode === 'none' ? 'none' : '';
+    if (mode !== 'none') {
+      var kids = gLabels.children;
+      for (var i = 0; i < kids.length; i++) kids[i].style.display = (mode === 'all' || kids[i].hasAttribute('data-inter')) ? '' : 'none';
+    }
+    gMarks.setAttribute('font-size', (12 / z).toFixed(2));
+  }
+
+  function fitView() {
+    var W = svg.clientWidth, H = svg.clientHeight;
+    if (!pos.length || !W || !H) return;
+    var minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    pos.forEach(function (p) { minX = Math.min(minX, p[0]); maxX = Math.max(maxX, p[0]); minY = Math.min(minY, p[1]); maxY = Math.max(maxY, p[1]); });
+    var pad = 30;
+    var k = Math.min((W - 2 * pad) / (maxX - minX + PITCH), (H - 2 * pad) / (maxY - minY + PITCH));
+    view.k = Math.max(0.05, Math.min(k, 3));
+    view.tx = W / 2 - view.k * (minX + maxX) / 2;
+    view.ty = H / 2 - view.k * (minY + maxY) / 2;
+    applyView();
+  }
+
+  function centreOn(k, zoom) {
+    var W = svg.clientWidth, H = svg.clientHeight;
+    if (zoom) view.k = zoom;
+    view.tx = W / 2 - view.k * pos[k][0];
+    view.ty = H / 2 - view.k * pos[k][1];
+    applyView();
+  }
+
+  function zoomAt(factor, cx, cy) {
+    var nk = Math.max(0.05, Math.min(8, view.k * factor));
+    view.tx = cx - (cx - view.tx) * (nk / view.k);
+    view.ty = cy - (cy - view.ty) * (nk / view.k);
+    view.k = nk;
+    applyView();
+  }
+
+  /* ---------- Pan, zoom, hover, click ---------- */
+  (function pointer() {
+    var pointers = {}, dragging = false, moved = 0, last = null, pinch = null;
+    svg.addEventListener('pointerdown', function (e) {
+      pointers[e.pointerId] = [e.clientX, e.clientY];
+      var ids = Object.keys(pointers);
+      if (ids.length === 1) { dragging = true; moved = 0; last = [e.clientX, e.clientY]; svg.classList.add('dragging'); }
+      else if (ids.length === 2) { pinch = pinchState(); }
+      svg.setPointerCapture(e.pointerId);
+      hideTip();
+    });
+    svg.addEventListener('pointermove', function (e) {
+      if (pointers[e.pointerId]) pointers[e.pointerId] = [e.clientX, e.clientY];
+      var ids = Object.keys(pointers);
+      if (ids.length === 2 && pinch) {
+        var p = pinchState();
+        var f = p.d / (pinch.d || 1);
+        var r = svg.getBoundingClientRect();
+        zoomAt(f, pinch.c[0] - r.left, pinch.c[1] - r.top);
+        view.tx += p.c[0] - pinch.c[0]; view.ty += p.c[1] - pinch.c[1];
+        applyView();
+        pinch = p; moved += 10;
+      } else if (dragging && ids.length === 1 && last) {
+        var dx = e.clientX - last[0], dy = e.clientY - last[1];
+        moved += Math.abs(dx) + Math.abs(dy);
+        view.tx += dx; view.ty += dy; last = [e.clientX, e.clientY];
+        applyView();
+      } else if (!dragging && e.pointerType === 'mouse') {
+        hover(e);
+      }
+    });
+    function end(e) {
+      delete pointers[e.pointerId];
+      if (Object.keys(pointers).length < 2) pinch = null;
+      if (Object.keys(pointers).length === 0) {
+        svg.classList.remove('dragging');
+        if (dragging && moved < 6) {
+          var t = e.target;
+          if (t && t.classList && t.classList.contains('st')) select(path[+t.getAttribute('data-k')], true);
+        }
+        dragging = false; last = null;
+      }
+    }
+    svg.addEventListener('pointerup', end);
+    svg.addEventListener('pointercancel', end);
+    svg.addEventListener('wheel', function (e) {
+      e.preventDefault();
+      var r = svg.getBoundingClientRect();
+      zoomAt(Math.exp(-e.deltaY * (e.deltaMode === 1 ? 0.05 : 0.0016)), e.clientX - r.left, e.clientY - r.top);
+    }, { passive: false });
+    svg.addEventListener('pointerleave', hideTip);
+    function pinchState() {
+      var ids = Object.keys(pointers), a = pointers[ids[0]], b = pointers[ids[1]];
+      return { d: Math.hypot(a[0] - b[0], a[1] - b[1]), c: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2] };
+    }
+  })();
+
+  var tip = $('tip'), tipK = -1;
+  function hover(e) {
+    var t = e.target;
+    if (!(t && t.classList && t.classList.contains('st'))) { hideTip(); return; }
+    var k = +t.getAttribute('data-k');
+    var r = $('mapwrap').getBoundingClientRect();
+    if (k !== tipK) {
+      tipK = k;
+      var b = books[path[k]], gi = genreIdx[path[k]], html = '<b>' + esc(b.t) + '</b>';
+      html += '<div class="g">' + esc(b.a || '') + (b.a && b.y ? ', ' : '') + (b.y || '') + '</div>';
+      html += '<div class="g"><span class="sw" style="background:' + colourOf(gi) + '"></span>' + esc(b.g) + ' · stop ' + (k + 1) + ' of ' + n + '</div>';
+      if (k > 0) {
+        var prev = path[k - 1], sh = Oracle.shared(vec, prev, path[k], 5), sim = S[prev * n + path[k]];
+        html += '<div>from <i>' + esc(short(books[prev].t, 40)) + '</i>: ' + (sh.length ? '<span class="k">' + esc(sh.join(', ')) + '</span>' : '<span class="faint">no shared words</span>');
+        html += ' <span class="faint">(' + sim.toFixed(2) + (genreIdx[prev] === gi ? ', same genre' : '') + ')</span></div>';
+      } else html += '<div class="k">the start of the route</div>';
+      tip.innerHTML = html;
+      tip.style.display = 'block';
+    }
+    var x = e.clientX - r.left + 14, y = e.clientY - r.top + 14;
+    if (x + 290 > r.width) x = Math.max(4, e.clientX - r.left - 294);
+    if (y + tip.offsetHeight + 8 > r.height) y = Math.max(4, e.clientY - r.top - tip.offsetHeight - 10);
+    tip.style.left = x + 'px'; tip.style.top = y + 'px';
+  }
+  function hideTip() { tip.style.display = 'none'; tipK = -1; }
+
+  /* ---------- Selection, neighbours, journey ---------- */
+  function updateSelectionMarks() {
+    var old = gMarks.querySelectorAll('[data-sel]');
+    for (var i = 0; i < old.length; i++) old[i].parentNode.removeChild(old[i]);
+    gRoute.innerHTML = '';
+    if (routeIdx && routeIdx.length > 1) {
+      var d = '';
+      routeIdx.forEach(function (b, i) { var p = pos[posOf[b]]; d += (i ? ' L' : 'M') + p[0] + ' ' + p[1]; });
+      el('path', { d: d, fill: 'none', stroke: 'var(--accent)', 'stroke-width': 3, 'stroke-dasharray': '6 5', 'stroke-linejoin': 'round', opacity: 0.9 }, gRoute);
+      routeIdx.forEach(function (b) { var p = pos[posOf[b]]; el('circle', { cx: p[0], cy: p[1], r: 9, fill: 'none', stroke: 'var(--accent)', 'stroke-width': 2, 'data-sel': 1 }, gMarks); });
+    }
+    if (selIdx >= 0 && posOf) {
+      var p = pos[posOf[selIdx]];
+      var c = el('circle', { cx: p[0], cy: p[1], r: 13, fill: 'none', stroke: 'var(--accent)', 'stroke-width': 3, 'data-sel': 1 }, gMarks);
+      el('animate', { attributeName: 'r', values: '11;15;11', dur: '1.6s', repeatCount: 'indefinite' }, c);
+    }
+    if (toIdx >= 0 && posOf) {
+      var p2 = pos[posOf[toIdx]];
+      el('circle', { cx: p2[0], cy: p2[1], r: 13, fill: 'none', stroke: '#fff', 'stroke-width': 2, 'stroke-dasharray': '4 3', 'data-sel': 1 }, gMarks);
+    }
+  }
+
+  function select(i, pan) {
+    selIdx = i;
+    $('book-q').value = i >= 0 ? books[i].t : '';
+    renderOracle();
+    updateSelectionMarks();
+    if (pan && i >= 0) centreOn(posOf[i], Math.max(view.k, 2.2));
+    writeHash();
+  }
+
+  function renderOracle() {
+    var box = $('selbook'), nextBox = $('next');
+    if (selIdx < 0) { box.innerHTML = 'Pick a book to see what to read next.'; nextBox.innerHTML = ''; $('journey-ui').style.display = 'none'; return; }
+    var b = books[selIdx], gi = genreIdx[selIdx], k = posOf[selIdx];
+    box.innerHTML = '<div class="t">' + esc(b.t) + '</div><div class="muted">' + esc(b.a || '') + (b.a && b.y ? ', ' : '') + (b.y || '') + '</div>' +
+      '<div class="pos"><span class="sw" style="display:inline-block;width:10px;height:10px;border-radius:3px;background:' + colourOf(gi) + ';margin-right:5px;vertical-align:-1px"></span>' + esc(b.g) + ' · stop ' + (k + 1) + ' of ' + n +
+      (k + 1 < n ? ' · next on the route: <a href="#" data-sel="' + path[k + 1] + '">' + esc(short(books[path[k + 1]].t, 34)) + '</a>' : '') + '</div>';
+    var html = '<h3>Read next</h3><ul class="stops">';
+    nn[selIdx].slice(0, 5).forEach(function (j) {
+      var sh = Oracle.shared(vec, selIdx, j, 4);
+      html += stopItem(j, sh.length ? sh.join(', ') : (genreIdx[j] === gi ? 'same genre only' : 'same language only'), S[selIdx * n + j].toFixed(2));
+    });
+    html += '</ul>';
+    nextBox.innerHTML = html;
+    $('journey-ui').style.display = '';
+    renderJourney();
+  }
+
+  function stopItem(j, note, sim) {
+    var b = books[j];
+    return '<li data-sel="' + j + '"><span class="dot" style="border-color:' + colourOf(genreIdx[j]) + '"></span><div class="body"><div><span class="t">' + esc(b.t) + '</span>' +
+      (b.a ? ' <span class="a">' + esc(b.a) + '</span>' : '') + '</div>' + (note ? '<div class="k">' + esc(note) + (sim ? ' <span class="s">' + sim + '</span>' : '') + '</div>' : '') + '</div></li>';
+  }
+
+  function renderJourney() {
+    var box = $('journey');
+    if (selIdx < 0 || toIdx < 0) { box.innerHTML = '<p class="faint" style="font-size:12px">Search a second book to see the stops between them on the ' + K_NEIGHBOURS + '-nearest-neighbour graph.</p>'; routeIdx = null; return; }
+    routeIdx = Oracle.route(S, n, nn, selIdx, toIdx);
+    if (!routeIdx) { box.innerHTML = '<p class="muted">No route: these two books sit in separate islands of the neighbour graph.</p>'; return; }
+    var html = '<p class="muted" style="font-size:13px">' + (routeIdx.length - 1) + ' hop' + (routeIdx.length === 2 ? '' : 's') + '</p><ul class="stops">';
+    routeIdx.forEach(function (j, i) {
+      var sh = i ? Oracle.shared(vec, routeIdx[i - 1], j, 4) : [];
+      html += stopItem(j, i ? (sh.length ? sh.join(', ') : 'genre or language only') : 'from here', i ? S[routeIdx[i - 1] * n + j].toFixed(2) : '');
+    });
+    box.innerHTML = html + '</ul>';
+  }
+
+  $('side').addEventListener('click', function (e) {
+    var t = e.target.closest('[data-sel]');
+    if (!t) return;
+    e.preventDefault();
+    select(+t.getAttribute('data-sel'), true);
+  });
+
+  /* ---------- Typeahead ---------- */
+  function norm(s) { return String(s).toLowerCase().normalize('NFKC'); }
+  function typeahead(inputId, listId, onPick) {
+    var input = $(inputId), list = $(listId), items = [], hi = -1;
+    function close() { list.classList.remove('show'); list.innerHTML = ''; items = []; hi = -1; }
+    function open() {
+      var q = norm(input.value.trim());
+      if (!q) { close(); return; }
+      var words = q.split(/\s+/);
+      items = [];
+      for (var i = 0; i < n && items.length < 10; i++) {
+        var hay = norm(books[i].t + ' ' + books[i].a);
+        var ok = true;
+        for (var w = 0; w < words.length && ok; w++) ok = hay.indexOf(words[w]) >= 0;
+        if (ok) items.push(i);
+      }
+      if (!items.length) { list.innerHTML = '<li class="faint">no such book</li>'; list.classList.add('show'); return; }
+      list.innerHTML = items.map(function (i) {
+        return '<li data-i="' + i + '"><span class="sw" style="background:' + colourOf(genreIdx[i]) + '"></span><span class="t">' + esc(books[i].t) + '</span><span class="a">' + esc(books[i].a) + '</span></li>';
+      }).join('');
+      list.classList.add('show'); hi = -1;
+    }
+    input.addEventListener('input', open);
+    input.addEventListener('focus', open);
+    input.addEventListener('keydown', function (e) {
+      if (!items.length) return;
+      if (e.key === 'ArrowDown') { hi = (hi + 1) % items.length; e.preventDefault(); }
+      else if (e.key === 'ArrowUp') { hi = (hi - 1 + items.length) % items.length; e.preventDefault(); }
+      else if (e.key === 'Enter') { var pick = items[hi < 0 ? 0 : hi]; close(); onPick(pick); e.preventDefault(); return; }
+      else if (e.key === 'Escape') { close(); return; }
+      else return;
+      var lis = list.children;
+      for (var i = 0; i < lis.length; i++) lis[i].classList.toggle('hi', i === hi);
+    });
+    list.addEventListener('mousedown', function (e) {
+      var li = e.target.closest('li[data-i]');
+      if (!li) return;
+      e.preventDefault();
+      var i = +li.getAttribute('data-i');
+      close(); onPick(i);
+    });
+    input.addEventListener('blur', function () { setTimeout(close, 150); });
+  }
+
+  /* ---------- Legend ---------- */
+  function buildLegend(counts) {
+    var ul = $('legend');
+    ul.innerHTML = genres.map(function (g, i) {
+      return '<li data-g="' + i + '"><span class="sw' + (dashed(i) ? ' dash' : '') + '" style="background:' + colourOf(i) + '"></span><span>' + esc(g) + '</span><span class="n">' + counts[g] + '</span></li>';
+    }).join('');
+    ul.addEventListener('click', function (e) {
+      var li = e.target.closest('li[data-g]');
+      if (!li) return;
+      var g = +li.getAttribute('data-g');
+      focusGenre = focusGenre === g ? -1 : g;
+      var lis = ul.children;
+      for (var i = 0; i < lis.length; i++) lis[i].classList.toggle('off', focusGenre >= 0 && i !== focusGenre);
+      var paths = gLines.children;
+      for (i = 0; i < paths.length; i++) paths[i].setAttribute('opacity', focusGenre < 0 || +paths[i].getAttribute('data-g') === focusGenre ? 1 : 0.12);
+      var sts = gStations.children;
+      for (i = 0; i < sts.length; i++) sts[i].setAttribute('opacity', focusGenre < 0 || genreIdx[path[+sts[i].getAttribute('data-k')]] === focusGenre ? 1 : 0.15);
+    });
+  }
+
+  /* ---------- Hash state ---------- */
+  function readHash() {
+    var h = location.hash.replace(/^#/, ''), out = {};
+    h.split('&').forEach(function (kv) { var p = kv.split('='); if (p[0]) out[decodeURIComponent(p[0])] = decodeURIComponent(p[1] || ''); });
+    return out;
+  }
+  var hashLock = false;
+  function writeHash() {
+    var parts = [];
+    if (startIdx >= 0 && startIdx !== todayStart()) parts.push('start=' + encodeURIComponent(books[startIdx].id));
+    if (selIdx >= 0) parts.push('book=' + encodeURIComponent(books[selIdx].id));
+    if (toIdx >= 0) parts.push('to=' + encodeURIComponent(books[toIdx].id));
+    hashLock = true;
+    try { history.replaceState(null, '', parts.length ? '#' + parts.join('&') : location.pathname + location.search); } catch (e) { /* file:// may refuse */ }
+    hashLock = false;
+  }
+
+  /* ---------- Export ---------- */
+  function readingList() {
+    var lines = ['Read-Order Oracle: a route through ' + n + ' books, starting from "' + books[startIdx].t + '"', 'coherence ' + tourRes.mean.toFixed(3) + ', worst jump ' + tourRes.worst.toFixed(3), ''];
+    for (var k = 0; k < n; k++) {
+      var b = books[path[k]];
+      lines.push((k + 1) + '. ' + b.t + (b.a ? ' — ' + b.a : '') + ' [' + b.g + ']');
+    }
+    return lines.join('\n');
+  }
+  $('btn-copy').addEventListener('click', function () {
+    var text = readingList(), btn = this;
+    function done(ok) { btn.textContent = ok ? 'Copied ' + n + ' lines' : 'Copy failed'; setTimeout(function () { btn.textContent = 'Copy reading list'; }, 1800); }
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(function () { done(true); }, function () { fallbackCopy(text, done); });
+    else fallbackCopy(text, done);
+  });
+  function fallbackCopy(text, done) {
+    var ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    var ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    document.body.removeChild(ta); done(ok);
+  }
+
+  $('btn-svg').addEventListener('click', function () {
+    var minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    pos.forEach(function (p) { minX = Math.min(minX, p[0]); maxX = Math.max(maxX, p[0]); minY = Math.min(minY, p[1]); maxY = Math.max(maxY, p[1]); });
+    var pad = 120, W = maxX - minX + 2 * pad, H = maxY - minY + 2 * pad;
+    var out = document.createElementNS(SVG_NS, 'svg');
+    out.setAttribute('xmlns', SVG_NS);
+    out.setAttribute('width', W); out.setAttribute('height', H);
+    out.setAttribute('viewBox', (minX - pad) + ' ' + (minY - pad) + ' ' + W + ' ' + H);
+    var style = document.createElementNS(SVG_NS, 'style');
+    style.textContent = 'text{font-family:Helvetica,Arial,sans-serif;font-weight:600}';
+    out.appendChild(style);
+    el('rect', { x: minX - pad, y: minY - pad, width: W, height: H, fill: '#15171d' }, out);
+    var g = gView.cloneNode(true);
+    g.removeAttribute('transform');
+    // Resolve CSS variables and show every label for the file
+    var all = g.querySelectorAll('*');
+    for (var i = 0; i < all.length; i++) {
+      var e = all[i];
+      ['fill', 'stroke'].forEach(function (a) {
+        var v = e.getAttribute(a);
+        if (v === 'var(--station)') e.setAttribute(a, '#f7f2e8');
+        else if (v === 'var(--accent)') e.setAttribute(a, '#f2c14e');
+      });
+      e.removeAttribute('style');
+      e.removeAttribute('class');
+    }
+    var lab = g.querySelector('#labels');
+    lab.setAttribute('font-size', '8'); lab.removeAttribute('style');
+    g.querySelector('#marks').setAttribute('font-size', '12');
+    var title = el('text', { x: minX - pad + 24, y: minY - pad + 40, fill: '#f3efe6', 'font-size': 26 }, out);
+    title.textContent = 'Read-Order Oracle — ' + n + ' books from ' + short(books[startIdx].t, 60);
+    out.appendChild(g);
+    var blob = new Blob([new XMLSerializer().serializeToString(out)], { type: 'image/svg+xml' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = 'read-order-oracle.svg';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
+  });
+
+  /* ---------- Buttons ---------- */
+  $('z-in').addEventListener('click', function () { zoomAt(1.5, svg.clientWidth / 2, svg.clientHeight / 2); });
+  $('z-out').addEventListener('click', function () { zoomAt(1 / 1.5, svg.clientWidth / 2, svg.clientHeight / 2); });
+  $('z-fit').addEventListener('click', fitView);
+  $('z-start').addEventListener('click', function () { centreOn(0, 2.4); });
+  $('btn-help').addEventListener('click', function () { $('help').classList.add('show'); });
+  $('btn-help-close').addEventListener('click', function () { $('help').classList.remove('show'); });
+  $('help').addEventListener('click', function (e) { if (e.target === this) this.classList.remove('show'); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') $('help').classList.remove('show'); });
+  $('btn-today').addEventListener('click', function () { setStart(todayStart()); });
+  window.addEventListener('resize', function () { if (pos.length) applyView(); });
+
+  function setStart(i) {
+    if (i === startIdx) return;
+    setStatus('Re-routing…');
+    setTimeout(function () {
+      runTour(i);
+      fitView();
+      writeHash();
+      $('start-q').value = '';
+      if (selIdx >= 0) { renderOracle(); updateSelectionMarks(); }
+    }, 10);
+  }
+
+  /* ---------- Boot ---------- */
+  loadCatalogue().then(function (list) {
+    if (!list.length) { setStatus('No books to route.'); return; }
+    prepare(list);
+    return computeMatrix().then(function (M) {
+      S = M;
+      setProgress(1);
+      setStatus('Finding the route…');
+      nn = Oracle.knn(S, n, K_NEIGHBOURS);
+      var h = readHash();
+      var start = (h.start && byId[h.start] !== undefined) ? byId[h.start] : todayStart();
+      runTour(start);
+      fitView();
+      $('progress').style.display = 'none';
+      ['start-q', 'book-q'].forEach(function (id) { $(id).disabled = false; });
+      $('btn-copy').disabled = false; $('btn-svg').disabled = false;
+      typeahead('start-q', 'start-list', function (i) { setStart(i); });
+      typeahead('book-q', 'book-list', function (i) { select(i, true); });
+      typeahead('to-q', 'to-list', function (i) { toIdx = i; $('to-q').value = books[i].t; renderJourney(); updateSelectionMarks(); writeHash(); });
+      if (h.to && byId[h.to] !== undefined) { toIdx = byId[h.to]; $('to-q').value = books[toIdx].t; }
+      if (h.book && byId[h.book] !== undefined) select(byId[h.book], true);
+      window.addEventListener('hashchange', function () {
+        if (hashLock) return;
+        var hh = readHash();
+        if (hh.start && byId[hh.start] !== undefined && byId[hh.start] !== startIdx) setStart(byId[hh.start]);
+        if (hh.book && byId[hh.book] !== undefined && byId[hh.book] !== selIdx) select(byId[hh.book], true);
+      });
+    });
+  }).catch(function (err) {
+    setStatus('Something went wrong: ' + err.message);
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Homophone Bridge</title>
+<meta name="description" content="A chain-of-sound puzzle across six languages: step from word to word by sound alone and see how far the meanings drift.">
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    --bg: #14110e;
+    --panel: #221b16;
+    --panel-2: #2d251e;
+    --line: #443628;
+    --ink: #f1e8da;
+    --ink-2: #b8a893;
+    --ink-3: #7f7264;
+    --water: #1c2a3a;
+    --water-2: #24374d;
+    --wood: #b98a5a;
+    --wood-dark: #7a5433;
+    --gold: #f2c14e;
+    --good: #5fd08a;
+    --bad: #e8635a;
+    --en: #5fb3c9; --ja: #e0656a; --es: #f2b84b; --fr: #7c8ff0; --de: #7fcf8a; --it: #c58ae6;
+    --mono: "SF Mono", Menlo, Consolas, "DejaVu Sans Mono", "Liberation Mono", monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); }
+  body {
+    font: 15px/1.45 -apple-system, "Segoe UI", Helvetica, Arial, "Hiragino Sans", "Yu Gothic", "IPAGothic", "Noto Sans CJK JP", sans-serif;
+    padding: 14px 16px 32px; max-width: 1180px; margin: 0 auto; overflow-x: hidden;
+  }
+  h1 { font-size: 22px; margin: 0; font-weight: 600; letter-spacing: 0.01em; }
+  header { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+  header .sub { color: var(--ink-2); font-size: 14px; }
+  header .spacer { flex: 1; }
+  header .btns { display: flex; gap: 6px; flex-wrap: wrap; }
+  button {
+    font: inherit; color: var(--ink); background: var(--panel-2); border: 1px solid var(--line);
+    border-radius: 7px; padding: 6px 12px; cursor: pointer;
+  }
+  button:hover { background: #3a2e24; }
+  button:active { transform: translateY(1px); }
+  button:disabled { opacity: 0.45; cursor: default; transform: none; }
+  button.small { font-size: 13px; padding: 4px 10px; }
+  button.on { border-color: var(--gold); color: var(--gold); }
+  input, select {
+    font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 7px; padding: 6px 10px;
+  }
+  input:focus, select:focus, button:focus-visible { outline: 1px solid var(--gold); outline-offset: 1px; }
+  .mono { font-family: var(--mono); }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+  .card h2 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-2); margin: 0 0 6px; font-weight: 600; }
+
+  /* language chips */
+  .chip { display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; padding: 1px 6px; border-radius: 4px; color: var(--bg); text-transform: uppercase; vertical-align: middle; }
+  .chip.en { background: var(--en); } .chip.ja { background: var(--ja); } .chip.es { background: var(--es); }
+  .chip.fr { background: var(--fr); } .chip.de { background: var(--de); } .chip.it { background: var(--it); }
+  .tx-en { color: var(--en); } .tx-ja { color: var(--ja); } .tx-es { color: var(--es); } .tx-fr { color: var(--fr); } .tx-de { color: var(--de); } .tx-it { color: var(--it); }
+
+  /* the river and the bridge */
+  #river {
+    position: relative; background: linear-gradient(180deg, var(--water) 0%, var(--water-2) 55%, var(--water) 100%);
+    border: 1px solid #2c3f55; border-radius: 12px; padding: 18px 0 24px; margin-bottom: 14px; overflow: hidden;
+  }
+  #river::before {
+    content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0.35;
+    background: repeating-linear-gradient(175deg, transparent 0 18px, rgba(255,255,255,0.05) 18px 20px);
+  }
+  #bridge { display: flex; align-items: stretch; gap: 0; overflow-x: auto; padding: 0 12px; scrollbar-width: thin; position: relative; }
+  .bank { flex: 0 0 auto; width: 48px; border-radius: 8px; background: linear-gradient(180deg, #3d3226, #2a2118); border: 1px solid #4a3b2c; display: flex; align-items: center; justify-content: center; writing-mode: vertical-rl; color: var(--ink-3); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; }
+  .bank.far { background: linear-gradient(180deg, #2a2118, #3d3226); }
+  .bank.far.reached { border-color: var(--gold); color: var(--gold); }
+  .plank {
+    flex: 0 0 auto; min-width: 118px; max-width: 160px; margin: 6px 0; padding: 8px 10px 9px;
+    background: linear-gradient(180deg, #c4955f 0%, var(--wood) 40%, #a67a4c 100%);
+    border: 1px solid var(--wood-dark); border-top: 4px solid var(--wood-dark); border-radius: 5px;
+    color: #2a1c10; box-shadow: 0 10px 14px rgba(0,0,0,0.45); cursor: pointer; text-align: center; position: relative;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .plank:hover { filter: brightness(1.06); }
+  .plank.en { border-top-color: var(--en); } .plank.ja { border-top-color: var(--ja); } .plank.es { border-top-color: var(--es); }
+  .plank.fr { border-top-color: var(--fr); } .plank.de { border-top-color: var(--de); } .plank.it { border-top-color: var(--it); }
+  .plank.current { outline: 2px solid var(--gold); outline-offset: 2px; }
+  .plank b { display: block; font-size: 16px; font-weight: 700; line-height: 1.2; word-break: break-word; }
+  .plank .kana { display: block; font-size: 11px; opacity: 0.8; }
+  .plank i { display: block; font-family: var(--mono); font-style: normal; font-size: 11px; opacity: 0.75; margin-top: 2px; }
+  .plank .n { position: absolute; top: 3px; left: 6px; font-size: 10px; opacity: 0.6; }
+  .gap { flex: 0 0 auto; width: 58px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #9fb7cf; font-family: var(--mono); font-size: 10px; line-height: 1.35; position: relative; }
+  .gap::before { content: ""; position: absolute; left: 4px; right: 4px; top: 50%; border-top: 2px dashed rgba(184,168,147,0.35); }
+  .gap span { background: rgba(20,28,40,0.85); padding: 0 3px; border-radius: 3px; position: relative; }
+  .gap .snd { color: #9fd0e6; } .gap .sem { color: var(--gold); }
+  .empty-slot { flex: 0 0 auto; width: 90px; margin: 6px 0; border: 1px dashed rgba(184,168,147,0.35); border-radius: 5px; opacity: 0.6; }
+  #river .caption { position: absolute; right: 12px; bottom: 4px; font-size: 11px; color: #7f95ad; }
+
+  /* main layout */
+  #layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr); gap: 14px; align-items: start; }
+  #left { display: grid; gap: 12px; }
+  #current .word { font-size: 34px; font-weight: 700; line-height: 1.15; margin: 4px 0 0; word-break: break-word; }
+  #current .kana { font-size: 18px; color: var(--ink-2); }
+  #current .phon { font-family: var(--mono); font-size: 17px; color: var(--ink); margin: 6px 0 2px; }
+  #current .gloss { color: var(--ink); margin-top: 4px; }
+  #current .def { color: var(--ink-2); font-size: 13px; }
+  #current .note { color: var(--ink-3); font-size: 12px; margin-top: 6px; }
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; }
+  .stats div { display: flex; justify-content: space-between; border-bottom: 1px dotted var(--line); padding: 2px 0; }
+  .stats b { font-variant-numeric: tabular-nums; font-weight: 600; }
+  .stats .score b { color: var(--gold); font-size: 17px; }
+  #message { color: var(--gold); min-height: 1.4em; font-size: 14px; }
+  #message.bad { color: var(--bad); }
+  .row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  #start-form { display: none; }
+  #free-form { display: none; }
+  body.mode-free #free-form { display: flex; }
+  body.mode-custom #start-form, body.mode-daily #start-form, body.mode-random #start-form { display: flex; }
+  #start-word, #free-word { flex: 1 1 140px; min-width: 0; }
+
+  /* candidates */
+  #cands { display: grid; gap: 6px; }
+  .cand {
+    display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 4px 10px; align-items: center;
+    background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; cursor: pointer; text-align: left; width: 100%; color: var(--ink);
+  }
+  .cand:hover { border-color: var(--wood); background: #352a20; }
+  .cand .k { grid-column: 1; grid-row: 1 / span 2; font-size: 11px; color: var(--ink-3); width: 1.4em; text-align: right; font-variant-numeric: tabular-nums; }
+  .cand .w { grid-column: 2; grid-row: 1; font-size: 17px; font-weight: 600; }
+  .cand .w .kana { font-size: 12px; color: var(--ink-2); font-weight: 400; margin-left: 6px; }
+  .cand .p { font-family: var(--mono); font-size: 13px; color: var(--ink-2); margin-left: 8px; }
+  .cand .g { grid-column: 2; grid-row: 2; font-size: 13px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cand .m { grid-column: 3; grid-row: 1 / span 2; text-align: right; font-family: var(--mono); font-size: 11px; line-height: 1.4; color: var(--ink-2); white-space: nowrap; }
+  .cand .m .snd { color: #9fd0e6; } .cand .m .sem { color: var(--gold); } .cand .m .sc { color: var(--ink); font-weight: 600; font-size: 13px; }
+  .cand .m .sc.neg { color: var(--bad); }
+  #cands .none { color: var(--ink-3); font-size: 14px; padding: 8px 2px; }
+  .legend { color: var(--ink-3); font-size: 12px; margin-top: 8px; font-family: var(--mono); }
+
+  /* result / hint */
+  #hint { display: none; }
+  #hint.show { display: block; }
+  #hint .chain { display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; font-size: 14px; margin: 4px 0; }
+  #hint .chain .arrow { color: var(--ink-3); }
+  #hint .chain .step { white-space: nowrap; }
+  #hint .chain .step i { font-family: var(--mono); font-style: normal; color: var(--ink-2); font-size: 12px; }
+
+  /* overlay help */
+  .overlay { position: fixed; inset: 0; display: none; align-items: flex-start; justify-content: center; background: rgba(12, 8, 5, 0.82); padding: 24px 16px; overflow-y: auto; z-index: 10; }
+  .overlay.show { display: flex; }
+  .overlay .box { max-width: 620px; width: 100%; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px 18px; }
+  .overlay h2 { margin: 0 0 8px; font-size: 20px; font-weight: 600; }
+  .overlay h3 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-2); margin: 14px 0 4px; }
+  .overlay p, .overlay li { font-size: 14px; color: var(--ink); margin: 6px 0; }
+  .overlay ul { padding-left: 18px; margin: 4px 0; }
+  .overlay code { font-family: var(--mono); font-size: 12px; background: var(--bg); padding: 0 4px; border-radius: 3px; }
+  .overlay a { color: var(--gold); }
+  #banner { display: none; background: #3a1f1c; border: 1px solid var(--bad); color: var(--ink); border-radius: 10px; padding: 10px 12px; margin-bottom: 12px; }
+  #banner.show { display: block; }
+
+  @media (max-width: 800px) {
+    #layout { grid-template-columns: 1fr; }
+    #current .word { font-size: 28px; }
+    .cand .g { white-space: normal; }
+    .cand .m { font-size: 10px; }
+    header .sub { flex-basis: 100%; }
+  }
+</style>
+</head>
+<body class="mode-daily">
+<header>
+  <h1>Homophone Bridge</h1>
+  <span class="sub">Cross a river of six languages on planks that sound alike; score for how far the meanings drift.</span>
+  <span class="spacer"></span>
+  <span class="btns">
+    <button class="small" id="btn-daily" title="today's start word">Daily</button>
+    <button class="small" id="btn-random" title="a random start word">Random</button>
+    <button class="small" id="btn-free" title="type any word in any of the six languages">Free mode</button>
+    <button class="small" id="btn-help">Help &amp; sources</button>
+  </span>
+</header>
+
+<div id="banner"></div>
+
+<div id="river">
+  <div id="bridge"></div>
+  <div class="caption" id="caption"></div>
+</div>
+
+<div id="layout">
+  <div id="left">
+    <div class="card" id="current">
+      <h2 id="current-title">Standing on</h2>
+      <div id="current-body"></div>
+    </div>
+
+    <div class="card">
+      <h2>Score</h2>
+      <div class="stats">
+        <div><span>steps</span><b id="st-steps">0 / 6</b></div>
+        <div><span>languages</span><b id="st-langs">1</b></div>
+        <div><span>sound cost Σ</span><b id="st-sound">0.00</b></div>
+        <div><span>meaning drift Σ</span><b id="st-sem">0.00</b></div>
+        <div><span>start → here</span><b id="st-far">0.00</b></div>
+        <div class="score"><span>score</span><b id="st-score">0.00</b></div>
+      </div>
+      <div id="message" style="margin-top:8px"></div>
+      <div class="row" style="margin-top:8px">
+        <button class="small" id="btn-undo">Undo</button>
+        <button class="small" id="btn-auto" title="beam search for the best six-step crossing from this start">Auto-cross</button>
+        <button class="small" id="btn-share">Share</button>
+        <button class="small" id="btn-restart" title="back to the start bank">Restart</button>
+      </div>
+      <form class="row" id="start-form" style="margin-top:8px" autocomplete="off">
+        <input id="start-word" placeholder="start from an English word…" aria-label="start word">
+        <button class="small" type="submit">Start</button>
+      </form>
+      <form class="row" id="free-form" style="margin-top:8px" autocomplete="off">
+        <input id="free-word" placeholder="any word: casa, Zeit, 時間, jikan…" aria-label="free mode word">
+        <select id="free-lang" aria-label="language">
+          <option value="auto">auto</option>
+          <option value="en">English</option><option value="ja">Japanese</option><option value="es">Spanish</option>
+          <option value="fr">French</option><option value="de">German</option><option value="it">Italian</option>
+        </select>
+        <button class="small" type="submit">Look up</button>
+      </form>
+    </div>
+
+    <div class="card" id="hint">
+      <h2 id="hint-title">Auto-cross</h2>
+      <div class="chain" id="hint-chain"></div>
+      <div class="row"><span id="hint-score" class="mono" style="color:var(--gold)"></span><span class="spacer"></span><button class="small" id="btn-adopt">Walk this bridge</button></div>
+    </div>
+  </div>
+
+  <div class="card" id="right">
+    <h2 id="cands-title">Next plank: the twelve closest sounds in other languages</h2>
+    <div id="cands"></div>
+    <div class="legend">≈ sound distance (0 = identical) · Δ meaning jump (1 = nothing in common) · step score = Δ − 1.5·≈</div>
+  </div>
+</div>
+
+<div class="overlay" id="help">
+  <div class="box">
+    <h2>Homophone Bridge</h2>
+    <p>A game of cross-lingual telephone. You start on an English word. Each plank must be a word in a <em>different</em> language from the one you are standing on, chosen because it <em>sounds</em> like it. The bridge is six planks long. The score rewards meaning that wanders while sound stays put:</p>
+    <p class="mono" style="color:var(--ink-2)">score = Σ meaning jump − 1.5 × Σ sound distance</p>
+    <h3>Sound</h3>
+    <p>Every word is squashed into a 28-symbol pronunciation (vowels a e i o u ə; consonants p b t d k g m n l r s z ʃ ʒ tʃ dʒ f v h θ w j). Distance is a weighted edit distance: swapping a vowel for a nearby vowel or a voiced stop for its voiceless twin is cheap; a vowel for a consonant is not; dropping a schwa is nearly free. It is divided by the words' average length so that short words are not automatically "close". Sounds were taken from Wiktionary IPA where available (98% of the French, German and Italian words, 28% of Spanish), from the CMU dictionary for English, from kana for Japanese, and otherwise from rule-based spelling-to-sound conversion per language.</p>
+    <h3>Meaning, crudely</h3>
+    <p>There are no embeddings here. The meaning jump between two words is <code>1 − (0.7·J<sub>words</sub> + 0.3·J<sub>topics</sub>)</code>, where the first term is the Jaccard overlap of the English gloss words and the second the overlap of their WordNet topic files (noun.food, verb.motion…). Two words whose glosses share nothing score a full 1.0 even when they are near-synonyms in spirit, so treat the numbers as a game rule, not as semantics. "Start → here" is the same measure between the first plank and the one you stand on.</p>
+    <h3>Modes</h3>
+    <ul>
+      <li><b>Daily</b>: one start word per day from a curated list of 215 English nouns and adjectives. <b>Random</b>: another one. You can also type your own English start word.</li>
+      <li><b>Free mode</b>: type any word in any of the six languages (kanji, kana or romaji for Japanese). Words missing from the lexicon are transcribed by rule and marked as such; there the chain is unbounded and the same language may repeat.</li>
+      <li><b>Auto-cross</b>: a beam search (width 8, eight candidates per step) for the highest-scoring six-plank bridge from the current start. Click a plank on the bridge to walk back to it.</li>
+      <li><b>Share</b> copies the chain as text; the address bar always holds the chain, so the link alone is enough.</li>
+    </ul>
+    <h3>Data and licences</h3>
+    <p>Roughly 2,600 common words per language, chosen by frequency; the whole lexicon is one static file built once with a small Node script from these freely licensed sources:</p>
+    <ul>
+      <li>Word inventories: <a href="https://github.com/hermitdave/FrequencyWords" target="_blank" rel="noopener">hermitdave/FrequencyWords</a> (2018 OpenSubtitles lists), CC BY-SA 4.0.</li>
+      <li>Spanish, French, German, Italian glosses and IPA: <a href="https://www.wikdict.com/" target="_blank" rel="noopener">WikDict</a> TEI dictionaries derived from Wiktionary, CC BY-SA 3.0.</li>
+      <li>Japanese words, readings and glosses: <a href="https://www.edrdg.org/wiki/index.php/JMdict-EDICT_Dictionary_Project" target="_blank" rel="noopener">JMdict</a> by the Electronic Dictionary Research and Development Group, CC BY-SA 4.0.</li>
+      <li>English pronunciations: the <a href="https://github.com/cmusphinx/cmudict" target="_blank" rel="noopener">CMU Pronouncing Dictionary</a>, BSD-style licence.</li>
+      <li>English synonyms, definitions and topic files for every gloss word: <a href="https://wordnet.princeton.edu/" target="_blank" rel="noopener">Princeton WordNet 3.1</a>, WordNet licence.</li>
+    </ul>
+    <p>The subtitle-derived lists are colloquial and a little lopsided (lots of "kill", "police" and "sorry"); glosses are the first dictionary senses and can be odd. The transcriptions are deliberately coarse: French <em>u</em> and German <em>ü</em> become plain <em>u</em>, Japanese long vowels and doubled consonants are dropped, English <em>th</em> in <em>the</em> is a <em>d</em>.</p>
+    <p style="text-align:center;margin-top:12px"><button id="btn-help-close">Close</button></p>
+  </div>
+</div>
+
+<script src="g2p.js"></script>
+<script src="lexicon.js"></script>
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var G = window.HB_G2P, LEX = window.HB_LEXICON;
+  if (!G || !LEX) {
+    $('banner').textContent = 'The lexicon (lexicon.js) or the sound rules (g2p.js) failed to load, so there is nothing to bridge. Reload the page, or check that both files sit next to index.html.';
+    $('banner').classList.add('show');
+    return;
+  }
+
+  var LANG_NAME = { en: 'English', ja: 'Japanese', es: 'Spanish', fr: 'French', de: 'German', it: 'Italian' };
+  var LAMBDA = 1.5, STEPS = 6, K = 12, BEAM = 8, BRANCH = 8;
+
+  /* ------------------------------------------------------------ lexicon */
+  var GLUE = {};
+  'to a an the of in on at for with by or and be is are sth sb one ones someone something oneself one\'s etc as from into up out off that this it its not which who very'.split(' ').forEach(function (w) { GLUE[w] = 1; });
+  /* Same tokeniser as the build script, so tokens line up with the category map. */
+  function tokens(text) {
+    var out = {}, parts = text.toLowerCase().split(/[^a-z']+/);
+    for (var i = 0; i < parts.length; i++) {
+      var w = parts[i].replace(/^'+|'+$/g, '');
+      if (w.length < 2 || GLUE[w]) continue;
+      if (w.length > 3 && /[^su]s$/.test(w)) w = w.slice(0, -1);
+      out[w] = 1;
+    }
+    return Object.keys(out);
+  }
+  var entries = [], byKey = {}, byWord = {}, buckets = [];
+  LEX.langs.forEach(function (lang) {
+    LEX.words[lang].forEach(function (row) {
+      var e = lang === 'ja'
+        ? { lang: lang, word: row[0], kana: row[1], romaji: row[2], phon: row[3], gloss: row[4], def: '' }
+        : { lang: lang, word: row[0], phon: row[1], gloss: row[2], def: row[3] || '' };
+      e.id = entries.length;
+      e.toks = lang === 'en' ? [e.word].concat(tokens(e.gloss)) : tokens(e.gloss);
+      var cats = {};
+      e.toks.forEach(function (t) { var c = LEX.cats[t]; if (c) c.split(',').forEach(function (x) { cats[x] = 1; }); });
+      e.cats = Object.keys(cats);
+      entries.push(e);
+      var lw = e.word.toLowerCase();
+      byKey[lang + ':' + lw] = e;
+      (byWord[lw] = byWord[lw] || []).push(e);
+      if (lang === 'ja') { byKey['ja:' + e.kana] = byKey['ja:' + e.kana] || e; byKey['ja:' + e.romaji] = byKey['ja:' + e.romaji] || e; }
+      (buckets[e.phon.length] = buckets[e.phon.length] || []).push(e);
+    });
+  });
+
+  /* ------------------------------------------------------------ distances */
+  function jaccard(a, b) {
+    if (!a.length || !b.length) return 0;
+    var set = {}, inter = 0, i;
+    for (i = 0; i < a.length; i++) set[a[i]] = 1;
+    for (i = 0; i < b.length; i++) if (set[b[i]]) inter++;
+    return inter / (a.length + b.length - inter);
+  }
+  function semJump(a, b) { return 1 - (0.7 * jaccard(a.toks, b.toks) + 0.3 * jaccard(a.cats, b.cats)); }
+  function soundNorm(a, b, raw) { return raw / Math.max(1.5, (a.phon.length + b.phon.length) / 2); }
+  function stepScore(jump, snd) { return jump - LAMBDA * snd; }
+
+  /* The twelve (k) closest-sounding entries to e, searched over length buckets. */
+  function neighbours(e, opt) {
+    var k = opt.k || K, top = [], L = e.phon.length, worst = Infinity;
+    var span = L <= 3 ? 2 : 3;
+    for (var len = Math.max(1, L - span); len <= L + span; len++) {
+      var b = buckets[len]; if (!b) continue;
+      var scale = Math.max(1.5, (L + len) / 2);
+      for (var i = 0; i < b.length; i++) {
+        var c = b[i];
+        if (c === e || (opt.excludeLang && c.lang === opt.excludeLang) || (opt.exclude && opt.exclude[c.id])) continue;
+        if (c.word.toLowerCase() === e.word.toLowerCase()) continue; /* identical loanwords are not a bridge */
+        var limit = top.length >= k ? worst * scale : undefined;
+        var raw = G.soundDistance(e.phon, c.phon, limit);
+        var d = raw / scale;
+        if (top.length >= k && d >= worst) continue;
+        var j = top.length;
+        top.push(null);
+        while (j > 0 && top[j - 1].d > d) { top[j] = top[j - 1]; j--; }
+        top[j] = { e: c, d: d, raw: raw };
+        if (top.length > k) top.pop();
+        worst = top[top.length - 1].d;
+      }
+    }
+    for (var t = 0; t < top.length; t++) { top[t].jump = semJump(e, top[t].e); top[t].score = stepScore(top[t].jump, top[t].d); }
+    return top;
+  }
+  /* Beam search for the best STEPS-plank crossing from start. */
+  function autoCross(start, steps, width, branch) {
+    var beams = [{ path: [start], score: 0, ids: {} }];
+    beams[0].ids[start.id] = 1;
+    for (var d = 0; d < steps; d++) {
+      var next = [];
+      beams.forEach(function (b) {
+        var cur = b.path[b.path.length - 1];
+        neighbours(cur, { excludeLang: cur.lang, exclude: b.ids, k: branch }).forEach(function (c) {
+          var ids = {}; for (var id in b.ids) ids[id] = 1; ids[c.e.id] = 1;
+          next.push({ path: b.path.concat(c.e), score: b.score + c.score, ids: ids });
+        });
+      });
+      next.sort(function (x, y) { return y.score - x.score; });
+      var seen = {}, kept = [];
+      for (var i = 0; i < next.length && kept.length < width; i++) {
+        var last = next[i].path[next[i].path.length - 1].id;
+        if (seen[last]) continue; seen[last] = 1; kept.push(next[i]);
+      }
+      if (!kept.length) break;
+      beams = kept;
+    }
+    return beams[0];
+  }
+
+  /* ------------------------------------------------------------ state */
+  var state = { mode: 'daily', chain: [], links: [], best: null, seed: '' };
+  function today() { var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+  function hashStr(s) { var h = 2166136261; for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return h; }
+  function dailyStart(seed) { return byKey['en:' + LEX.starts[hashStr(seed) % LEX.starts.length]]; }
+  function isFree() { return state.mode === 'free'; }
+  function crossed() { return !isFree() && state.chain.length > STEPS; }
+
+  function setMode(m) {
+    state.mode = m;
+    document.body.className = 'mode-' + m;
+    ['daily', 'random', 'free'].forEach(function (x) { $('btn-' + x).classList.toggle('on', x === m); });
+  }
+  function startFrom(entry, mode, seed) {
+    setMode(mode);
+    state.chain = [entry]; state.links = []; state.best = null; state.seed = seed || '';
+    $('hint').classList.remove('show');
+    setMessage('');
+    render();
+  }
+  function step(cand) {
+    if (crossed()) return;
+    state.chain.push(cand.e);
+    state.links.push({ d: cand.d, jump: cand.jump, score: cand.score });
+    render();
+    if (crossed()) finish();
+  }
+  function truncateTo(n) { /* walk back to plank n */
+    if (n >= state.chain.length - 1) return;
+    state.chain = state.chain.slice(0, n + 1); state.links = state.links.slice(0, n);
+    setMessage('');
+    render();
+  }
+  function totals() {
+    var s = 0, j = 0, sc = 0;
+    state.links.forEach(function (l) { s += l.d; j += l.jump; sc += l.score; });
+    return { sound: s, sem: j, score: sc };
+  }
+  function finish() {
+    var t = totals(), best = state.best || (state.best = autoCross(state.chain[0], STEPS, BEAM, BRANCH));
+    var msg = 'Crossed! Score ' + t.score.toFixed(2) + '. ';
+    if (t.score >= best.score - 1e-9) msg += 'That beats or matches the auto-cross search.';
+    else msg += 'The beam search found ' + best.score.toFixed(2) + '; see the hint below.';
+    setMessage(msg);
+    showHint(best, 'Best crossing found');
+  }
+  function setMessage(txt, bad) { $('message').textContent = txt; $('message').classList.toggle('bad', !!bad); }
+
+  /* ------------------------------------------------------------ rendering */
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function chip(lang) { return '<span class="chip ' + lang + '">' + lang + '</span>'; }
+  function ipa(e) { return '/' + G.toIPA(e.phon) + '/'; }
+  function wordHTML(e) {
+    if (e.lang === 'ja') {
+      return esc(e.word) + (e.word !== e.kana ? '<span class="kana">' + esc(e.kana) + ' · ' + esc(e.romaji) + '</span>' : '<span class="kana">' + esc(e.romaji) + '</span>');
+    }
+    return esc(e.word);
+  }
+
+  function renderBridge() {
+    var h = '<div class="bank">start</div>';
+    state.chain.forEach(function (e, i) {
+      if (i > 0) {
+        var l = state.links[i - 1];
+        h += '<div class="gap"><span class="snd">≈' + l.d.toFixed(2) + '</span><span class="sem">Δ' + l.jump.toFixed(2) + '</span></div>';
+      }
+      h += '<div class="plank ' + e.lang + (i === state.chain.length - 1 ? ' current' : '') + '" data-i="' + i + '" title="' + (i === state.chain.length - 1 ? 'you are here' : 'walk back to this plank') + '">'
+        + '<span class="n">' + i + '</span>'
+        + '<b>' + esc(e.word) + '</b>'
+        + (e.lang === 'ja' ? '<span class="kana">' + esc(e.word !== e.kana ? e.kana + ' ' + e.romaji : e.romaji) + '</span>' : '')
+        + '<i>' + esc(ipa(e)) + '</i></div>';
+    });
+    if (!isFree()) {
+      for (var k = state.chain.length; k <= STEPS; k++) h += '<div class="gap"></div><div class="empty-slot"></div>';
+      h += '<div class="gap"></div>';
+    } else h += '<div class="gap"></div>';
+    h += '<div class="bank far' + (crossed() ? ' reached' : '') + '">far bank</div>';
+    $('bridge').innerHTML = h;
+    var planks = $('bridge').querySelectorAll('.plank');
+    for (var i = 0; i < planks.length; i++) planks[i].addEventListener('click', function () { truncateTo(parseInt(this.getAttribute('data-i'), 10)); });
+    /* Scroll just far enough that the current plank (and a little water beyond it) is visible. */
+    var br = $('bridge'), cur = planks[planks.length - 1];
+    if (cur) {
+      var need = cur.offsetLeft + cur.offsetWidth + 70 - br.clientWidth;
+      br.scrollLeft = Math.max(0, need);
+    }
+    $('caption').textContent = state.mode === 'daily' ? 'daily bridge · ' + state.seed : state.mode === 'free' ? 'free mode' : state.mode === 'random' ? 'random start' : 'custom start';
+  }
+
+  function renderCurrent() {
+    var e = state.chain[state.chain.length - 1];
+    var h = '<div>' + chip(e.lang) + ' <span style="color:var(--ink-2);font-size:13px">' + LANG_NAME[e.lang] + (state.chain.length === 1 ? ' · start' : ' · plank ' + (state.chain.length - 1)) + '</span></div>';
+    h += '<div class="word tx-' + e.lang + '">' + esc(e.word) + '</div>';
+    if (e.lang === 'ja') h += '<div class="kana">' + esc(e.word !== e.kana ? e.kana + ' · ' + e.romaji : e.romaji) + '</div>';
+    h += '<div class="phon">' + esc(ipa(e)) + ' <span style="color:var(--ink-3);font-size:12px;font-family:inherit">' + esc(e.phon) + '</span></div>';
+    if (e.lang === 'en') {
+      h += '<div class="gloss">' + (e.gloss ? esc(e.gloss) : '<span style="color:var(--ink-3)">no listed synonyms</span>') + '</div>';
+      if (e.def) h += '<div class="def">' + esc(e.def) + '</div>';
+    } else h += '<div class="gloss">' + esc(e.gloss) + '</div>';
+    if (e.adhoc) h += '<div class="note">Not in the lexicon: transcribed by ' + esc(LANG_NAME[e.lang]) + ' spelling rules, no gloss, so every meaning jump from here is 1.</div>';
+    $('current-body').innerHTML = h;
+    $('current-title').textContent = crossed() ? 'Far bank' : 'Standing on';
+  }
+
+  function renderStats() {
+    var t = totals(), langs = {};
+    state.chain.forEach(function (e) { langs[e.lang] = 1; });
+    $('st-steps').textContent = isFree() ? String(state.links.length) : state.links.length + ' / ' + STEPS;
+    $('st-langs').textContent = String(Object.keys(langs).length);
+    $('st-sound').textContent = t.sound.toFixed(2);
+    $('st-sem').textContent = t.sem.toFixed(2);
+    $('st-far').textContent = state.chain.length > 1 ? semJump(state.chain[0], state.chain[state.chain.length - 1]).toFixed(2) : '0.00';
+    $('st-score').textContent = (t.score >= 0 ? '' : '−') + Math.abs(t.score).toFixed(2);
+    $('btn-undo').disabled = state.chain.length < 2;
+  }
+
+  function renderCands() {
+    var e = state.chain[state.chain.length - 1];
+    if (crossed()) {
+      $('cands').innerHTML = '<div class="none">You have reached the far bank. Share the bridge, walk back to a plank to try another route, or start a new one.</div>';
+      $('cands-title').textContent = 'Crossed';
+      return;
+    }
+    var used = {}; state.chain.forEach(function (x) { used[x.id] = 1; });
+    /* Closest sounds, but at most five per language so the list is not all German. */
+    var wide = neighbours(e, { excludeLang: isFree() ? null : e.lang, exclude: used, k: K * 3 }), perLang = {}, list = [];
+    for (var w = 0; w < wide.length && list.length < K; w++) {
+      var lg = wide[w].e.lang; perLang[lg] = (perLang[lg] || 0) + 1;
+      if (perLang[lg] <= 5) list.push(wide[w]);
+    }
+    $('cands-title').textContent = isFree() ? 'Nearest sounds in any language' : 'Next plank: the closest sounds in other languages (at most five per language)';
+    if (!list.length) { $('cands').innerHTML = '<div class="none">Nothing sounds like this. Walk back a plank.</div>'; return; }
+    var h = '';
+    list.forEach(function (c, i) {
+      var x = c.e;
+      h += '<button class="cand" data-i="' + i + '">'
+        + '<span class="k">' + (i + 1) + '</span>'
+        + '<span class="w">' + chip(x.lang) + ' ' + esc(x.word) + (x.lang === 'ja' ? '<span class="kana">' + esc(x.word !== x.kana ? x.kana + ' ' + x.romaji : x.romaji) + '</span>' : '') + '<span class="p">' + esc(ipa(x)) + '</span></span>'
+        + '<span class="m"><span class="snd">≈ ' + c.d.toFixed(2) + '</span><br><span class="sem">Δ ' + c.jump.toFixed(2) + '</span><br><span class="sc' + (c.score < 0 ? ' neg' : '') + '">' + (c.score >= 0 ? '+' : '−') + Math.abs(c.score).toFixed(2) + '</span></span>'
+        + '<span class="g">' + esc(x.gloss || x.def || '') + '</span>'
+        + '</button>';
+    });
+    $('cands').innerHTML = h;
+    var btns = $('cands').querySelectorAll('.cand');
+    for (var i = 0; i < btns.length; i++) btns[i].addEventListener('click', function () { step(list[parseInt(this.getAttribute('data-i'), 10)]); });
+    state.cands = list;
+  }
+
+  function showHint(best, title) {
+    var h = '';
+    best.path.forEach(function (e, i) {
+      if (i) h += '<span class="arrow">→</span>';
+      h += '<span class="step">' + chip(e.lang) + ' ' + esc(e.word) + (e.lang === 'ja' ? ' <i>' + esc(e.romaji) + '</i>' : '') + ' <i>' + esc(ipa(e)) + '</i></span>';
+    });
+    $('hint-chain').innerHTML = h;
+    $('hint-title').textContent = title;
+    $('hint-score').textContent = 'score ' + best.score.toFixed(2);
+    $('hint').classList.add('show');
+    state.best = best;
+  }
+
+  function writeHash() {
+    var parts = state.chain.map(function (e) { return e.lang + ':' + (e.adhoc ? '~' : '') + e.word; });
+    var h = '#' + (state.mode === 'daily' ? 'd=' + state.seed + '&' : state.mode === 'free' ? 'f=1&' : '') + 'c=' + encodeURIComponent(parts.join('|'));
+    try { history.replaceState(null, '', h); } catch (err) { location.hash = h; }
+  }
+  function render() { renderBridge(); renderCurrent(); renderStats(); renderCands(); writeHash(); }
+
+  /* ------------------------------------------------------------ lookups */
+  function lookup(word, lang) {
+    var w = word.trim(), lw = w.toLowerCase();
+    if (!w) return null;
+    if (lang && lang !== 'auto') return byKey[lang + ':' + lw] || (lang === 'ja' ? byKey['ja:' + G.kataToHira(w)] : null) || null;
+    if (G.hasJapanese(w)) return byKey['ja:' + w] || byKey['ja:' + G.kataToHira(w)] || null;
+    var hits = byWord[lw];
+    if (hits && hits.length) { /* prefer English, then the order of the language list */
+      hits = hits.slice().sort(function (a, b) { return LEX.langs.indexOf(a.lang) - LEX.langs.indexOf(b.lang); });
+      return hits[0];
+    }
+    return byKey['ja:' + lw] || null;
+  }
+  /* Build a throwaway entry for a word that is not in the lexicon. */
+  function adhoc(word, lang) {
+    var w = word.trim();
+    if (lang === 'auto') lang = G.hasJapanese(w) ? 'ja' : /[äöüß]/i.test(w) ? 'de' : /[ñ¿¡]/i.test(w) ? 'es' : /[çœàèùâêîôû]/i.test(w) ? 'fr' : 'en';
+    var phon = G.g2p(lang, w);
+    if (!phon) return null;
+    return { id: -1 - hashStr(lang + ':' + w) % 1e6, lang: lang, word: w, kana: lang === 'ja' ? (G.isKana(w) ? w : '') : '', romaji: lang === 'ja' ? (G.isKana(w) ? G.kanaToRomaji(w) : w) : '', phon: phon, gloss: '', def: '', toks: [], cats: [], adhoc: true };
+  }
+  function share() {
+    var t = totals(), lines = [];
+    lines.push('Homophone Bridge' + (state.mode === 'daily' ? ' ' + state.seed : '') + ' — score ' + t.score.toFixed(2) + (crossed() ? ' (crossed)' : ''));
+    lines.push(state.chain.map(function (e) { return e.word + (e.lang === 'ja' && e.word !== e.kana ? ' (' + e.romaji + ')' : '') + ' [' + e.lang + ']'; }).join(' → '));
+    lines.push(state.chain.map(function (e) { return ipa(e); }).join(' → '));
+    lines.push(location.href);
+    var text = lines.join('\n');
+    function done() { setMessage('Copied the bridge to the clipboard.'); }
+    function fail() { setMessage('Could not copy; the bridge is in the address bar.', true); }
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fail);
+    else {
+      var ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); done(); } catch (err) { fail(); }
+      document.body.removeChild(ta);
+    }
+  }
+
+  /* ------------------------------------------------------------ wiring */
+  $('btn-daily').addEventListener('click', function () { var s = today(); startFrom(dailyStart(s), 'daily', s); });
+  $('btn-random').addEventListener('click', function () { startFrom(byKey['en:' + LEX.starts[Math.floor(Math.random() * LEX.starts.length)]], 'random'); });
+  $('btn-free').addEventListener('click', function () { setMode('free'); $('free-word').focus(); render(); });
+  $('btn-help').addEventListener('click', function () { $('help').classList.add('show'); });
+  $('btn-help-close').addEventListener('click', function () { $('help').classList.remove('show'); });
+  $('help').addEventListener('click', function (ev) { if (ev.target === $('help')) $('help').classList.remove('show'); });
+  document.addEventListener('keydown', function (ev) {
+    if (ev.key === 'Escape') $('help').classList.remove('show');
+    if (ev.target.tagName === 'INPUT' || ev.target.tagName === 'SELECT') return;
+    if (ev.key >= '1' && ev.key <= '9' && state.cands && !crossed()) { var c = state.cands[parseInt(ev.key, 10) - 1]; if (c) step(c); }
+    if (ev.key === 'Backspace' || ev.key === 'u') { if (state.chain.length > 1) truncateTo(state.chain.length - 2); }
+  });
+  $('btn-undo').addEventListener('click', function () { if (state.chain.length > 1) truncateTo(state.chain.length - 2); });
+  $('btn-restart').addEventListener('click', function () { truncateTo(0); $('hint').classList.remove('show'); });
+  $('btn-share').addEventListener('click', share);
+  $('btn-auto').addEventListener('click', function () {
+    var t0 = performance.now();
+    var best = autoCross(state.chain[0], STEPS, BEAM, BRANCH);
+    showHint(best, 'Auto-cross from ' + state.chain[0].word + ' (' + Math.round(performance.now() - t0) + ' ms)');
+  });
+  $('btn-adopt').addEventListener('click', function () {
+    if (!state.best) return;
+    var p = state.best.path;
+    state.chain = [p[0]]; state.links = [];
+    for (var i = 1; i < p.length; i++) {
+      var raw = G.soundDistance(p[i - 1].phon, p[i].phon), d = soundNorm(p[i - 1], p[i], raw), j = semJump(p[i - 1], p[i]);
+      state.chain.push(p[i]); state.links.push({ d: d, jump: j, score: stepScore(j, d) });
+    }
+    if (isFree()) setMode('custom');
+    setMessage('Walking the searched bridge.');
+    render();
+  });
+  $('start-form').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var w = $('start-word').value.trim(); if (!w) return;
+    var e = byKey['en:' + w.toLowerCase()];
+    if (!e) { setMessage('"' + w + '" is not among the ' + LEX.words.en.length + ' English words here. Free mode takes anything.', true); return; }
+    startFrom(e, 'custom');
+    $('start-word').value = '';
+  });
+  $('free-form').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var w = $('free-word').value.trim(), lang = $('free-lang').value; if (!w) return;
+    var e = lookup(w, lang) || adhoc(w, lang);
+    if (!e) { setMessage('Could not transcribe that.', true); return; }
+    startFrom(e, 'free');
+    if (e.adhoc) setMessage('Not in the lexicon; transcribed by rule.');
+  });
+
+  /* Restore a chain from the hash, else start today's bridge. */
+  function fromHash() {
+    var h = location.hash.slice(1); if (!h) return false;
+    var params = {};
+    h.split('&').forEach(function (kv) { var i = kv.indexOf('='); if (i > 0) params[kv.slice(0, i)] = decodeURIComponent(kv.slice(i + 1)); });
+    if (!params.c) return false;
+    var chain = [];
+    var parts = params.c.split('|');
+    for (var i = 0; i < parts.length; i++) {
+      var p = parts[i], ci = p.indexOf(':'); if (ci < 0) return false;
+      var lang = p.slice(0, ci), word = p.slice(ci + 1), e;
+      if (word[0] === '~') e = adhoc(word.slice(1), lang); else e = byKey[lang + ':' + word.toLowerCase()];
+      if (!e) return false;
+      chain.push(e);
+    }
+    var mode = params.f ? 'free' : params.d === today() ? 'daily' : params.d ? 'custom' : 'custom';
+    startFrom(chain[0], mode, params.d || '');
+    for (i = 1; i < chain.length; i++) {
+      var raw = G.soundDistance(chain[i - 1].phon, chain[i].phon), d = soundNorm(chain[i - 1], chain[i], raw), j = semJump(chain[i - 1], chain[i]);
+      state.chain.push(chain[i]); state.links.push({ d: d, jump: j, score: stepScore(j, d) });
+    }
+    render();
+    if (crossed()) finish();
+    return true;
+  }
+  if (!fromHash()) { var s = today(); startFrom(dailyStart(s), 'daily', s); }
+  window.addEventListener('hashchange', function () { if (!location.hash) { var s = today(); startFrom(dailyStart(s), 'daily', s); } });
+
+  /* Exposed for the Node/console checks. */
+  window.HB = { entries: entries, neighbours: neighbours, autoCross: autoCross, semJump: semJump, lookup: lookup, state: state };
+})();
+</script>
+</body>
+</html>

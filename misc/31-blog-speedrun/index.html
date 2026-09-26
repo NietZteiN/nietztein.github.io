@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Blog Post Speedrun</title>
+<link rel="icon" href="data:,">
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" onerror="window.__markedFailed=true"></script>
+<script src="core.js"></script>
+<style>
+  /* Page tokens follow the reader's colour scheme; the timer panel is always dark. */
+  :root {
+    --bg: #f6f1e8;
+    --bg-2: #efe7da;
+    --panel: #fffaf2;
+    --line: #dccfbc;
+    --ink: #221c16;
+    --ink-2: #6f6255;
+    --accent: #8a5a2b;
+    --link: #8a4a1e;
+    --good: #2d9d5f;
+    --bad: #cf4b42;
+    --gold: #b78a1f;
+    --code-bg: #ede4d5;
+    --t-bg: #0d0b09;
+    --t-bg-2: #171310;
+    --t-line: #2c231c;
+    --t-ink: #f1e8da;
+    --t-ink-2: #9a8b78;
+    --t-good: #5fd08a;
+    --t-bad: #e8635a;
+    --t-gold: #f2c14e;
+    --mono: "SF Mono", "Cascadia Mono", Consolas, "Roboto Mono", "DejaVu Sans Mono", Menlo, monospace;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif CJK JP", serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #17120e; --bg-2: #1f1813; --panel: #241b15; --line: #453628;
+      --ink: #f1e8da; --ink-2: #b8a893; --accent: #d9a568; --link: #e0b077;
+      --good: #5fd08a; --bad: #e8635a; --gold: #f2c14e; --code-bg: #2f241c;
+    }
+  }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); }
+  body {
+    font: 15px/1.45 -apple-system, "Segoe UI", Helvetica, Arial, "Hiragino Sans", "Yu Gothic", "IPAGothic", "Noto Sans CJK JP", sans-serif;
+    padding: 14px 16px 24px;
+    overflow-x: hidden;
+  }
+  body.in-run { padding-right: 336px; }
+  h1 { font-size: 22px; margin: 0; font-weight: 600; letter-spacing: 0.01em; }
+  header { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; }
+  header .sub { color: var(--ink-2); font-size: 14px; }
+  header .spacer { flex: 1; }
+  header a { color: var(--ink-2); font-size: 13px; text-decoration: none; }
+  header a:hover { text-decoration: underline; }
+  button {
+    font: inherit; color: var(--ink); background: var(--bg-2); border: 1px solid var(--line);
+    border-radius: 7px; padding: 6px 12px; cursor: pointer;
+  }
+  button:hover { filter: brightness(0.96); }
+  button:active { transform: translateY(1px); }
+  button.small { font-size: 13px; padding: 4px 10px; }
+  button.primary { background: var(--accent); color: #fff; border-color: transparent; }
+  button:disabled { opacity: 0.5; cursor: default; }
+  input[type=text] { font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+  .card h2 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-2); margin: 0 0 8px; font-weight: 600; }
+  .muted { color: var(--ink-2); }
+  .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  .good { color: var(--good); } .bad { color: var(--bad); } .gold { color: var(--gold); }
+  #notice { display: none; margin-bottom: 12px; border-color: var(--gold); }
+  #notice.show { display: block; }
+
+  /* Category select screen */
+  #select { max-width: 900px; }
+  .cats { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; margin-bottom: 14px; }
+  .cat { text-align: left; padding: 10px 12px; border-radius: 10px; display: block; }
+  .cat b { display: block; font-size: 16px; font-family: var(--mono); }
+  .cat span { display: block; color: var(--ink-2); font-size: 13px; margin-top: 3px; }
+  .cat.on { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+  .postlist { display: grid; gap: 6px; }
+  .post { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: center; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); cursor: pointer; }
+  .post:hover { border-color: var(--accent); }
+  .post .t { font-weight: 600; }
+  .post .d { color: var(--ink-2); font-size: 13px; }
+  .post .r { font-family: var(--mono); font-size: 12px; color: var(--ink-2); text-align: right; white-space: nowrap; }
+  .post .r b { color: var(--ink); font-weight: 600; }
+  .post .r .pb { color: var(--good); }
+  .post .boardlink { font-size: 12px; color: var(--link); text-decoration: underline; cursor: pointer; }
+  #rules-brief { margin-top: 14px; font-size: 13px; color: var(--ink-2); }
+
+  /* The article column */
+  #run { max-width: 700px; margin: 0 auto; }
+  .runhead { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; color: var(--ink-2); font-size: 13px; margin-bottom: 6px; }
+  .runhead .badge { font-family: var(--mono); background: var(--bg-2); border: 1px solid var(--line); border-radius: 5px; padding: 1px 7px; }
+  .prose { font-family: var(--serif); font-size: 18px; line-height: 1.65; }
+  .prose h1.ptitle { font-size: 32px; line-height: 1.2; margin: 6px 0 4px; }
+  .prose .pdate { font-family: -apple-system, "Segoe UI", sans-serif; color: var(--ink-2); font-size: 14px; margin: 0 0 22px; }
+  .prose h1, .prose h2, .prose h3, .prose h4 { line-height: 1.25; margin: 1.5em 0 0.5em; }
+  .prose h1 { font-size: 26px; } .prose h2 { font-size: 23px; } .prose h3 { font-size: 20px; }
+  .prose p, .prose ul, .prose ol, .prose blockquote { margin: 0 0 1em; }
+  .prose a { color: var(--link); }
+  .prose img { max-width: 100%; height: auto; display: block; margin: 12px auto; border-radius: 6px; }
+  .prose blockquote { border-left: 3px solid var(--line); margin-left: 0; padding-left: 14px; color: var(--ink-2); }
+  .prose code { font-family: var(--mono); font-size: 0.85em; background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
+  .prose pre { background: var(--code-bg); padding: 12px; border-radius: 8px; overflow-x: auto; font-size: 14px; }
+  .prose pre code { background: none; padding: 0; }
+  .prose hr { border: 0; border-top: 1px solid var(--line); margin: 24px 0; }
+  .prose li { margin: 0.2em 0; }
+  .prose .seghead { margin-top: 2.5em; padding-top: 1.2em; border-top: 2px dashed var(--line); }
+  .prose.blind { filter: blur(7px); user-select: none; pointer-events: none; }
+  #endmark { text-align: center; color: var(--ink-2); font-family: var(--mono); font-size: 13px; letter-spacing: 0.2em; padding: 40px 0 60px; }
+
+  /* Timer panel, LiveSplit style */
+  #panel {
+    position: fixed; top: 0; right: 0; bottom: 0; width: 320px; box-sizing: border-box;
+    background: var(--t-bg); color: var(--t-ink); border-left: 1px solid var(--t-line);
+    display: flex; flex-direction: column; font-family: var(--mono); z-index: 5;
+  }
+  #panel[hidden] { display: none; }
+  .p-head { padding: 12px 14px 8px; border-bottom: 1px solid var(--t-line); font-size: 12px; }
+  .p-head b { color: var(--t-gold); }
+  .p-head .title { color: var(--t-ink-2); display: block; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #p-timer { font-size: 46px; font-weight: 700; line-height: 1; padding: 14px 14px 4px; text-align: right; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+  #p-timer.running { color: #ffffff; }
+  #p-timer.done { color: var(--t-good); }
+  #p-timer.bad { color: var(--t-bad); }
+  #p-status { padding: 0 14px 10px; font-size: 12px; color: var(--t-ink-2); text-align: right; min-height: 1.4em; }
+  #p-status.warn { color: var(--t-bad); }
+  #p-splits { list-style: none; margin: 0; padding: 0; flex: 1; overflow-y: auto; border-top: 1px solid var(--t-line); border-bottom: 1px solid var(--t-line); font-size: 13px; }
+  #p-splits li { display: grid; grid-template-columns: 1fr 52px 52px 66px; gap: 6px; padding: 5px 14px; border-bottom: 1px solid var(--t-bg-2); align-items: baseline; }
+  #p-splits li.head { color: var(--t-ink-2); font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; }
+  #p-splits li.cur { background: var(--t-bg-2); box-shadow: inset 3px 0 0 var(--t-gold); }
+  #p-splits li .n { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #p-splits li .x { text-align: right; font-variant-numeric: tabular-nums; }
+  #p-splits li .x.pend { color: var(--t-ink-2); }
+  .p-refs { padding: 10px 14px; font-size: 12px; color: var(--t-ink-2); display: grid; gap: 3px; }
+  .p-refs div { display: flex; justify-content: space-between; gap: 8px; }
+  .p-refs b { color: var(--t-ink); font-weight: 600; }
+  .p-refs .who { color: var(--t-gold); }
+  .p-btns { padding: 8px 14px 14px; display: flex; gap: 6px; }
+  .p-btns button { flex: 1; background: var(--t-bg-2); color: var(--t-ink); border-color: var(--t-line); font-family: var(--mono); font-size: 13px; padding: 7px 4px; }
+  .p-btns button.go { background: var(--t-good); color: #08120c; border-color: transparent; font-weight: 700; }
+  .t-good { color: var(--t-good); } .t-bad { color: var(--t-bad); } .t-gold { color: var(--t-gold); }
+
+  /* Overlays */
+  .overlay { position: fixed; inset: 0; background: rgba(10, 6, 3, 0.7); z-index: 20; display: none; overflow-y: auto; padding: 24px 16px; box-sizing: border-box; }
+  .overlay.show { display: block; }
+  .overlay .box { max-width: 620px; margin: 0 auto; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.4); }
+  .overlay h2 { margin: 0 0 6px; font-size: 22px; }
+  .overlay p { margin: 6px 0; }
+  #r-time { font-family: var(--mono); font-size: 44px; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .badges { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0 10px; }
+  .badges span { font-family: var(--mono); font-size: 12px; border-radius: 5px; padding: 2px 8px; border: 1px solid var(--line); background: var(--bg-2); }
+  .badges .b-good { color: var(--good); border-color: var(--good); }
+  .badges .b-bad { color: var(--bad); border-color: var(--bad); }
+  .badges .b-gold { color: var(--gold); border-color: var(--gold); }
+  .rstats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 6px 12px; font-size: 13px; margin-bottom: 10px; }
+  .rstats div { border-bottom: 1px dotted var(--line); display: flex; justify-content: space-between; padding: 2px 0; }
+  .rstats b { font-family: var(--mono); font-weight: 600; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  th, td { text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--line); }
+  th { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-2); font-weight: 600; }
+  td.num, th.num { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .tablewrap { overflow-x: auto; margin: 6px 0 12px; }
+  .rowbtns { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 12px 0 6px; }
+  .rowbtns .grow { flex: 1; }
+  #board-title { display: flex; justify-content: space-between; align-items: baseline; }
+  #help .box p { font-size: 15px; }
+  #help ul { padding-left: 20px; font-size: 14px; }
+  #help li { margin: 4px 0; }
+  kbd { font-family: var(--mono); background: var(--bg-2); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; font-size: 12px; }
+
+  /* Phones: the panel becomes a sticky bottom bar */
+  @media (max-width: 860px) {
+    body.in-run { padding-right: 16px; padding-bottom: 110px; }
+    #panel { top: auto; left: 0; right: 0; bottom: 0; width: auto; height: auto; border-left: 0; border-top: 1px solid var(--t-line);
+      display: grid; grid-template-columns: 1fr auto; grid-template-areas: "head timer" "status timer" "btns btns"; align-items: center; }
+    .p-head { grid-area: head; border: 0; padding: 8px 12px 0; min-width: 0; }
+    #p-timer { grid-area: timer; font-size: 34px; padding: 8px 12px 0; }
+    #p-status { grid-area: status; text-align: left; padding: 2px 12px 4px; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    #p-splits, .p-refs { display: none; }
+    .p-btns { grid-area: btns; padding: 0 12px 8px; }
+    .prose { font-size: 17px; }
+    .prose h1.ptitle { font-size: 26px; }
+  }
+  @media (max-width: 600px) {
+    .post { grid-template-columns: 1fr; }
+    .post .r { text-align: left; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Blog Post Speedrun</h1>
+  <span class="sub">The timer starts when you open a post and stops when you reach the end. Reading is optional.</span>
+  <span class="spacer"></span>
+  <button class="small" id="btn-help">Help &amp; rules</button>
+  <a href="../../#/misc">back to misc</a>
+</header>
+
+<main id="select">
+  <div class="card" id="notice"></div>
+  <div class="cats" id="cats"></div>
+  <div class="card">
+    <h2 id="list-title">Choose a post</h2>
+    <div class="postlist" id="postlist"><span class="muted">Loading the blog index&hellip;</span></div>
+  </div>
+  <div id="rules-brief">Splits are the post's headings. Ctrl+End is watched. World records are fake and unverified. Times stay in this browser.</div>
+</main>
+
+<main id="run" hidden>
+  <div class="runhead">
+    <span class="badge" id="run-cat">Any%</span>
+    <span id="run-info"></span>
+    <span class="spacer" style="flex:1"></span>
+    <a href="#" id="run-back" style="color:var(--link)">categories</a>
+  </div>
+  <article id="post" class="prose"></article>
+  <div id="endmark">&mdash; END OF POST &mdash;</div>
+</main>
+
+<aside id="panel" hidden aria-live="off">
+  <div class="p-head"><b id="p-cat">Any%</b> <span id="p-count"></span><span class="title" id="p-title"></span></div>
+  <div id="p-timer">00:00.00</div>
+  <div id="p-status">scroll to start</div>
+  <ol id="p-splits"></ol>
+  <div class="p-refs">
+    <div><span>WR <span class="muted">(unverified)</span></span><b id="p-wr"></b></div>
+    <div><span class="who" id="p-wrname"></span></div>
+    <div><span>Human, 250 wpm</span><b id="p-human"></b></div>
+    <div><span>Personal best</span><b id="p-pb"></b></div>
+  </div>
+  <div class="p-btns">
+    <button class="go" id="btn-start">Start</button>
+    <button id="btn-reset">Reset</button>
+    <button id="btn-back">Back</button>
+  </div>
+</aside>
+
+<div class="overlay" id="results">
+  <div class="box">
+    <div id="r-main">
+      <h2 id="r-head">Run complete</h2>
+      <p class="muted" id="r-sub"></p>
+      <div id="r-time">00:00.00</div>
+      <div class="badges" id="r-badges"></div>
+      <div class="rstats" id="r-stats"></div>
+      <div class="tablewrap"><table id="r-splits"></table></div>
+      <div class="rowbtns">
+        <input type="text" id="r-name" placeholder="name (optional, defaults to anon)" maxlength="24" class="grow">
+        <button class="primary" id="btn-submit">Submit to local leaderboard</button>
+        <button id="btn-copy">Copy run</button>
+      </div>
+    </div>
+    <div id="board-title"><h2 style="font-size:16px">Local leaderboard <span class="muted" id="board-key"></span></h2><button class="small" id="btn-board-reset">reset</button></div>
+    <div class="tablewrap"><table id="board"></table></div>
+    <div class="rowbtns">
+      <button class="primary" id="btn-again">Run again</button>
+      <button id="btn-cats">Categories</button>
+      <button id="btn-close">Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="help">
+  <div class="box">
+    <h2>Blog Post Speedrun</h2>
+    <p>This page renders the site's own blog posts with a LiveSplit-style timer beside them: it starts on your first scroll and stops once the end-of-post marker has been on screen for one second. Splits are the post's headings, each shown against your personal best and a fake world record. Everything is stored in this browser only and none of it matters, which is the point.</p>
+    <ul>
+      <li><b>Any%</b>: anything goes. <b>100%</b>: every post back to back, one segment per post. <b>Glitchless</b>: never scroll faster than 2500 px/s or the run is rejected. <b>Blindfolded</b>: the text is blurred and you scroll by feel.</li>
+      <li>Splits fire when a heading passes the top of the window. Posts with fewer than three headings use the 25%, 50% and 75% marks instead.</li>
+      <li>Anti-cheat theatre: <kbd>Ctrl</kbd>+<kbd>End</kbd>, or one jump of more than 60% of the page, marks the run as <b>TAS</b> (tool-assisted). It goes on the board with a label but never counts as a personal best.</li>
+      <li>World records are computed, not run: words &divide; 900 wpm + 1.5 s with seeded jitter, credited to a generated runner. They are labelled unverified because they are fictional. "Human" is the same post at 250 wpm.</li>
+      <li>Leaderboards keep the top ten per post and category in localStorage. Reset clears one board. Nothing is sent anywhere.</li>
+      <li>Rendering uses <code>marked</code> from jsDelivr, with a small built-in renderer as fallback. Links in posts open in a new tab so the run survives.</li>
+      <li>Hash state: <code>#/any/&lt;slug&gt;</code>, <code>#/glitchless/&lt;slug&gt;</code>, <code>#/blind/&lt;slug&gt;</code>, <code>#/all</code>.</li>
+    </ul>
+    <p style="text-align:center"><button id="btn-help-close">Close</button></p>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var C = window.SpeedrunCore;
+  var SITE = '../../';
+  var GLITCHLESS_MAX = 2500;   // px/s
+  var END_HOLD_MS = 1000;
+  var STORE_KEY = 'blog-speedrun.v1';
+
+  var CATS = {
+    any: { name: 'Any%', tag: 'Reach the end. Anything goes.' },
+    all: { name: '100%', tag: 'Every post, back to back. One segment each.' },
+    glitchless: { name: 'Glitchless', tag: 'No scrolling faster than ' + GLITCHLESS_MAX + ' px/s, or the run is rejected.' },
+    blind: { name: 'Blindfolded', tag: 'The text is blurred. Scroll by feel.' }
+  };
+
+  var $ = function (id) { return document.getElementById(id); };
+  var posts = [];            // [{slug,title,date,body,words,wr,wrName,human}]
+  var cat = 'any';
+  var offline = false;
+  var run = null;            // the current run state
+  var routing = false;
+
+  /* A short bundled post so the page still does something on file:// or when the blog cannot be fetched. */
+  var SAMPLE = {
+    slug: 'sample', title: 'A Sample Post About Speedrunning', date: '2026-09-25',
+    body: '## Why speedrun a blog post\n\nBecause the site could not be fetched, this page is showing a bundled sample instead of the real blog. Everything else works: the timer starts on your first scroll, the headings become splits, and the end marker stops the clock once it has been on screen for a second.\n\nA speedrun is a reading of a text that optimises for the wrong variable. The genre has a long history: skipping to the end of a novel to see who marries whom, reading the abstract and the conclusion of a paper, the executive summary, the last paragraph of a letter first.\n\n## Categories\n\nAny% is what most people already do with blog posts. Glitchless forbids the flick of the scroll wheel that jumps a thousand pixels in a frame. Blindfolded blurs the text so the only signal is the shape of the paragraphs, which is a surprisingly honest reading of most writing on the internet.\n\n## Strategies\n\n- Long paragraphs are free time: nothing splits until the next heading.\n- Lists are dangerous because they look short and are not.\n- Images load late and move the end marker. Wait for them, or do not.\n\n## The end marker\n\nThe run only ends when the marker below has been visible for one second, so overshooting into the footer is fine. The result screen shows your splits against a personal best and a fake world record credited to a runner who does not exist.\n\nThat is all there is to it. Scroll on.'
+  };
+
+  /* ---------- storage ---------- */
+  function loadStore() { try { return JSON.parse(localStorage.getItem(STORE_KEY) || '{}') || {}; } catch (e) { return {}; } }
+  function saveStore(s) { try { localStorage.setItem(STORE_KEY, JSON.stringify(s)); return true; } catch (e) { return false; } }
+  function boardKey(c, slug) { return c === 'all' ? 'all:*' : c + ':' + slug; }
+  function getBoard(key) { var s = loadStore(); return (s.boards && s.boards[key]) || []; }
+  function setBoard(key, rows) { var s = loadStore(); s.boards = s.boards || {}; s.boards[key] = rows; return saveStore(s); }
+  function sortBoard(rows) {
+    return rows.slice().sort(function (a, b) { return (a.tas === b.tas) ? a.ms - b.ms : (a.tas ? 1 : -1); });
+  }
+  function getPB(key) {
+    var rows = getBoard(key).filter(function (r) { return !r.tas; });
+    if (!rows.length) return null;
+    return rows.reduce(function (m, r) { return r.ms < m.ms ? r : m; });
+  }
+
+  /* ---------- loading ---------- */
+  function fetchText(url) { return fetch(url).then(function (r) { if (!r.ok) throw new Error(r.status + ' ' + url); return r.text(); }); }
+
+  function preparePost(entry, md) {
+    var fm = C.stripFrontmatter(md);
+    var body = C.dropTitleHeading(fm.body, entry.title || fm.meta.title);
+    var words = C.wordCount(body);
+    return {
+      slug: entry.slug, title: entry.title || fm.meta.title || entry.slug, date: entry.date || fm.meta.date || '',
+      body: body, words: words, wr: C.fakeWR(words, entry.slug), wrName: C.runnerName(entry.slug), human: C.humanTime(words)
+    };
+  }
+
+  function boot() {
+    var notice = $('notice');
+    if (window.__markedFailed || !window.marked) {
+      notice.textContent = 'The marked library could not be loaded from jsDelivr; using the built-in markdown renderer (headings, lists, links and emphasis only).';
+      notice.classList.add('show');
+    }
+    fetchText(SITE + 'blog/index.json').then(function (txt) {
+      var index = JSON.parse(txt);
+      return Promise.all(index.map(function (e) {
+        return fetchText(SITE + 'blog/posts/' + e.file).then(function (md) { return preparePost(e, md); }, function () { return null; });
+      }));
+    }).then(function (list) {
+      posts = list.filter(Boolean);
+      if (!posts.length) throw new Error('no posts');
+    }).catch(function (err) {
+      offline = true;
+      posts = [preparePost(SAMPLE, SAMPLE.body)];
+      notice.innerHTML = (notice.classList.contains('show') ? notice.innerHTML + '<br>' : '') +
+        'The blog could not be fetched (' + esc(String(err && err.message || err)) + '). This happens on file://; on the site the real posts appear. Showing a bundled sample post instead.';
+      notice.classList.add('show');
+    }).then(function () {
+      renderCats();
+      renderList();
+      window.addEventListener('hashchange', route);
+      route();
+    });
+  }
+
+  /* ---------- select screen ---------- */
+  function renderCats() {
+    var box = $('cats'); box.innerHTML = '';
+    Object.keys(CATS).forEach(function (k) {
+      var b = document.createElement('button');
+      b.className = 'cat' + (k === cat ? ' on' : '');
+      b.innerHTML = '<b>' + CATS[k].name + '</b><span>' + esc(CATS[k].tag) + '</span>';
+      b.addEventListener('click', function () { cat = k; renderCats(); renderList(); });
+      box.appendChild(b);
+    });
+  }
+
+  function renderList() {
+    var list = $('postlist'); list.innerHTML = '';
+    $('list-title').textContent = cat === 'all' ? '100%: the whole blog' : 'Choose a post (' + CATS[cat].name + ')';
+    if (cat === 'all') {
+      var words = posts.reduce(function (s, p) { return s + p.words; }, 0);
+      var wr = posts.reduce(function (s, p) { return s + p.wr; }, 0);
+      list.appendChild(postRow({ title: 'All ' + posts.length + ' posts, back to back', date: 'newest first', words: words, wr: wr, wrName: C.runnerName('all'), human: C.humanTime(words) }, 'all:*', function () { startRun('all', null); }));
+      return;
+    }
+    posts.forEach(function (p) {
+      list.appendChild(postRow(p, boardKey(cat, p.slug), function () { startRun(cat, p.slug); }));
+    });
+  }
+
+  function postRow(p, key, onClick) {
+    var pb = getPB(key);
+    var row = document.createElement('div');
+    row.className = 'post';
+    row.innerHTML = '<div><div class="t">' + esc(p.title) + '</div><div class="d">' + esc(p.date) + ' &middot; ' + p.words.toLocaleString() + ' words &middot; <span class="boardlink">leaderboard</span></div></div>' +
+      '<div class="r">WR <b>' + C.fmtTime(p.wr) + '</b> <span class="muted">' + esc(p.wrName) + '</span><br>human ' + C.fmtTime(p.human) +
+      (pb ? ' &middot; PB <b class="pb">' + C.fmtTime(pb.ms) + '</b>' : ' &middot; no PB yet') + '</div>';
+    row.addEventListener('click', function (e) {
+      if (e.target.classList.contains('boardlink')) { e.stopPropagation(); showBoard(key, p.title); return; }
+      onClick();
+    });
+    return row;
+  }
+
+  /* ---------- routing ---------- */
+  function route() {
+    if (routing) return;
+    var m = /^#\/(any|all|glitchless|blind)(?:\/([^\/?#]+))?/.exec(location.hash || '');
+    if (!m) { if (run) leaveRun(false); return; }
+    var c = m[1], slug = m[2] ? decodeURIComponent(m[2]) : null;
+    if (c !== cat) { cat = c; renderCats(); renderList(); }
+    if (c === 'all') { if (!run || run.cat !== 'all') startRun('all', null); return; }
+    if (!slug) return;
+    var p = posts.filter(function (x) { return x.slug === slug; })[0];
+    if (!p) { if (run) leaveRun(false); return; }
+    if (!run || run.cat !== c || run.slug !== slug) startRun(c, slug);
+  }
+  function setHash(h) {
+    routing = true;
+    try { history.replaceState(null, '', h ? h : location.pathname + location.search); } catch (e) { location.hash = h; }
+    setTimeout(function () { routing = false; }, 0);
+  }
+
+  /* ---------- rendering a post ---------- */
+  function renderMarkdown(md) {
+    if (window.marked && !window.__markedFailed) {
+      try { return (typeof marked.parse === 'function' ? marked.parse(md) : marked(md)); } catch (e) { /* fall through */ }
+    }
+    return C.renderMarkdown(md);
+  }
+  function postHtml(p, segment) {
+    var h = '<h1 class="ptitle' + (segment ? ' seghead' : '') + '" data-seg="' + esc(p.slug) + '">' + esc(p.title) + '</h1>' +
+      '<p class="pdate">' + esc(p.date) + ' &middot; ' + p.words.toLocaleString() + ' words</p>';
+    return h + renderMarkdown(p.body);
+  }
+  function fixLinks(root) {
+    Array.prototype.forEach.call(root.querySelectorAll('a[href]'), function (a) {
+      a.setAttribute('href', C.fixUrl(a.getAttribute('href'), SITE));
+      a.setAttribute('target', '_blank'); a.setAttribute('rel', 'noopener');
+    });
+    Array.prototype.forEach.call(root.querySelectorAll('img[src]'), function (img) {
+      img.setAttribute('src', C.fixUrl(img.getAttribute('src'), SITE));
+    });
+  }
+
+  /* ---------- run lifecycle ---------- */
+  function startRun(c, slug) {
+    var list = c === 'all' ? posts : posts.filter(function (p) { return p.slug === slug; });
+    if (!list.length) return;
+    if (run) stopClock();
+    var article = $('post');
+    article.innerHTML = list.map(function (p, i) { return c === 'all' ? '<section class="segment">' + postHtml(p, i > 0) + '</section>' : postHtml(p, false); }).join('');
+    fixLinks(article);
+    article.classList.toggle('blind', c === 'blind');
+
+    var totalWords = list.reduce(function (s, p) { return s + p.words; }, 0);
+    var key = boardKey(c, slug);
+    run = {
+      cat: c, slug: slug, key: key, posts: list, words: totalWords,
+      title: c === 'all' ? 'All ' + list.length + ' posts' : list[0].title,
+      wr: list.reduce(function (s, p) { return s + p.wr; }, 0),
+      wrName: c === 'all' ? C.runnerName('all') : list[0].wrName,
+      human: C.humanTime(totalWords),
+      pb: getPB(key),
+      state: 'armed', t0: 0, elapsed: 0, times: [], plan: [], refWR: [], refPB: null,
+      tas: false, rejected: null, endSince: null, lastY: 0, lastT: 0, meter: C.speedMeter(300), raf: 0
+    };
+    // the article must be visible before its headings can be measured
+    $('select').hidden = true; $('run').hidden = false; $('panel').hidden = false;
+    document.body.classList.add('in-run');
+    $('results').classList.remove('show');
+    run.plan = buildPlan(article, c);
+    run.refWR = C.referenceSplits(run.plan, run.wr);
+    run.refPB = run.pb && run.pb.splits && run.pb.splits.length === run.plan.length ? run.pb.splits : null;
+    $('run-cat').textContent = CATS[c].name;
+    $('run-info').textContent = c === 'all' ? list.length + ' posts, ' + totalWords.toLocaleString() + ' words' : list[0].date + ' · ' + totalWords.toLocaleString() + ' words';
+    $('p-cat').textContent = CATS[c].name;
+    $('p-count').textContent = run.plan.length + ' splits';
+    $('p-title').textContent = run.title;
+    $('p-wr').textContent = C.fmtTime(run.wr);
+    $('p-wrname').textContent = 'by ' + run.wrName;
+    $('p-human').textContent = C.fmtTime(run.human);
+    $('p-pb').textContent = run.pb ? C.fmtTime(run.pb.ms) : '—';
+    setHash('#/' + c + (slug ? '/' + encodeURIComponent(slug) : ''));
+    $('results').classList.remove('show');
+    resetRun();
+  }
+
+  /* Split boundaries: headings (h1-h3) inside the article, or the posts' own headers in 100% mode. */
+  function buildPlan(article, c) {
+    var heads = [], words = 0, sel = c === 'all' ? 'h1[data-seg]' : 'h1:not(.ptitle),h2,h3';
+    var top0 = article.getBoundingClientRect().top;
+    var blocks = c === 'all' ? article.querySelectorAll('.segment > *') : article.children;
+    Array.prototype.forEach.call(blocks, function (el) {
+      if (el.matches(sel)) heads.push({ ref: el, text: el.textContent, top: el.getBoundingClientRect().top - top0, words: words });
+      if (!el.classList.contains('pdate')) words += C.wordCount(el.textContent);
+    });
+    var height = article.getBoundingClientRect().height;
+    var plan;
+    if (c === 'all') {
+      plan = heads.slice(1).map(function (h, i) { return { name: shortTitle(run.posts[i].title), el: h.ref, top: h.top, endOfArticle: false, wordsAt: h.words }; });
+      plan.push({ name: shortTitle(run.posts[run.posts.length - 1].title), top: null, endOfArticle: true, wordsAt: words });
+    } else {
+      plan = C.planSplits(heads, height, words, 150);
+      plan.forEach(function (s) { if (s.ref) s.el = s.ref; }); // heading splits track their element; % splits keep frac
+    }
+    return plan;
+  }
+  function shortTitle(t) { return t.length > 30 ? t.slice(0, 29).replace(/\s+\S*$/, '') + '…' : t; }
+
+  /* Refresh split tops from the live layout: images load, fonts swap, the article grows. */
+  function refreshTops() {
+    var rect = $('post').getBoundingClientRect();
+    run.plan.forEach(function (s) {
+      if (s.endOfArticle) return;
+      if (s.el) s.top = s.el.getBoundingClientRect().top - rect.top;
+      else if (s.frac != null) s.top = s.frac * rect.height;
+    });
+    return -rect.top; // viewport top, article-relative
+  }
+
+  function stopClock() { cancelAnimationFrame(run.raf); clearInterval(run.iv); }
+
+  function resetRun() {
+    stopClock();
+    run.refPB = run.pb && run.pb.splits && run.pb.splits.length === run.plan.length ? run.pb.splits : null;
+    run.submitted = false;
+    run.state = 'armed'; run.elapsed = 0; run.times = []; run.tas = false; run.rejected = null; run.endSince = null;
+    run.meter.reset();
+    window.scrollTo(0, 0);
+    run.lastY = window.scrollY; run.lastT = performance.now();
+    $('post').classList.toggle('blind', run.cat === 'blind');
+    $('p-timer').className = ''; $('p-timer').textContent = C.fmtTime(0);
+    setStatus(run.cat === 'blind' ? 'blurred. scroll to start' : 'scroll to start', false);
+    $('btn-start').textContent = 'Start';
+    $('results').classList.remove('show');
+    renderSplits();
+  }
+
+  function beginRun() {
+    if (!run || run.state !== 'armed') return;
+    run.state = 'running'; run.t0 = performance.now(); run.times = [];
+    $('p-timer').className = 'running'; $('btn-start').textContent = 'Running';
+    setStatus('go', false);
+    // rAF drives the display; a coarse interval backs it up so the end check still runs when frames are throttled
+    run.iv = setInterval(check, 100);
+    tick();
+  }
+
+  function tick() {
+    if (!run || run.state !== 'running') return;
+    check();
+    if (run.state === 'running') run.raf = requestAnimationFrame(tick);
+  }
+
+  /* One timer step: update the display, fire passed splits, and watch the end marker. */
+  function check() {
+    if (!run || run.state !== 'running') return;
+    run.elapsed = performance.now() - run.t0;
+    $('p-timer').textContent = C.fmtTime(run.elapsed);
+    updateCurrentSplit();
+    // the end marker must sit inside the viewport for one full second
+    var r = $('endmark').getBoundingClientRect();
+    var visible = r.top < window.innerHeight && r.bottom > 0;
+    if (visible) {
+      if (run.endSince == null) run.endSince = performance.now();
+      else if (performance.now() - run.endSince >= END_HOLD_MS) { finishRun(); return; }
+    } else run.endSince = null;
+  }
+
+  function onScroll() {
+    if (!run || $('run').hidden) return;
+    var y = window.scrollY, now = performance.now();
+    if (y === run.lastY) return;
+    var docSpan = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+    if (run.state === 'armed') beginRun();
+    if (run.state === 'running') {
+      run.elapsed = performance.now() - run.t0;
+      var delta = Math.abs(y - run.lastY);
+      if (docSpan > 2.5 * window.innerHeight && delta > 0.6 * docSpan) flagTAS('jumped ' + Math.round(100 * delta / docSpan) + '% of the page in one go');
+      if (run.cat === 'glitchless' && !run.rejected) {
+        var v = run.meter.push(now, y);
+        if (v > GLITCHLESS_MAX) { run.rejected = 'scrolled at ' + Math.round(v) + ' px/s (limit ' + GLITCHLESS_MAX + ')'; setStatus('REJECTED: ' + run.rejected, true); $('p-timer').className = 'running bad'; }
+      }
+      var viewTop = refreshTops();
+      var before = run.times.length;
+      C.advanceSplits(run.plan, run.times, viewTop, run.elapsed, 80);
+      if (run.times.length !== before) renderSplits();
+    }
+    run.lastY = y; run.lastT = now;
+  }
+
+  function flagTAS(why) {
+    if (run.tas) return;
+    run.tas = true;
+    setStatus('TAS detected: ' + why, true);
+  }
+
+  function finishRun() {
+    stopClock();
+    run.state = 'done';
+    run.elapsed = performance.now() - run.t0;
+    while (run.times.length < run.plan.length) run.times.push(run.elapsed);
+    run.endedAt = new Date();
+    $('post').classList.remove('blind');
+    $('p-timer').textContent = C.fmtTime(run.elapsed);
+    $('p-timer').className = run.rejected ? 'bad' : 'done';
+    $('btn-start').textContent = 'Done';
+    setStatus(run.rejected ? 'run rejected' : (run.tas ? 'finished (TAS)' : 'finished'), !!run.rejected);
+    renderSplits();
+    showResults();
+  }
+
+  function leaveRun(pushHash) {
+    if (run) stopClock();
+    run = null;
+    $('select').hidden = false; $('run').hidden = true; $('panel').hidden = true;
+    $('results').classList.remove('show');
+    document.body.classList.remove('in-run');
+    if (pushHash !== false) setHash('');
+    renderList();
+    window.scrollTo(0, 0);
+  }
+
+  function setStatus(t, warn) { var s = $('p-status'); s.textContent = t; s.classList.toggle('warn', !!warn); }
+
+  /* ---------- panel ---------- */
+  function renderSplits() {
+    var ol = $('p-splits'); ol.innerHTML = '';
+    var head = document.createElement('li'); head.className = 'head';
+    head.innerHTML = '<span class="n">split</span><span class="x">pb</span><span class="x">wr</span><span class="x">time</span>';
+    ol.appendChild(head);
+    run.plan.forEach(function (s, i) {
+      var li = document.createElement('li');
+      var done = i < run.times.length;
+      var cur = !done && i === run.times.length && run.state !== 'done';
+      if (cur) li.className = 'cur';
+      var t = done ? run.times[i] : null;
+      li.innerHTML = '<span class="n" title="' + esc(s.name) + '">' + esc(s.name) + '</span>' +
+        deltaCell(t, run.refPB ? run.refPB[i] : null) + deltaCell(t, run.refWR[i]) +
+        '<span class="x' + (done ? '' : ' pend') + '">' + (done ? C.fmtTime(t) : '—') + '</span>';
+      ol.appendChild(li);
+    });
+    var curEl = ol.querySelector('.cur');
+    if (curEl && curEl.scrollIntoView) { try { curEl.scrollIntoView({ block: 'nearest' }); } catch (e) { curEl.scrollIntoView(false); } }
+  }
+  function deltaCell(t, ref) {
+    if (t == null || ref == null) return '<span class="x pend">' + (ref == null ? '·' : C.fmtDelta(0).replace('+0.00', '—')) + '</span>';
+    var d = t - ref;
+    return '<span class="x ' + (d <= 0 ? 't-good' : 't-bad') + '">' + C.fmtDelta(d) + '</span>';
+  }
+  function updateCurrentSplit() {
+    // live delta of the split in progress against WR, shown in the status line while nothing else is being reported
+    var i = run.times.length;
+    if (i >= run.plan.length || run.rejected || run.tas) return;
+    var d = run.elapsed - run.refWR[i];
+    var s = $('p-status');
+    s.textContent = run.plan[i].name + '  ' + C.fmtDelta(d) + ' vs WR';
+    s.style.color = d <= 0 ? 'var(--t-good)' : 'var(--t-bad)';
+  }
+
+  /* ---------- results + leaderboard ---------- */
+  function showResults() {
+    var wpm = run.elapsed > 0 ? Math.round(run.words / (run.elapsed / 60000)) : 0;
+    run.wpm = wpm;
+    var isPB = !run.tas && !run.rejected && (!run.pb || run.elapsed < run.pb.ms);
+    $('r-main').style.display = '';
+    $('r-head').textContent = run.rejected ? 'Run rejected' : run.tas ? 'Run complete (TAS)' : 'Run complete';
+    $('r-sub').textContent = CATS[run.cat].name + ' · ' + run.title;
+    $('r-time').textContent = C.fmtTime(run.elapsed);
+    $('r-time').className = run.rejected ? 'bad' : '';
+    var badges = [];
+    if (isPB) badges.push('<span class="b-good">new personal best</span>');
+    if (!run.tas && !run.rejected && run.elapsed < run.wr) badges.push('<span class="b-gold">faster than the fake WR</span>');
+    if (run.tas) badges.push('<span class="b-bad">TAS: tool-assisted</span>');
+    if (run.rejected) badges.push('<span class="b-bad">' + esc(run.rejected) + '</span>');
+    if (wpm > 900) badges.push('<span>' + wpm.toLocaleString() + ' wpm, which is not reading</span>');
+    else if (wpm <= 300) badges.push('<span class="b-good">' + wpm + ' wpm: you may actually have read it</span>');
+    $('r-badges').innerHTML = badges.join('');
+    $('r-stats').innerHTML =
+      '<div><span>Words</span><b>' + run.words.toLocaleString() + '</b></div>' +
+      '<div><span>Words / minute</span><b>' + wpm.toLocaleString() + '</b></div>' +
+      '<div><span>vs fake WR</span><b class="' + (run.elapsed <= run.wr ? 'good' : 'bad') + '">' + C.fmtDelta(run.elapsed - run.wr) + '</b></div>' +
+      '<div><span>vs human 250 wpm</span><b class="' + (run.elapsed <= run.human ? 'good' : 'bad') + '">' + C.fmtDelta(run.elapsed - run.human) + '</b></div>' +
+      (run.pb ? '<div><span>vs old PB</span><b class="' + (run.elapsed <= run.pb.ms ? 'good' : 'bad') + '">' + C.fmtDelta(run.elapsed - run.pb.ms) + '</b></div>' : '');
+    var rows = '<tr><th>' + (run.cat === 'all' ? 'segment' : 'split') + '</th><th class="num">segment</th><th class="num">time</th><th class="num">vs PB</th><th class="num">vs WR</th></tr>';
+    run.plan.forEach(function (s, i) {
+      var t = run.times[i], prev = i ? run.times[i - 1] : 0;
+      rows += '<tr><td>' + esc(s.name) + '</td><td class="num">' + C.fmtTime(t - prev) + '</td><td class="num">' + C.fmtTime(t) + '</td>' +
+        '<td class="num">' + (run.refPB ? colored(t - run.refPB[i]) : '·') + '</td><td class="num">' + colored(t - run.refWR[i]) + '</td></tr>';
+    });
+    $('r-splits').innerHTML = rows;
+    $('btn-submit').disabled = !!run.rejected;
+    $('btn-submit').textContent = run.rejected ? 'Rejected runs are not submitted' : 'Submit to local leaderboard';
+    $('btn-copy').textContent = 'Copy run';
+    renderBoard(run.key, run.title);
+    $('results').classList.add('show');
+    $('results').scrollTop = 0;
+  }
+  function colored(d) { return '<span class="' + (d <= 0 ? 'good' : 'bad') + '">' + C.fmtDelta(d) + '</span>'; }
+
+  function renderBoard(key, title) {
+    var rows = sortBoard(getBoard(key)).slice(0, 10);
+    $('board-key').textContent = '· ' + (CATS[key.split(':')[0]] || CATS.any).name + ' · ' + title;
+    var html = '<tr><th>#</th><th>runner</th><th class="num">time</th><th class="num">wpm</th><th>date</th></tr>';
+    if (!rows.length) html += '<tr><td colspan="5" class="muted">No runs yet. The fake WR is ' + C.fmtTime(run && run.key === key ? run.wr : wrFor(key)) + ' (unverified).</td></tr>';
+    rows.forEach(function (r, i) {
+      html += '<tr><td>' + (i + 1) + '</td><td>' + esc(r.name || 'anon') + (r.tas ? ' <span class="bad">[TAS]</span>' : '') + '</td><td class="num">' + C.fmtTime(r.ms) + '</td><td class="num">' + (r.wpm || '') + '</td><td class="muted">' + esc(r.date || '') + '</td></tr>';
+    });
+    $('board').innerHTML = html;
+    $('board').dataset.key = key;
+  }
+  function wrFor(key) {
+    var parts = key.split(':');
+    if (parts[0] === 'all') return posts.reduce(function (s, p) { return s + p.wr; }, 0);
+    var p = posts.filter(function (x) { return x.slug === parts[1]; })[0];
+    return p ? p.wr : 0;
+  }
+  function showBoard(key, title) {
+    $('r-main').style.display = 'none';
+    renderBoard(key, title);
+    $('results').classList.add('show');
+  }
+
+  function submitRun() {
+    if (!run || run.state !== 'done' || run.rejected || run.submitted) return;
+    var name = ($('r-name').value || '').trim().slice(0, 24) || 'anon';
+    var rows = getBoard(run.key);
+    rows.push({ name: name, ms: Math.round(run.elapsed), wpm: run.wpm, date: run.endedAt.toISOString().slice(0, 10), tas: run.tas, splits: run.times.map(Math.round) });
+    rows = sortBoard(rows).slice(0, 10);
+    var ok = setBoard(run.key, rows);
+    run.submitted = ok;
+    $('btn-submit').textContent = ok ? 'Submitted' : 'Storage unavailable';
+    $('btn-submit').disabled = true;
+    run.pb = getPB(run.key);
+    $('p-pb').textContent = run.pb ? C.fmtTime(run.pb.ms) : '—';
+    renderBoard(run.key, run.title);
+  }
+
+  function copyRun() {
+    if (!run || run.state !== 'done') return;
+    var lines = [
+      'Blog Post Speedrun — ' + CATS[run.cat].name + ' — ' + run.title,
+      'Time ' + C.fmtTime(run.elapsed) + ' (' + run.wpm.toLocaleString() + ' wpm)' + (run.tas ? ' [TAS]' : '') + (run.rejected ? ' [REJECTED: ' + run.rejected + ']' : ''),
+      'Splits: ' + run.plan.map(function (s, i) { return s.name + ' ' + C.fmtTime(run.times[i]); }).join(' | '),
+      'Fake WR ' + C.fmtTime(run.wr) + ' by ' + run.wrName + ' (unverified) · human ' + C.fmtTime(run.human),
+      location.href
+    ];
+    var text = lines.join('\n');
+    var done = function () { $('btn-copy').textContent = 'Copied'; };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, function () { fallbackCopy(text); done(); });
+    else { fallbackCopy(text); done(); }
+  }
+  function fallbackCopy(text) {
+    var ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); } catch (e) { /* nothing more to try */ }
+    document.body.removeChild(ta);
+  }
+
+  function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+  /* ---------- wiring ---------- */
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('keydown', function (e) {
+    if (!run || $('run').hidden) return;
+    if (e.key === 'End' && (e.ctrlKey || e.metaKey)) { if (run.state === 'armed') beginRun(); flagTAS('Ctrl+End'); }
+  });
+  $('btn-start').addEventListener('click', function () { if (run && run.state === 'armed') beginRun(); });
+  $('btn-reset').addEventListener('click', function () { if (run) resetRun(); });
+  $('btn-back').addEventListener('click', function () { leaveRun(); });
+  $('run-back').addEventListener('click', function (e) { e.preventDefault(); leaveRun(); });
+  $('btn-submit').addEventListener('click', submitRun);
+  $('btn-copy').addEventListener('click', copyRun);
+  $('btn-again').addEventListener('click', function () { if (run) resetRun(); else $('results').classList.remove('show'); });
+  $('btn-cats').addEventListener('click', function () { leaveRun(); });
+  $('btn-close').addEventListener('click', function () { $('results').classList.remove('show'); if (!run) renderList(); });
+  $('btn-board-reset').addEventListener('click', function () {
+    var key = $('board').dataset.key; if (!key) return;
+    setBoard(key, []);
+    if (run && run.key === key) { run.pb = null; run.refPB = null; $('p-pb').textContent = '—'; run.submitted = false; }
+    renderBoard(key, run && run.key === key ? run.title : '');
+    if (!run || $('run').hidden) renderList();
+  });
+  $('btn-help').addEventListener('click', function () { $('help').classList.add('show'); });
+  $('btn-help-close').addEventListener('click', function () { $('help').classList.remove('show'); });
+  document.querySelectorAll('.overlay').forEach(function (o) { o.addEventListener('click', function (e) { if (e.target === o) o.classList.remove('show'); }); });
+  window.addEventListener('keydown', function (e) { if (e.key === 'Escape') { $('help').classList.remove('show'); } });
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+})();
+</script>
+</body>
+</html>

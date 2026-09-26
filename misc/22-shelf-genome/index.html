@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shelf Genome</title>
+<meta name="description" content="The whole library drawn as one chromosome: every book a band, coloured by genre, with mutation hotspots where neighbours collide and fake crossover children when you click.">
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    --bg: #070b16;
+    --panel: #0e1524;
+    --panel-2: #151f35;
+    --line: #22304d;
+    --ink: #e6edf7;
+    --ink-2: #8fa0bd;
+    --ink-3: #5c6b8a;
+    --accent: #ffcc66;
+    --good: #5fd08a;
+    --bad: #ff6b6b;
+    --mono: ui-monospace, "Cascadia Mono", Consolas, "SF Mono", Menlo, "Noto Sans Mono CJK JP", monospace;
+    --sans: -apple-system, "Segoe UI", Helvetica, Arial, "Hiragino Sans", "Yu Gothic", "IPAGothic", "Noto Sans CJK JP", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); }
+  body { font: 15px/1.45 var(--sans); padding: 14px 16px 28px; overflow-x: hidden; }
+  a { color: var(--accent); }
+  h1 { font-size: 22px; margin: 0; font-weight: 600; letter-spacing: 0.01em; }
+  header { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 12px; }
+  header .sub { color: var(--ink-2); font-size: 14px; }
+  header .spacer { flex: 1; }
+  #note { display: none; font-family: var(--mono); font-size: 12px; color: var(--accent); margin: -6px 0 10px; }
+  #note.show { display: block; }
+  button {
+    font: inherit; color: var(--ink); background: var(--panel-2); border: 1px solid var(--line);
+    border-radius: 7px; padding: 6px 12px; cursor: pointer;
+  }
+  button:hover { background: #1c2845; }
+  button:active { transform: translateY(1px); }
+  button.small { font-size: 13px; padding: 4px 10px; }
+  button.mono { font-family: var(--mono); font-size: 13px; padding: 3px 9px; }
+  button.link { background: none; border: 0; padding: 0; color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+  button.link:hover { background: none; color: #ffe0a0; }
+
+  #layout { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; }
+  #main { flex: 1 1 620px; min-width: 0; display: grid; gap: 12px; }
+  #side { flex: 0 1 300px; min-width: 250px; display: grid; gap: 12px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; min-width: 0; }
+  .card h2 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-2); margin: 0 0 8px; font-weight: 600; font-family: var(--mono); }
+  .card h2 .r { float: right; text-transform: none; letter-spacing: 0; color: var(--ink-3); font-weight: 400; }
+  .hidden { display: none !important; }
+
+  /* the chromosome */
+  #stripwrap { position: relative; width: 100%; border-radius: 6px; overflow: hidden; background: #050810; }
+  #strip { display: block; width: 100%; height: 206px; touch-action: none; cursor: grab; outline: none; }
+  #strip:focus-visible { box-shadow: inset 0 0 0 1px var(--accent); }
+  #strip.dragging { cursor: grabbing; }
+  #tip {
+    position: absolute; pointer-events: none; display: none; max-width: 280px;
+    background: rgba(8, 12, 24, 0.94); border: 1px solid var(--line); border-radius: 6px;
+    padding: 6px 8px; font-size: 12px; line-height: 1.35; z-index: 2;
+  }
+  #tip b { display: block; font-weight: 600; }
+  #tip .m { color: var(--ink-2); font-family: var(--mono); font-size: 11px; }
+  #minimap { display: block; width: 100%; height: 28px; margin-top: 8px; border-radius: 4px; cursor: pointer; touch-action: none; background: #050810; }
+  #zoombar { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 8px; font-family: var(--mono); font-size: 12px; color: var(--ink-2); }
+  #zoombar .spacer { flex: 1; }
+  #legend { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 10px; font-family: var(--mono); font-size: 11px; color: var(--ink-2); }
+  #legend .chip { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; padding: 1px 3px; border-radius: 3px; }
+  #legend .chip:hover, #legend .chip.on { background: var(--panel-2); color: var(--ink); }
+  #legend .sw { width: 10px; height: 10px; border-radius: 2px; flex: none; }
+  #legend .sw.row { height: 6px; }
+  #legend .grp { flex-basis: 100%; color: var(--ink-3); margin-top: 4px; }
+  #legend .grp:first-child { margin-top: 0; }
+
+  /* stats + hotspots */
+  .stats { display: grid; gap: 3px; font-size: 13px; }
+  .stats div { display: flex; justify-content: space-between; gap: 10px; border-bottom: 1px dotted var(--line); padding: 3px 0; }
+  .stats span:first-child { color: var(--ink-2); font-family: var(--mono); font-size: 12px; flex: none; }
+  .stats b { font-weight: 600; text-align: right; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #hotlist { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 13px; }
+  #hotlist li { display: grid; grid-template-columns: auto 1fr; gap: 8px; align-items: start; padding: 4px 6px; border-radius: 6px; cursor: pointer; border: 1px solid transparent; }
+  #hotlist li:hover { background: var(--panel-2); }
+  #hotlist li.on { border-color: var(--accent); }
+  #hotlist .sc { font-family: var(--mono); color: var(--accent); font-size: 12px; padding-top: 1px; }
+  #hotlist .t { min-width: 0; }
+  #hotlist .t span { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #hotlist .t .x { color: var(--ink-3); font-family: var(--mono); font-size: 11px; }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 5px; vertical-align: 0; }
+
+  /* crossover panel */
+  #cross .parents { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+  .parent { background: var(--panel-2); border-radius: 8px; padding: 8px 10px; border-top: 3px solid var(--ink-3); min-width: 0; }
+  .parent .role { font-family: var(--mono); font-size: 11px; color: var(--ink-3); }
+  .parent .t { font-weight: 600; margin: 2px 0; }
+  .parent .m { color: var(--ink-2); font-size: 12px; font-family: var(--mono); }
+  .parent .d { color: var(--ink-2); font-size: 12px; margin-top: 4px; }
+  .child { background: linear-gradient(180deg, #131c31, #0f1728); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+  .child .t { font-size: 18px; font-weight: 600; }
+  .child .a { color: var(--ink-2); font-size: 13px; }
+  .child .m { font-family: var(--mono); font-size: 12px; color: var(--ink-2); margin: 6px 0; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+  .child .d { margin: 6px 0 0; }
+  .via { display: inline-flex; align-items: center; gap: 6px; }
+  .via .bar { width: 90px; height: 6px; background: #0a0f1c; border-radius: 3px; overflow: hidden; border: 1px solid var(--line); }
+  .via .bar i { display: block; height: 100%; background: var(--good); }
+  .via.low .bar i { background: var(--bad); }
+  .via.mid .bar i { background: var(--accent); }
+  .btnrow { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  #cross .locus { font-family: var(--mono); font-size: 12px; color: var(--ink-2); margin-bottom: 8px; }
+
+  /* shuffle list */
+  #shufflelist { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; max-height: 360px; overflow: auto; }
+  #shufflelist li { background: var(--panel-2); border-radius: 8px; padding: 8px 10px; }
+  #shufflelist .t { font-weight: 600; }
+  #shufflelist .p { font-size: 12px; color: var(--ink-2); font-family: var(--mono); }
+  #shufflelist .p button { font-size: 12px; font-family: var(--mono); }
+  #shufflelist .d { font-size: 13px; margin-top: 3px; }
+  #shufflelist .m { font-family: var(--mono); font-size: 11px; color: var(--ink-3); margin-top: 3px; }
+
+  /* help overlay */
+  .overlay { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(4, 6, 14, 0.8); padding: 18px; z-index: 10; }
+  .overlay.show { display: flex; }
+  .overlay .box { max-width: 520px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; }
+  .overlay h2 { margin: 0 0 8px; font-size: 20px; font-weight: 600; }
+  .overlay p { margin: 8px 0; font-size: 14px; }
+  .overlay .keys { font-family: var(--mono); font-size: 12px; color: var(--ink-2); }
+  .overlay kbd { font-family: inherit; background: var(--panel-2); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; }
+
+  @media (max-width: 760px) {
+    #side { flex-basis: 100%; }
+    #cross .parents { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Shelf Genome</h1>
+  <span class="sub">The library as one chromosome: each book a band, colour by genre, glow by year.</span>
+  <span class="spacer"></span>
+  <button class="small" id="btn-shuffle">Shuffle the genome</button>
+  <button class="small" id="btn-help">What am I looking at?</button>
+</header>
+<div id="note"></div>
+
+<div id="layout">
+  <div id="main">
+    <div class="card" id="stripcard">
+      <h2>Chromosome <span class="r" id="viewinfo">loading the catalog</span></h2>
+      <div id="stripwrap">
+        <canvas id="strip" tabindex="0" aria-label="The library drawn as a chromosome strip; scroll to zoom, drag to pan, click a band"></canvas>
+        <div id="tip"></div>
+      </div>
+      <canvas id="minimap" aria-label="minimap"></canvas>
+      <div id="zoombar">
+        <button class="mono" id="btn-out" title="zoom out">&minus;</button>
+        <button class="mono" id="btn-in" title="zoom in">+</button>
+        <button class="mono" id="btn-fit" title="whole library">fit</button>
+        <span id="scale"></span>
+        <span class="spacer"></span>
+        <span id="hint">wheel to zoom, drag to pan, click a band or a glowing hotspot</span>
+      </div>
+      <div id="legend"></div>
+    </div>
+
+    <div class="card hidden" id="cross">
+      <h2>Crossover <span class="r" id="crossinfo"></span></h2>
+      <div class="locus" id="crosslocus"></div>
+      <div class="parents" id="parents"></div>
+      <div class="child" id="child"></div>
+      <div class="btnrow">
+        <button class="small" id="btn-reroll">Reroll</button>
+        <button class="small" id="btn-jump">Jump to locus</button>
+        <button class="small" id="btn-close">Close</button>
+      </div>
+    </div>
+
+    <div class="card hidden" id="shuffle">
+      <h2>Ten random crossovers <span class="r" id="shuffleinfo"></span></h2>
+      <ul id="shufflelist"></ul>
+      <div class="btnrow">
+        <button class="small" id="btn-reshuffle">Shuffle again</button>
+        <button class="small" id="btn-shuffle-close">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="side">
+    <div class="card" id="statscard">
+      <h2>Genome stats</h2>
+      <div class="stats" id="stats"></div>
+    </div>
+    <div class="card" id="hotcard">
+      <h2>Mutation hotspots <span class="r" id="hotinfo"></span></h2>
+      <ul id="hotlist"></ul>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="help">
+  <div class="box">
+    <h2>What maps to what</h2>
+    <p>Every band is one book in shelf order, coloured by genre, widened by how much there is to say about it (title plus description length, weighted by type: manga thin, textbooks fat), and brightened by publication year, so old books sit in shadow and new ones glow.</p>
+    <p>The two thin rows underneath mark language and type, the pinched gaps are the bookcases (A to N, then the loose pile) with shelf ticks between them, and the glowing dots above are hotspots where neighbours disagree on genre, language and century all at once.</p>
+    <p>A crossover is not genetics but a seeded splice of two titles and two blurbs, so the same pair with the same seed always breeds the same imaginary book, and the viability score is a made-up number that likes neighbours who are different but not too different.</p>
+    <p class="keys"><kbd>wheel</kbd> zoom &middot; <kbd>drag</kbd> pan &middot; <kbd>+</kbd> <kbd>-</kbd> <kbd>0</kbd> zoom, fit &middot; <kbd>&larr;</kbd> <kbd>&rarr;</kbd> pan &middot; <kbd>Esc</kbd> close</p>
+    <p class="keys" id="helpsource"></p>
+    <p style="text-align:center"><button id="btn-help-close">Close</button></p>
+  </div>
+</div>
+
+<script src="genome.js"></script>
+<script src="sample.js"></script>
+<script>
+(function () {
+  'use strict';
+  var G = window.Genome;
+  var $ = function (id) { return document.getElementById(id); };
+
+  /* ---------- layout constants (CSS px inside the strip canvas) ---------- */
+  var HOT_Y = 17, STRIP_Y0 = 34, STRIP_H = 96, LANG_Y = 138, ROW_H = 7, TYPE_Y = 149, SHELF_Y = 162, UNIT_Y = 195;
+  var MAX_SCALE = 120, PAD = 3; /* world units of padding either side */
+
+  var genome = null, hotspots = [], stats = null, source = '';
+  var state = { scale: 1, x0: 0, sel: null, pair: false, seed: 0, shuffleSeed: 0, highlightGenre: null };
+  var W = 0, H = 0, dpr = 1, fitScale = 1;
+  var canvas = $('strip'), ctx = canvas.getContext('2d');
+  var mini = $('minimap'), mctx = mini.getContext('2d'), miniCache = null, MW = 0, MH = 0;
+  var fillCache = [];
+  var typeColor = {}, langColor = {};
+  G.TYPE_CLASSES.forEach(function (t) { typeColor[t.key] = t.color; });
+  G.LANG_CLASSES.forEach(function (t) { langColor[t.key] = t.color; });
+
+  /* ---------- helpers ---------- */
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function fmtYear(y) { if (y === null || y === undefined) return 'year unknown'; return y < 0 ? (-y) + ' BC' : String(y); }
+  function hexRgb(h) { return [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]; }
+  function shade(hex, f) { var c = hexRgb(hex); return 'rgb(' + Math.round(c[0] * f) + ',' + Math.round(c[1] * f) + ',' + Math.round(c[2] * f) + ')'; }
+  function lum(hex, f) { var c = hexRgb(hex); return (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]) * f / 255; }
+  function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
+  function px(x) { return (x - state.x0) * state.scale; }
+  function world(p) { return p / state.scale + state.x0; }
+  function short(s, n) { s = String(s || ''); return s.length > n ? s.slice(0, n - 1) + '…' : s; }
+
+  /* ---------- data ---------- */
+  function load() {
+    var url = '../../assets/data/library.json';
+    var p = (window.fetch && location.protocol !== 'file:') ? fetch(url).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); }) : Promise.reject(new Error('no fetch'));
+    p.then(function (j) {
+      source = 'the library catalog of this site (assets/data/library.json, ' + j.books.length + ' books)';
+      start(j.books);
+    }).catch(function (err) {
+      var s = window.SHELF_GENOME_SAMPLE || [];
+      var note = $('note');
+      note.textContent = 'Could not fetch the real catalog (' + (err && err.message ? err.message : 'error') + '); showing a bundled sample of ' + s.length + ' invented books instead.';
+      note.className = 'show';
+      source = 'a bundled sample of ' + s.length + ' invented books (the real catalog could not be fetched)';
+      start(s);
+    });
+  }
+
+  function start(books) {
+    genome = G.buildGenome(books);
+    hotspots = G.findHotspots(genome);
+    stats = G.computeStats(genome);
+    fillCache = genome.loci.map(function (L) { return shade(L.color, G.yearBrightness(L.year)); });
+    $('helpsource').textContent = 'Data: ' + source + '. Colours, widths and children are computed in the page; nothing is stored.';
+    renderStats(); renderHotlist(); renderLegend();
+    resize();
+    if (!applyHash()) fitView();
+    draw();
+    window.addEventListener('hashchange', function () { if (!hashLock) { applyHash(); draw(); } });
+  }
+
+  /* ---------- view ---------- */
+  function resize() {
+    dpr = window.devicePixelRatio || 1;
+    var r = canvas.getBoundingClientRect();
+    var oldW = W;
+    W = Math.max(200, Math.round(r.width)); H = Math.round(r.height);
+    canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    var mr = mini.getBoundingClientRect();
+    MW = Math.max(200, Math.round(mr.width)); MH = Math.round(mr.height);
+    mini.width = Math.round(MW * dpr); mini.height = Math.round(MH * dpr);
+    mctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    if (!genome) return;
+    fitScale = W / (genome.length + PAD * 2);
+    if (oldW && oldW !== W) state.scale = clamp(state.scale * W / oldW, fitScale, MAX_SCALE);
+    miniCache = null;
+    clampView();
+  }
+  function clampView() {
+    state.scale = clamp(state.scale, fitScale, MAX_SCALE);
+    var span = W / state.scale;
+    state.x0 = clamp(state.x0, -PAD, genome.length + PAD - span);
+  }
+  function fitView() { state.scale = fitScale; state.x0 = -PAD; clampView(); }
+  function zoomAt(factor, atPx) {
+    var wx = world(atPx);
+    state.scale = clamp(state.scale * factor, fitScale, MAX_SCALE);
+    state.x0 = wx - atPx / state.scale;
+    clampView();
+  }
+  /* Animate the view to centre on a world x at a given scale. */
+  var anim = null;
+  function flyTo(wx, scale) {
+    scale = clamp(scale, fitScale, MAX_SCALE);
+    var from = { s: state.scale, x: state.x0 }, t0 = performance.now(), dur = 420;
+    var toX = wx - (W / scale) / 2;
+    if (anim) cancelAnimationFrame(anim);
+    function step(now) {
+      var t = clamp((now - t0) / dur, 0, 1), e = 1 - Math.pow(1 - t, 3);
+      state.scale = Math.exp(Math.log(from.s) + (Math.log(scale) - Math.log(from.s)) * e);
+      var cx = (from.x + (W / from.s) / 2) + ((wx) - (from.x + (W / from.s) / 2)) * e;
+      state.x0 = cx - (W / state.scale) / 2;
+      clampView(); draw();
+      if (t < 1) anim = requestAnimationFrame(step); else { anim = null; state.x0 = toX; clampView(); draw(); pushHash(); }
+    }
+    anim = requestAnimationFrame(step);
+  }
+
+  /* ---------- hash state ---------- */
+  var hashLock = false, hashTimer = null;
+  function pushHash() {
+    clearTimeout(hashTimer);
+    hashTimer = setTimeout(function () {
+      var q = 'z=' + state.scale.toFixed(3) + '&x=' + state.x0.toFixed(2);
+      if (state.sel !== null) q += '&sel=' + encodeURIComponent(genome.loci[state.sel].id) + (state.pair ? '&pair=1' : '') + (state.seed ? '&seed=' + state.seed : '');
+      if (state.highlightGenre) q += '&g=' + encodeURIComponent(state.highlightGenre);
+      hashLock = true;
+      try { history.replaceState(null, '', '#' + q); } catch (e) { location.hash = q; }
+      setTimeout(function () { hashLock = false; }, 0);
+    }, 120);
+  }
+  function applyHash() {
+    var h = location.hash.slice(1);
+    if (!h) return false;
+    var p = {};
+    h.split('&').forEach(function (kv) { var i = kv.indexOf('='); if (i > 0) p[kv.slice(0, i)] = decodeURIComponent(kv.slice(i + 1)); });
+    var z = parseFloat(p.z), x = parseFloat(p.x);
+    if (isFinite(z) && isFinite(x)) { state.scale = z; state.x0 = x; clampView(); } else fitView();
+    state.highlightGenre = p.g && G.GENRE_COLORS[p.g] ? p.g : null;
+    if (p.sel) {
+      var idx = -1;
+      for (var i = 0; i < genome.loci.length; i++) if (genome.loci[i].id === p.sel) { idx = i; break; }
+      if (idx >= 0) { state.seed = parseInt(p.seed, 10) || 0; select(idx, p.pair === '1', false); }
+    } else closeCross(false);
+    renderLegend();
+    return true;
+  }
+
+  /* ---------- drawing ---------- */
+  function visibleRange() {
+    var loci = genome.loci, x0 = state.x0, x1 = state.x0 + W / state.scale;
+    var lo = 0, hi = loci.length - 1;
+    while (lo < hi) { var m = (lo + hi) >> 1; if (loci[m].x + loci[m].w < x0) lo = m + 1; else hi = m; }
+    return { from: lo, to: x1 };
+  }
+  var fontMono = '11px ' + getComputedStyle(document.documentElement).getPropertyValue('--mono');
+  var fontSans = getComputedStyle(document.documentElement).getPropertyValue('--sans');
+
+  function draw() {
+    if (!genome) return;
+    var loci = genome.loci, s = state.scale;
+    ctx.clearRect(0, 0, W, H);
+    /* backbone */
+    ctx.fillStyle = '#0b1120';
+    ctx.fillRect(0, STRIP_Y0, W, STRIP_H);
+    /* centromeres: pinched shapes across the unit gaps */
+    for (var u = 1; u < genome.units.length; u++) {
+      var gx0 = px(genome.units[u - 1].x1), gx1 = px(genome.units[u].x0);
+      if (gx1 < 0 || gx0 > W) continue;
+      var gm = (gx0 + gx1) / 2, waist = STRIP_H * 0.32;
+      ctx.fillStyle = '#050810';
+      ctx.fillRect(gx0, STRIP_Y0, gx1 - gx0, STRIP_H);
+      ctx.fillStyle = '#1a2440';
+      ctx.beginPath();
+      ctx.moveTo(gx0, STRIP_Y0);
+      ctx.quadraticCurveTo(gm, STRIP_Y0 + waist, gx1, STRIP_Y0);
+      ctx.lineTo(gx1, STRIP_Y0 + STRIP_H);
+      ctx.quadraticCurveTo(gm, STRIP_Y0 + STRIP_H - waist, gx0, STRIP_Y0 + STRIP_H);
+      ctx.closePath(); ctx.fill();
+    }
+    /* bands */
+    var vr = visibleRange(), hl = state.highlightGenre;
+    for (var i = vr.from; i < loci.length && loci[i].x <= vr.to; i++) {
+      var L = loci[i], x = px(L.x), w = Math.max(L.w * s, 0.6);
+      ctx.globalAlpha = (hl && L.genre !== hl) ? 0.18 : 1;
+      ctx.fillStyle = fillCache[i];
+      ctx.fillRect(x, STRIP_Y0, w, STRIP_H);
+      if (w >= 4) { ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillRect(x + w - 1, STRIP_Y0, 1, STRIP_H); }
+      ctx.fillStyle = langColor[L.lang]; ctx.fillRect(x, LANG_Y, w, ROW_H);
+      ctx.fillStyle = typeColor[L.tclass]; ctx.fillRect(x, TYPE_Y, w, ROW_H);
+      if (w >= 13) drawTitle(L, x, w, i);
+    }
+    ctx.globalAlpha = 1;
+    /* selection */
+    if (state.sel !== null) {
+      var ids = state.pair ? [state.sel, state.sel + 1] : [state.sel];
+      ids.forEach(function (k) {
+        var S = loci[k]; if (!S) return;
+        var sx = px(S.x), sw = Math.max(S.w * s, 2);
+        ctx.save(); ctx.shadowColor = '#ffffff'; ctx.shadowBlur = 12;
+        ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.strokeRect(sx - 1, STRIP_Y0 - 1, sw + 2, STRIP_H + 2);
+        ctx.restore();
+      });
+    }
+    /* hotspots: the glow shrinks when zoomed out so dense regions stay legible */
+    var gz = clamp(0.45 + 0.55 * Math.log(state.scale / fitScale) / Math.log(6), 0.45, 1);
+    for (var h = 0; h < hotspots.length; h++) {
+      var hs = hotspots[h], hx = px(hs.x);
+      if (hx < -20 || hx > W + 20) continue;
+      var r = (5 + (hs.score - 1.7) * 6) * gz;
+      var g = ctx.createRadialGradient(hx, HOT_Y, 0, hx, HOT_Y, r * 2.2);
+      g.addColorStop(0, 'rgba(255,204,102,0.75)'); g.addColorStop(0.5, 'rgba(255,140,60,0.28)'); g.addColorStop(1, 'rgba(255,120,40,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(hx, HOT_Y, r * 2.2, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#ffe2a0'; ctx.beginPath(); ctx.arc(hx, HOT_Y, 2.2, 0, Math.PI * 2); ctx.fill();
+      var active = state.pair && state.sel === hs.i;
+      if (active) { ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(hx, HOT_Y, r + 3, 0, Math.PI * 2); ctx.stroke(); }
+      /* a hairline down to the seam between the two bands */
+      ctx.strokeStyle = 'rgba(255,204,102,' + (active ? 0.9 : 0.35) + ')'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(hx, HOT_Y + 4); ctx.lineTo(hx, STRIP_Y0); ctx.stroke();
+    }
+    /* shelf ticks and labels */
+    ctx.font = fontMono; ctx.textBaseline = 'top'; ctx.textAlign = 'left';
+    for (var j = 0; j < genome.shelves.length; j++) {
+      var sh = genome.shelves[j], sx0 = px(sh.x0), sx1 = px(sh.x1);
+      if (sx1 < 0 || sx0 > W) continue;
+      ctx.fillStyle = '#3a4a6e'; ctx.fillRect(Math.round(sx0), SHELF_Y, 1, 9);
+      var tw = ctx.measureText(sh.s).width;
+      if (sx1 - sx0 > tw + 8) { ctx.fillStyle = '#6f80a3'; ctx.fillText(sh.s, Math.max(sx0, 0) + 4, SHELF_Y + 12); }
+    }
+    ctx.fillStyle = '#3a4a6e'; ctx.fillRect(Math.round(px(genome.length)), SHELF_Y, 1, 9);
+    /* unit letters, sticky within the visible part of the unit */
+    ctx.font = '600 13px ' + getComputedStyle(document.documentElement).getPropertyValue('--mono');
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    for (var k = 0; k < genome.units.length; k++) {
+      var U = genome.units[k], ux0 = px(U.x0), ux1 = px(U.x1);
+      if (ux1 < 0 || ux0 > W) continue;
+      var lab = U.u, lw = ctx.measureText(lab).width;
+      if (ux1 - ux0 < lw + 4 && genome.units.length > 6) { if (lab.length > 1) continue; }
+      var cx = clamp((ux0 + ux1) / 2, Math.max(ux0, 0) + lw / 2 + 2, Math.min(ux1, W) - lw / 2 - 2);
+      ctx.fillStyle = '#b8c4de'; ctx.fillText(lab, cx, UNIT_Y);
+      if (ux1 - ux0 > 30) { ctx.fillStyle = '#1e2a47'; ctx.fillRect(Math.max(ux0, 0), UNIT_Y + 10, Math.min(ux1, W) - Math.max(ux0, 0), 1); }
+    }
+    drawMini();
+    $('scale').textContent = 'x' + (state.scale / fitScale).toFixed(1) + '  ' + Math.round(W / state.scale) + ' of ' + Math.round(genome.length) + ' bp';
+    $('viewinfo').textContent = genome.loci.length + ' loci · ' + genome.units.length + ' bookcases · ' + genome.shelves.length + ' shelves';
+  }
+  function drawTitle(L, x, w, i) {
+    var fs = Math.min(12, Math.max(9, w * 0.62));
+    ctx.save();
+    ctx.beginPath(); ctx.rect(x, STRIP_Y0, w, STRIP_H); ctx.clip();
+    ctx.font = fs + 'px ' + fontSans;
+    ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
+    var dark = lum(L.color, G.yearBrightness(L.year)) > 0.42;
+    ctx.fillStyle = dark ? 'rgba(6,10,20,0.92)' : 'rgba(240,245,255,0.92)';
+    ctx.translate(x + w / 2, STRIP_Y0 + STRIP_H - 6);
+    ctx.rotate(-Math.PI / 2);
+    var t = L.book.t, maxW = STRIP_H - 12;
+    if (ctx.measureText(t).width > maxW) {
+      var chars = Array.from(t), n = chars.length;
+      while (n > 1 && ctx.measureText(chars.slice(0, n).join('') + '…').width > maxW) n = Math.floor(n * 0.8);
+      t = chars.slice(0, n).join('') + '…';
+    }
+    ctx.fillText(t, 0, 0);
+    /* wide bands also get author and year on a second line */
+    if (w >= 34) {
+      ctx.font = '9px ' + fontSans; ctx.fillStyle = dark ? 'rgba(6,10,20,0.7)' : 'rgba(240,245,255,0.7)';
+      ctx.fillText(short((L.book.a ? L.book.a + ' · ' : '') + fmtYear(L.year), 24), 0, fs + 2);
+    }
+    ctx.restore();
+  }
+  function drawMini() {
+    if (!miniCache) {
+      miniCache = document.createElement('canvas');
+      miniCache.width = Math.round(MW * dpr); miniCache.height = Math.round(MH * dpr);
+      var c = miniCache.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0);
+      var ms = MW / (genome.length + PAD * 2);
+      c.fillStyle = '#050810'; c.fillRect(0, 0, MW, MH);
+      genome.loci.forEach(function (L, i) {
+        c.fillStyle = fillCache[i];
+        c.fillRect((L.x + PAD) * ms, 4, Math.max(L.w * ms, 0.5), MH - 8);
+      });
+      c.fillStyle = 'rgba(255,204,102,0.8)';
+      hotspots.forEach(function (h) { c.fillRect((h.x + PAD) * ms - 0.5, 0, 1, 3); });
+    }
+    mctx.clearRect(0, 0, MW, MH);
+    mctx.drawImage(miniCache, 0, 0, MW, MH);
+    var ms = MW / (genome.length + PAD * 2);
+    var vx0 = (state.x0 + PAD) * ms, vw = Math.max((W / state.scale) * ms, 3);
+    mctx.fillStyle = 'rgba(255,255,255,0.14)'; mctx.fillRect(vx0, 0, vw, MH);
+    mctx.strokeStyle = 'rgba(255,255,255,0.85)'; mctx.lineWidth = 1; mctx.strokeRect(vx0 + 0.5, 0.5, vw - 1, MH - 1);
+  }
+
+  /* ---------- hit testing ---------- */
+  function locusAt(p) {
+    var wx = world(p), loci = genome.loci;
+    var lo = 0, hi = loci.length - 1;
+    while (lo < hi) { var m = (lo + hi) >> 1; if (loci[m].x + loci[m].w < wx) lo = m + 1; else hi = m; }
+    var L = loci[lo];
+    if (L && wx >= L.x - 0.3 / state.scale && wx <= L.x + L.w + 0.3 / state.scale) return lo;
+    return null;
+  }
+  function hotspotAt(p) {
+    var best = null, bd = 9;
+    for (var h = 0; h < hotspots.length; h++) { var d = Math.abs(px(hotspots[h].x) - p); if (d < bd) { bd = d; best = h; } }
+    return best;
+  }
+
+  /* ---------- selection and crossover ---------- */
+  function parentsFor(idx, pair) {
+    var loci = genome.loci;
+    if (pair) return [loci[idx], loci[idx + 1]];
+    if (loci.length < 2) return [loci[idx], loci[idx]];
+    if (idx === 0) return [loci[0], loci[1]];
+    if (idx === loci.length - 1) return [loci[idx - 1], loci[idx]];
+    return [loci[idx - 1], loci[idx + 1]];
+  }
+  function select(idx, pair, push) {
+    if (pair && idx + 1 >= genome.loci.length) pair = false;
+    /* a fresh selection by the user starts at seed 0; a hash restore keeps its seed */
+    if (push !== false && (state.sel !== idx || state.pair !== pair)) state.seed = 0;
+    state.sel = idx; state.pair = pair;
+    renderCross();
+    renderHotlist();
+    if (push !== false) pushHash();
+  }
+  function closeCross(push) {
+    state.sel = null; state.pair = false; state.seed = 0;
+    $('cross').classList.add('hidden');
+    renderHotlist();
+    if (push !== false) pushHash();
+  }
+  function parentCard(L, role) {
+    var b = L.book;
+    return '<div class="parent" style="border-top-color:' + L.color + '">' +
+      '<div class="role">' + role + ' · ' + esc(b.id) + '</div>' +
+      '<div class="t">' + esc(b.t) + '</div>' +
+      '<div class="m">' + esc(b.a || 'anon.') + ' · ' + fmtYear(L.year) + ' · ' + esc(b.l) + ' · ' + esc(b.ty) + '</div>' +
+      '<div class="m"><span class="dot" style="background:' + L.color + '"></span>' + esc(b.g) + '</div>' +
+      (b.d ? '<div class="d">' + esc(short(b.d, 180)) + '</div>' : '<div class="d"><i>no description</i></div>') +
+      '</div>';
+  }
+  function childCard(c) {
+    var cls = c.viability >= 70 ? '' : c.viability >= 45 ? ' mid' : ' low';
+    return '<div class="t">' + esc(c.title) + '</div>' +
+      '<div class="a">' + esc(c.author) + '</div>' +
+      '<div class="m"><span><span class="dot" style="background:' + G.genreColor(c.genre) + '"></span>' + esc(c.genre) + '</span><span>' + fmtYear(c.year) + '</span>' +
+      '<span class="via' + cls + '"><span class="bar"><i style="width:' + c.viability + '%"></i></span>' + c.viability + '% ' + esc(c.verdict) + '</span></div>' +
+      '<div class="d">' + esc(c.blurb) + '</div>';
+  }
+  function renderCross() {
+    if (state.sel === null) return;
+    var P = parentsFor(state.sel, state.pair), L = genome.loci[state.sel];
+    var child = G.crossover(P[0].book, P[1].book, state.seed, genome.genreCount);
+    $('cross').classList.remove('hidden');
+    $('crossinfo').textContent = 'seed ' + state.seed;
+    $('crosslocus').innerHTML = state.pair
+      ? 'hotspot between <b>' + esc(P[0].id) + '</b> and <b>' + esc(P[1].id) + '</b> · collision score ' + G.collisionScore(P[0], P[1]).toFixed(2)
+      : 'locus <b>' + esc(L.id) + '</b> · ' + esc(short(L.book.t, 70)) + ' · what its two neighbours would breed:';
+    $('parents').innerHTML = parentCard(P[0], state.pair ? 'left' : 'left neighbour') + parentCard(P[1], state.pair ? 'right' : 'right neighbour');
+    $('child').innerHTML = childCard(child);
+  }
+
+  /* ---------- side panels ---------- */
+  function renderStats() {
+    var s = stats, run = s.longestRun, loci = genome.loci;
+    var runShelf = run.genre ? loci[run.first].book.u + ' ' + loci[run.first].book.s : '';
+    var rows = [
+      ['genome length', s.length + ' loci'],
+      ['F-content', (s.fictionShare * 100).toFixed(1) + '% fiction'],
+      ['top gene', '<span class="dot" style="background:' + G.genreColor(s.topGenre) + '"></span>' + esc(s.topGenre) + ' (' + s.topGenreCount + ')'],
+      ['genes', s.genres + ' genres'],
+      ['longest run', '<button class="link" data-jump="' + run.first + '" title="' + esc(runShelf) + '">' + run.len + ' × ' + esc(short(run.genre, 26)) + '</button>'],
+      ['oldest locus', s.oldest ? '<button class="link" data-jump="' + s.oldest.i + '">' + esc(short(s.oldest.book.t, 22)) + ', ' + fmtYear(s.oldest.year) + '</button>' : '—'],
+      ['newest locus', s.newest ? '<button class="link" data-jump="' + s.newest.i + '">' + esc(short(s.newest.book.t, 22)) + ', ' + fmtYear(s.newest.year) + '</button>' : '—'],
+      ['hotspots', hotspots.length + ' above 1.7']
+    ];
+    $('stats').innerHTML = rows.map(function (r) { return '<div><span>' + r[0] + '</span><b>' + r[1] + '</b></div>'; }).join('');
+  }
+  function renderHotlist() {
+    var top = hotspots.slice(0, 10);
+    $('hotinfo').textContent = 'top 10 of ' + hotspots.length;
+    $('hotlist').innerHTML = top.map(function (h, n) {
+      var A = genome.loci[h.i], B = genome.loci[h.j];
+      var on = state.pair && state.sel === h.i ? ' class="on"' : '';
+      return '<li data-hot="' + n + '"' + on + '><span class="sc">' + h.score.toFixed(1) + '</span><span class="t">' +
+        '<span><span class="dot" style="background:' + A.color + '"></span>' + esc(A.book.t) + '</span>' +
+        '<span class="x">× ' + esc(A.book.u) + ' ' + esc(A.book.s) + ' · ' + fmtYear(A.year) + ' / ' + fmtYear(B.year) + '</span>' +
+        '<span><span class="dot" style="background:' + B.color + '"></span>' + esc(B.book.t) + '</span></span></li>';
+    }).join('');
+  }
+  function renderLegend() {
+    var genres = Object.keys(genome.genreCount).sort(function (a, b) { return genome.genreCount[b] - genome.genreCount[a]; });
+    var html = '<span class="grp">genre (click to isolate) · brightness = year, dark is old</span>';
+    html += genres.map(function (g) {
+      return '<span class="chip' + (state.highlightGenre === g ? ' on' : '') + '" data-genre="' + esc(g) + '"><span class="sw" style="background:' + G.genreColor(g) + '"></span>' + esc(g) + ' ' + genome.genreCount[g] + '</span>';
+    }).join('');
+    html += '<span class="grp">language row</span>' + G.LANG_CLASSES.map(function (c) { return '<span class="chip"><span class="sw row" style="background:' + c.color + '"></span>' + c.label + '</span>'; }).join('');
+    html += '<span class="grp">type row</span>' + G.TYPE_CLASSES.map(function (c) { return '<span class="chip"><span class="sw row" style="background:' + c.color + '"></span>' + c.label + '</span>'; }).join('');
+    $('legend').innerHTML = html;
+  }
+  function renderShuffle() {
+    var kids = G.shuffleGenome(genome, state.shuffleSeed, 10);
+    $('shuffle').classList.remove('hidden');
+    $('shuffleinfo').textContent = 'seed ' + state.shuffleSeed;
+    $('shufflelist').innerHTML = kids.map(function (c) {
+      return '<li><div class="t">' + esc(c.title) + '</div>' +
+        '<div class="p">child of <button class="link" data-jump="' + c.a.i + '">' + esc(short(c.a.book.t, 40)) + '</button> × <button class="link" data-jump="' + c.b.i + '">' + esc(short(c.b.book.t, 40)) + '</button></div>' +
+        '<div class="d">' + esc(c.blurb) + '</div>' +
+        '<div class="m"><span class="dot" style="background:' + G.genreColor(c.genre) + '"></span>' + esc(c.genre) + ' · ' + fmtYear(c.year) + ' · ' + esc(c.author) + ' · viability ' + c.viability + '% ' + esc(c.verdict) + '</div></li>';
+    }).join('');
+  }
+
+  /* jump: select a locus and fly to it at a readable zoom */
+  function jumpTo(idx, pair) {
+    var L = genome.loci[idx];
+    var cx = pair ? L.x + L.w : L.x + L.w / 2;
+    select(idx, !!pair, true);
+    flyTo(cx, Math.max(state.scale, 28));
+  }
+
+  /* ---------- interaction ---------- */
+  var drag = null, pointers = {}, pinch = null, moved = false;
+  canvas.addEventListener('wheel', function (e) {
+    e.preventDefault();
+    var r = canvas.getBoundingClientRect();
+    if (e.shiftKey || Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+      state.x0 += (e.deltaX || e.deltaY) / state.scale; clampView();
+    } else {
+      zoomAt(Math.exp(-e.deltaY * 0.0016), e.clientX - r.left);
+    }
+    draw(); pushHash();
+  }, { passive: false });
+  canvas.addEventListener('pointerdown', function (e) {
+    canvas.setPointerCapture(e.pointerId);
+    pointers[e.pointerId] = { x: e.clientX, y: e.clientY };
+    var keys = Object.keys(pointers);
+    if (keys.length === 2) {
+      var a = pointers[keys[0]], b = pointers[keys[1]];
+      pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), scale: state.scale, mid: (a.x + b.x) / 2 - canvas.getBoundingClientRect().left };
+      drag = null;
+    } else {
+      drag = { x: e.clientX, x0: state.x0 }; moved = false;
+      canvas.classList.add('dragging');
+    }
+  });
+  canvas.addEventListener('pointermove', function (e) {
+    var r = canvas.getBoundingClientRect(), p = e.clientX - r.left, py = e.clientY - r.top;
+    if (pointers[e.pointerId]) pointers[e.pointerId] = { x: e.clientX, y: e.clientY };
+    if (pinch) {
+      var keys = Object.keys(pointers); if (keys.length < 2) return;
+      var a = pointers[keys[0]], b = pointers[keys[1]], d = Math.hypot(a.x - b.x, a.y - b.y);
+      var wx = world(pinch.mid);
+      state.scale = clamp(pinch.scale * d / pinch.d, fitScale, MAX_SCALE);
+      state.x0 = wx - pinch.mid / state.scale; clampView(); draw(); pushHash();
+      return;
+    }
+    if (drag) {
+      var dx = e.clientX - drag.x;
+      if (Math.abs(dx) > 3) moved = true;
+      state.x0 = drag.x0 - dx / state.scale; clampView(); draw(); pushHash();
+      hideTip(); return;
+    }
+    if (e.pointerType === 'touch') return;
+    /* hover tooltip */
+    var idx = null, hot = null;
+    if (py < STRIP_Y0 - 2) hot = hotspotAt(p);
+    else if (py >= STRIP_Y0 && py <= TYPE_Y + ROW_H) idx = locusAt(p);
+    if (hot !== null) {
+      var h = hotspots[hot];
+      showTip(p, py, '<b>hotspot · score ' + h.score.toFixed(2) + '</b>' + esc(short(genome.loci[h.i].book.t, 50)) + '<br>× ' + esc(short(genome.loci[h.j].book.t, 50)));
+      canvas.style.cursor = 'pointer';
+    } else if (idx !== null) {
+      var L = genome.loci[idx], b = L.book;
+      showTip(p, py, '<b>' + esc(b.t) + '</b>' + esc(b.a || 'anon.') + '<div class="m">' + esc(b.id) + ' · ' + fmtYear(L.year) + ' · ' + esc(b.l) + ' · ' + esc(b.ty) + '<br>' + esc(b.g) + '</div>');
+      canvas.style.cursor = 'pointer';
+    } else { hideTip(); canvas.style.cursor = ''; }
+  });
+  function endPointer(e) {
+    delete pointers[e.pointerId];
+    if (pinch) { if (Object.keys(pointers).length < 2) pinch = null; return; }
+    canvas.classList.remove('dragging');
+    if (!drag) return;
+    var wasClick = !moved;
+    drag = null;
+    if (wasClick && e.type === 'pointerup') {
+      var r = canvas.getBoundingClientRect(), p = e.clientX - r.left, py = e.clientY - r.top;
+      if (py < STRIP_Y0 - 2) {
+        var hot = hotspotAt(p);
+        if (hot !== null) { select(hotspots[hot].i, true, true); draw(); return; }
+      }
+      if (py >= STRIP_Y0 && py <= TYPE_Y + ROW_H) {
+        var idx = locusAt(p);
+        if (idx !== null) { select(idx, false, true); draw(); return; }
+      }
+    }
+  }
+  canvas.addEventListener('pointerup', endPointer);
+  canvas.addEventListener('pointercancel', endPointer);
+  canvas.addEventListener('pointerleave', function () { hideTip(); });
+  canvas.addEventListener('dblclick', function (e) {
+    var r = canvas.getBoundingClientRect(); zoomAt(2.2, e.clientX - r.left); draw(); pushHash();
+  });
+  canvas.addEventListener('keydown', function (e) {
+    var k = e.key;
+    if (k === '+' || k === '=') zoomAt(1.4, W / 2);
+    else if (k === '-' || k === '_') zoomAt(1 / 1.4, W / 2);
+    else if (k === '0') fitView();
+    else if (k === 'ArrowLeft') { state.x0 -= (W / state.scale) * 0.15; clampView(); }
+    else if (k === 'ArrowRight') { state.x0 += (W / state.scale) * 0.15; clampView(); }
+    else return;
+    e.preventDefault(); draw(); pushHash();
+  });
+  function showTip(x, y, html) {
+    var t = $('tip'); t.innerHTML = html; t.style.display = 'block';
+    var tw = t.offsetWidth, left = x + 14; if (left + tw > W - 4) left = Math.max(4, x - tw - 14);
+    t.style.left = left + 'px'; t.style.top = Math.min(y + 14, H - t.offsetHeight - 4) + 'px';
+  }
+  function hideTip() { $('tip').style.display = 'none'; }
+
+  /* minimap: click or drag to move the viewport */
+  var mdrag = false;
+  function miniSeek(e) {
+    var r = mini.getBoundingClientRect(), ms = MW / (genome.length + PAD * 2);
+    var wx = (e.clientX - r.left) / ms - PAD;
+    state.x0 = wx - (W / state.scale) / 2; clampView(); draw(); pushHash();
+  }
+  mini.addEventListener('pointerdown', function (e) { mdrag = true; mini.setPointerCapture(e.pointerId); miniSeek(e); });
+  mini.addEventListener('pointermove', function (e) { if (mdrag) miniSeek(e); });
+  mini.addEventListener('pointerup', function () { mdrag = false; });
+  mini.addEventListener('pointercancel', function () { mdrag = false; });
+
+  $('btn-in').addEventListener('click', function () { zoomAt(1.6, W / 2); draw(); pushHash(); });
+  $('btn-out').addEventListener('click', function () { zoomAt(1 / 1.6, W / 2); draw(); pushHash(); });
+  $('btn-fit').addEventListener('click', function () { fitView(); draw(); pushHash(); });
+  $('btn-reroll').addEventListener('click', function () { state.seed++; renderCross(); pushHash(); });
+  $('btn-close').addEventListener('click', function () { closeCross(true); draw(); });
+  $('btn-jump').addEventListener('click', function () { if (state.sel !== null) jumpTo(state.sel, state.pair); });
+  $('btn-shuffle').addEventListener('click', function () { if (!genome) return; renderShuffle(); $('shuffle').scrollIntoView({ behavior: 'smooth', block: 'nearest' }); });
+  $('btn-reshuffle').addEventListener('click', function () { state.shuffleSeed++; renderShuffle(); });
+  $('btn-shuffle-close').addEventListener('click', function () { $('shuffle').classList.add('hidden'); });
+  $('btn-help').addEventListener('click', function () { $('help').classList.add('show'); });
+  $('btn-help-close').addEventListener('click', function () { $('help').classList.remove('show'); });
+  $('help').addEventListener('click', function (e) { if (e.target === $('help')) $('help').classList.remove('show'); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { $('help').classList.remove('show'); } });
+  $('hotlist').addEventListener('click', function (e) {
+    var li = e.target.closest('li[data-hot]'); if (!li) return;
+    var h = hotspots[parseInt(li.getAttribute('data-hot'), 10)];
+    jumpTo(h.i, true);
+  });
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-jump]'); if (!b) return;
+    jumpTo(parseInt(b.getAttribute('data-jump'), 10), false);
+    $('stripcard').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  });
+  $('legend').addEventListener('click', function (e) {
+    var chip = e.target.closest('.chip[data-genre]'); if (!chip) return;
+    var g = chip.getAttribute('data-genre');
+    state.highlightGenre = state.highlightGenre === g ? null : g;
+    renderLegend(); draw(); pushHash();
+  });
+  window.addEventListener('resize', function () { resize(); draw(); });
+
+  load();
+})();
+</script>
+</body>
+</html>

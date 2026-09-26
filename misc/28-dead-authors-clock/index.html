@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dead Authors' Local Time</title>
+<meta name="description" content="A world clock for the places where the authors on my shelves died, sorted by whose sun is setting right now.">
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    --bg: #0a0d18;
+    --panel: #131829;
+    --panel-2: #1b2138;
+    --line: #2a3150;
+    --ink: #ece6d8;
+    --ink-2: #a49d90;
+    --ink-3: #6f6a63;
+    --gold: #e8c47a;
+    --day: #8fc1ff;
+    --dusk: #f08a5d;
+    --dawn: #f3c26b;
+    --night: #4a5590;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", "Noto Serif CJK JP", "Noto Serif JP", serif;
+    --sans: -apple-system, "Segoe UI", Helvetica, Arial, "Hiragino Sans", "Yu Gothic", "Noto Sans CJK JP", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); }
+  body { font: 15px/1.45 var(--sans); padding: 14px 16px 40px; overflow-x: hidden; }
+  a { color: inherit; }
+  h1 { font: 600 24px/1.2 var(--serif); margin: 0; letter-spacing: 0.01em; }
+  header { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; }
+  header .sub { color: var(--ink-2); font-size: 14px; }
+  header .spacer { flex: 1; }
+  button, select, input {
+    font: inherit; color: var(--ink); background: var(--panel-2); border: 1px solid var(--line);
+    border-radius: 7px; padding: 6px 10px;
+  }
+  button { cursor: pointer; }
+  button:hover { background: #242c48; }
+  button.small { font-size: 13px; padding: 4px 10px; }
+  input::placeholder { color: var(--ink-3); }
+  select option { background: var(--panel-2); }
+
+  /* featured author */
+  #featured {
+    position: relative; border-radius: 14px; padding: 28px 26px 24px; margin-bottom: 14px; min-height: 150px;
+    background: linear-gradient(180deg, #1a2148, #070b1c); border: 1px solid var(--line);
+    box-shadow: 0 14px 40px rgba(0,0,0,0.45); overflow: hidden; transition: background 2s linear;
+  }
+  #featured .eyebrow { font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em; color: rgba(255,255,255,0.55); margin-bottom: 8px; }
+  #featured .name { font: 400 clamp(26px, 4.5vw, 40px)/1.15 var(--serif); text-shadow: 0 2px 12px rgba(0,0,0,0.4); }
+  #featured .ja { font-family: var(--serif); font-size: 0.55em; color: rgba(255,255,255,0.7); margin-left: 0.5em; }
+  #featured .line { font-family: var(--serif); font-size: clamp(16px, 2.2vw, 20px); margin-top: 12px; max-width: 46em; line-height: 1.5; text-shadow: 0 1px 8px rgba(0,0,0,0.35); }
+  #featured .line b { font-weight: 400; font-variant-numeric: tabular-nums; }
+  #featured .sun { position: absolute; right: 26px; width: 46px; height: 46px; border-radius: 50%; background: radial-gradient(circle at 40% 40%, #fff6d8, #f2b94f 60%, rgba(242,185,79,0) 72%); box-shadow: 0 0 40px 12px rgba(255, 190, 90, 0.35); transition: top 2s linear, opacity 2s; }
+  #featured .meta { position: absolute; right: 26px; bottom: 16px; font-size: 12px; color: rgba(255,255,255,0.6); }
+  #featured a { text-decoration: none; border-bottom: 1px dotted rgba(255,255,255,0.4); }
+
+  /* sky strip */
+  #strip { position: relative; height: 64px; border-radius: 10px; margin-bottom: 14px; border: 1px solid var(--line); overflow: hidden;
+    background: linear-gradient(90deg, #070b1c 0%, #101634 18%, #6b3f5f 24%, #f0a860 27%, #7fb2ec 33%, #9fcbff 50%, #7fb2ec 67%, #f0a860 74%, #6b3f5f 79%, #101634 84%, #070b1c 100%); }
+  #strip .tick { position: absolute; top: 0; bottom: 0; width: 1px; background: rgba(255,255,255,0.14); }
+  #strip .tick span { position: absolute; top: 3px; left: 4px; font-size: 10px; color: rgba(255,255,255,0.55); font-variant-numeric: tabular-nums; letter-spacing: 0.04em; }
+  #strip .dot { position: absolute; width: 9px; height: 9px; margin: -4px 0 0 -4px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.45); box-shadow: 0 0 6px rgba(0,0,0,0.5); cursor: pointer; transition: left 1s linear; }
+  #strip .dot:hover { transform: scale(1.7); z-index: 2; }
+  #strip .dot.day { background: var(--day); }
+  #strip .dot.dusk { background: var(--dusk); }
+  #strip .dot.dawn { background: var(--dawn); }
+  #strip .dot.night { background: var(--night); }
+  #strip .here { position: absolute; top: 0; bottom: 0; width: 2px; background: rgba(255,255,255,0.7); box-shadow: 0 0 6px #fff; }
+  #strip .here span { position: absolute; bottom: 3px; left: 5px; font-size: 10px; color: #fff; white-space: nowrap; }
+
+  /* controls */
+  #controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; font-size: 14px; }
+  #controls label { color: var(--ink-2); }
+  #q { min-width: 200px; flex: 1 1 200px; max-width: 360px; }
+  #count { color: var(--ink-3); font-size: 13px; }
+  .legend { display: flex; gap: 12px; color: var(--ink-3); font-size: 12px; margin-left: auto; }
+  .legend i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 4px; vertical-align: -1px; }
+
+  /* cards */
+  #grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
+  .card { position: relative; border-radius: 12px; padding: 14px 14px 12px; border: 1px solid var(--line); min-height: 148px;
+    background: linear-gradient(180deg, #1a2148, #0d1127); transition: background 2s linear; overflow: hidden; }
+  .card.hi { outline: 2px solid var(--gold); }
+  .card .name { font: 400 19px/1.25 var(--serif); text-shadow: 0 1px 6px rgba(0,0,0,0.4); }
+  .card .name a { text-decoration: none; }
+  .card .name a:hover { border-bottom: 1px dotted currentColor; }
+  .card .ja { font-family: var(--serif); font-size: 14px; color: rgba(255,255,255,0.6); }
+  .card .place { font-size: 13px; color: rgba(255,255,255,0.72); margin-top: 2px; min-height: 1.4em; }
+  .card .time { font-family: var(--serif); font-size: 30px; line-height: 1.1; margin-top: 10px; font-variant-numeric: tabular-nums; letter-spacing: 0.02em; text-shadow: 0 1px 8px rgba(0,0,0,0.5); }
+  .card .time small { font-size: 0.5em; opacity: 0.65; margin-left: 2px; }
+  .card .sun { font-size: 12.5px; color: rgba(255,255,255,0.78); margin-top: 4px; }
+  .card .died { position: absolute; right: 12px; bottom: 10px; font-size: 12px; color: rgba(255,255,255,0.6); font-variant-numeric: tabular-nums; }
+  .card .flag { position: absolute; right: 10px; top: 8px; font-size: 11px; color: rgba(255,255,255,0.45); cursor: help; }
+  .card .badge { position: absolute; left: 14px; bottom: 10px; font-size: 11px; color: rgba(255,255,255,0.5); }
+
+  #empty, #nodata { color: var(--ink-2); padding: 20px 0; }
+  #nodata { display: none; }
+
+  /* help */
+  #help { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(5, 7, 14, 0.8); padding: 16px; z-index: 10; }
+  #help.show { display: flex; }
+  #help .box { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 20px 22px; max-width: 560px; max-height: 90vh; overflow: auto; width: 100%; }
+  #help h2 { margin: 0 0 8px; font: 600 20px/1.2 var(--serif); }
+  #help p { margin: 8px 0; font-size: 14px; }
+  #help details { margin: 8px 0; font-size: 13px; color: var(--ink-2); }
+  #help summary { cursor: pointer; color: var(--ink); }
+  #help .names { line-height: 1.6; }
+  #help .stats { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; font-size: 14px; margin: 10px 0; }
+  #help .stats b { font-variant-numeric: tabular-nums; text-align: right; }
+  footer { margin-top: 26px; color: var(--ink-3); font-size: 12px; }
+
+  .card .sun { padding-right: 52px; }
+  @media (max-width: 640px) {
+    #featured { padding: 20px 16px 30px; }
+    #featured .sun { width: 30px; height: 30px; right: 14px; top: 14px !important; opacity: 0.85 !important; }
+    #featured .name, #featured .line { padding-right: 36px; }
+    #featured .meta { right: 14px; bottom: 8px; }
+    #grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+    .card .time { font-size: 26px; }
+    .legend { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { #featured, .card, #strip .dot, #featured .sun { transition: none; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Dead Authors&rsquo; Local Time</h1>
+  <span class="sub">What time it is right now where the authors on my shelves died, sorted by whose sun is setting.</span>
+  <span class="spacer"></span>
+  <button class="small" id="btn-help">About the data</button>
+</header>
+
+<section id="featured" aria-live="polite">
+  <div class="sun" id="f-sun"></div>
+  <div class="eyebrow" id="f-eyebrow">Nearest to sunset</div>
+  <div class="name"><a id="f-name" href="#" target="_blank" rel="noopener"></a><span class="ja" id="f-ja"></span></div>
+  <div class="line" id="f-line"></div>
+  <div class="meta" id="f-meta"></div>
+</section>
+
+<div id="strip" title="Every author as a dot at their current local hour"></div>
+
+<div id="controls">
+  <label for="sort">Sort</label>
+  <select id="sort">
+    <option value="sunset">closest to sunset</option>
+    <option value="time">local time</option>
+    <option value="name">name</option>
+    <option value="year">year of death</option>
+  </select>
+  <input id="q" type="search" placeholder="filter by name, place or zone" autocomplete="off">
+  <span id="count"></span>
+  <span class="legend"><span><i style="background:var(--day)"></i>day</span><span><i style="background:var(--dusk)"></i>dusk</span><span><i style="background:var(--night)"></i>night</span><span><i style="background:var(--dawn)"></i>dawn</span></span>
+</div>
+
+<div id="grid"></div>
+<div id="empty" hidden>No one matches that filter.</div>
+<div id="nodata">The author data (authors.js) did not load, so there is nothing to show.</div>
+
+<footer>Times use your browser&rsquo;s time-zone database; sun states are computed here from NOAA&rsquo;s solar equations. Author and place data: Wikidata (CC0), matched automatically, so treat surprises with suspicion.</footer>
+
+<div id="help" role="dialog" aria-modal="true" aria-labelledby="help-title">
+  <div class="box">
+    <h2 id="help-title">About this clock</h2>
+    <p>Every card is an author from the library catalog whose place of death Wikidata records, showing the current local time there and whether the sun is up, setting, down or rising. The one whose sunset is nearest right now, before or after, takes the big panel at the top, and the strip beneath it puts everyone on one 24-hour day. Sort by nearness to sunset, by local time, by name or by year of death, and filter by name, place or zone; the sort and filter are kept in the address bar.</p>
+    <div class="stats" id="help-stats"></div>
+    <p>Data: names were taken from the catalog and matched to <a href="https://www.wikidata.org/" target="_blank" rel="noopener">Wikidata</a> (CC0) automatically by label and alias, preferring people with writer-type occupations and skipping names that several writers share; a few were checked by hand. Place of death, its coordinates and the date of death come from Wikidata; the time zone was chosen offline from the coordinates and country using the IANA tz database&rsquo;s zone table (public domain). Mistakes are possible: every name links to its Wikidata entry so you can check. Sunrise and sunset use the NOAA solar-position equations and are accurate to about a minute.</p>
+    <details><summary>Still writing (<span id="n-living"></span>)</summary><div class="names" id="living-names"></div></details>
+    <details><summary>Died, but Wikidata has no place (<span id="n-noplace"></span>)</summary><div class="names" id="noplace-names"></div></details>
+    <details><summary>Could not be matched safely (<span id="n-unresolved"></span>)</summary><div class="names" id="unresolved-names"></div></details>
+    <p style="text-align:center;margin-top:14px"><button id="btn-help-close">Close</button></p>
+  </div>
+</div>
+
+<script src="solar.js"></script>
+<script src="authors.js"></script>
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var AUTHORS = window.DEAD_AUTHORS, LIVING = window.LIVING_AUTHORS || [], NOPLACE = window.NO_PLACE_AUTHORS || [], UNRESOLVED = window.UNRESOLVED_AUTHORS || [];
+  if (!AUTHORS || !window.Solar) { $('nodata').style.display = 'block'; $('featured').style.display = 'none'; $('strip').style.display = 'none'; $('controls').style.display = 'none'; return; }
+
+  // ---- state (sort + filter live in the hash)
+  var state = { sort: 'sunset', q: '' };
+  function readHash() {
+    var h = location.hash.replace(/^#/, '');
+    var out = { sort: 'sunset', q: '' };
+    h.split('&').forEach(function (kv) {
+      var i = kv.indexOf('='); if (i < 0) return;
+      var k = kv.slice(0, i), v = decodeURIComponent(kv.slice(i + 1).replace(/\+/g, ' '));
+      if (k === 'sort' && /^(sunset|time|name|year)$/.test(v)) out.sort = v;
+      if (k === 'q') out.q = v;
+    });
+    return out;
+  }
+  function writeHash() {
+    var parts = [];
+    if (state.sort !== 'sunset') parts.push('sort=' + state.sort);
+    if (state.q) parts.push('q=' + encodeURIComponent(state.q));
+    var h = parts.length ? '#' + parts.join('&') : '';
+    if (h !== location.hash) history.replaceState(null, '', location.pathname + location.search + h);
+  }
+
+  // ---- formatting helpers
+  var fmtCache = {};
+  function fmt(tz) {
+    if (!fmtCache[tz]) {
+      try { fmtCache[tz] = new Intl.DateTimeFormat('en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, weekday: 'short' }); }
+      catch (e) { fmtCache[tz] = new Intl.DateTimeFormat('en-GB', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, weekday: 'short' }); }
+    }
+    return fmtCache[tz];
+  }
+  // local wall clock parts for a zone: {h, m, s, wd, hm, hms}
+  function localParts(tz, now) {
+    var parts = fmt(tz).formatToParts(now), o = {};
+    parts.forEach(function (p) { o[p.type] = p.value; });
+    var h = +o.hour % 24, m = +o.minute, s = +o.second;
+    return { h: h, m: m, s: s, wd: o.weekday, hm: pad(h) + ':' + pad(m), hms: pad(h) + ':' + pad(m) + ':' + pad(s), frac: (h * 3600 + m * 60 + s) / 86400 };
+  }
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+  function plural(n, w) { return n + ' ' + w + (n === 1 ? '' : 's'); }
+  function minutesPhrase(min) { // 12 -> "12 minutes", 95 -> "1 hour 35 minutes"
+    min = Math.round(Math.abs(min));
+    if (min < 60) return plural(min, 'minute');
+    var h = Math.floor(min / 60), m = min % 60;
+    return plural(h, 'hour') + (m ? ' ' + plural(m, 'minute') : '');
+  }
+  function yearLabel(a) {
+    if (a.dp === 7) { var c = Math.floor((Math.abs(a.d) - 1) / 100) + 1; return ordinal(c) + ' century' + (a.d < 0 ? ' BC' : ''); }
+    if (a.dp === 8) return (a.d < 0 ? Math.abs(a.d) + 's BC' : a.d + 's');
+    return a.d < 0 ? Math.abs(a.d) + ' BC' : String(a.d);
+  }
+  function ordinal(n) { var s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
+  function yearsDead(a, now) {
+    var y = now.getUTCFullYear() - a.d;
+    if (a.dm && (now.getUTCMonth() + 1 < a.dm || (now.getUTCMonth() + 1 === a.dm && now.getUTCDate() < a.dd))) y -= 1;
+    return y;
+  }
+  function deadPhrase(a, now) {
+    var who = a.n;
+    if (a.dp && a.dp < 9) return who + ' died in the ' + yearLabel(a) + '.';
+    var y = yearsDead(a, now);
+    if (y < 1) return who + ' died this year.';
+    return who + ' has been dead for ' + y.toLocaleString('en') + ' years.';
+  }
+  function placePrep(p) { return /River|Hall|Place$|Abbey|Island|île|Prefecture|Hawaii|Ohio|Surrey/.test(p) ? 'At ' : 'In '; }
+  function sunPhrase(sit) {
+    var d = sit.sunsetDelta, r = sit.sunriseDelta;
+    if (!isFinite(d) && !isFinite(r)) return sit.altitude > 0 ? 'the sun does not set today' : 'the sun does not rise today';
+    if (sit.state === 'day') return isFinite(d) ? 'the sun sets in ' + minutesPhrase(d) : 'the sun is up';
+    if (sit.state === 'dusk') return 'the sun set ' + minutesPhrase(d) + ' ago';
+    if (sit.state === 'dawn') return 'the sun rises in ' + minutesPhrase(r);
+    // night: whichever is nearer, last sunset or next sunrise
+    if (Math.abs(d) <= Math.abs(r) && d < 0) return 'the sun set ' + minutesPhrase(d) + ' ago';
+    return isFinite(r) && r > 0 ? 'the sun rises in ' + minutesPhrase(r) : 'it is night';
+  }
+  function shortSun(sit) {
+    var d = sit.sunsetDelta, r = sit.sunriseDelta;
+    if (sit.state === 'day') return isFinite(d) ? 'day · sunset in ' + minutesPhrase(d) : 'day';
+    if (sit.state === 'dusk') return 'dusk · sunset ' + minutesPhrase(d) + ' ago';
+    if (sit.state === 'dawn') return 'dawn · sunrise in ' + minutesPhrase(r);
+    if (Math.abs(d) <= Math.abs(r) && d < 0) return 'night · sunset ' + minutesPhrase(d) + ' ago';
+    return isFinite(r) ? 'night · sunrise in ' + minutesPhrase(r) : 'night';
+  }
+
+  // ---- sky colours by sun altitude (degrees): [alt, top, bottom]
+  var STOPS = [
+    [-18, [7, 11, 28], [12, 16, 40]],
+    [-9, [14, 19, 52], [38, 32, 78]],
+    [-4, [46, 36, 92], [150, 70, 90]],
+    [0, [92, 62, 120], [232, 130, 82]],
+    [4, [126, 140, 200], [244, 184, 110]],
+    [12, [96, 150, 215], [175, 205, 240]],
+    [40, [70, 130, 210], [150, 195, 240]],
+    [90, [56, 118, 200], [140, 185, 236]]
+  ];
+  function lerp(a, b, t) { return Math.round(a + (b - a) * t); }
+  function skyFor(alt) {
+    var i = 0; while (i < STOPS.length - 2 && alt > STOPS[i + 1][0]) i++;
+    var a = STOPS[i], b = STOPS[i + 1], t = Math.max(0, Math.min(1, (alt - a[0]) / (b[0] - a[0])));
+    var top = [lerp(a[1][0], b[1][0], t), lerp(a[1][1], b[1][1], t), lerp(a[1][2], b[1][2], t)];
+    var bot = [lerp(a[2][0], b[2][0], t), lerp(a[2][1], b[2][1], t), lerp(a[2][2], b[2][2], t)];
+    return 'linear-gradient(180deg, rgb(' + top.join(',') + '), rgb(' + bot.join(',') + '))';
+  }
+
+  // ---- build the cards once; update text each second
+  var grid = $('grid'), strip = $('strip'), items = [];
+  AUTHORS.forEach(function (a) {
+    var card = document.createElement('article');
+    card.className = 'card';
+    card.id = 'a-' + a.q;
+    var wdUrl = 'https://www.wikidata.org/wiki/' + a.q;
+    card.innerHTML =
+      '<div class="name"><a href="' + wdUrl + '" target="_blank" rel="noopener" title="' + esc(a.w || a.n) + ' on Wikidata"></a>' + (a.ja ? ' <span class="ja"></span>' : '') + '</div>' +
+      '<div class="place"></div>' +
+      '<div class="time"><span class="hm"></span><small class="ss"></small></div>' +
+      '<div class="sun"></div>' +
+      (a.flag ? '<span class="flag" title="This match was made automatically from a name that several people share; the better-known writer was taken. Click the name to check.">?</span>' : '') +
+      (a.via === 'birth' ? '<span class="badge" title="Wikidata has no place of death for this author, so the birthplace is shown">birthplace</span>' : '') +
+      '<div class="died"></div>';
+    card.querySelector('.name a').textContent = a.n;
+    if (a.ja) card.querySelector('.ja').textContent = a.ja;
+    card.querySelector('.place').textContent = a.p + ' · ' + a.tz.replace(/_/g, ' ');
+    card.querySelector('.died').textContent = (a.dp && a.dp < 9 ? 'd. ' : 'd. ') + yearLabel(a);
+    var dot = document.createElement('span');
+    dot.className = 'dot';
+    dot.title = a.n;
+    dot.addEventListener('click', function () {
+      card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      card.classList.add('hi'); setTimeout(function () { card.classList.remove('hi'); }, 1800);
+    });
+    items.push({ a: a, card: card, dot: dot, hm: card.querySelector('.hm'), ss: card.querySelector('.ss'), sunEl: card.querySelector('.sun'), search: (a.n + ' ' + (a.w || '') + ' ' + (a.ja || '') + ' ' + a.p + ' ' + a.tz).toLowerCase(), sit: null, lp: null, lastSky: null });
+    grid.appendChild(card);
+  });
+  // strip ticks and dots
+  [0, 6, 12, 18].forEach(function (h) {
+    var t = document.createElement('div'); t.className = 'tick'; t.style.left = (h / 24 * 100) + '%';
+    t.innerHTML = '<span>' + pad(h) + ':00</span>'; strip.appendChild(t);
+  });
+  var here = document.createElement('div'); here.className = 'here'; here.innerHTML = '<span>you</span>'; strip.appendChild(here);
+  items.forEach(function (it) { strip.appendChild(it.dot); });
+
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+
+  // ---- per-second update
+  var lastSort = 0, lastOrderKey = '';
+  function tick() {
+    var now = new Date(), ms = now.getTime();
+    items.forEach(function (it) {
+      it.sit = window.Solar.situation(ms, it.a.lat, it.a.lon);
+      it.lp = localParts(it.a.tz, ms);
+      it.hm.textContent = it.lp.hm; it.ss.textContent = ':' + pad(it.lp.s);
+      it.sunEl.textContent = it.lp.wd + ' · ' + shortSun(it.sit);
+      var sky = skyFor(it.sit.altitude);
+      if (sky !== it.lastSky) { it.card.style.background = sky; it.lastSky = sky; }
+      it.dot.className = 'dot ' + it.sit.state;
+      it.dot.style.left = (it.lp.frac * 100) + '%';
+      it.dot.style.top = (18 + 36 * hashFrac(it.a.q)) + 'px';
+    });
+    var me = localParts(Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC', ms);
+    here.style.left = (me.frac * 100) + '%';
+    // featured: nearest sunset, before or after
+    var best = null;
+    items.forEach(function (it) { if (best === null || Math.abs(it.sit.sunsetDelta) < Math.abs(best.sit.sunsetDelta)) best = it; });
+    if (best) renderFeatured(best, now);
+    // re-sort at most every 30 s (or when the order key changed for name/year sorts, which never happens)
+    if (ms - lastSort > 30000) { lastSort = ms; applyOrder(); }
+  }
+  function hashFrac(s) { var h = 0; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 9973; return h / 9973; }
+
+  var featuredQ = null;
+  function renderFeatured(it, now) {
+    var a = it.a, sit = it.sit;
+    if (featuredQ !== a.q) {
+      featuredQ = a.q;
+      $('f-name').textContent = a.n; $('f-name').href = 'https://www.wikidata.org/wiki/' + a.q;
+      $('f-ja').textContent = a.ja || (a.w && a.w !== a.n ? a.w : '');
+      $('f-meta').textContent = a.p + ' · ' + a.tz.replace(/_/g, ' ') + (a.via === 'birth' ? ' · birthplace' : '');
+    }
+    $('f-eyebrow').textContent = sit.sunsetDelta < 0 ? 'Sunset just passed' : sit.state === 'day' ? 'Sunset coming' : 'Nearest to sunset';
+    var where = placePrep(a.p) + a.p + (a.via === 'birth' ? ', where ' + a.n + ' was born,' : '');
+    $('f-line').innerHTML = esc(where) + ' it is <b>' + it.lp.hm + '</b> and ' + esc(sunPhrase(sit)) + '. ' + esc(deadPhrase(a, now));
+    $('featured').style.background = skyFor(sit.altitude);
+    // the sun disc: its vertical position follows the altitude, fading below the horizon
+    var alt = Math.max(-12, Math.min(60, sit.altitude));
+    $('f-sun').style.top = (110 - (alt + 12) * 1.6) + 'px';
+    $('f-sun').style.opacity = sit.altitude > -6 ? String(Math.min(1, (sit.altitude + 6) / 8)) : '0';
+  }
+
+  // ---- sorting and filtering
+  function applyOrder() {
+    var q = state.q.trim().toLowerCase();
+    var visible = items.filter(function (it) { return !q || it.search.indexOf(q) >= 0; });
+    var cmp;
+    if (state.sort === 'sunset') cmp = function (x, y) { return Math.abs(x.sit.sunsetDelta) - Math.abs(y.sit.sunsetDelta) || tie(x, y); };
+    else if (state.sort === 'time') cmp = function (x, y) { return x.lp.frac - y.lp.frac || tie(x, y); };
+    else if (state.sort === 'year') cmp = function (x, y) { return x.a.d - y.a.d || tie(x, y); };
+    else cmp = tie;
+    visible.sort(cmp);
+    var key = visible.map(function (it) { return it.a.q; }).join(',');
+    if (key !== lastOrderKey) {
+      lastOrderKey = key;
+      var frag = document.createDocumentFragment();
+      visible.forEach(function (it) { frag.appendChild(it.card); });
+      grid.appendChild(frag);
+    }
+    items.forEach(function (it) { it.card.style.display = visible.indexOf(it) >= 0 ? '' : 'none'; it.dot.style.display = visible.indexOf(it) >= 0 ? '' : 'none'; });
+    $('empty').hidden = visible.length > 0;
+    $('count').textContent = visible.length === items.length ? items.length + ' authors' : visible.length + ' of ' + items.length;
+  }
+  function tie(x, y) { return x.a.n.localeCompare(y.a.n, 'en') || (x.a.q < y.a.q ? -1 : x.a.q > y.a.q ? 1 : 0); }
+
+  // ---- controls
+  var sortEl = $('sort'), qEl = $('q');
+  function syncFromState() { sortEl.value = state.sort; qEl.value = state.q; }
+  sortEl.addEventListener('change', function () { state.sort = sortEl.value; writeHash(); lastSort = Date.now(); applyOrder(); });
+  var qTimer = null;
+  qEl.addEventListener('input', function () { clearTimeout(qTimer); qTimer = setTimeout(function () { state.q = qEl.value; writeHash(); applyOrder(); }, 120); });
+  window.addEventListener('hashchange', function () { state = readHash(); syncFromState(); applyOrder(); });
+
+  // ---- help
+  function fillHelp() {
+    $('help-stats').innerHTML =
+      '<b>' + AUTHORS.length + '</b><span>authors with a place and a time on the clock</span>' +
+      '<b>' + LIVING.length + '</b><span>still writing (no place; they have their own clocks)</span>' +
+      '<b>' + NOPLACE.length + '</b><span>died, but Wikidata records no place</span>' +
+      '<b>' + UNRESOLVED.length + '</b><span>names that could not be matched safely (shared names, textbook teams, institutions, pen names)</span>';
+    $('n-living').textContent = LIVING.length; $('n-noplace').textContent = NOPLACE.length; $('n-unresolved').textContent = UNRESOLVED.length;
+    $('living-names').innerHTML = LIVING.map(function (a) { return '<a href="https://www.wikidata.org/wiki/' + a.q + '" target="_blank" rel="noopener">' + esc(a.n) + '</a>'; }).join(' · ');
+    $('noplace-names').innerHTML = NOPLACE.map(function (a) { return '<a href="https://www.wikidata.org/wiki/' + a.q + '" target="_blank" rel="noopener">' + esc(a.n) + '</a> (d. ' + a.d + ')'; }).join(' · ');
+    $('unresolved-names').textContent = UNRESOLVED.join(' · ');
+  }
+  $('btn-help').addEventListener('click', function () { $('help').classList.add('show'); });
+  $('btn-help-close').addEventListener('click', function () { $('help').classList.remove('show'); });
+  $('help').addEventListener('click', function (e) { if (e.target === $('help')) $('help').classList.remove('show'); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') $('help').classList.remove('show'); });
+
+  // ---- go
+  state = readHash(); syncFromState(); fillHelp();
+  tick(); applyOrder();
+  setInterval(tick, 1000);
+})();
+</script>
+</body>
+</html>

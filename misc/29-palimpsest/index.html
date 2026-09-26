@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Palimpsest</title>
+<meta name="description" content="A page that remembers where your hand has been. Where the vellum wears thin, an older text shows through.">
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    /* the desk around the leaf */
+    --bg: #cfc3ad;
+    --bg-2: #bfb198;
+    --ink: #2b1d12;
+    --ink-2: #5e4d3b;
+    --ink-3: #8a7962;
+    --line: rgba(60, 40, 20, 0.22);
+    --chip: rgba(255, 250, 240, 0.55);
+    --chip-hover: rgba(255, 250, 240, 0.85);
+    --shadow: rgba(40, 25, 10, 0.35);
+    /* the leaf itself: these do not change with the theme */
+    --parchment-1: #f0e2c2;
+    --parchment-2: #e6d2a6;
+    --parchment-edge: rgba(110, 70, 30, 0.22);
+    --leaf-ink: #2b1d12;
+    --rubric: #9b2a1f;
+    --under-ink: rgba(96, 60, 24, 0.92);
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", "Hoefler Text", Georgia, "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", "IPAMincho", "Noto Serif CJK JP", "Noto Serif JP", serif;
+    --under-serif: Baskerville, "Baskerville Old Face", "Goudy Old Style", "Garamond", "EB Garamond", "Palatino Linotype", Georgia, "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", "IPAMincho", "Noto Serif CJK JP", serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #17120e; --bg-2: #0f0b08;
+      --ink: #efe6d6; --ink-2: #bfae95; --ink-3: #8d7d66;
+      --line: rgba(240, 225, 200, 0.18);
+      --chip: rgba(255, 245, 225, 0.08); --chip-hover: rgba(255, 245, 225, 0.16);
+      --shadow: rgba(0, 0, 0, 0.7);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #17120e; --bg-2: #0f0b08;
+    --ink: #efe6d6; --ink-2: #bfae95; --ink-3: #8d7d66;
+    --line: rgba(240, 225, 200, 0.18);
+    --chip: rgba(255, 245, 225, 0.08); --chip-hover: rgba(255, 245, 225, 0.16);
+    --shadow: rgba(0, 0, 0, 0.7);
+  }
+
+  * { box-sizing: border-box; }
+  html { background: var(--bg); }
+  body {
+    margin: 0; min-height: 100vh;
+    background: radial-gradient(ellipse at 50% 30%, var(--bg) 0%, var(--bg-2) 100%) fixed;
+    color: var(--ink);
+    font: 16px/1.5 var(--serif);
+    font-variant-numeric: oldstyle-nums;
+    font-feature-settings: "onum" 1, "kern" 1;
+    padding: 14px 16px 40px;
+    overflow-x: hidden;
+  }
+  a { color: inherit; }
+  button {
+    font: inherit; font-size: 14px; color: var(--ink);
+    background: var(--chip); border: 1px solid var(--line); border-radius: 999px;
+    padding: 5px 13px; cursor: pointer; white-space: nowrap;
+  }
+  button:hover { background: var(--chip-hover); }
+  button:active { transform: translateY(1px); }
+  button:focus-visible { outline: 2px solid var(--rubric); outline-offset: 2px; }
+  button.icon { padding: 5px 10px; min-width: 34px; }
+  .hidden { display: none !important; }
+
+  header { display: flex; align-items: baseline; gap: 10px 14px; flex-wrap: wrap; max-width: 920px; margin: 0 auto 10px; }
+  h1 { font-size: 24px; margin: 0; font-weight: 600; letter-spacing: 0.02em; }
+  h1 .r { color: var(--rubric); }
+  header .sub { color: var(--ink-2); font-size: 14px; }
+  header .spacer { flex: 1; }
+  header .tools { display: flex; gap: 6px; flex-wrap: wrap; }
+
+  /* reveal meter */
+  #meter { max-width: 720px; margin: 0 auto 14px; display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--ink-2); }
+  #meter .bar { flex: 1; height: 3px; background: var(--line); border-radius: 2px; overflow: hidden; }
+  #meter .bar i { display: block; height: 100%; width: 0; background: var(--rubric); transition: width 0.4s ease; }
+  #meter .pct { font-variant-numeric: tabular-nums; min-width: 3.2em; text-align: right; }
+
+  /* the leaf */
+  main { max-width: 720px; margin: 0 auto; }
+  .leaf {
+    position: relative; overflow: hidden; border-radius: 3px;
+    color: var(--leaf-ink);
+    box-shadow: 0 1px 0 rgba(255,255,255,0.35) inset, 0 18px 40px var(--shadow), 0 2px 6px rgba(0,0,0,0.2);
+    background-color: var(--parchment-1);
+    background-image:
+      /* grain from an SVG turbulence filter: CSS only, no image file */
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.36 0 0 0 0 0.25 0 0 0 0 0.10 0 0 0 0.16 0'/></filter><rect width='300' height='300' filter='url(%23g)'/></svg>"),
+      radial-gradient(ellipse at 18% 8%, rgba(120, 80, 30, 0.13), transparent 45%),
+      radial-gradient(ellipse at 85% 92%, rgba(120, 80, 30, 0.14), transparent 40%),
+      radial-gradient(circle at 70% 25%, rgba(150, 100, 40, 0.07), transparent 25%),
+      radial-gradient(ellipse at center, transparent 58%, var(--parchment-edge) 100%),
+      linear-gradient(170deg, var(--parchment-1), var(--parchment-2));
+    touch-action: pan-y;
+    user-select: none; -webkit-user-select: none;
+    cursor: crosshair;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+  }
+  .leaf.turning { opacity: 0; transform: translateX(-14px) rotate(-0.4deg); }
+  .leaf::before {
+    /* faint drypoint ruling, like a ruled quire */
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: repeating-linear-gradient(180deg, transparent 0, transparent 28.2px, rgba(90, 60, 30, 0.05) 28.2px, rgba(90, 60, 30, 0.05) 28.8px);
+    background-position: 0 44px;
+  }
+  .over, .under { padding: 44px 56px 52px; }
+  .over { position: relative; z-index: 2; font-size: 18px; line-height: 1.6; }
+  .over .rubric { color: var(--rubric); font-size: 22px; font-weight: 600; margin: 0 0 14px; letter-spacing: 0.02em; font-variant: small-caps; }
+  .over p { margin: 0 0 1em; text-align: justify; hyphens: auto; }
+  .over p:last-child { margin-bottom: 0; }
+  .over p:first-of-type::first-letter {
+    float: left; font-size: 3.3em; line-height: 0.82; padding: 0.08em 0.1em 0 0; color: var(--rubric); font-weight: 600;
+  }
+  .under {
+    position: absolute; inset: 0; z-index: 1; overflow: hidden;
+    color: var(--under-ink); font-family: var(--under-serif); font-style: italic;
+    font-size: 17.5px; line-height: 1.62;
+    transform: rotate(-1.6deg) translate(5px, -3px) scale(1.015); transform-origin: 50% 50%;
+    text-shadow: 0 0 1px rgba(96, 60, 24, 0.35);
+  }
+  .under .heading { font-style: normal; font-variant: small-caps; font-weight: 600; margin: 0 0 12px; letter-spacing: 0.04em; }
+  .under p { margin: 0 0 0.9em; }
+  .under:lang(ja) {
+    font-style: normal; writing-mode: vertical-rl; text-orientation: mixed;
+    font-size: 21px; line-height: 2.1; letter-spacing: 0.14em;
+    padding: 40px 52px 40px 44px;
+    transform: rotate(1.2deg) translate(-4px, 2px) scale(1.01);
+  }
+  .under:lang(ja) .heading { font-variant: normal; font-size: 24px; margin: 0 0 0 1.2em; padding-top: 0.2em; }
+  .under:lang(ja) p { margin: 0 0.35em 0 0; }
+  .under:lang(ja) p.verse { margin-left: 1.1em; }
+  .shade { position: absolute; inset: 0; z-index: 3; width: 100%; height: 100%; pointer-events: none; mix-blend-mode: multiply; }
+
+  /* below the leaf */
+  .stats, .colophon { max-width: 720px; margin: 12px auto 0; font-size: 13.5px; color: var(--ink-2); text-align: center; line-height: 1.5; }
+  .colophon { color: var(--ink-3); font-style: italic; }
+  .touch-hint { display: none; }
+  @media (pointer: coarse) { .touch-hint { display: inline; } }
+  #secret { max-width: 720px; margin: 14px auto 0; padding: 10px 14px; border: 1px solid var(--rubric); border-radius: 8px; text-align: center; font-size: 14.5px; color: var(--ink); }
+  #secret .r { color: var(--rubric); font-variant: small-caps; letter-spacing: 0.04em; }
+  #secret button { margin-left: 8px; }
+
+  #vignette { position: fixed; inset: 0; pointer-events: none; z-index: 5; opacity: 0.2; transition: opacity 2s ease;
+    background: radial-gradient(ellipse at center, transparent 50%, rgba(20, 10, 0, 0.55) 100%); }
+
+  /* toast and help */
+  #toast { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%) translateY(20px); opacity: 0; z-index: 30;
+    background: var(--ink); color: var(--bg); padding: 8px 14px; border-radius: 8px; font-size: 14px; max-width: min(92vw, 520px);
+    transition: opacity 0.25s, transform 0.25s; pointer-events: none; }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .overlay { position: fixed; inset: 0; z-index: 40; background: rgba(20, 12, 6, 0.62); display: none; align-items: center; justify-content: center; padding: 16px; }
+  .overlay.show { display: flex; }
+  .overlay .box { background: var(--parchment-1); color: var(--leaf-ink); max-width: 560px; width: 100%; max-height: 90vh; overflow: auto; border-radius: 6px; padding: 22px 26px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); font-size: 15px; line-height: 1.55; }
+  .overlay h2 { margin: 0 0 8px; font-size: 20px; color: var(--rubric); font-variant: small-caps; font-weight: 600; }
+  .overlay p { margin: 0 0 10px; }
+  .overlay ul { margin: 6px 0 10px; padding-left: 20px; }
+  .overlay li { margin-bottom: 4px; }
+  .overlay .box button { background: rgba(60, 40, 20, 0.08); color: var(--leaf-ink); border-color: rgba(60, 40, 20, 0.3); }
+  .overlay .box button:hover { background: rgba(60, 40, 20, 0.16); }
+  .overlay kbd { font-family: inherit; border: 1px solid rgba(60,40,20,0.35); border-radius: 4px; padding: 0 5px; font-size: 0.9em; }
+
+  #fallback { max-width: 720px; margin: 40px auto; text-align: center; color: var(--ink-2); }
+
+  @media (max-width: 640px) {
+    body { padding: 10px 16px 32px; }
+    h1 { font-size: 21px; }
+    .over, .under { padding: 30px 22px 36px; }
+    .over { font-size: 16.5px; line-height: 1.58; }
+    .under { font-size: 16px; }
+    .under:lang(ja) { font-size: 18px; padding: 26px 24px 26px 20px; }
+    .leaf::before { background: repeating-linear-gradient(180deg, transparent 0, transparent 25.5px, rgba(90, 60, 30, 0.05) 25.5px, rgba(90, 60, 30, 0.05) 26.07px); background-position: 0 30px; }
+    #meter { margin-bottom: 10px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .leaf, #vignette, #toast, #meter .bar i { transition: none; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1><span class="r">P</span>alimpsest</h1>
+  <span class="sub">A page that remembers your hand. Where the vellum wears thin, an older writing shows through.</span>
+  <span class="spacer"></span>
+  <div class="tools">
+    <button id="btn-turn" title="turn to the next leaf (N)">turn the page</button>
+    <button id="btn-share" title="copy a link carrying your wear pattern">share your handling</button>
+    <button id="btn-restore" title="clear the wear on this leaf">restore the vellum</button>
+    <button id="btn-theme" class="icon" title="lamp: light or dark desk">&#9788;</button>
+    <button id="btn-help" class="icon" title="about (?)">?</button>
+  </div>
+</header>
+
+<div id="meter" title="share of the under-text now legible">
+  <span>under-text legible</span>
+  <div class="bar"><i id="meter-fill"></i></div>
+  <span class="pct" id="meter-pct">0%</span>
+</div>
+
+<main>
+  <article class="leaf" id="leaf" aria-label="the leaf">
+    <div class="under" id="under" aria-hidden="true"></div>
+    <div class="over" id="over"></div>
+    <canvas class="shade" id="shade" width="48" height="64" aria-hidden="true"></canvas>
+  </article>
+  <div id="secret" class="hidden"><span class="r">the vellum has given up its secret</span> <button id="btn-fresh">start a fresh leaf</button></div>
+  <p class="stats" id="stats">&nbsp;</p>
+  <p class="colophon" id="colophon"></p>
+  <div id="fallback" class="hidden">The leaf could not be prepared: the text or wear scripts did not load. Reload the page, or open it from the site rather than a saved copy.</div>
+</main>
+
+<div id="vignette" aria-hidden="true"></div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<div class="overlay" id="help" role="dialog" aria-modal="true" aria-labelledby="help-title">
+  <div class="box">
+    <h2 id="help-title">Of palimpsests</h2>
+    <p>A palimpsest is a manuscript whose vellum was scraped or washed and written over, because skin was dear and text was cheap; centuries later the older ink, having sunk into the hide, shows through wherever the surface has thinned, which is how a lost treatise of Archimedes was read from beneath a prayer book. This leaf works the other way round: it remembers where your pointer has lingered across visits and thins the vellum there, so the older writing surfaces exactly where you have handled it most. Rub a passage, leave the tab open, come back tomorrow; the wear is kept on this browser, and <em>share your handling</em> puts it in a link another reader can load.</p>
+    <p><strong>The texts.</strong> Three leaves, each with a public-domain over-text and a hidden under-text in a contrasting register:</p>
+    <ul id="help-sources"></ul>
+    <p>The Bash&#333; leaf runs vertically, right to left: the opening of <em>Oku no Hosomichi</em> (&#8220;the months and days are the travellers of a hundred generations&#8221;) and six haiku, ending with his last, dreamed over withered fields.</p>
+    <p><kbd>N</kbd> turns the page, <kbd>?</kbd> opens this note. <span class="touch-hint">On a phone, rub sideways: up-and-down strokes scroll the page instead.</span></p>
+    <p style="text-align:right; margin:0"><button id="btn-help-close">close</button></p>
+  </div>
+</div>
+
+<script src="texts.js"></script>
+<script src="wear.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  /* ---------- guards ---------- */
+  var TEXTS = window.PALIMPSEST_TEXTS;
+  var Wear = window.Wear;
+  var $ = function (id) { return document.getElementById(id); };
+  if (!TEXTS || !TEXTS.length || !Wear) {
+    $('fallback').classList.remove('hidden');
+    $('leaf').classList.add('hidden');
+    return;
+  }
+
+  /* ---------- tuning ---------- */
+  var GW = Wear.GRID_W, GH = Wear.GRID_H;
+  var BRUSH_PX = 26;          // sigma of the Gaussian brush, in CSS pixels
+  var RATE_MOVE = 0.55;       // peak wear per second while the pointer moves over the leaf
+  var RATE_DWELL = 0.30;      // per second while it rests on the leaf
+  var RATE_AMBIENT = 0.008;   // per second at the last position once the hand has gone
+  var IDLE_MS = 5000;         // stillness before dwell turns into ambient drift
+  var LEGIBLE = 0.7;          // wear at which a cell counts as legible under-text
+  var FRAME_MS = 66;          // mask redraw cap, about 15 fps
+  var STORE = 'palimpsest:v1:';
+
+  /* ---------- state ---------- */
+  var pairIndex = 0;
+  var map = new Wear.WearMap(GW, GH);
+  var meta = { sec: 0, visits: 0 };
+  var dirty = true, saveDirty = false, lastSave = 0, lastFrame = 0;
+  var pointer = { u: 0.5, v: 0.5, inside: false, has: false, lastMove: 0, lastBrush: 0 };
+  var secretShown = false;
+  var seenThisSession = {};
+
+  var leaf = $('leaf'), over = $('over'), under = $('under'), shade = $('shade');
+  var overCanvas = document.createElement('canvas'), underCanvas = document.createElement('canvas');
+  overCanvas.width = underCanvas.width = GW; overCanvas.height = underCanvas.height = GH;
+  var overCtx = overCanvas.getContext('2d'), underCtx = underCanvas.getContext('2d'), shadeCtx = shade.getContext('2d');
+  var overImg = overCtx.createImageData(GW, GH), underImg = underCtx.createImageData(GW, GH), shadeImg = shadeCtx.createImageData(GW, GH);
+
+  /* ---------- storage ---------- */
+  function storageGet(key) { try { return localStorage.getItem(key); } catch (e) { return null; } }
+  function storageSet(key, val) { try { localStorage.setItem(key, val); return true; } catch (e) { return false; } }
+  function storageDel(key) { try { localStorage.removeItem(key); } catch (e) {} }
+
+  function loadPair(index) {
+    pairIndex = (index + TEXTS.length) % TEXTS.length;
+    var pair = TEXTS[pairIndex];
+    map = new Wear.WearMap(GW, GH);
+    meta = { sec: 0, visits: 0 };
+    var raw = storageGet(STORE + pair.id);
+    if (raw) {
+      try {
+        var obj = JSON.parse(raw);
+        var decoded = obj && obj.m ? Wear.WearMap.decode(obj.m) : null;
+        if (decoded) map.adopt(decoded);
+        meta.sec = +obj.s || 0;
+        meta.visits = +obj.n || 0;
+      } catch (e) { /* a corrupt record simply starts fresh */ }
+    }
+    if (!seenThisSession[pair.id]) { seenThisSession[pair.id] = true; meta.visits += 1; saveDirty = true; }
+    secretShown = false;
+    renderTexts(pair);
+    dirty = true;
+    updateStats();
+    saveNow();
+  }
+
+  function saveNow() {
+    var pair = TEXTS[pairIndex];
+    storageSet(STORE + pair.id, JSON.stringify({ m: map.encode(), s: Math.round(meta.sec), n: meta.visits, t: Date.now() }));
+    saveDirty = false; lastSave = performance.now();
+  }
+
+  /* ---------- text rendering ---------- */
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  }
+  function renderTexts(pair) {
+    over.innerHTML = ''; under.innerHTML = '';
+    over.appendChild(el('h2', 'rubric', pair.over.rubric));
+    pair.over.paragraphs.forEach(function (p) { over.appendChild(el('p', null, p)); });
+    under.setAttribute('lang', pair.under.lang || 'en');
+    under.appendChild(el('div', 'heading', pair.under.heading));
+    pair.under.paragraphs.forEach(function (p) {
+      var isVerse = pair.under.vertical && p.length < 40;
+      under.appendChild(el('p', isVerse ? 'verse' : null, p));
+    });
+    $('colophon').textContent = 'leaf ' + (pairIndex + 1) + ' of ' + TEXTS.length + ' · over-text: ' + pair.over.source + ' · the under-text is named in the help note';
+    document.title = 'Palimpsest · ' + pair.over.rubric;
+  }
+
+  /* ---------- masks ---------- */
+  var smoothstep = Wear.smoothstep;
+  function render() {
+    var cells = map.cells, n = cells.length;
+    var od = overImg.data, ud = underImg.data, sd = shadeImg.data;
+    for (var i = 0, j = 0; i < n; i++, j += 4) {
+      var w = cells[i];
+      var overA = 1 - 0.96 * smoothstep(0.10, 0.80, w);   // the visible page fades away
+      var underA = smoothstep(0.18, 0.85, w);             // the older ink ghosts through, then reads
+      var tint = 0.30 * smoothstep(0.03, 1.0, w);         // the thinned vellum darkens a little
+      od[j] = od[j + 1] = od[j + 2] = 0; od[j + 3] = Math.round(overA * 255);
+      ud[j] = ud[j + 1] = ud[j + 2] = 0; ud[j + 3] = Math.round(underA * 255);
+      sd[j] = 96; sd[j + 1] = 66; sd[j + 2] = 34; sd[j + 3] = Math.round(tint * 255);
+    }
+    overCtx.putImageData(overImg, 0, 0);
+    underCtx.putImageData(underImg, 0, 0);
+    shadeCtx.putImageData(shadeImg, 0, 0);
+    setMask(over, overCanvas.toDataURL());
+    setMask(under, underCanvas.toDataURL());
+    var share = map.legibleShare(LEGIBLE);
+    var pct = Math.round(share * 100);
+    $('meter-fill').style.width = (share * 100).toFixed(1) + '%';
+    $('meter-pct').textContent = pct + '%';
+    $('vignette').style.opacity = (0.2 + 0.6 * map.mean()).toFixed(2);
+    if (share >= 0.995 && !secretShown) { secretShown = true; $('secret').classList.remove('hidden'); }
+    else if (share < 0.995 && secretShown) { secretShown = false; $('secret').classList.add('hidden'); }
+    dirty = false;
+  }
+  function setMask(node, url) {
+    var v = 'url(' + url + ')';
+    node.style.webkitMaskImage = v; node.style.maskImage = v;
+    node.style.webkitMaskSize = '100% 100%'; node.style.maskSize = '100% 100%';
+    node.style.webkitMaskRepeat = 'no-repeat'; node.style.maskRepeat = 'no-repeat';
+  }
+
+  /* ---------- wear from the pointer ---------- */
+  function sigmas() {
+    var r = leaf.getBoundingClientRect();
+    return { su: BRUSH_PX / Math.max(1, r.width) * GW, sv: BRUSH_PX / Math.max(1, r.height) * GH };
+  }
+  function dab(amount) {
+    var s = sigmas();
+    map.brush(pointer.u, pointer.v, amount, s.su, s.sv);
+    dirty = true; saveDirty = true;
+  }
+  function onMove(ev) {
+    var r = leaf.getBoundingClientRect();
+    pointer.u = Math.min(1, Math.max(0, (ev.clientX - r.left) / r.width));
+    pointer.v = Math.min(1, Math.max(0, (ev.clientY - r.top) / r.height));
+    pointer.inside = true; pointer.has = true;
+    var now = performance.now();
+    pointer.lastMove = now;
+    if (now - pointer.lastBrush < 30) return;         // throttle: about 30 dabs a second at most
+    var dt = Math.min(0.25, (now - pointer.lastBrush) / 1000);
+    pointer.lastBrush = now;
+    dab(RATE_MOVE * dt);
+  }
+  leaf.addEventListener('pointermove', onMove);
+  leaf.addEventListener('pointerdown', onMove);
+  leaf.addEventListener('pointerleave', function () { pointer.inside = false; });
+  leaf.addEventListener('pointercancel', function () { pointer.inside = false; });
+  leaf.addEventListener('pointerup', function (ev) { if (ev.pointerType !== 'mouse') pointer.inside = false; });
+
+  /* dwell, ambient drift, the clock: ten times a second */
+  var lastTick = performance.now();
+  setInterval(function () {
+    var now = performance.now();
+    var dt = Math.min(1, (now - lastTick) / 1000);
+    lastTick = now;
+    if (document.visibilityState !== 'visible') return;
+    meta.sec += dt;
+    if (pointer.has) {
+      var still = now - pointer.lastMove;
+      if (pointer.inside && still > 120 && still < IDLE_MS) {
+        dab(RATE_DWELL * dt);                          // the hand resting on the page
+      } else if (!pointer.inside || still >= IDLE_MS) {
+        /* the leaf left open: a very slow wear that wanders a little around the last spot */
+        pointer.u = Math.min(0.97, Math.max(0.03, pointer.u + (Math.random() - 0.5) * 0.004));
+        pointer.v = Math.min(0.97, Math.max(0.03, pointer.v + (Math.random() - 0.5) * 0.004));
+        dab(RATE_AMBIENT * dt);
+      }
+    }
+    if (saveDirty && now - lastSave > 3000) saveNow();
+    updateStats();
+  }, 100);
+
+  /* redraw the masks when something changed, at most ~15 fps */
+  function frame(ts) {
+    if (dirty && ts - lastFrame >= FRAME_MS) { lastFrame = ts; render(); }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState !== 'visible' && saveDirty) saveNow(); });
+  window.addEventListener('pagehide', function () { if (saveDirty) saveNow(); });
+
+  /* ---------- stats ---------- */
+  var lastStats = '';
+  function updateStats() {
+    var s = meta.sec, txt;
+    if (s < 60) txt = 'less than a minute';
+    else { var m = Math.floor(s / 60); txt = m + (m === 1 ? ' minute' : ' minutes'); }
+    var v = meta.visits;
+    var out = 'you have worn this page for ' + txt + ' across ' + v + (v === 1 ? ' visit' : ' visits') + '.';
+    if (out !== lastStats) { lastStats = out; $('stats').textContent = out; }
+  }
+
+  /* ---------- hash ---------- */
+  function readHash() {
+    var h = location.hash.replace(/^#\/?/, '');
+    var params = {};
+    h.split('&').forEach(function (kv) {
+      var i = kv.indexOf('=');
+      if (i > 0) params[decodeURIComponent(kv.slice(0, i))] = kv.slice(i + 1);
+    });
+    return params;
+  }
+  function indexOfPair(id) {
+    for (var i = 0; i < TEXTS.length; i++) if (TEXTS[i].id === id) return i;
+    return -1;
+  }
+  function writeHash() {
+    var want = '#p=' + TEXTS[pairIndex].id;
+    if (location.hash !== want) {
+      try { history.replaceState(null, '', location.pathname + location.search + want); } catch (e) { location.hash = want; }
+    }
+  }
+  window.addEventListener('hashchange', function () {
+    var p = readHash();
+    var i = indexOfPair(p.p);
+    if (i >= 0 && i !== pairIndex) { if (saveDirty) saveNow(); loadPair(i); }
+    if (p.w) importWear(p.w);
+  });
+
+  function importWear(str) {
+    var decoded = Wear.WearMap.decode(str);
+    if (!decoded) { toast('That link did not carry a readable wear pattern.'); writeHash(); return; }
+    var ok = window.confirm('Load a shared handling onto this leaf?\nIt replaces your own wear on this page (your minutes and visits are kept).');
+    if (ok) { map.adopt(decoded); dirty = true; saveDirty = true; saveNow(); toast('Loaded another reader’s handling.'); }
+    writeHash();
+  }
+
+  /* ---------- buttons ---------- */
+  function turnPage() {
+    if (saveDirty) saveNow();
+    leaf.classList.add('turning');
+    setTimeout(function () {
+      loadPair(pairIndex + 1);
+      writeHash();
+      render();
+      leaf.classList.remove('turning');
+    }, 260);
+  }
+  function restore(confirmFirst) {
+    if (confirmFirst && !window.confirm('Restore the vellum? This clears every trace of handling on this leaf.')) return;
+    map.clear(); dirty = true; saveDirty = true; saveNow();
+    toast('The vellum is fresh again.');
+  }
+  function share() {
+    var url = location.href.split('#')[0] + '#p=' + TEXTS[pairIndex].id + '&w=' + map.encode();
+    var msg = 'Link copied: ' + url.length + ' characters carrying your handling of this leaf.';
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(function () { toast(msg); }, function () { window.prompt('Copy this link', url); });
+    } else {
+      window.prompt('Copy this link', url);
+    }
+  }
+  $('btn-turn').addEventListener('click', turnPage);
+  $('btn-restore').addEventListener('click', function () { restore(true); });
+  $('btn-fresh').addEventListener('click', function () { restore(false); });
+  $('btn-share').addEventListener('click', share);
+
+  /* help */
+  var help = $('help');
+  function openHelp() { help.classList.add('show'); $('btn-help-close').focus(); }
+  function closeHelp() { help.classList.remove('show'); }
+  $('btn-help').addEventListener('click', openHelp);
+  $('btn-help-close').addEventListener('click', closeHelp);
+  help.addEventListener('click', function (ev) { if (ev.target === help) closeHelp(); });
+  (function fillSources() {
+    var ul = $('help-sources');
+    TEXTS.forEach(function (pair, i) {
+      var li = document.createElement('li');
+      li.appendChild(el('span', null, 'Leaf ' + (i + 1) + ': '));
+      li.appendChild(el('em', null, pair.over.source));
+      li.appendChild(document.createTextNode(' over '));
+      li.appendChild(el('em', null, pair.under.source));
+      li.appendChild(document.createTextNode('.'));
+      ul.appendChild(li);
+    });
+  })();
+
+  /* theme: follows the system unless the lamp is touched */
+  function currentDark() {
+    var t = document.documentElement.getAttribute('data-theme');
+    if (t) return t === 'dark';
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  }
+  $('btn-theme').addEventListener('click', function () {
+    var next = currentDark() ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    storageSet(STORE + 'theme', next);
+  });
+  (function () { var t = storageGet(STORE + 'theme'); if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t); })();
+
+  document.addEventListener('keydown', function (ev) {
+    if (ev.target && /input|textarea/i.test(ev.target.tagName)) return;
+    if (ev.key === 'Escape') closeHelp();
+    else if (ev.key === '?') { help.classList.contains('show') ? closeHelp() : openHelp(); }
+    else if (ev.key === 'n' || ev.key === 'N') turnPage();
+  });
+
+  var toastTimer = 0;
+  function toast(msg) {
+    var t = $('toast');
+    t.textContent = msg; t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.classList.remove('show'); }, 3200);
+  }
+
+  /* ---------- start ---------- */
+  var params = readHash();
+  var start = indexOfPair(params.p);
+  loadPair(start >= 0 ? start : 0);
+  writeHash();
+  render();
+  if (params.w) setTimeout(function () { importWear(params.w); }, 50);
+
+  /* a small hook for inspection from the console */
+  window.Palimpsest = {
+    map: function () { return map; },
+    invalidate: function () { dirty = true; saveDirty = true; },
+    render: render
+  };
+})();
+</script>
+</body>
+</html>

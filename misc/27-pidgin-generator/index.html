@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pidgin Generator</title>
+<meta name="description" content="Two grammars collide and a toy contact language falls out: lexicon, phonology, grammar sketch, phrasebook and corpus, all live.">
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    --paper: #f3ead5;
+    --paper-2: #faf4e4;
+    --paper-3: #ebdfc3;
+    --rule: #d9c9a6;
+    --rule-2: #c4b08a;
+    --ink: #2b2117;
+    --ink-2: #6d5b45;
+    --ink-3: #9a886c;
+    --red: #a83b2a;
+    --blue: #2f4f7a;
+    --green: #4a6b3a;
+    --gold: #8a6a2c;
+    --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, "Courier New", monospace;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif CJK JP", serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--paper); color: var(--ink); }
+  body {
+    font: 15px/1.5 -apple-system, "Segoe UI", Helvetica, Arial, "Hiragino Sans", "Yu Gothic", "IPAGothic", "Noto Sans CJK JP", sans-serif;
+    padding: 14px 16px 40px;
+    background-image: radial-gradient(ellipse at top left, rgba(255,255,255,0.35), transparent 60%);
+  }
+  header { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 12px; }
+  h1 { font-size: 22px; margin: 0; font-weight: 600; letter-spacing: 0.01em; font-family: var(--serif); }
+  header .sub { color: var(--ink-2); font-size: 14px; }
+  header .spacer { flex: 1; }
+  button, select, input {
+    font: inherit; color: var(--ink); background: var(--paper-2); border: 1px solid var(--rule-2);
+    border-radius: 6px; padding: 6px 10px;
+  }
+  button { cursor: pointer; }
+  button:hover { background: #fff8e8; }
+  button:active { transform: translateY(1px); }
+  button.small { font-size: 13px; padding: 4px 10px; }
+  select { padding-right: 6px; }
+  input[type=number] { width: 6.5em; font-family: var(--mono); }
+  input[type=range] { width: 100%; padding: 0; background: transparent; border: 0; accent-color: var(--red); }
+  label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-2); display: block; margin-bottom: 4px; }
+
+  .card {
+    background: var(--paper-2); border: 1px solid var(--rule); border-radius: 8px; padding: 12px 14px;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.6) inset, 0 2px 6px rgba(60, 40, 10, 0.08);
+  }
+  .card h2 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-2); margin: 0 0 8px; font-weight: 600; border-bottom: 1px solid var(--rule); padding-bottom: 4px; }
+  .card h2 small { text-transform: none; letter-spacing: 0; font-weight: 400; color: var(--ink-3); margin-left: 6px; }
+
+  /* controls */
+  #controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px 18px; align-items: end; margin-bottom: 12px; }
+  #controls .field { min-width: 0; }
+  #controls .row { display: flex; gap: 6px; align-items: center; }
+  #controls select { flex: 1; min-width: 0; }
+  #wval { font-family: var(--mono); font-size: 13px; color: var(--red); margin-left: 6px; }
+  #wscale { display: flex; justify-content: space-between; font-size: 11px; color: var(--ink-3); font-family: var(--mono); }
+  .check { display: flex; align-items: center; gap: 8px; font-size: 14px; padding: 6px 0; }
+  .check input { width: 16px; height: 16px; accent-color: var(--red); margin: 0; }
+  .check span { text-transform: none; letter-spacing: 0; color: var(--ink); }
+
+  /* name card */
+  #namecard { margin-bottom: 12px; display: flex; flex-wrap: wrap; gap: 8px 28px; align-items: baseline; }
+  #lname { font-family: var(--serif); font-size: 34px; font-weight: 600; margin: 0; line-height: 1.1; color: var(--red); }
+  #lname small { font-size: 14px; color: var(--ink-2); font-family: var(--mono); font-weight: 400; margin-left: 8px; }
+  #tagline { color: var(--ink-2); font-size: 14px; flex: 1 1 300px; }
+  #inv { width: 100%; font-family: var(--mono); font-size: 12.5px; color: var(--ink-2); line-height: 1.7; }
+  #inv b { color: var(--ink); font-weight: 600; }
+  #inv span { margin-right: 14px; white-space: nowrap; }
+
+  /* layout */
+  #grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 12px; margin-bottom: 12px; }
+  #grid > .card { min-width: 0; }
+  .wide { grid-column: 1 / -1; }
+
+  /* sketch */
+  #sketch ul { margin: 0; padding: 0; list-style: none; }
+  #sketch li { padding: 5px 0; border-bottom: 1px dotted var(--rule); font-size: 14px; }
+  #sketch li:last-child { border-bottom: 0; }
+  #sketch b { color: var(--blue); font-weight: 600; margin-right: 4px; }
+
+  /* interlinear */
+  .sent { padding: 8px 0; border-bottom: 1px dotted var(--rule); }
+  .sent:last-child { border-bottom: 0; }
+  .words { display: flex; flex-wrap: wrap; gap: 2px 14px; align-items: flex-start; }
+  .w { display: inline-flex; flex-direction: column; }
+  .w .f { font-family: var(--mono); font-size: 15px; color: var(--ink); }
+  .w .g { font-family: var(--mono); font-size: 11.5px; color: var(--ink-2); }
+  .w.gram .f { color: var(--red); }
+  .w.gram .g { font-variant: small-caps; text-transform: lowercase; letter-spacing: 0.04em; }
+  .free { font-size: 13px; color: var(--ink-2); font-style: italic; margin-top: 2px; }
+  .free::before { content: "‘"; } .free::after { content: "’"; }
+  .num { font-family: var(--mono); font-size: 11px; color: var(--ink-3); margin-right: 8px; }
+
+  /* compounds */
+  #compounds .list { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 4px 14px; font-size: 14px; }
+  #compounds .c { display: flex; justify-content: space-between; border-bottom: 1px dotted var(--rule); padding: 3px 0; gap: 8px; }
+  #compounds .c b { font-family: var(--mono); font-weight: 500; }
+  #compounds .c i { color: var(--ink-2); font-style: normal; font-family: var(--mono); font-size: 12px; }
+
+  /* swadesh table */
+  #swadesh .scroll { overflow: auto; max-height: 70vh; border: 1px solid var(--rule); border-radius: 6px; background: var(--paper-2); }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  thead th { position: sticky; top: 0; background: var(--paper-3); text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-2); padding: 6px 8px; border-bottom: 1px solid var(--rule-2); z-index: 1; }
+  tbody td { padding: 4px 8px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  tbody tr.row { cursor: pointer; }
+  tbody tr.row:hover td { background: rgba(255, 250, 235, 0.9); }
+  tbody tr.rules td { background: #fff8e6; color: var(--ink-2); font-family: var(--mono); font-size: 12px; padding: 4px 8px 8px 24px; }
+  tbody tr.rules td::before { content: "↳ "; color: var(--red); }
+  td .ipa { display: block; font-family: var(--mono); font-size: 11.5px; color: var(--ink-3); }
+  td.pid { font-family: var(--mono); font-weight: 600; color: var(--ink); }
+  td.src { font-family: var(--mono); font-size: 12px; }
+  .badge { display: inline-block; min-width: 1.5em; text-align: center; border-radius: 4px; padding: 0 4px; font-size: 11px; font-weight: 600; }
+  .badge.L { background: var(--blue); color: #fff; }
+  .badge.S { background: var(--green); color: #fff; }
+  .badge.A { background: var(--gold); color: #fff; }
+  .unsure { color: var(--red); font-size: 11px; cursor: help; }
+  td.concept { color: var(--ink-2); }
+  td.concept i { font-size: 11px; color: var(--ink-3); font-style: normal; margin-left: 4px; }
+  #legend { font-size: 12.5px; color: var(--ink-2); margin: 8px 0 0; }
+
+  /* help */
+  #help { position: fixed; inset: 0; background: rgba(40, 28, 12, 0.55); display: none; align-items: center; justify-content: center; padding: 16px; z-index: 10; }
+  #help.show { display: flex; }
+  #help .box { background: var(--paper-2); border: 1px solid var(--rule-2); border-radius: 10px; max-width: 560px; max-height: 90vh; overflow: auto; padding: 18px 20px; }
+  #help h2 { margin: 0 0 8px; font-family: var(--serif); font-size: 22px; font-weight: 600; }
+  #help p { margin: 8px 0; font-size: 14px; }
+  #help .close { float: right; }
+  #error { display: none; color: var(--red); padding: 10px 0; }
+  #inv span { white-space: normal; }
+  .card, .field, .row { min-width: 0; }
+  select, input { max-width: 100%; }
+  #sketch li, .free, #tagline, #inv, #compounds .c { overflow-wrap: anywhere; }
+  @media (max-width: 600px) {
+    #controls { grid-template-columns: 1fr 1fr; }
+    #controls .field.wide2 { grid-column: 1 / -1; }
+    #lname { font-size: 26px; overflow-wrap: anywhere; }
+    #lname small { display: block; margin: 4px 0 0; }
+    #grid { grid-template-columns: 1fr; }
+    thead th:nth-child(5), tbody td:nth-child(5) { display: none; }
+    td .ipa { display: none; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Pidgin Generator</h1>
+  <span class="sub">Two grammars collide; a contact language falls out.</span>
+  <span class="spacer"></span>
+  <button class="small" id="btn-help">What is this?</button>
+</header>
+
+<div class="card" id="controls">
+  <div class="field">
+    <label for="lex">Lexifier (superstrate)</label>
+    <div class="row"><select id="lex"></select></div>
+  </div>
+  <div class="field">
+    <label for="sub">Substrate</label>
+    <div class="row"><select id="sub"></select><button class="small" id="btn-swap" title="Swap lexifier and substrate">⇄ swap</button></div>
+  </div>
+  <div class="field">
+    <label for="w">Lexifier share <span id="wval"></span></label>
+    <input type="range" id="w" min="0" max="1" step="0.05">
+    <div id="wscale"><span>substrate</span><span>lexifier</span></div>
+  </div>
+  <div class="field">
+    <label for="seed">Seed</label>
+    <div class="row"><input type="number" id="seed" min="0" max="999999" step="1"><button class="small" id="btn-reroll">reroll</button></div>
+  </div>
+  <div class="field wide2">
+    <label class="check"><input type="checkbox" id="dec"><span>Decreolisation (drift back toward the lexifier)</span></label>
+  </div>
+</div>
+
+<div id="error"></div>
+
+<div class="card" id="namecard">
+  <h2 id="lname" style="margin:0"></h2>
+  <div id="tagline"></div>
+  <div id="inv"></div>
+</div>
+
+<div id="grid">
+  <div class="card" id="sketch"><h2>Grammar sketch <small>auto-written from the settings</small></h2><ul></ul></div>
+  <div class="card" id="phrasebook"><h2>Phrasebook <small>15 fixed sentences, interlinear</small></h2><div class="body"></div></div>
+  <div class="card" id="corpus"><h2>Mini corpus <small>8 sentences from a template grammar</small></h2><div class="body"></div></div>
+  <div class="card" id="compounds"><h2>Derivation <small>compounds built from core roots</small></h2><div class="list"></div></div>
+  <div class="card wide" id="swadesh">
+    <h2>Core vocabulary <small>Swadesh-style; click a row for the rules applied</small></h2>
+    <div class="scroll"><table>
+      <thead><tr><th>Concept</th><th id="th-lex"></th><th id="th-sub"></th><th>Pidgin</th><th>Source</th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+    <p id="legend"><span class="badge L">L</span> lexifier form &nbsp; <span class="badge S">S</span> substrate form &nbsp; <span class="badge A">A</span> acrolectal (decreolised) &nbsp; <span class="unsure">?</span> author unsure of the source form. Source forms in broad IPA; tones and length dropped.</p>
+  </div>
+</div>
+
+<div id="help">
+  <div class="box">
+    <button class="small close" id="btn-close">close</button>
+    <h2>Pidgins, creoles, and this toy</h2>
+    <p>A pidgin is a makeshift contact language that grows up between groups with no language in common: most of its words come from one language (the lexifier, usually the socially dominant one) while its sounds and some of its syntax are shaped by the speakers' own languages (the substrate), and its morphology is stripped back to analytic particles; when children acquire it natively and it expands into a full language, it is called a creole.</p>
+    <p>This page collides two of eight hand-written profiles (English, Japanese, Spanish, Portuguese, Vietnamese, Hausa, Malay, Mandarin): each concept takes the lexifier's word with probability equal to the slider, otherwise the substrate's, and the result is pushed through the substrate's phoneme inventory and syllable template (nearest-segment substitution, cluster epenthesis or deletion, coda simplification, paragoge), while word order, adposition type, negation, plural marking and tense-mood-aspect particles are settled by weighted vote with the usual creole bias toward SVO and grammaticalised lexifier words like <i>been</i>, <i>by and by</i>, <i>finish</i>.</p>
+    <p>It does not model tone, stress, semantics, register, social history or the real-world lexical mixing that gives creoles words from three or four languages, its source vocabularies are the author's own broad transcriptions (entries marked <span class="unsure">?</span> are the ones the author was unsure of), and a real linguist should read the output as a caricature of tendencies, not a prediction. Everything runs in your browser; the settings live in the URL hash so a language can be shared by link.</p>
+  </div>
+</div>
+
+<script src="languages.js"></script>
+<script src="contact.js"></script>
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  if (!window.PidginLanguages || !window.PidginContact) {
+    $('error').style.display = 'block';
+    $('error').textContent = 'The language data (languages.js / contact.js) did not load; the page needs its two sibling scripts.';
+    return;
+  }
+  var L = window.PidginLanguages, C = window.PidginContact;
+
+  /* ---------- state and hash ---------- */
+  var state = { lex: 'en', sub: 'ja', w: 0.8, seed: 7, dec: false };
+  function readHash() {
+    var h = location.hash.replace(/^#/, '');
+    if (!h) return;
+    h.split('&').forEach(function (kv) {
+      var p = kv.split('='), k = p[0], v = decodeURIComponent(p[1] || '');
+      if (k === 'lex' && L.LANGS[v]) state.lex = v;
+      if (k === 'sub' && L.LANGS[v]) state.sub = v;
+      if (k === 'w' && !isNaN(+v)) state.w = Math.max(0, Math.min(1, +v));
+      if (k === 'seed' && /^\d+$/.test(v)) state.seed = +v;
+      if (k === 'dec') state.dec = v === '1';
+    });
+  }
+  function writeHash() {
+    var h = '#lex=' + state.lex + '&sub=' + state.sub + '&w=' + state.w + '&seed=' + state.seed + (state.dec ? '&dec=1' : '');
+    if (history.replaceState) history.replaceState(null, '', h); else location.hash = h;
+  }
+
+  /* ---------- controls ---------- */
+  L.ORDER.forEach(function (id) {
+    ['lex', 'sub'].forEach(function (sel) {
+      var o = document.createElement('option'); o.value = id; o.textContent = L.LANGS[id].name; $(sel).appendChild(o);
+    });
+  });
+  function syncControls() {
+    $('lex').value = state.lex; $('sub').value = state.sub;
+    $('w').value = state.w; $('wval').textContent = state.w.toFixed(2);
+    $('seed').value = state.seed; $('dec').checked = state.dec;
+  }
+  $('lex').addEventListener('change', function () {
+    if (this.value === state.sub) state.sub = state.lex;   /* keep them distinct by swapping */
+    state.lex = this.value; update();
+  });
+  $('sub').addEventListener('change', function () {
+    if (this.value === state.lex) state.lex = state.sub;
+    state.sub = this.value; update();
+  });
+  $('btn-swap').addEventListener('click', function () { var t = state.lex; state.lex = state.sub; state.sub = t; update(); });
+  $('w').addEventListener('input', function () { state.w = Math.round(+this.value * 100) / 100; update(); });
+  $('seed').addEventListener('change', function () { var v = parseInt(this.value, 10); if (!isNaN(v) && v >= 0) { state.seed = v; update(); } });
+  $('btn-reroll').addEventListener('click', function () { state.seed = 1 + Math.floor(Math.random() * 9999); update(); });
+  $('dec').addEventListener('change', function () { state.dec = this.checked; update(); });
+  $('btn-help').addEventListener('click', function () { $('help').classList.add('show'); });
+  $('btn-close').addEventListener('click', function () { $('help').classList.remove('show'); });
+  $('help').addEventListener('click', function (e) { if (e.target === this) this.classList.remove('show'); });
+  window.addEventListener('hashchange', function () { readHash(); update(false); });
+
+  /* ---------- rendering ---------- */
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function el(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
+
+  function renderSentences(container, items) {
+    container.innerHTML = '';
+    items.forEach(function (s, i) {
+      var d = el('div', 'sent');
+      var words = el('div', 'words');
+      var n = el('span', 'num', String(i + 1) + '.');
+      words.appendChild(n);
+      s.words.forEach(function (t, j) {
+        var w = el('span', 'w' + (t.c === 'gram' ? ' gram' : ''));
+        w.appendChild(el('span', 'f', esc(t.f) + (j === s.words.length - 1 ? esc(s.punct) : '')));
+        w.appendChild(el('span', 'g', esc(t.g)));
+        words.appendChild(w);
+      });
+      d.appendChild(words);
+      d.appendChild(el('div', 'free', esc(s.en)));
+      container.appendChild(d);
+    });
+  }
+
+  function render(lang) {
+    var lex = lang.lex, sub = lang.sub, T = lang.target;
+    $('lname').innerHTML = esc(lang.name) + '<small>' + esc(lang.nameParts.talk.orth) + ' “talk” + ' + esc(lang.nameParts.autonym.orth) + ' “' + esc(lex.name) + '”</small>';
+    $('tagline').textContent = (lang.decreolise ? 'A decreolising ' : (/^[AEIOU]/.test(lex.name) ? 'An ' : 'A ')) + lex.name + '-lexified contact language with a ' + sub.name +
+      ' substrate; lexifier share ' + lang.weight.toFixed(2) + (lang.decreolise ? ' (effective ' + lang.weightEff.toFixed(2) + ')' : '') + ', seed ' + lang.seed + '. ' +
+      lex.family + ' meets ' + sub.family + '.';
+    var codaExtra = T.codaList.filter(function (c) { return !T.cons[c]; });
+    $('inv').innerHTML =
+      '<span><b>C</b> ' + esc(T.consList.join(' ')) + (codaExtra.length ? ' <i>(coda only: ' + esc(codaExtra.join(' ')) + ')</i>' : '') + '</span>' +
+      '<span><b>V</b> ' + esc(T.vowelList.join(' ')) + '</span>' +
+      '<span><b>σ</b> ' + esc(T.template) + '</span>' +
+      '<span><b>codas</b> ' + esc(T.codaList.length ? T.codaList.join(' ') : '∅') + '</span>' +
+      '<span><b>order</b> ' + esc(lang.G.order) + '</span>';
+
+    var ul = $('sketch').querySelector('ul'); ul.innerHTML = '';
+    lang.sketch.forEach(function (b) { ul.appendChild(el('li', null, '<b>' + esc(b[0]) + '.</b> ' + esc(b[1]))); });
+
+    renderSentences($('phrasebook').querySelector('.body'), lang.phrasebook);
+    renderSentences($('corpus').querySelector('.body'), lang.corpus);
+
+    var list = $('compounds').querySelector('.list'); list.innerHTML = '';
+    lang.compounds.forEach(function (c) {
+      list.appendChild(el('div', 'c', '<b>' + esc(c.orth) + '</b><i>' + esc(c.gloss) + ' “' + esc(c.meaning) + '”</i>'));
+    });
+
+    $('th-lex').textContent = lex.name + ' (L)';
+    $('th-sub').textContent = sub.name + ' (S)';
+    var tb = $('swadesh').querySelector('tbody'); tb.innerHTML = '';
+    var frag = document.createDocumentFragment();
+    var srcCell = function (e) {
+      if (!e) return '—';
+      return esc(e.orth) + (e.u ? ' <span class="unsure" title="author unsure of this source form">?</span>' : '') +
+        (e.ipa !== e.orth ? '<span class="ipa">/' + esc(e.ipa) + '/</span>' : '');
+    };
+    lang.lexicon.forEach(function (f) {
+      var tr = el('tr', 'row');
+      var rules = f.rules.length ? f.rules.join('; ') : 'no change: fits the target phonology as is';
+      tr.title = rules;
+      tr.innerHTML = '<td class="concept">' + esc(f.concept) + '<i>' + esc(f.pos) + '</i></td>' +
+        '<td>' + srcCell(f.lexEntry) + '</td><td>' + srcCell(f.subEntry) + '</td>' +
+        '<td class="pid">' + esc(f.orth) + (f.ipa !== f.orth ? '<span class="ipa">/' + esc(f.ipa) + '/</span>' : '') + '</td>' +
+        '<td class="src"><span class="badge ' + (f.acro ? 'A' : f.src) + '">' + (f.acro ? 'A' : f.src) + '</span></td>';
+      var rr = el('tr', 'rules'); rr.style.display = 'none';
+      rr.innerHTML = '<td colspan="5">' + esc(rules) + '</td>';
+      tr.addEventListener('click', function () { rr.style.display = rr.style.display === 'none' ? '' : 'none'; });
+      frag.appendChild(tr); frag.appendChild(rr);
+    });
+    tb.appendChild(frag);
+  }
+
+  var current = null;
+  function update(write) {
+    syncControls();
+    if (write !== false) writeHash();
+    try {
+      current = C.generate(L, { lex: state.lex, sub: state.sub, weight: state.w, seed: state.seed, decreolise: state.dec });
+      $('error').style.display = 'none';
+      render(current);
+    } catch (e) {
+      $('error').style.display = 'block';
+      $('error').textContent = 'Generation failed: ' + e.message;
+      if (window.console) console.error(e);
+    }
+  }
+
+  readHash();
+  if (state.lex === state.sub) state.sub = state.lex === 'en' ? 'ja' : 'en';
+  update();
+})();
+</script>
+</body>
+</html>

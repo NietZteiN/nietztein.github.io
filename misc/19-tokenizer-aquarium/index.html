@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tokenizer Aquarium</title>
+<meta name="description" content="Live BPE tokenisation as an aquarium: every token in your text is a fish. Common tokens are big and slow, rare ones small and skittish.">
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    --bg: #07131c;
+    --panel: #0d1f2b;
+    --panel-2: #123042;
+    --line: #1f4356;
+    --ink: #e6f1f4;
+    --ink-2: #8fb3bf;
+    --ink-3: #5a8291;
+    --accent: #5fd3c7;
+    --accent-2: #f2c14e;
+    --bad: #e8635a;
+    --water-top: #0e3d55;
+    --water-bottom: #06202e;
+    --sand: #b89a6a;
+    --mono: ui-monospace, "Cascadia Mono", "SFMono-Regular", Menlo, Consolas, "Noto Sans Mono CJK JP", "Yu Gothic", "Hiragino Sans", monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); }
+  body {
+    font: 15px/1.45 -apple-system, "Segoe UI", Helvetica, Arial, "Hiragino Sans", "Yu Gothic", "IPAGothic", "Noto Sans CJK JP", sans-serif;
+    padding: 14px 16px 28px;
+    overflow-x: hidden;
+  }
+  h1 { font-size: 22px; margin: 0; font-weight: 600; letter-spacing: 0.01em; }
+  header { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 12px; }
+  header .sub { color: var(--ink-2); font-size: 14px; }
+  header .spacer { flex: 1; }
+  a { color: var(--accent); }
+
+  button, select {
+    font: inherit; color: var(--ink); background: var(--panel-2); border: 1px solid var(--line);
+    border-radius: 7px; padding: 6px 12px; cursor: pointer;
+  }
+  button:hover { background: #17405a; }
+  button:active { transform: translateY(1px); }
+  button.on { background: var(--accent); color: #06202e; border-color: var(--accent); }
+  button.small, select.small { font-size: 13px; padding: 4px 10px; }
+  button:focus-visible, select:focus-visible, textarea:focus-visible, .chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+  /* feed box */
+  #feed { display: grid; gap: 6px; margin-bottom: 10px; }
+  #feed label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-2); font-weight: 600; }
+  textarea {
+    font: 14px/1.5 var(--mono); color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+    border-radius: 10px; padding: 10px 12px; width: 100%; min-height: 84px; resize: vertical;
+  }
+  #toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  #toolbar .status { color: var(--ink-2); font-size: 13px; }
+  #toolbar .status.offline { color: var(--accent-2); }
+  #toolbar .status.loading::after { content: " …"; }
+  #toolbar .spacer { flex: 1; }
+
+  /* the tank */
+  #tankwrap { position: relative; border-radius: 12px; overflow: hidden; border: 1px solid var(--line); box-shadow: 0 14px 36px rgba(0,0,0,0.45); }
+  #tank { display: block; width: 100%; height: 60vh; min-height: 340px; max-height: 720px; touch-action: manipulation; cursor: crosshair; }
+  #tip {
+    position: absolute; pointer-events: none; display: none; z-index: 2;
+    background: rgba(7, 19, 28, 0.94); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px;
+    font-size: 13px; line-height: 1.4; max-width: 280px; box-shadow: 0 6px 18px rgba(0,0,0,0.5);
+  }
+  #tip .tok { font-family: var(--mono); font-size: 15px; word-break: break-all; }
+  #tip .tok .sp { color: var(--ink-3); }
+  #tip .row { color: var(--ink-2); }
+  #tip .row b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+  #mode-note { position: absolute; left: 12px; top: 10px; z-index: 1; font-size: 13px; color: var(--ink-2); background: rgba(7,19,28,0.6); padding: 3px 8px; border-radius: 6px; display: none; }
+
+  /* stats strip */
+  #stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin: 12px 0; }
+  .tile { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; min-width: 0; }
+  .tile .k { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-2); font-weight: 600; }
+  .tile .v { font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tile .v .mono { font-family: var(--mono); font-size: 16px; }
+  .tile .v small { font-size: 12px; color: var(--ink-2); font-weight: 400; margin-left: 4px; }
+
+  /* lower panels */
+  #panels { display: grid; grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr); gap: 12px; align-items: start; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; min-width: 0; }
+  .card h2 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-2); margin: 0 0 8px; font-weight: 600; }
+  .card p { margin: 0 0 8px; color: var(--ink); font-size: 14px; }
+  .card p:last-child { margin-bottom: 0; }
+  #stream { display: flex; flex-wrap: wrap; gap: 4px; max-height: 260px; overflow-y: auto; padding: 2px; }
+  .chip {
+    font: 13px/1.2 var(--mono); padding: 3px 6px; border-radius: 5px; cursor: pointer; border: 1px solid transparent;
+    background: var(--c, #666); color: #06202e; white-space: pre; max-width: 100%; overflow: hidden; text-overflow: ellipsis;
+  }
+  .chip .sp { opacity: 0.5; }
+  .chip:hover, .chip.hot { outline: 2px solid var(--ink); outline-offset: 1px; }
+  #stream .more { color: var(--ink-2); font-size: 13px; padding: 3px 4px; }
+  #help small { color: var(--ink-2); display: block; margin-top: 6px; font-size: 13px; }
+
+  @media (max-width: 760px) {
+    #panels { grid-template-columns: 1fr; }
+    #tank { height: 52vh; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    button:active { transform: none; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Tokenizer Aquarium</h1>
+  <span class="sub">Every token in your text is a fish. Common tokens are big and slow; rare ones are small and skittish.</span>
+</header>
+
+<div id="feed">
+  <label for="text">Feed the tank</label>
+  <textarea id="text" maxlength="4000" spellcheck="false" placeholder="Type anything…"></textarea>
+  <div id="toolbar">
+    <button id="btn-feed" class="small on" title="normal swimming">Feed</button>
+    <button id="btn-storm" class="small" title="a burst of random tokens from the whole vocabulary">Storm</button>
+    <button id="btn-sort" class="small" title="line the fish up by token id for a few seconds">Sort</button>
+    <button id="btn-freeze" class="small" title="pause all motion (for screenshots)">Freeze</button>
+    <select id="enc" class="small" title="which BPE vocabulary to use">
+      <option value="cl100k_base">cl100k_base (GPT-4, GPT-3.5)</option>
+      <option value="o200k_base">o200k_base (GPT-4o, GPT-5)</option>
+    </select>
+    <span class="spacer"></span>
+    <span class="status loading" id="status">loading tokenizer</span>
+  </div>
+</div>
+
+<div id="tankwrap">
+  <canvas id="tank" aria-label="aquarium of tokens"></canvas>
+  <div id="tip" role="tooltip"></div>
+  <div id="mode-note"></div>
+</div>
+
+<div id="stats">
+  <div class="tile"><div class="k">Tokens</div><div class="v" id="s-tokens">0</div></div>
+  <div class="tile"><div class="k">Characters</div><div class="v" id="s-chars">0</div></div>
+  <div class="tile"><div class="k">Chars per token</div><div class="v" id="s-ratio">0</div></div>
+  <div class="tile"><div class="k">Species</div><div class="v" id="s-species">0</div></div>
+  <div class="tile"><div class="k">Rarest fish</div><div class="v" id="s-rare">–</div></div>
+</div>
+
+<div id="panels">
+  <div class="card">
+    <h2>Token stream <span id="stream-note" style="text-transform:none;letter-spacing:0;font-weight:400"></span></h2>
+    <div id="stream"></div>
+  </div>
+  <div class="card" id="help">
+    <h2>What is this?</h2>
+    <p>Language models do not read letters or words. Text is first cut into <b>tokens</b> by byte-pair encoding (BPE): starting from single bytes, the tokeniser repeatedly merged the most frequent adjacent pair in its training data, so common strings like <span style="font-family:var(--mono)">␣the</span> became one token while rare words are stitched together from smaller pieces. Japanese and emoji often fall apart into fragments of a character.</p>
+    <p>There is no public frequency table for these tokens, so the fish sizes use a <b>proxy</b>: a token's id (its merge order; earlier merges tend to be commoner) blended with its length (short tokens tend to be commoner, Zipf-style). It is a rough guide, not a measurement.</p>
+    <p>Hover or tap a fish for its id and bytes; click a chip in the stream to find its fish. Same token, same species: they school together and carry a count badge.</p>
+    <small>Tokeniser: <a href="https://github.com/niieani/gpt-tokenizer" rel="noopener">gpt-tokenizer</a> (MIT) loaded from jsDelivr, running entirely in your browser. Nothing you type leaves the page except into the URL hash so you can share it.</small>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  // ---------------------------------------------------------------- settings
+  const MAX_FISH = 400;              // beyond this, duplicates are aggregated into fewer fish
+  const HASH_LIMIT = 2048;           // bytes of URL hash we are willing to keep
+  const STORM_COUNT = 60;
+  const STORM_LIFE = 9;              // seconds a storm fish stays
+  const SORT_TIME = 7;               // seconds the Sort formation holds
+  const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const MOTION = reduced ? 0.3 : 1;  // global speed multiplier
+
+  const ENCODINGS = {
+    cl100k_base: { url: 'https://cdn.jsdelivr.net/npm/gpt-tokenizer@4/esm/encoding/cl100k_base.js', note: 'cl100k_base via gpt-tokenizer' },
+    o200k_base: { url: 'https://cdn.jsdelivr.net/npm/gpt-tokenizer@4/esm/encoding/o200k_base.js', note: 'o200k_base via gpt-tokenizer' }
+  };
+
+  const DEFAULT_TEXT = 'The quick brown fox jumps over the lazy dog, and the dog does not mind. ' +
+    'Antidisestablishmentarianism is one word but many tokens. 日本語のトークンはもっと細かく切られる。 ' +
+    'A 🐠 costs 3.14159 credits at https://example.com/fish?id=42 — the URL alone is a shoal.';
+
+  const $ = id => document.getElementById(id);
+  const canvas = $('tank');
+  const ctx = canvas.getContext('2d');
+  const tip = $('tip');
+  const textarea = $('text');
+  const utf8 = new TextEncoder();
+
+  // ---------------------------------------------------------------- tokeniser
+  // A tokenizer object exposes: name, online, vocabSize, encode(text)->ids, rawOf(id)->Uint8Array of the token bytes.
+  let tok = null;
+
+  async function loadTokenizer(name) {
+    const enc = ENCODINGS[name];
+    const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 25000));
+    const mod = await Promise.race([import(enc.url), timeout]);
+    const api = mod.default && mod.default.encode ? mod.default : mod;
+    const core = api.bytePairEncodingCoreProcessor;    // internal, guarded below
+    // Raw bytes of one token. api.decode() shares a *streaming* TextDecoder between calls, so decoding
+    // single tokens through it leaks partial characters from one call into the next; we go to the rank
+    // table directly (string for valid UTF-8 tokens, Uint8Array otherwise) and only fall back to decode().
+    const rawOf = id => {
+      try {
+        if (core && typeof core.tryDecodeToken === 'function') {
+          const v = core.tryDecodeToken(id);
+          if (v instanceof Uint8Array) return v;
+          if (typeof v === 'string') return utf8.encode(v);
+        }
+      } catch (e) { /* fall through */ }
+      try { return utf8.encode(api.decode([id])); } catch (e) { return new Uint8Array(0); }
+    };
+    const vocabSize = api.vocabularySize || mod.vocabularySize || 100277;
+    // allowedSpecial: 'all' so a text that is exactly a special token (e.g. <|endoftext|>) does not throw
+    const encode = text => { try { return api.encode(text, { allowedSpecial: 'all' }); } catch (e) { return api.encode(text); } };
+    // sanity check: the module must actually tokenise
+    if (!Array.isArray(encode('hello world'))) throw new Error('bad module');
+    return { name, online: true, vocabSize, encode, rawOf, note: enc.note };
+  }
+
+  // Lossy (replacement-character) and strict decoders for turning raw token bytes into text
+  const lossy = new TextDecoder('utf-8');
+  const strict = new TextDecoder('utf-8', { fatal: true });
+  function describeToken(id) {
+    const raw = tok.rawOf(id);
+    let str, partial = false;
+    try { str = strict.decode(raw); } catch (e) { str = lossy.decode(raw); partial = true; }
+    const hex = Array.from(raw).map(b => b.toString(16).padStart(2, '0')).join(' ');
+    return { str, partial, bytes: raw.length, hex };
+  }
+
+  // Offline fallback: split on whitespace and punctuation, chunk long words into 4-char pieces.
+  // Ids are a stable hash of the piece so the same piece is always the same species.
+  function offlineTokenizer() {
+    const dict = new Map();   // id -> string
+    const hash = s => { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0) % 100000; };
+    const encode = text => {
+      const ids = [];
+      const re = /\s*(?:[\p{L}\p{N}]+|[^\s\p{L}\p{N}]|\s+)/gu;
+      let m;
+      while ((m = re.exec(text)) !== null) {
+        const piece = m[0];
+        if (!piece) continue;
+        const parts = [];
+        // keep one leading space attached, then chunk the rest by 4 code points
+        const lead = piece.match(/^\s*/)[0];
+        const rest = Array.from(piece.slice(lead.length));
+        if (!rest.length) { parts.push(piece); }
+        else for (let i = 0; i < rest.length; i += 4) parts.push((i === 0 ? lead : '') + rest.slice(i, i + 4).join(''));
+        for (const p of parts) { const id = hash(p); dict.set(id, p); ids.push(id); }
+      }
+      return ids;
+    };
+    return { name: 'offline', online: false, vocabSize: 100000, encode, rawOf: id => utf8.encode(dict.get(id) || '?'), note: 'offline tokenizer (CDN unavailable): rough word/piece splitter, ids are hashes' };
+  }
+
+  // ---------------------------------------------------------------- "frequency" proxy
+  // Returns commonness in [0, 1]. Swap this function for a real frequency table if one turns up.
+  function commonness(id, str, vocabSize) {
+    const byRank = 1 - Math.pow(Math.log(id + 1) / Math.log(vocabSize), 2);   // early merges -> common
+    const len = Math.max(1, str.trim().length || str.length);
+    const byLength = 1 - Math.min(1, (len - 1) / 12);                          // short tokens -> common
+    return Math.max(0, Math.min(1, 0.7 * byRank + 0.3 * byLength));
+  }
+
+  // ---------------------------------------------------------------- species and fish
+  const species = new Map();       // id -> { id, str, label, count, c (commonness), hue, variant, fish: [], bytes }
+  const fish = [];                 // all live fish (including leaving and storm fish)
+  let W = 0, H = 0, DPR = 1;
+
+  function hueOf(id) { return (id * 137.508) % 360; }   // golden-angle spread so neighbours differ
+
+  function labelOf(str) {
+    // visible marker for leading spaces / newlines so the text on the fish stays legible
+    return str.replace(/^ +/, m => '␣'.repeat(m.length)).replace(/\n/g, '⏎').replace(/\t/g, '⇥');
+  }
+
+  function makeSpecies(id, extra) {
+    const d = describeToken(id);
+    const c = commonness(id, d.str, tok.vocabSize);
+    return Object.assign({
+      id, str: d.str, label: labelOf(d.str) || '�', count: 0, c, hue: hueOf(id), variant: id % 3, fish: [],
+      bytes: d.bytes, hex: d.hex, partial: d.partial, hot: 0, storm: false
+    }, extra || {});
+  }
+
+  // from: 'top' (new tokens rain in), 'side' (storm visitors), 'anywhere' (cold start)
+  function spawnFish(sp, from) {
+    const c = sp.c;
+    const fs = 10 + 8 * c;                      // font size in CSS px
+    ctx.font = `600 ${fs}px ${getComputedStyle(document.documentElement).getPropertyValue('--mono')}`;
+    const tw = ctx.measureText(sp.label).width;
+    const f = {
+      sp, fs, tw,
+      L: Math.max(tw / 2 + fs * 0.8, fs * 1.6),      // half-length of body ellipse
+      Hh: fs * 0.95,                                 // half-height
+      x: from === 'side' ? (Math.random() < 0.5 ? -60 : W + 60) : 40 + Math.random() * (W - 80),
+      y: from === 'side' ? Math.random() * H * 0.8 + 20 : from === 'anywhere' ? 40 + Math.random() * (H - 110) : -30 - Math.random() * 60,
+      vx: 0, vy: 0,
+      speed: (16 + (1 - c) * 70) * MOTION,          // cruising speed px/s
+      jitter: (1 - c) * (1 - c) * 240 * MOTION,      // random acceleration, rare = twitchy
+      phase: Math.random() * Math.PI * 2,
+      wag: (1.2 + (1 - c) * 3) * MOTION,             // tail wag frequency
+      leaving: false, born: performance.now() / 1000, life: Infinity, tx: null, ty: null
+    };
+    f.vx = (Math.random() - 0.5) * f.speed;
+    f.vy = (Math.random() - 0.5) * f.speed * 0.4;
+    sp.fish.push(f);
+    fish.push(f);
+    return f;
+  }
+
+  function letGo(f) {
+    f.leaving = true;
+    const i = f.sp.fish.indexOf(f);
+    if (i >= 0) f.sp.fish.splice(i, 1);
+  }
+
+  // How many fish should a species with `count` occurrences get, given the total token count?
+  function fishQuota(count, total) {
+    if (total <= MAX_FISH) return count;
+    return Math.max(1, Math.round(count * MAX_FISH / total));
+  }
+
+  // ---------------------------------------------------------------- tokenising the text
+  let stream = [];      // ids in order
+  let text = '';
+
+  function retokenize(cold) {
+    text = textarea.value;
+    stream = tok.encode(text);
+    const counts = new Map();
+    for (const id of stream) counts.set(id, (counts.get(id) || 0) + 1);
+    const total = stream.length;
+
+    // species that vanished swim off
+    for (const [id, sp] of species) {
+      if (sp.storm) continue;
+      if (!counts.has(id)) { for (const f of sp.fish.slice()) letGo(f); sp.count = 0; species.delete(id); }
+    }
+    // existing species adjust their numbers; new ones spawn from the top
+    for (const [id, count] of counts) {
+      let sp = species.get(id);
+      if (!sp) { sp = makeSpecies(id); species.set(id, sp); }
+      sp.count = count;
+      const want = fishQuota(count, total);
+      while (sp.fish.length < want) spawnFish(sp, cold ? 'anywhere' : 'top');
+      while (sp.fish.length > want) letGo(sp.fish[sp.fish.length - 1]);
+    }
+    renderStream(counts);
+    renderStats(counts);
+  }
+
+  // ---------------------------------------------------------------- side panels
+  function chipStyle(sp) { return `--c: hsl(${sp.hue.toFixed(0)} 55% 62%)`; }
+
+  function renderStream() {
+    const box = $('stream');
+    box.textContent = '';
+    const frag = document.createDocumentFragment();
+    const limit = 1500;
+    stream.slice(0, limit).forEach((id, i) => {
+      const sp = species.get(id);
+      const b = document.createElement('button');
+      b.className = 'chip'; b.type = 'button';
+      b.style.cssText = chipStyle(sp);
+      b.dataset.id = id;
+      b.title = `id ${id}`;
+      // leading-space marker rendered dim
+      const m = sp.str.match(/^ +/);
+      if (m) { const s = document.createElement('span'); s.className = 'sp'; s.textContent = '␣'.repeat(m.length); b.appendChild(s); b.appendChild(document.createTextNode(labelOf(sp.str.slice(m.length)))); }
+      else b.textContent = sp.label;
+      frag.appendChild(b);
+    });
+    if (stream.length > limit) { const s = document.createElement('span'); s.className = 'more'; s.textContent = `… and ${stream.length - limit} more`; frag.appendChild(s); }
+    box.appendChild(frag);
+    $('stream-note').textContent = stream.length ? `(${stream.length} tokens, in order)` : '';
+  }
+
+  function renderStats(counts) {
+    const chars = Array.from(text).length;
+    $('s-tokens').textContent = stream.length.toLocaleString();
+    $('s-chars').textContent = chars.toLocaleString();
+    $('s-ratio').textContent = stream.length ? (chars / stream.length).toFixed(2) : '0';
+    $('s-species').textContent = counts.size.toLocaleString();
+    let rare = -1;
+    for (const id of counts.keys()) if (id > rare) rare = id;
+    const el = $('s-rare');
+    if (rare < 0) { el.textContent = '–'; return; }
+    el.textContent = '';
+    const m = document.createElement('span'); m.className = 'mono'; m.textContent = species.get(rare).label;
+    const s = document.createElement('small'); s.textContent = `id ${rare}`;
+    el.appendChild(m); el.appendChild(s);
+  }
+
+  $('stream').addEventListener('click', e => {
+    const chip = e.target.closest('.chip');
+    if (!chip) return;
+    const sp = species.get(Number(chip.dataset.id));
+    if (!sp) return;
+    sp.hot = performance.now() / 1000 + 2.5;
+    for (const c of $('stream').querySelectorAll('.chip.hot')) c.classList.remove('hot');
+    for (const c of $('stream').querySelectorAll(`.chip[data-id="${sp.id}"]`)) c.classList.add('hot');
+    $('tankwrap').scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'nearest' });
+  });
+
+  // ---------------------------------------------------------------- modes
+  let mode = 'feed';         // feed | storm | sort
+  let frozen = false;
+  let sortUntil = 0;
+  const modeNote = $('mode-note');
+
+  function setMode(m) {
+    mode = m;
+    for (const id of ['feed', 'storm', 'sort']) $('btn-' + id).classList.toggle('on', id === m);
+  }
+
+  function storm() {
+    if (!tok) return;
+    setMode('storm');
+    const now = performance.now() / 1000;
+    let made = 0, tries = 0;
+    while (made < STORM_COUNT && tries < STORM_COUNT * 4) {
+      tries++;
+      const id = Math.floor(Math.random() * tok.vocabSize);
+      if (species.has(id)) continue;
+      const str = describeToken(id).str;
+      if (!str || /^<\|.*\|>$/.test(str)) continue;             // skip special tokens
+      const sp = makeSpecies(id, { storm: true, count: 1 });
+      species.set(id, sp);
+      const f = spawnFish(sp, 'side');
+      f.life = now + STORM_LIFE + Math.random() * 3;
+      f.speed *= 1.6; f.jitter *= 1.5;
+      made++;
+    }
+    modeNote.textContent = `storm: ${made} random tokens from the ${tok.vocabSize.toLocaleString()}-token vocabulary`;
+    modeNote.style.display = 'block';
+    setTimeout(() => { if (mode === 'storm') { setMode('feed'); modeNote.style.display = 'none'; } }, (STORM_LIFE + 3) * 1000);
+  }
+
+  function sort() {
+    setMode('sort');
+    sortUntil = performance.now() / 1000 + SORT_TIME;
+    layoutSorted();
+    modeNote.textContent = 'sorted by token id, left to right, top to bottom';
+    modeNote.style.display = 'block';
+  }
+
+  // Assign grid targets: fish sorted by id, filling rows across the tank.
+  function layoutSorted() {
+    const live = fish.filter(f => !f.leaving).sort((a, b) => a.sp.id - b.sp.id || a.born - b.born);
+    if (!live.length) return;
+    const cellW = Math.max(70, Math.min(150, W / Math.ceil(Math.sqrt(live.length * W / (H * 0.85)))));
+    const cols = Math.max(1, Math.floor(W / cellW));
+    const rows = Math.ceil(live.length / cols);
+    const rowH = Math.min(46, (H - 60) / rows);
+    const top = Math.max(30, (H - rows * rowH) / 2);
+    live.forEach((f, i) => {
+      f.tx = (i % cols + 0.5) * (W / cols);
+      f.ty = top + Math.floor(i / cols) * rowH + rowH / 2;
+    });
+  }
+
+  function endSort() {
+    setMode('feed');
+    modeNote.style.display = 'none';
+    for (const f of fish) { f.tx = f.ty = null; }
+  }
+
+  $('btn-feed').addEventListener('click', () => { if (mode === 'sort') endSort(); else setMode('feed'); modeNote.style.display = 'none'; });
+  $('btn-storm').addEventListener('click', storm);
+  $('btn-sort').addEventListener('click', sort);
+  $('btn-freeze').addEventListener('click', () => { frozen = !frozen; $('btn-freeze').classList.toggle('on', frozen); });
+
+  // ---------------------------------------------------------------- simulation
+  let last = performance.now();
+
+  function step(dt) {
+    const now = performance.now() / 1000;
+    const sorting = mode === 'sort' && now < sortUntil;
+    if (mode === 'sort' && !sorting) endSort();
+    const n = fish.length;
+
+    for (let i = 0; i < n; i++) {
+      const f = fish[i];
+      if (f.leaving) {
+        // swim off towards the nearer side and speed up
+        const dir = f.x < W / 2 ? -1 : 1;
+        f.vx += dir * 160 * MOTION * dt; f.vy *= 0.98;
+        continue;
+      }
+      if (f.life < now) { letGo(f); species.delete(f.sp.id); continue; }
+
+      let ax = 0, ay = 0;
+      if (sorting && f.tx !== null) {
+        // steer to the grid slot, strongly damped
+        ax += (f.tx - f.x) * 6 - f.vx * 3;
+        ay += (f.ty - f.y) * 6 - f.vy * 3;
+      } else {
+        // boids: separation from everyone, alignment and cohesion with the same species
+        let sx = 0, sy = 0, alx = 0, aly = 0, cx = 0, cy = 0, mates = 0;
+        const near2 = 130 * 130;
+        for (let j = 0; j < n; j++) {
+          if (j === i) continue;
+          const g = fish[j];
+          if (g.leaving) continue;
+          const dx = f.x - g.x, dy = f.y - g.y, d2 = dx * dx + dy * dy;
+          const sepR = f.L + g.L + 12;                 // keep bodies from overlapping, whatever their size
+          if (d2 < sepR * sepR && d2 > 0.01) { const d = Math.sqrt(d2); const k = (sepR - d) / sepR; sx += dx / d * k; sy += dy / d * k * 1.6; }
+          if (g.sp === f.sp && d2 < near2) { alx += g.vx; aly += g.vy; cx += g.x; cy += g.y; mates++; }
+        }
+        ax += sx * 170 * MOTION; ay += sy * 170 * MOTION;
+        if (mates) {
+          ax += (alx / mates - f.vx) * 0.9;
+          ay += (aly / mates - f.vy) * 0.9;
+          ax += (cx / mates - f.x) * 0.35 * MOTION;
+          ay += (cy / mates - f.y) * 0.35 * MOTION;
+        }
+        // wander + rarity jitter
+        f.phase += dt * (0.4 + f.jitter / 200);
+        ax += Math.cos(f.phase * 1.7) * f.speed * 0.6 + (Math.random() - 0.5) * f.jitter;
+        ay += Math.sin(f.phase) * f.speed * 0.3 + (Math.random() - 0.5) * f.jitter * 0.6;
+        // stay inside the water: soft walls, sand at the bottom
+        const m = 40, sand = H - 44;
+        if (f.x < m) ax += (m - f.x) * 4; else if (f.x > W - m) ax -= (f.x - W + m) * 4;
+        if (f.y < m) ay += (m - f.y) * 4; else if (f.y > sand - f.Hh) ay -= (f.y - sand + f.Hh) * 4;
+        // cruise control: pull the speed back towards the species' cruising speed
+        const sp = Math.hypot(f.vx, f.vy) || 1;
+        const k = (f.speed - sp) * 0.8;
+        ax += f.vx / sp * k; ay += f.vy / sp * k;
+      }
+      f.vx += ax * dt; f.vy += ay * dt;
+      const cap = sorting ? 900 : f.speed * 2.2 + 20;
+      const s = Math.hypot(f.vx, f.vy);
+      if (s > cap) { f.vx *= cap / s; f.vy *= cap / s; }
+    }
+    for (const f of fish) { f.x += f.vx * dt; f.y += f.vy * dt; }
+    // remove fish that have left the tank
+    for (let i = fish.length - 1; i >= 0; i--) {
+      const f = fish[i];
+      if (f.leaving && (f.x < -120 || f.x > W + 120)) fish.splice(i, 1);
+    }
+  }
+
+  // ---------------------------------------------------------------- drawing
+  const bubbles = [];
+  for (let i = 0; i < 26; i++) bubbles.push({ x: Math.random(), y: Math.random(), r: 1.5 + Math.random() * 3, s: 0.02 + Math.random() * 0.05, w: Math.random() * 6.28 });
+  const caustics = [];
+  for (let i = 0; i < 7; i++) caustics.push({ x: Math.random(), y: Math.random() * 0.6, rx: 120 + Math.random() * 200, ry: 30 + Math.random() * 40, p: Math.random() * 6.28, s: 0.05 + Math.random() * 0.08 });
+  let hover = null;
+  const monoFont = getComputedStyle(document.documentElement).getPropertyValue('--mono').trim();
+
+  function drawWater(t) {
+    const g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, '#0e3d55'); g.addColorStop(1, '#06202e');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    // caustic light patches
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    for (const c of caustics) {
+      const x = ((c.x + t * c.s * MOTION * 0.15) % 1.2 - 0.1) * W;
+      const y = c.y * H + Math.sin(t * c.s * 3 * MOTION + c.p) * 18;
+      const rg = ctx.createRadialGradient(x, y, 0, x, y, c.rx);
+      rg.addColorStop(0, 'rgba(120, 200, 220, 0.07)'); rg.addColorStop(1, 'rgba(120, 200, 220, 0)');
+      ctx.fillStyle = rg;
+      ctx.beginPath(); ctx.ellipse(x, y, c.rx, c.ry, 0, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function drawSand() {
+    ctx.fillStyle = '#b89a6a';
+    ctx.beginPath(); ctx.moveTo(0, H);
+    for (let x = 0; x <= W; x += 24) ctx.lineTo(x, H - 26 + Math.sin(x / 47) * 4 + Math.cos(x / 23) * 2);
+    ctx.lineTo(W, H); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'rgba(0,0,0,0.18)';
+    for (let x = 12; x < W; x += 37) { ctx.beginPath(); ctx.ellipse(x, H - 12 + (x % 7), 5, 1.5, 0, 0, 6.28); ctx.fill(); }
+  }
+
+  function drawBubbles(t) {
+    ctx.fillStyle = 'rgba(200, 235, 245, 0.35)';
+    ctx.strokeStyle = 'rgba(220, 245, 255, 0.5)';
+    for (const b of bubbles) {
+      const y = ((b.y - t * b.s * MOTION) % 1 + 1) % 1;
+      const x = b.x * W + Math.sin(t * 1.3 + b.w) * 6;
+      ctx.beginPath(); ctx.arc(x, y * (H - 30), b.r, 0, 6.28); ctx.stroke();
+    }
+  }
+
+  function drawFish(f, t) {
+    const sp = f.sp;
+    const facing = f.vx < 0 ? -1 : 1;
+    const tilt = Math.max(-0.55, Math.min(0.55, Math.atan2(f.vy, Math.abs(f.vx) + 1e-6)));
+    const L = f.L, Hh = f.Hh;
+    const wag = Math.sin(t * f.wag * 6 + f.phase) * 0.35;
+    const hot = sp.hot > t || hover === f;
+    const light = f.leaving ? 0.45 : 1;
+
+    ctx.save();
+    ctx.translate(f.x, f.y);
+    ctx.rotate(facing * tilt);
+    ctx.globalAlpha = light;
+    const body = `hsl(${sp.hue.toFixed(0)} 55% 62%)`;
+    const dark = `hsl(${sp.hue.toFixed(0)} 60% 34%)`;
+
+    // highlight ring
+    if (hot) { ctx.strokeStyle = 'rgba(255,255,255,0.9)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(0, 0, L + 9, Hh + 9, 0, 0, 6.28); ctx.stroke(); }
+
+    ctx.save();
+    ctx.scale(facing, 1);        // mirror the body only; text is drawn un-mirrored below
+    // tail (three species variants)
+    ctx.fillStyle = dark;
+    ctx.beginPath();
+    const tx = -L + 2, tl = Hh * 1.3;
+    ctx.moveTo(tx, 0);
+    if (sp.variant === 0) { ctx.lineTo(tx - tl, -Hh * 0.9 + wag * Hh); ctx.lineTo(tx - tl * 0.6, wag * Hh * 0.5); ctx.lineTo(tx - tl, Hh * 0.9 + wag * Hh); }
+    else if (sp.variant === 1) { ctx.lineTo(tx - tl, -Hh * 0.7 + wag * Hh); ctx.lineTo(tx - tl, Hh * 0.7 + wag * Hh); }
+    else { ctx.quadraticCurveTo(tx - tl * 0.5, wag * Hh, tx - tl, -Hh + wag * Hh); ctx.lineTo(tx - tl * 0.7, wag * Hh); ctx.lineTo(tx - tl, Hh + wag * Hh); ctx.quadraticCurveTo(tx - tl * 0.5, wag * Hh, tx, 0); }
+    ctx.closePath(); ctx.fill();
+    // dorsal fin
+    ctx.beginPath(); ctx.moveTo(-L * 0.4, -Hh + 1); ctx.quadraticCurveTo(0, -Hh - Hh * 0.7, L * 0.35, -Hh + 1); ctx.closePath(); ctx.fill();
+    // body
+    ctx.fillStyle = body; ctx.strokeStyle = dark; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.ellipse(0, 0, L, Hh, 0, 0, 6.28); ctx.fill(); ctx.stroke();
+    // eye
+    ctx.fillStyle = '#f6fbfc'; ctx.beginPath(); ctx.arc(L - Hh * 0.55, -Hh * 0.25, Hh * 0.22, 0, 6.28); ctx.fill();
+    ctx.fillStyle = '#0b1a22'; ctx.beginPath(); ctx.arc(L - Hh * 0.5, -Hh * 0.25, Hh * 0.11, 0, 6.28); ctx.fill();
+    ctx.restore();
+
+    // token text on the body (never mirrored), nudged towards the tail to clear the eye
+    ctx.fillStyle = '#0b1a22';
+    ctx.font = `600 ${f.fs}px ${monoFont}`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(sp.label, -facing * Hh * 0.3, 1);
+
+    // count badge on the species' lead fish
+    if (sp.fish[0] === f && sp.count > 1) {
+      const txt = '×' + sp.count;
+      ctx.font = `600 10px ${monoFont}`;
+      const w = ctx.measureText(txt).width + 8;
+      ctx.fillStyle = '#f2c14e';
+      ctx.beginPath();
+      if (ctx.roundRect) ctx.roundRect(L * 0.3, -Hh - 14, w, 13, 6); else ctx.rect(L * 0.3, -Hh - 14, w, 13);
+      ctx.fill();
+      ctx.fillStyle = '#06202e'; ctx.fillText(txt, L * 0.3 + w / 2, -Hh - 7.5);
+    }
+    ctx.restore();
+  }
+
+  function frame(now) {
+    const dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+    const t = now / 1000;
+    if (!frozen) step(dt);
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    drawWater(t);
+    drawBubbles(frozen ? 0 : t);
+    // draw slow (big, common) fish first so the twitchy little ones sit on top
+    const order = fish.slice().sort((a, b) => b.fs - a.fs);
+    for (const f of order) drawFish(f, frozen ? 0 : t);
+    drawSand();
+    requestAnimationFrame(frame);
+  }
+
+  // ---------------------------------------------------------------- sizing
+  function resize() {
+    DPR = Math.min(2, window.devicePixelRatio || 1);
+    const r = canvas.getBoundingClientRect();
+    W = Math.max(200, r.width); H = Math.max(200, r.height);
+    canvas.width = Math.round(W * DPR); canvas.height = Math.round(H * DPR);
+    if (mode === 'sort') layoutSorted();
+  }
+  window.addEventListener('resize', resize);
+
+  // ---------------------------------------------------------------- inspector (hover / tap)
+  function fishAt(px, py) {
+    let best = null, bd = Infinity;
+    for (const f of fish) {
+      if (f.leaving) continue;
+      const dx = (px - f.x) / (f.L + 6), dy = (py - f.y) / (f.Hh + 8);
+      const d = dx * dx + dy * dy;
+      if (d < 1 && d < bd) { bd = d; best = f; }
+    }
+    return best;
+  }
+
+  function showTip(f, px, py) {
+    const sp = f.sp;
+    const lead = sp.str.match(/^ +/);
+    tip.textContent = '';
+    const t1 = document.createElement('div'); t1.className = 'tok';
+    if (lead) { const s = document.createElement('span'); s.className = 'sp'; s.textContent = '␣'.repeat(lead[0].length); t1.appendChild(s); t1.appendChild(document.createTextNode(labelOf(sp.str.slice(lead[0].length)))); }
+    else t1.textContent = sp.label;
+    tip.appendChild(t1);
+    const rows = [
+      ['id', sp.id.toLocaleString()],
+      ['bytes', sp.bytes + (sp.bytes <= 8 ? ' (' + sp.hex + ')' : '') + (sp.partial ? ' – part of a character' : '')],
+      ['in text', sp.storm ? 'storm visitor' : `${sp.count}×`],
+      ['commonness', Math.round(sp.c * 100) + '%']
+    ];
+    for (const [k, v] of rows) { const d = document.createElement('div'); d.className = 'row'; d.textContent = k + ' '; const b = document.createElement('b'); b.textContent = v; d.appendChild(b); tip.appendChild(d); }
+    tip.style.display = 'block';
+    const tw = tip.offsetWidth, th = tip.offsetHeight;
+    let x = px + 14, y = py + 14;
+    if (x + tw > W - 8) x = px - tw - 14;
+    if (y + th > H - 8) y = py - th - 14;
+    tip.style.left = Math.max(4, x) + 'px'; tip.style.top = Math.max(4, y) + 'px';
+  }
+
+  function pointer(e) {
+    const r = canvas.getBoundingClientRect();
+    const px = e.clientX - r.left, py = e.clientY - r.top;
+    const f = fishAt(px, py);
+    hover = f;
+    if (f) showTip(f, px, py); else tip.style.display = 'none';
+  }
+  canvas.addEventListener('pointermove', pointer);
+  canvas.addEventListener('pointerdown', pointer);
+  canvas.addEventListener('pointerleave', () => { hover = null; tip.style.display = 'none'; });
+
+  // ---------------------------------------------------------------- hash state
+  function readHash() {
+    const h = location.hash.slice(1);
+    if (!h) return null;
+    try { return decodeURIComponent(h); } catch (e) { return null; }
+  }
+  function writeHash() {
+    let t = text;
+    let enc = encodeURIComponent(t);
+    while (enc.length > HASH_LIMIT && t.length) { t = t.slice(0, Math.floor(t.length * 0.8)); enc = encodeURIComponent(t); }
+    try { history.replaceState(null, '', enc ? '#' + enc : location.pathname + location.search); } catch (e) { /* file:// etc. */ }
+  }
+
+  // ---------------------------------------------------------------- wiring
+  let debounce = 0;
+  textarea.addEventListener('input', () => {
+    clearTimeout(debounce);
+    debounce = setTimeout(() => { if (!tok) return; retokenize(); writeHash(); if (mode === 'sort') layoutSorted(); }, 120);
+  });
+
+  async function useEncoding(name) {
+    const status = $('status');
+    status.className = 'status loading'; status.textContent = 'loading tokenizer';
+    let next;
+    try { next = await loadTokenizer(name); }
+    catch (e) { next = offlineTokenizer(); }
+    // switching vocabularies changes every id, so everything swims off and respawns
+    tok = next;
+    for (const f of fish.slice()) if (!f.leaving) letGo(f);
+    species.clear();
+    status.className = 'status' + (tok.online ? '' : ' offline');
+    status.textContent = tok.note;
+    document.title = 'Tokenizer Aquarium' + (tok.online ? '' : ' (offline tokenizer)');
+    retokenize(true);
+    // warm start: pre-run a couple of seconds so the shoal has already settled
+    for (let i = 0; i < 80; i++) step(1 / 40);
+  }
+  $('enc').addEventListener('change', e => useEncoding(e.target.value));
+
+  textarea.value = readHash() || DEFAULT_TEXT;
+  resize();
+  requestAnimationFrame(t => { last = t; frame(t); });
+  useEncoding($('enc').value);
+})();
+</script>
+</body>
+</html>
