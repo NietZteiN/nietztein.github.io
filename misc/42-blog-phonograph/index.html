@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Phonograph</title>
+<meta name="description" content="Every blog post pressed onto a twelve-inch record: the groove is the text, paragraphs are tracks, and a tonearm reads it aloud. Drop the needle anywhere.">
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    --bg: #100d0b;
+    --bg-2: #1b1512;
+    --panel: rgba(255, 255, 255, 0.045);
+    --panel-2: rgba(255, 255, 255, 0.09);
+    --line: rgba(236, 226, 206, 0.14);
+    --ink: #ece3d0;
+    --ink-2: #ab9f8a;
+    --ink-3: rgba(236, 226, 206, 0.4);
+    --lamp: #ffcf6e;           /* the lit word, the power lamp */
+    --amber: #e8a33c;          /* VU needle red zone counterpart */
+    --walnut-1: #4a2b19;
+    --walnut-2: #2d1a0f;
+    --alu: #b9b7b0;
+    --alu-2: #8b8984;
+    --lcd: #0a0f0b;
+    --lcd-ink: #d9e4c8;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, "Times New Roman", serif;
+    --sans: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+    --mono: ui-monospace, "Cascadia Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); }
+  body {
+    font: 15px/1.45 var(--sans);
+    background: radial-gradient(ellipse at 50% -10%, #2a1e17 0%, var(--bg) 55%, #0a0806 100%);
+    background-attachment: fixed;
+    min-height: 100vh; display: flex; flex-direction: column;
+    padding: 14px 16px 24px; overflow-x: hidden;
+  }
+  a { color: inherit; }
+  h1 { font-size: 22px; margin: 0; font-weight: 600; letter-spacing: 0.01em; }
+  header { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 12px; }
+  header .sub { color: var(--ink-2); font-size: 14px; }
+  header .spacer { flex: 1; }
+  header .back { color: var(--ink-2); font-size: 14px; text-decoration: none; }
+  header .back:hover { color: var(--ink); }
+  button, select, input[type=range] { font: inherit; }
+  button {
+    color: var(--ink); background: var(--panel-2); border: 1px solid var(--line);
+    border-radius: 7px; padding: 6px 12px; cursor: pointer; line-height: 1.2; white-space: nowrap;
+  }
+  button:hover { background: rgba(255,255,255,0.14); }
+  button:active { transform: translateY(1px); }
+  button.on { background: var(--lamp); color: #1a1208; border-color: transparent; }
+  button.small { font-size: 13px; padding: 4px 10px; }
+  button:disabled { opacity: 0.45; cursor: default; }
+  button:focus-visible, select:focus-visible, input:focus-visible { outline: 1px solid var(--lamp); outline-offset: 1px; }
+  select {
+    color: var(--ink); background: rgba(0,0,0,0.35); border: 1px solid var(--line); border-radius: 7px; padding: 5px 8px; max-width: 100%;
+  }
+  label { color: var(--ink-2); font-size: 13px; display: inline-flex; align-items: center; gap: 6px; }
+  input[type=range] { accent-color: var(--lamp); width: 110px; margin: 0; }
+
+  /* layout */
+  main { flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 22px; align-items: start; }
+  #left { min-width: 0; }
+
+  /* the hi-fi deck */
+  #deck {
+    position: relative; width: min(100%, calc((100vh - 345px) * 1000 / 720)); min-width: min(100%, 420px);
+    aspect-ratio: 1000 / 720; margin: 0 auto;
+    border-radius: 14px;
+    background:
+      repeating-linear-gradient(94deg, rgba(0,0,0,0) 0 7px, rgba(0,0,0,0.12) 7px 9px, rgba(0,0,0,0) 9px 23px, rgba(255,210,160,0.05) 23px 25px),
+      repeating-linear-gradient(176deg, rgba(0,0,0,0) 0 2px, rgba(0,0,0,0.06) 2px 3px),
+      linear-gradient(100deg, #5a3620 0%, var(--walnut-1) 35%, #3a2113 70%, var(--walnut-2) 100%);
+    box-shadow: 0 30px 60px rgba(0,0,0,0.6), 0 2px 0 rgba(255,230,200,0.08) inset, 0 -3px 0 rgba(0,0,0,0.4) inset;
+    overflow: hidden; user-select: none; -webkit-user-select: none; touch-action: none;
+  }
+  #deck > svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  #deck-base { z-index: 1; }
+  #arm-layer { z-index: 5; pointer-events: none; }
+  #record {
+    position: absolute; left: 6%; top: 5.556%; width: 64%; aspect-ratio: 1 / 1; border-radius: 50%; z-index: 2;
+    display: block; will-change: transform; transform: rotate(0deg);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.65);
+  }
+  #sheen {
+    position: absolute; left: 6%; top: 5.556%; width: 64%; aspect-ratio: 1 / 1; border-radius: 50%; z-index: 3; pointer-events: none;
+    background: conic-gradient(from 200deg, rgba(255,255,255,0) 0deg, rgba(255,255,255,0.11) 18deg, rgba(255,255,255,0) 50deg, rgba(255,255,255,0) 180deg, rgba(255,255,255,0.09) 200deg, rgba(255,255,255,0) 232deg);
+    mix-blend-mode: screen;
+  }
+  #hit { position: absolute; left: 6%; top: 5.556%; width: 64%; aspect-ratio: 1 / 1; border-radius: 50%; z-index: 4; cursor: pointer; }
+  #hit.drag { cursor: grabbing; }
+  #drop-ring {
+    position: absolute; left: 38%; top: 50%; width: 0; height: 0; border-radius: 50%; border: 2px solid var(--lamp);
+    transform: translate(-50%, -50%); opacity: 0; pointer-events: none; z-index: 4;
+  }
+  #drop-ring.flash { animation: dropflash 0.7s ease-out; }
+  @keyframes dropflash { 0% { opacity: 0.9; } 100% { opacity: 0; } }
+  #arm { transform-origin: 890px 108px; }
+  #arm-shadow { transition: opacity 0.6s; transform-origin: 890px 108px; opacity: 0.35; }
+  #deck.down #arm-shadow { opacity: 0.55; }
+  #headshell { transition: transform 0.6s ease; }
+  #deck:not(.down) #headshell { transform: translate(0, -5px); }
+  #deck.noanim #arm-shadow, #deck.noanim #headshell { transition: none; }
+  #lamp { fill: #3a2a16; }
+  #deck.on #lamp { fill: var(--lamp); filter: drop-shadow(0 0 4px rgba(255,207,110,0.9)); }
+
+  /* control strip */
+  #strip {
+    margin: 14px auto 0; width: min(100%, calc((100vh - 345px) * 1000 / 720)); min-width: min(100%, 420px);
+    display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center;
+    padding: 10px 12px; border-radius: 10px;
+    background: linear-gradient(180deg, #2a2a2a, #1b1b1b 55%, #222);
+    border: 1px solid rgba(255,255,255,0.09);
+    box-shadow: 0 1px 0 rgba(255,255,255,0.06) inset, 0 10px 30px rgba(0,0,0,0.4);
+  }
+  #strip .grp { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  #strip .sep { width: 1px; height: 22px; background: var(--line); }
+  #post { max-width: 300px; }
+  #voice { max-width: 200px; }
+  #btn-play { min-width: 82px; }
+  #btn-play.on { background: var(--lamp); }
+
+  /* now playing */
+  #np {
+    margin: 12px auto 0; width: min(100%, calc((100vh - 345px) * 1000 / 720)); min-width: min(100%, 420px);
+    background: var(--lcd); color: var(--lcd-ink); border-radius: 10px; border: 1px solid rgba(255,255,255,0.08);
+    box-shadow: 0 0 0 4px #1a1a1a, 0 0 30px rgba(0,0,0,0.5), 0 0 24px rgba(160,220,140,0.05) inset;
+    padding: 8px 14px 6px; min-height: 92px;
+  }
+  #np .meta { display: flex; justify-content: space-between; gap: 10px; font: 12px/1.3 var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: rgba(217,228,200,0.6); }
+  #np .meta b { color: var(--lcd-ink); font-weight: 600; }
+  #sentence { font-family: var(--serif); font-size: clamp(1rem, 0.95rem + 0.5vw, 1.2rem); line-height: 1.4; margin: 4px 0 2px; min-height: 2.8em; text-wrap: pretty; }
+  #sentence .w { color: rgba(217,228,200,0.42); transition: color 0.15s; }
+  #sentence .w.done { color: var(--lcd-ink); }
+  #sentence .w.cur { color: var(--lamp); text-shadow: 0 0 10px rgba(255,207,110,0.55); }
+  #sentence.scratch { color: #ff8f7a; font-style: italic; letter-spacing: 0.04em; }
+  #sentence .msg { color: rgba(217,228,200,0.75); font-family: var(--sans); font-size: 14px; }
+  #scope { display: block; width: 100%; height: 52px; margin-top: 2px; }
+
+  /* the sleeve */
+  #sleeve {
+    position: sticky; top: 14px;
+    background: linear-gradient(170deg, #d8cdb6 0%, #c9bb9f 50%, #bfb093 100%);
+    color: #2a2218; border-radius: 4px;
+    box-shadow: 0 24px 50px rgba(0,0,0,0.6), 0 0 0 1px rgba(0,0,0,0.3), -6px 0 0 -2px #a99a7f, -10px 0 0 -4px #8f8168;
+    padding: 12px 12px 14px;
+    font-family: var(--serif);
+  }
+  #sleeve::before { content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: 4px;
+    background: repeating-linear-gradient(0deg, rgba(0,0,0,0) 0 3px, rgba(0,0,0,0.02) 3px 4px), radial-gradient(circle at 20% 10%, rgba(255,255,255,0.25), rgba(255,255,255,0) 50%); }
+  #cover { width: 100%; aspect-ratio: 1 / 1; display: block; border-radius: 2px; box-shadow: 0 2px 10px rgba(0,0,0,0.35); }
+  #sleeve .hdr { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-top: 10px; }
+  #sleeve .hdr h2 { font-size: 16px; margin: 0; font-weight: 700; line-height: 1.2; }
+  #sleeve .cat { font: 11px/1 var(--mono); letter-spacing: 0.08em; color: #5a4d3b; white-space: nowrap; }
+  #sleeve .meta { font-size: 12px; color: #5a4d3b; margin-top: 3px; letter-spacing: 0.02em; }
+  #sleeve .side-hdr { display: flex; justify-content: space-between; align-items: center; margin: 10px 0 4px; font: 600 11px/1 var(--sans); letter-spacing: 0.12em; text-transform: uppercase; color: #3b3023; border-bottom: 1px solid rgba(0,0,0,0.25); padding-bottom: 5px; }
+  #sleeve .side-hdr button { background: rgba(0,0,0,0.08); color: #2a2218; border-color: rgba(0,0,0,0.25); font-size: 11px; padding: 3px 8px; }
+  #sleeve .side-hdr button:hover { background: rgba(0,0,0,0.14); }
+  #tracks { list-style: none; margin: 0; padding: 0; font-size: 12.5px; line-height: 1.35; max-height: 34vh; overflow: auto; }
+  #tracks li { display: grid; grid-template-columns: 1.6em minmax(0, 1fr) auto; gap: 6px; padding: 3px 2px; border-radius: 3px; cursor: pointer; }
+  #tracks li:hover { background: rgba(0,0,0,0.07); }
+  #tracks li.cur { background: rgba(80,50,20,0.14); font-weight: 600; }
+  #tracks li .n { color: #6a5c48; font-variant-numeric: tabular-nums; }
+  #tracks li .t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #tracks li .d { font: 11px/1.5 var(--mono); color: #6a5c48; }
+  #liner { margin-top: 10px; font-size: 12.5px; line-height: 1.4; color: #3b3023; font-style: italic; }
+  #liner b { font-style: normal; font: 600 10px/1 var(--sans); letter-spacing: 0.12em; text-transform: uppercase; color: #6a5c48; display: block; margin-bottom: 3px; }
+  #sleeve .imprint { margin-top: 10px; display: flex; justify-content: space-between; font: 10px/1 var(--sans); letter-spacing: 0.1em; text-transform: uppercase; color: #6a5c48; }
+
+  footer { margin-top: 18px; color: var(--ink-2); font-size: 13px; max-width: 70em; }
+  footer p { margin: 4px 0; }
+
+  /* help overlay */
+  .overlay { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(6, 4, 3, 0.82); padding: 18px; z-index: 50; }
+  .overlay.show { display: flex; }
+  .overlay .box { max-width: 480px; background: var(--bg-2); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; }
+  .overlay h2 { margin: 0 0 8px; font-size: 20px; font-weight: 600; }
+  .overlay p { margin: 8px 0; font-size: 14px; }
+  .overlay p.lic { color: var(--ink-2); font-size: 13px; }
+  .overlay .keys { display: inline-grid; grid-template-columns: auto auto; gap: 3px 14px; margin: 8px 0; font-size: 13px; color: var(--ink-2); }
+  kbd { font-family: inherit; background: var(--panel-2); border: 1px solid var(--line); border-radius: 4px; padding: 0 6px; color: var(--ink); }
+
+  /* photogenic state for the card thumbnail (?thumb=1) */
+  body.thumb #strip, body.thumb footer { display: none; }
+  body.thumb #deck, body.thumb #np { width: min(100%, 820px); }
+
+  @media (max-width: 900px) {
+    main { grid-template-columns: minmax(0, 1fr); }
+    #sleeve { position: static; max-width: 420px; margin: 0 auto; width: 100%; }
+    #deck, #strip, #np { width: 100%; min-width: 0; }
+  }
+  @media (max-width: 640px) {
+    body { padding: 12px 12px 20px; }
+    #post { max-width: 100%; width: 100%; }
+    #strip { gap: 6px 8px; }
+    #np { min-height: 80px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #arm-shadow, #headshell { transition: none; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Phonograph</h1>
+  <span class="sub">Every blog post pressed onto a twelve-inch record. The groove is the text; drop the needle anywhere.</span>
+  <span class="spacer"></span>
+  <a class="back" href="../../#/misc">&larr; Jack V. Le</a>
+</header>
+
+<main>
+  <div id="left">
+    <div id="deck" aria-label="turntable">
+      <svg id="deck-base" viewBox="0 0 1000 720" aria-hidden="true">
+        <defs>
+          <linearGradient id="g-alu" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#d6d4cd"/><stop offset="0.5" stop-color="#a8a6a0"/><stop offset="1" stop-color="#c9c7c0"/>
+          </linearGradient>
+          <linearGradient id="g-alu-h" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stop-color="#e2e0da"/><stop offset="0.5" stop-color="#9f9d97"/><stop offset="1" stop-color="#d0cec7"/>
+          </linearGradient>
+          <radialGradient id="g-platter" cx="0.5" cy="0.5" r="0.5">
+            <stop offset="0.86" stop-color="#2b2b2b"/><stop offset="0.93" stop-color="#4a4a48"/><stop offset="0.965" stop-color="#8d8c88"/><stop offset="1" stop-color="#3b3b3a"/>
+          </radialGradient>
+          <linearGradient id="g-vu" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#f3e7c3"/><stop offset="1" stop-color="#d9c9a0"/>
+          </linearGradient>
+          <pattern id="brush" width="4" height="4" patternUnits="userSpaceOnUse">
+            <rect width="4" height="4" fill="none"/><path d="M0 1 H4 M0 3 H4" stroke="rgba(0,0,0,0.08)" stroke-width="1"/>
+          </pattern>
+          <filter id="soft" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="3"/></filter>
+          <filter id="softer" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="8"/></filter>
+        </defs>
+        <!-- aluminium top plate -->
+        <rect x="28" y="28" width="944" height="664" rx="12" fill="url(#g-alu)"/>
+        <rect x="28" y="28" width="944" height="664" rx="12" fill="url(#brush)"/>
+        <rect x="28" y="28" width="944" height="664" rx="12" fill="none" stroke="rgba(0,0,0,0.35)" stroke-width="2"/>
+        <rect x="31" y="31" width="938" height="658" rx="10" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1"/>
+        <!-- platter -->
+        <circle cx="380" cy="360" r="350" fill="rgba(0,0,0,0.35)" filter="url(#softer)"/>
+        <circle cx="380" cy="360" r="340" fill="url(#g-platter)"/>
+        <circle cx="380" cy="360" r="340" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="1"/>
+        <g id="strobe"></g>
+        <circle cx="380" cy="360" r="322" fill="#1c1c1c"/>
+        <circle cx="380" cy="360" r="9" fill="#777" stroke="#333"/>
+        <!-- tonearm base + rest -->
+        <circle cx="890" cy="108" r="44" fill="url(#g-alu-h)" stroke="rgba(0,0,0,0.5)"/>
+        <circle cx="890" cy="108" r="36" fill="#2a2a2a" stroke="rgba(255,255,255,0.15)"/>
+        <rect x="891" y="548" width="30" height="24" rx="4" fill="#3a3a3a" stroke="rgba(255,255,255,0.2)"/>
+        <!-- brand plate -->
+        <text x="772" y="236" font-family="Helvetica, Arial, sans-serif" font-size="13" letter-spacing="3" fill="#3b3b3b">NIETZTEIN</text>
+        <text x="772" y="254" font-family="Helvetica, Arial, sans-serif" font-size="9" letter-spacing="1.2" fill="#555">PH-42 · DIRECT DRIVE</text>
+        <circle id="lamp" cx="777" cy="276" r="5"/>
+        <text x="788" y="280" font-family="Helvetica, Arial, sans-serif" font-size="9" letter-spacing="2" fill="#555">POWER</text>
+        <text x="772" y="304" font-family="Helvetica, Arial, sans-serif" font-size="9" letter-spacing="1.2" fill="#555">33⅓ RPM · 12 INCH</text>
+        <text x="772" y="322" font-family="Helvetica, Arial, sans-serif" font-size="9" letter-spacing="1.2" fill="#555">VU: WORD LENGTH</text>
+        <!-- VU meters -->
+        <g id="vu">
+          <rect x="770" y="586" width="200" height="100" rx="8" fill="#1b1b1b" stroke="rgba(255,255,255,0.2)"/>
+          <g transform="translate(776,592)">
+            <rect width="92" height="88" rx="5" fill="url(#g-vu)"/>
+            <path d="M20.6 55.8 A38 38 0 0 1 71.4 55.8" fill="none" stroke="#2a2218" stroke-width="2"/>
+            <path d="M59 48.3 A38 38 0 0 1 71.4 55.8" fill="none" stroke="#c2321f" stroke-width="4"/>
+            <g font-family="Helvetica, Arial, sans-serif" font-size="7" fill="#2a2218" text-anchor="middle">
+              <text x="14" y="50">-20</text><text x="29" y="41">-10</text><text x="44" y="38">-3</text><text x="61" y="40">0</text><text x="77" y="49">+3</text>
+            </g>
+            <text x="8" y="84" font-family="Helvetica, Arial, sans-serif" font-size="8" letter-spacing="2" fill="#2a2218">VU L</text>
+            <line id="vuL" x1="46" y1="84" x2="46" y2="46" stroke="#1a1a1a" stroke-width="1.6" transform="rotate(-42 46 84)"/>
+            <circle cx="46" cy="84" r="3" fill="#1a1a1a"/>
+          </g>
+          <g transform="translate(872,592)">
+            <rect width="92" height="88" rx="5" fill="url(#g-vu)"/>
+            <path d="M20.6 55.8 A38 38 0 0 1 71.4 55.8" fill="none" stroke="#2a2218" stroke-width="2"/>
+            <path d="M59 48.3 A38 38 0 0 1 71.4 55.8" fill="none" stroke="#c2321f" stroke-width="4"/>
+            <g font-family="Helvetica, Arial, sans-serif" font-size="7" fill="#2a2218" text-anchor="middle">
+              <text x="14" y="50">-20</text><text x="29" y="41">-10</text><text x="44" y="38">-3</text><text x="61" y="40">0</text><text x="77" y="49">+3</text>
+            </g>
+            <text x="8" y="84" font-family="Helvetica, Arial, sans-serif" font-size="8" letter-spacing="2" fill="#2a2218">VU R</text>
+            <line id="vuR" x1="46" y1="84" x2="46" y2="46" stroke="#1a1a1a" stroke-width="1.6" transform="rotate(-42 46 84)"/>
+            <circle cx="46" cy="84" r="3" fill="#1a1a1a"/>
+          </g>
+        </g>
+      </svg>
+      <canvas id="record" width="1100" height="1100" aria-label="the record"></canvas>
+      <div id="sheen"></div>
+      <div id="hit" title="click to drop the needle, drag to scratch"></div>
+      <div id="drop-ring"></div>
+      <svg id="arm-layer" viewBox="0 0 1000 720" aria-hidden="true">
+        <defs>
+          <linearGradient id="g-arm" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#eeede8"/><stop offset="0.45" stop-color="#b9b7b0"/><stop offset="1" stop-color="#75736e"/>
+          </linearGradient>
+        </defs>
+        <g id="arm-shadow" style="transform: rotate(88deg)">
+          <g transform="translate(890,108)" filter="url(#soft)">
+            <rect x="-80" y="-14" width="90" height="28" rx="4" fill="#000" transform="translate(6,14)"/>
+            <path d="M0 -7 L380 -4 L470 -2 L470 2 L380 4 L0 7 Z" fill="#000" transform="translate(6,14)"/>
+          </g>
+        </g>
+        <g id="arm" style="transform: rotate(88deg)">
+          <g transform="translate(890,108)">
+            <!-- counterweight -->
+            <rect x="-86" y="-15" width="86" height="30" rx="5" fill="url(#g-arm)" stroke="rgba(0,0,0,0.5)"/>
+            <rect x="-70" y="-13" width="4" height="26" fill="rgba(0,0,0,0.3)"/>
+            <!-- bearing -->
+            <circle cx="0" cy="0" r="22" fill="url(#g-arm)" stroke="rgba(0,0,0,0.5)"/>
+            <circle cx="0" cy="0" r="8" fill="#333"/>
+            <!-- tube -->
+            <path d="M0 -6 L385 -5 L385 5 L0 6 Z" fill="url(#g-arm)" stroke="rgba(0,0,0,0.45)" stroke-width="0.8"/>
+            <!-- headshell -->
+            <g id="headshell">
+              <path d="M382 -9 L448 -13 L470 -4 L470 4 L448 13 L382 9 Z" fill="#2a2a2a" stroke="#111"/>
+              <path d="M384 -7 L446 -11 L466 -3 L446 -1 Z" fill="rgba(255,255,255,0.08)"/>
+              <rect x="450" y="-3" width="12" height="7" fill="#777"/>
+              <path d="M466 3 L470 10 L472 3 Z" fill="#ddd"/>
+              <circle cx="400" cy="0" r="3" fill="#8b8984"/>
+            </g>
+          </g>
+        </g>
+      </svg>
+    </div>
+
+    <div id="strip">
+      <span class="grp">
+        <select id="post" aria-label="choose a post"></select>
+        <button id="btn-play" title="play / pause (space)">&#9654; Play</button>
+        <button id="btn-flip" class="small" title="turn the record over (F)">Flip to B</button>
+        <button id="btn-export" class="small" title="download the sleeve and disc as a PNG">export PNG</button>
+        <button id="btn-help" class="small" title="what is this? (?)">?</button>
+      </span>
+      <span class="grp">
+        <label>voice <select id="voice" aria-label="voice"></select></label>
+        <label>speed <input id="rate" type="range" min="0.6" max="1.6" step="0.05" value="1" aria-label="speech rate"><span id="rate-val">1.00&times;</span></label>
+        <button id="btn-mute" class="small" title="mute the voice (M)">mute</button>
+        <button id="btn-crackle" class="small" title="surface noise: a crackle bed whose pops follow the post's punctuation">crackle</button>
+      </span>
+    </div>
+
+    <div id="np" aria-live="polite">
+      <div class="meta"><span id="np-left"><b>Stopped</b></span><span id="np-right"></span></div>
+      <div id="sentence"><span class="msg">Loading the catalogue&hellip;</span></div>
+      <canvas id="scope" aria-label="the groove under the stylus"></canvas>
+    </div>
+  </div>
+
+  <aside id="sleeve" aria-label="record sleeve">
+    <canvas id="cover" width="640" height="640"></canvas>
+    <div class="hdr"><h2 id="sl-title">&nbsp;</h2><span class="cat" id="sl-cat"></span></div>
+    <div class="meta" id="sl-meta"></div>
+    <div class="side-hdr"><span id="sl-side">Side A</span><span id="sl-total"></span><button id="btn-flip2" title="turn the record over (F)">flip</button></div>
+    <ol id="tracks"></ol>
+    <div id="liner"></div>
+    <div class="imprint"><span>nietztein records</span><span>33&#8531; rpm &middot; stereo</span></div>
+  </aside>
+</main>
+
+<footer>
+  <p>Each post is one continuous spiral groove: every letter adds its own wiggle (a stable amplitude and frequency per character), spaces run flat, sentence ends are short gaps and paragraphs are the shiny track gaps. The tonearm reads the sentence under the stylus aloud with your browser's own voices; click the record to drop the needle, drag it backwards to scratch.</p>
+  <p>Text from this site's blog (<a href="../../blog/index.json">blog/index.json</a>). Speech, noise and the PNG export all happen in your browser; nothing is sent anywhere.</p>
+</footer>
+
+<div class="overlay" id="help">
+  <div class="box">
+    <h2>Phonograph</h2>
+    <p>Pick a post and press play. The record spins at 33&#8531; (times the speed you set), the strobe dots on the platter rim stand still only at true speed, and the VU needles jump with the length of each word. Sentences are spoken with the voices your browser ships with; if it has none, the words still light up on the display.</p>
+    <p>Click anywhere on the record to drop the needle at that depth of the post. Drag the record backwards to scratch. Flip the record for side B: the second half of the post, or, when the post is too short to split, a remix of its words sorted by frequency. The sleeve art is drawn from the post's tags and slug, so each post has its own cover.</p>
+    <div class="keys">
+      <span><kbd>space</kbd></span><span>play / pause</span>
+      <span><kbd>&larr;</kbd> <kbd>&rarr;</kbd></span><span>previous / next sentence</span>
+      <span><kbd>F</kbd></span><span>flip the record</span>
+      <span><kbd>M</kbd></span><span>mute the voice</span>
+    </div>
+    <p class="lic">Markdown is stripped, so links read as their text. Crackle is off by default and only ever starts from a click. Nothing leaves your browser.</p>
+    <p><button id="btn-close" class="small">close</button></p>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

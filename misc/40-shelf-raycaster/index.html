@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Stacks</title>
+<meta name="description" content="A first-person walk through one real library, raycast like Wolfenstein 3D. Every wall is a shelf, every spine a real book; press E to pull one.">
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    --bg: #100c0a;
+    --bg-2: #1b1410;
+    --panel: rgba(255, 240, 220, 0.05);
+    --panel-2: rgba(255, 240, 220, 0.1);
+    --line: rgba(236, 220, 190, 0.16);
+    --ink: #ece1cc;
+    --ink-2: #ab9c84;
+    --ink-3: rgba(236, 225, 204, 0.42);
+    --lamp: #ffcf7a;
+    --accent: #e0a44a;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif CJK JP", serif;
+    --sans: -apple-system, "Segoe UI", Helvetica, Arial, "Hiragino Sans", "Yu Gothic", "Noto Sans CJK JP", sans-serif;
+    --mono: ui-monospace, "Cascadia Mono", Consolas, Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); }
+  body {
+    font: 15px/1.45 var(--sans);
+    background: radial-gradient(120% 90% at 50% 0%, var(--bg-2) 0%, var(--bg) 70%);
+    min-height: 100vh; display: flex; flex-direction: column;
+    padding: 12px 16px 16px; overflow-x: hidden;
+  }
+  a { color: inherit; }
+  h1 { font-size: 22px; margin: 0; font-weight: 600; letter-spacing: 0.01em; font-family: var(--serif); }
+  header { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+  header .sub { color: var(--ink-2); font-size: 14px; }
+  header .spacer { flex: 1; }
+  header .tools { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  header .back { color: var(--ink-2); font-size: 14px; text-decoration: none; }
+  header .back:hover { color: var(--ink); }
+  button {
+    font: inherit; color: var(--ink); background: var(--panel-2); border: 1px solid var(--line);
+    border-radius: 7px; padding: 5px 11px; cursor: pointer; line-height: 1.2; font-size: 13px;
+  }
+  button:hover { background: rgba(255,240,220,0.15); }
+  button:active { transform: translateY(1px); }
+  button.on { background: var(--accent); color: #1a120a; border-color: transparent; }
+  button:focus-visible, input:focus-visible { outline: 1px solid var(--lamp); outline-offset: 1px; }
+  input[type=search] {
+    font: inherit; font-size: 13px; color: var(--ink); background: rgba(0,0,0,0.3); border: 1px solid var(--line);
+    border-radius: 7px; padding: 5px 9px; width: 15em; max-width: 50vw;
+  }
+  input[type=search]::placeholder { color: var(--ink-3); }
+
+  main { flex: 1; display: flex; flex-direction: column; align-items: center; min-height: 0; }
+  #stage {
+    position: relative; width: 100%; max-width: 1280px; aspect-ratio: 16 / 10;
+    max-height: calc(100vh - 150px); min-height: 260px;
+    background: #000; border: 1px solid var(--line); border-radius: 8px; overflow: hidden;
+    touch-action: none; user-select: none; -webkit-user-select: none;
+    box-shadow: 0 14px 50px rgba(0,0,0,0.6);
+  }
+  #view { position: absolute; inset: 0; width: 100%; height: 100%; display: block; image-rendering: pixelated; image-rendering: crisp-edges; cursor: crosshair; }
+  #vignette { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at center, rgba(0,0,0,0) 55%, rgba(0,0,0,0.55) 100%); }
+  #crt { position: absolute; inset: 0; pointer-events: none; display: none;
+    background: repeating-linear-gradient(0deg, rgba(0,0,0,0.28) 0px, rgba(0,0,0,0.28) 1px, rgba(0,0,0,0) 2px, rgba(0,0,0,0) 4px);
+    mix-blend-mode: multiply; }
+  #crt::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(255,0,0,0.05), rgba(0,255,0,0.03), rgba(0,0,255,0.05)); }
+  #stage.crt #crt { display: block; }
+  #reticle { position: absolute; left: 50%; top: 50%; width: 14px; height: 14px; margin: -7px 0 0 -7px; pointer-events: none; opacity: 0.8; }
+  #reticle::before, #reticle::after { content: ""; position: absolute; background: rgba(255,240,220,0.85); }
+  #reticle::before { left: 6px; top: 0; width: 2px; height: 14px; }
+  #reticle::after { top: 6px; left: 0; width: 14px; height: 2px; }
+  #reticle.hot::before, #reticle.hot::after { background: var(--lamp); box-shadow: 0 0 6px var(--lamp); }
+  #minimap { position: absolute; right: 10px; top: 10px; background: rgba(10,8,6,0.7); border: 1px solid rgba(255,240,220,0.2); border-radius: 4px; image-rendering: pixelated; pointer-events: none; }
+  #hud {
+    position: absolute; left: 10px; right: 10px; bottom: 8px; display: flex; justify-content: space-between; gap: 10px; align-items: flex-end;
+    pointer-events: none; font-family: var(--mono); font-size: 13px; color: var(--ink); text-shadow: 0 1px 2px #000, 0 0 6px rgba(0,0,0,0.9);
+  }
+  #hud .where { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #hud .look { color: var(--lamp); text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #hud .look .dim { color: var(--ink-3); }
+  #keys { position: absolute; left: 10px; top: 10px; font-size: 12px; color: var(--ink-2); line-height: 1.5; pointer-events: none; text-shadow: 0 1px 2px #000; transition: opacity 0.8s; }
+  #keys kbd { font-family: inherit; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,240,220,0.25); border-radius: 4px; padding: 0 5px; color: var(--ink); }
+  #keys.fade { opacity: 0; }
+  #stick { position: absolute; display: none; width: 90px; height: 90px; border-radius: 50%; border: 2px solid rgba(255,240,220,0.35); pointer-events: none; }
+  #stick i { position: absolute; left: 50%; top: 50%; width: 36px; height: 36px; margin: -18px 0 0 -18px; border-radius: 50%; background: rgba(255,240,220,0.5); }
+  #msg { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; text-align: center; padding: 20px; color: var(--ink-2); font-size: 15px; background: #0a0806; }
+  #msg.show { display: flex; }
+
+  /* book card */
+  #shade { position: absolute; inset: 0; background: rgba(4, 3, 2, 0.72); display: none; }
+  #shade.show { display: block; }
+  #card { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(560px, calc(100% - 28px)); max-height: calc(100% - 28px);
+    overflow: auto; display: none; background: #1d1611; border: 1px solid rgba(236,220,190,0.25); border-radius: 10px; padding: 18px 20px 16px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.7), inset 0 0 0 1px rgba(0,0,0,0.6); }
+  #card.show { display: block; }
+  #card .spine { position: absolute; left: 0; top: 0; bottom: 0; width: 8px; border-radius: 10px 0 0 10px; }
+  #card h2 { margin: 0 0 4px; font-family: var(--serif); font-size: 22px; font-weight: 600; line-height: 1.2; padding-right: 36px; }
+  #card .by { color: var(--ink-2); margin-bottom: 10px; font-size: 14px; }
+  #card .meta { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--ink-2); margin-bottom: 10px; letter-spacing: 0.03em; text-transform: uppercase; }
+  #card .meta b { color: var(--ink); font-weight: 600; text-transform: none; letter-spacing: 0; }
+  #card p { margin: 0; font-family: var(--serif); font-size: 15.5px; line-height: 1.55; }
+  #card .loc { margin-top: 12px; font-family: var(--mono); font-size: 12px; color: var(--ink-3); }
+  #card .close { position: absolute; right: 10px; top: 10px; width: 30px; height: 30px; padding: 0; border-radius: 50%; font-size: 16px; }
+
+  /* help */
+  .overlay { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(6, 4, 3, 0.84); padding: 18px; z-index: 5; }
+  .overlay.show { display: flex; }
+  .overlay .box { max-width: 500px; max-height: calc(100vh - 36px); overflow: auto; background: var(--bg-2); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; }
+  .overlay h2 { margin: 0 0 8px; font-size: 20px; font-weight: 600; font-family: var(--serif); }
+  .overlay p { margin: 8px 0; font-size: 14px; }
+  .overlay p.lic { color: var(--ink-2); font-size: 13px; }
+  .overlay .keys { display: inline-grid; grid-template-columns: auto auto; gap: 4px 14px; margin: 8px 0; font-size: 13px; color: var(--ink-2); }
+  .overlay kbd, footer kbd { font-family: inherit; background: var(--panel-2); border: 1px solid var(--line); border-radius: 4px; padding: 0 6px; color: var(--ink); }
+
+  footer { margin-top: 10px; color: var(--ink-2); font-size: 13px; max-width: 1280px; width: 100%; align-self: center; }
+  footer p { margin: 0; }
+
+  @media (max-width: 640px) {
+    body { padding: 10px 12px 12px; }
+    h1 { font-size: 20px; }
+    header .sub { display: none; }
+    input[type=search] { width: 11em; }
+    #stage { aspect-ratio: 4 / 5; max-height: calc(100vh - 170px); border-radius: 6px; }
+    #hud { font-size: 11px; flex-direction: column; align-items: flex-start; gap: 2px; }
+    #hud .look { text-align: left; }
+    #keys { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { #keys { transition: none; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Stacks</h1>
+  <span class="sub">A first-person walk through the library. Every spine is a real book; press E to pull one.</span>
+  <span class="spacer"></span>
+  <span class="tools">
+    <input id="find" type="search" list="titles" placeholder="find a title…" aria-label="find a title and teleport to it" autocomplete="off" spellcheck="false">
+    <datalist id="titles"></datalist>
+    <button id="btn-crt" title="CRT scanlines (C)">crt</button>
+    <button id="btn-help" title="controls and about (?)">?</button>
+    <a class="back" href="../../#/misc">&larr; Jack V. Le</a>
+  </span>
+</header>
+
+<main>
+  <div id="stage">
+    <canvas id="view" width="640" height="400"></canvas>
+    <div id="vignette"></div>
+    <div id="crt"></div>
+    <div id="reticle"></div>
+    <canvas id="minimap" width="120" height="90"></canvas>
+    <div id="keys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> walk &nbsp; <kbd>&larr;</kbd><kbd>&rarr;</kbd> or click + mouse to look &nbsp; <kbd>E</kbd> pull the book you are looking at</div>
+    <div id="hud"><span class="where" id="where">loading the catalogue…</span><span class="look" id="look"></span></div>
+    <div id="stick"><i></i></div>
+    <div id="shade"></div>
+    <div id="card" role="dialog" aria-modal="true" aria-labelledby="card-title">
+      <div class="spine" id="card-spine"></div>
+      <button class="close" id="card-close" aria-label="close">&times;</button>
+      <h2 id="card-title"></h2>
+      <div class="by" id="card-by"></div>
+      <div class="meta" id="card-meta"></div>
+      <p id="card-desc"></p>
+      <div class="loc" id="card-loc"></div>
+    </div>
+    <div id="msg"></div>
+  </div>
+</main>
+
+<footer>
+  <p>A software raycaster in the Wolfenstein 3D manner, drawn pixel by pixel on a 2D canvas at half resolution. The level is built from Jack's library catalogue: each bookcase unit becomes an aisle, each shelf a stretch of wall, and the wall texture is the shelf's actual row of spines, generated at load time from title, author, genre and page-ish heuristics. Data: <code>assets/data/library.json</code> (889 books). No libraries, nothing leaves the browser.</p>
+</footer>
+
+<div class="overlay" id="help">
+  <div class="box">
+    <h2>Stacks</h2>
+    <p>You are standing in a hall. Thirteen aisles open off it, one per bookcase unit, and the ends of the aisles are signposted. Walk down one and the books on either side are the real ones, in shelf order. Look straight at a spine and pull it to read the catalogue entry.</p>
+    <div class="keys">
+      <span><kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd></span><span>walk and strafe (arrows too)</span>
+      <span><kbd>&larr;</kbd> <kbd>&rarr;</kbd></span><span>turn; or click the view for mouse look</span>
+      <span><kbd>E</kbd></span><span>pull the book under the crosshair</span>
+      <span><kbd>M</kbd></span><span>bigger map</span>
+      <span><kbd>C</kbd></span><span>CRT scanlines</span>
+      <span>touch</span><span>left half: drag to walk; right half: drag to look; tap the middle to pull</span>
+    </div>
+    <p class="lic">Shelves are laid out from the <code>u</code>/<code>s</code>/<code>p</code> fields of the catalogue (unit, shelf, position). Spine width comes from the type of book and the length of its description, colour from a hash of the genre, and a few get foil. The cat is real but lives elsewhere.</p>
+    <p><button id="btn-close">walk</button></p>
+  </div>
+</div>
+
+<script src="world.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

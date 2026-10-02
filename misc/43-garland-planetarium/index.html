@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Garland Planetarium</title>
+<meta name="description" content="The real night sky over Garland, Texas right now, with the eighty-eight constellations renamed after the authors on one bookshelf.">
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    --bg: #070a16;
+    --bg-2: #0d1328;
+    --panel: rgba(255, 255, 255, 0.045);
+    --panel-2: rgba(255, 255, 255, 0.09);
+    --line: rgba(230, 226, 214, 0.14);
+    --ink: #e9e4d6;
+    --ink-2: #a9a498;
+    --ink-3: rgba(233, 228, 214, 0.4);
+    --star: #ffe6a8;      /* labels, selected things */
+    --foam: #8fc8d8;      /* constellation lines, accents */
+    --rose: #f2a58c;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif CJK JP", "Times New Roman", serif;
+    --sans: -apple-system, "Segoe UI", Helvetica, Arial, "Hiragino Sans", "Yu Gothic", "Noto Sans CJK JP", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); }
+  body {
+    font: 14px/1.45 var(--sans);
+    background: radial-gradient(ellipse at 50% 0%, var(--bg-2) 0%, var(--bg) 70%);
+    background-attachment: fixed;
+    min-height: 100vh; display: flex; flex-direction: column;
+    padding: 12px 16px 20px; overflow-x: hidden;
+  }
+  a { color: inherit; }
+  h1 { font-size: 22px; margin: 0; font-weight: 600; letter-spacing: 0.01em; font-family: var(--serif); }
+  header { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+  header .back { color: var(--ink-2); text-decoration: none; font-size: 13px; }
+  header .back:hover { color: var(--ink); }
+  header .sub { color: var(--ink-2); font-size: 13px; }
+  header .spacer { flex: 1; }
+  header .tools { display: flex; gap: 6px; flex-wrap: wrap; }
+  button {
+    font: inherit; color: var(--ink); background: var(--panel-2); border: 1px solid var(--line);
+    border-radius: 7px; padding: 5px 11px; cursor: pointer; line-height: 1.2; font-size: 13px;
+  }
+  button:hover { background: rgba(255,255,255,0.14); }
+  button:active { transform: translateY(1px); }
+  button.on { background: var(--foam); color: #071019; border-color: transparent; }
+  button:disabled { opacity: 0.5; cursor: default; }
+  button:focus-visible, input:focus-visible, select:focus-visible { outline: 1px solid var(--foam); outline-offset: 1px; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
+  .seg button { border: 0; border-radius: 0; background: transparent; }
+  .seg button + button { border-left: 1px solid var(--line); }
+  .seg button.on { background: var(--foam); color: #071019; }
+
+  main { flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 14px; align-items: start; }
+  #stage { position: relative; width: 100%; aspect-ratio: 1 / 1; max-height: calc(100vh - 150px); margin: 0 auto; }
+  #stage.pano { aspect-ratio: 16 / 9; }
+  #sky { position: absolute; inset: 0; width: 100%; height: 100%; display: block; border-radius: 12px; touch-action: none; cursor: default; }
+  #sky.grab { cursor: grab; }
+  #sky.grabbing { cursor: grabbing; }
+  #sky.point { cursor: pointer; }
+  #stage .corner { position: absolute; left: 10px; top: 8px; font-size: 12px; color: var(--ink-3); pointer-events: none; letter-spacing: 0.04em; }
+  #stage .corner b { color: var(--ink-2); font-weight: 500; }
+  #stage .corner-r { position: absolute; right: 10px; top: 8px; font-size: 12px; color: var(--ink-3); pointer-events: none; text-align: right; }
+  #msg { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; text-align: center; color: var(--ink-2); padding: 30px; }
+  #msg.show { display: flex; }
+
+  aside { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+  .card h2 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-2); margin: 0 0 8px; font-weight: 600; display: flex; align-items: baseline; gap: 8px; }
+  .card h2 .r { margin-left: auto; font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--ink-3); }
+  .row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .row + .row { margin-top: 7px; }
+  input[type=range] { flex: 1 1 120px; min-width: 100px; accent-color: var(--foam); margin: 0; }
+  .val { font-variant-numeric: tabular-nums; min-width: 4.4em; text-align: right; color: var(--ink-2); font-size: 13px; }
+  label { color: var(--ink-2); font-size: 13px; }
+  .hint { color: var(--ink-3); font-size: 12px; }
+  input[type=text], input[type=number], select {
+    font: inherit; color: var(--ink); background: rgba(0,0,0,0.28); border: 1px solid var(--line); border-radius: 7px; padding: 5px 8px; font-size: 13px;
+  }
+  input[type=number] { width: 6.6em; }
+  input[type=text] { min-width: 0; }
+  #when { flex: 1 1 140px; }
+
+  #clockline { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  #clock { font-family: var(--serif); font-size: 20px; font-variant-numeric: tabular-nums; }
+  #clock .mode { font-family: var(--sans); font-size: 11px; color: var(--ink-3); margin-left: 8px; letter-spacing: 0.06em; text-transform: uppercase; }
+  #datestr { color: var(--ink-2); font-size: 13px; }
+  .facts { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; font-size: 13px; margin-top: 8px; color: var(--ink-2); }
+  .facts b { color: var(--ink); font-weight: 500; }
+  .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; vertical-align: -1px; margin-right: 5px; }
+
+  /* the constellation card */
+  #sel .empty { color: var(--ink-3); font-size: 13px; }
+  #sel .author { font-family: var(--serif); font-size: 20px; color: var(--star); line-height: 1.2; }
+  #sel .real { color: var(--ink-2); font-size: 13px; margin-top: 2px; }
+  #sel .myth { font-family: var(--serif); font-style: italic; margin: 8px 0; line-height: 1.45; color: var(--ink); }
+  #sel ul { margin: 6px 0 0; padding: 0; list-style: none; font-size: 13px; }
+  #sel li { padding: 2px 0; color: var(--ink-2); }
+  #sel li b { color: var(--ink); font-weight: 500; }
+  #sel li .y { color: var(--ink-3); margin-left: 4px; }
+  #sel .rise { margin-top: 8px; font-size: 13px; color: var(--ink-2); border-top: 1px solid var(--line); padding-top: 8px; }
+  #sel .rise b { color: var(--ink); font-weight: 500; }
+  #sel .rise button { margin-left: 6px; padding: 2px 8px; font-size: 12px; }
+
+  #foot { margin-top: 14px; color: var(--ink-2); font-size: 12.5px; line-height: 1.5; max-width: 72em; }
+  #foot p { margin: 4px 0; }
+
+  .overlay { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(4, 7, 14, 0.84); padding: 18px; z-index: 5; }
+  .overlay.show { display: flex; }
+  .overlay .box { max-width: 480px; max-height: 90vh; overflow: auto; background: var(--bg-2); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; }
+  .overlay h2 { margin: 0 0 8px; font-size: 20px; font-weight: 600; font-family: var(--serif); }
+  .overlay p { margin: 8px 0; font-size: 14px; }
+  .overlay p.lic { color: var(--ink-2); font-size: 13px; }
+  .overlay .keys { display: inline-grid; grid-template-columns: auto auto; gap: 3px 14px; margin: 8px 0; font-size: 13px; color: var(--ink-2); }
+  kbd { font-family: inherit; background: var(--panel-2); border: 1px solid var(--line); border-radius: 4px; padding: 0 6px; color: var(--ink); }
+
+  @media (max-width: 900px) {
+    main { grid-template-columns: 1fr; }
+    #stage { max-height: none; }
+    aside { max-width: 100%; }
+  }
+  @media (max-width: 480px) {
+    body { padding: 10px 12px 16px; }
+    h1 { font-size: 20px; }
+    #stage { border-radius: 10px; }
+  }
+  body.thumb { padding: 0; }
+  body.thumb header, body.thumb aside, body.thumb #foot, body.thumb .corner, body.thumb .corner-r { display: none; }
+  body.thumb main { grid-template-columns: 1fr; height: 100vh; align-items: center; }
+  body.thumb #stage { height: 100vh; max-height: 100vh; aspect-ratio: auto; }
+  body.thumb #sky { border-radius: 0; }
+  @media (prefers-reduced-motion: reduce) {
+    button:active { transform: none; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <a class="back" href="../../#/misc">&larr; Jack V. Le</a>
+  <h1>Garland Planetarium</h1>
+  <span class="sub">The sky over the house right now, with the constellations renamed after the bookshelf.</span>
+  <span class="spacer"></span>
+  <span class="tools">
+    <span class="seg" role="group" aria-label="view">
+      <button id="btn-dome" class="on" title="all-sky chart, zenith in the middle (V)">dome</button>
+      <button id="btn-pano" title="look around from the back yard, drag to turn (V)">look around</button>
+    </span>
+    <span class="seg" role="group" aria-label="labels">
+      <button id="lab-author" class="on" title="label constellations with authors (L)">authors</button>
+      <button id="lab-real" title="label constellations with their real names (L)">real names</button>
+      <button id="lab-none" title="no labels (L)">none</button>
+    </span>
+    <button id="btn-help" title="what is this? (?)">?</button>
+  </span>
+</header>
+
+<main>
+  <div id="stage">
+    <canvas id="sky" aria-label="sky chart"></canvas>
+    <div class="corner" id="corner"></div>
+    <div class="corner-r" id="corner-r"></div>
+    <div id="msg"></div>
+  </div>
+
+  <aside>
+    <div class="card">
+      <div id="clockline">
+        <span id="clock"><span id="hm">--:--</span><span class="mode" id="mode">live</span></span>
+        <span id="datestr"></span>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <button id="btn-now" class="small" title="back to the live clock (N)">now</button>
+        <button id="btn-tonight" title="tonight at 23:00 (T)">tonight 23:00</button>
+        <button id="btn-play" title="let the sky turn (space)">&#9654; play</button>
+      </div>
+      <div class="row"><label for="sl-min">hours</label><input id="sl-min" type="range" min="-720" max="720" step="5" value="0"><span class="val" id="v-min">+0:00</span></div>
+      <div class="row"><label for="sl-day">months</label><input id="sl-day" type="range" min="-183" max="183" step="1" value="0"><span class="val" id="v-day">+0 d</span></div>
+      <div class="facts" id="facts"></div>
+    </div>
+
+    <div class="card" id="sel">
+      <h2>Constellation <span class="r" id="sel-hint">click one on the chart</span></h2>
+      <div id="sel-body"><div class="empty">Every constellation up tonight is named after an author in the library. Click one.</div></div>
+    </div>
+
+    <div class="card">
+      <h2>When is &hellip; rising?</h2>
+      <div class="row">
+        <input id="when" type="text" list="authors" placeholder="type an author's name" autocomplete="off" spellcheck="false">
+        <datalist id="authors"></datalist>
+        <button id="btn-when">look up</button>
+      </div>
+      <div class="row"><span class="hint" id="when-out">Finds the next time that author's constellation (its brightest star) clears the horizon.</span></div>
+    </div>
+
+    <div class="card">
+      <h2>Where <span class="r" id="loc-name"></span></h2>
+      <div class="row">
+        <input id="lat" type="number" step="0.0001" min="-90" max="90" aria-label="latitude">
+        <input id="lon" type="number" step="0.0001" min="-180" max="180" aria-label="longitude">
+        <button id="btn-loc">apply</button>
+        <button id="btn-geo" title="use the browser's location (asks permission)">locate me</button>
+      </div>
+      <div class="row">
+        <label><input type="checkbox" id="chk-mw" checked> Milky Way</label>
+        <label><input type="checkbox" id="chk-lines" checked> lines</label>
+        <label><input type="checkbox" id="chk-skyline" checked> skyline</label>
+      </div>
+    </div>
+  </aside>
+</main>
+
+<div id="foot">
+  <p>How it works: local sidereal time from the clock and your longitude, each star's right ascension and declination turned into altitude and azimuth, then a stereographic projection with the zenith in the middle and the horizon at the rim (hold it overhead: north at the top, east on the left). The Sun, Moon and planets use low-precision orbital elements (Meeus, Schlyter) and the catalogue is J2000, so positions are good to a degree or two, which is about the width of your thumb at arm's length. Twilight on the rim follows the Sun's altitude.</p>
+  <p>Each day the 88 constellations are dealt out to authors from the <a href="../../#/bookshelf">library</a>, weighted so the authors with the most books get the most sky. Stars to magnitude 5 and constellation lines from <a href="https://github.com/ofrohn/d3-celestial">d3-celestial</a> by Olaf Frohn (BSD-3-Clause), reduced; no data leaves your browser.</p>
+</div>
+
+<div class="overlay" id="help">
+  <div class="box">
+    <h2>Garland Planetarium</h2>
+    <p>This is the real sky over Garland, Texas (or wherever you tell it) at the time on the clock. The dome view is an all-sky chart meant to be held above your head; "look around" is the view from the yard, drag to turn. The constellations keep their shapes but each one is renamed, for today only, after an author from Jack's bookshelf: the authors with the most books get the biggest constellations, and the deal is reshuffled every midnight. Click a constellation for its real name, the author's books and the myth the sky made up for them.</p>
+    <div class="keys">
+      <span><kbd>&larr;</kbd> <kbd>&rarr;</kbd></span><span>ten minutes back / forward (shift: one hour)</span>
+      <span><kbd>space</kbd></span><span>play / pause</span>
+      <span><kbd>N</kbd></span><span>return to now</span>
+      <span><kbd>T</kbd></span><span>tonight at 23:00</span>
+      <span><kbd>V</kbd></span><span>dome / look around</span>
+      <span><kbd>L</kbd></span><span>cycle labels</span>
+      <span><kbd>esc</kbd></span><span>deselect</span>
+    </div>
+    <p class="lic">Star positions, magnitudes and B&minus;V colours, star names and constellation lines come from d3-celestial by Olaf Frohn (BSD-3-Clause), cut to stars brighter than magnitude 5. Sun, Moon and planets use low-precision formulas accurate to a degree or two. The skyline is invented; the water tower is roughly where Garland's is.</p>
+    <p><button id="btn-close">close</button></p>
+  </div>
+</div>
+
+<script src="sky.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

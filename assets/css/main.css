@@ -2763,3 +2763,12 @@ body.bs-card-is-open { overflow: hidden; }
 		top: 0;
 	}
 }
+
+/* Places: the Passport Atlas widget on the About page (misc/34-passport-atlas/widget.js) */
+.places-widget {
+	max-width: 520px;
+}
+
+.places-widget .passport-atlas a:hover {
+	text-decoration: underline;
+}

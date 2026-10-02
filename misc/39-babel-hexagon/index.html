@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Babel Hexagon</title>
+<meta name="description" content="A browsable Library of Babel: every 40-line page that can be written over 29 symbols, each on its own shelf. Type anything and the Library tells you where it already is.">
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap">
+<style>
+  :root {
+    --bg: #130e09;
+    --bg-2: #1d1510;
+    --panel: rgba(255, 220, 160, 0.045);
+    --panel-2: rgba(255, 220, 160, 0.09);
+    --line: rgba(214, 178, 120, 0.17);
+    --line-2: rgba(214, 178, 120, 0.34);
+    --ink: #e8dbbf;
+    --ink-2: #b7a483;
+    --ink-3: rgba(232, 219, 191, 0.45);
+    --brass: #cfa75a;
+    --brass-2: #8f6a2c;
+    --brass-3: #5c4218;
+    --bronze: #8e5a2c;
+    --parchment: #e9dcbc;
+    --parchment-2: #d9c89f;
+    --page-ink: #3a2a17;
+    --page-num: rgba(58, 42, 23, 0.32);
+    --mark-en: #f0d27f;
+    --mark-hit: #b9532a;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, "Times New Roman", serif;
+    --mono: "Courier Prime", "Courier New", Courier, "Nimbus Mono PS", monospace;
+    --page-fs: 12.5px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); }
+  body {
+    font: 15px/1.45 var(--serif);
+    min-height: 100vh; padding: 12px 16px 24px; overflow-x: hidden;
+    background-color: var(--bg);
+    background-image:
+      radial-gradient(ellipse 70% 45% at 50% -5%, rgba(207, 167, 90, 0.22), rgba(207, 167, 90, 0) 70%),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='96' viewBox='0 0 56 96'%3E%3Cpath fill='none' stroke='%23cfa75a' stroke-opacity='0.09' stroke-width='1' d='M28 0L56 16L56 48L28 64L0 48L0 16Z M28 64L28 96'/%3E%3C/svg%3E");
+    background-attachment: fixed;
+  }
+  a { color: var(--brass); }
+  h1, h2 { margin: 0; font-weight: 600; }
+  header { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 12px; }
+  header h1 { font-size: 23px; letter-spacing: 0.02em; }
+  header .sub { color: var(--ink-2); font-size: 14px; font-style: italic; }
+  header .spacer { flex: 1; }
+  header .back { color: var(--ink-2); text-decoration: none; font-size: 14px; }
+  header .back:hover { color: var(--brass); }
+
+  button {
+    font: inherit; color: var(--ink); background: var(--panel-2); border: 1px solid var(--line-2);
+    border-radius: 5px; padding: 5px 11px; cursor: pointer; line-height: 1.2; font-size: 13.5px;
+    box-shadow: inset 0 1px 0 rgba(255, 235, 200, 0.08);
+  }
+  button:hover { background: rgba(255, 220, 160, 0.16); border-color: var(--brass-2); }
+  button:active { transform: translateY(1px); }
+  button:disabled { opacity: 0.45; cursor: default; transform: none; }
+  button.on { background: var(--brass); color: #231608; border-color: var(--brass); font-weight: 600; }
+  button.primary { background: var(--bronze); border-color: var(--brass-2); color: #fbefd6; }
+  button.primary:hover { background: #a46a35; }
+  button.small { font-size: 12.5px; padding: 3px 8px; }
+  button.icon { padding: 4px 8px; min-width: 32px; }
+  :focus-visible { outline: 2px solid var(--brass); outline-offset: 1px; }
+  input[type=text], input[type=number], textarea {
+    font: inherit; color: var(--ink); background: rgba(0, 0, 0, 0.32); border: 1px solid var(--line-2);
+    border-radius: 5px; padding: 6px 8px; font-size: 14px;
+  }
+  textarea { width: 100%; resize: vertical; min-height: 4.4em; font-family: var(--mono); line-height: 1.4; }
+  input[type=number] { width: 4.2em; padding: 4px 4px 4px 6px; }
+  input[type=range] { accent-color: var(--brass); margin: 0; }
+  label { color: var(--ink-2); font-size: 13px; }
+  .hint { color: var(--ink-3); font-size: 12.5px; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  kbd { font-family: inherit; background: var(--panel-2); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; font-size: 12px; }
+
+  /* ---------- layout ---------- */
+  main { display: grid; grid-template-columns: 436px minmax(0, 1fr); gap: 18px; max-width: 1180px; margin: 0 auto; align-items: start; }
+  #left { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+  #right { min-width: 0; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+  .card h2 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-2); margin: 0 0 8px; font-weight: 600; }
+  .row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .row + .row { margin-top: 8px; }
+
+  /* ---------- the room ---------- */
+  #room-card { padding: 6px 6px 2px; }
+  #room { width: 100%; height: auto; display: block; }
+  #room text { font-family: var(--serif); pointer-events: none; }
+  #room .lbl { fill: var(--ink-2); font-size: 11px; letter-spacing: 0.12em; }
+  #room .lbl.on { fill: var(--brass); }
+  #room .cap { fill: var(--ink-3); font-size: 10.5px; font-style: italic; letter-spacing: 0.03em; }
+  #room .wall { cursor: pointer; }
+  #room .wall .band { fill: #2b2016; stroke: var(--line-2); stroke-width: 0.8; transition: fill 0.25s ease; }
+  #room .wall:hover .band { fill: #3a2b1b; }
+  #room .wall.on .band { fill: #5a4120; stroke: var(--brass); }
+  #room .wall .tick { stroke: rgba(207, 167, 90, 0.35); stroke-width: 1; }
+  #room .wall.on .tick { stroke: rgba(240, 210, 130, 0.75); }
+  #room .outline { fill: rgba(255, 220, 160, 0.025); stroke: var(--line-2); stroke-width: 1.2; }
+  #room .ghost { fill: none; stroke: var(--line); stroke-width: 1; stroke-dasharray: 3 4; }
+  #room .door { stroke: var(--bg); stroke-width: 4; }
+  #room .stair { fill: none; stroke: var(--line-2); stroke-width: 1; }
+  #room .lamp { fill: url(#lampGlow); }
+  #room .lamp-core { fill: #ffe6a6; }
+  #room .shelf { cursor: pointer; }
+  #room .shelf .glow { fill: rgba(207, 167, 90, 0); transition: fill 0.25s ease; }
+  #room .shelf.on .glow { fill: rgba(207, 167, 90, 0.12); }
+  #room .shelf:hover .glow { fill: rgba(207, 167, 90, 0.08); }
+  #room .shelf .plank { fill: #6a4b1f; }
+  #room .shelf.on .plank { fill: var(--brass-2); }
+  #room .spine { stroke: rgba(0, 0, 0, 0.35); stroke-width: 0.6; opacity: 0.55; transition: opacity 0.25s ease, transform 0.15s ease; cursor: pointer; }
+  #room .shelf.on .spine { opacity: 0.95; }
+  #room .spine:hover { opacity: 1; }
+  #room .spine.on { stroke: #ffe3a0; stroke-width: 1.4; opacity: 1; transform: translateY(-3px); filter: drop-shadow(0 0 3px rgba(255, 220, 140, 0.8)); }
+  #room .spine-label { fill: rgba(207, 167, 90, 0.55); pointer-events: none; }
+
+  /* ---------- the brass plate ---------- */
+  #plate {
+    border-radius: 6px; padding: 10px 14px 9px; position: relative; color: #2e1f0a;
+    background: linear-gradient(170deg, #d9b56a 0%, #b88f3f 35%, #cfa75a 60%, #9c762e 100%);
+    box-shadow: inset 0 1px 0 rgba(255, 240, 200, 0.6), inset 0 -1px 0 rgba(60, 35, 0, 0.5), 0 4px 14px rgba(0, 0, 0, 0.45);
+    border: 1px solid #6e501a; font-family: var(--serif);
+  }
+  #plate::before, #plate::after { content: ""; position: absolute; top: 50%; width: 7px; height: 7px; margin-top: -3.5px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #f3dca2, #6e501a); box-shadow: 0 1px 1px rgba(0,0,0,0.4); }
+  #plate::before { left: 6px; } #plate::after { right: 6px; }
+  #plate .engr { text-shadow: 0 1px 0 rgba(255, 240, 200, 0.45); letter-spacing: 0.16em; text-transform: uppercase; font-size: 11.5px; font-weight: 600; }
+  #plate .hexline { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; margin-bottom: 3px; }
+  #plate .hexname { font-family: var(--mono); font-size: 13px; letter-spacing: 0.04em; text-transform: none; font-weight: 700; word-break: break-all; }
+  #plate .hexlen { font-size: 10.5px; letter-spacing: 0.05em; text-transform: none; opacity: 0.75; font-weight: 400; }
+  #plate .pos { display: flex; gap: 0 14px; flex-wrap: wrap; }
+  #plate .pos b { font-weight: 700; }
+  #plate button { background: rgba(60, 40, 5, 0.12); border-color: rgba(60, 40, 5, 0.35); color: #2e1f0a; box-shadow: none; }
+  #plate button:hover { background: rgba(60, 40, 5, 0.22); }
+  #goto { margin-top: 8px; }
+  #goto textarea { min-height: 2.4em; font-size: 12.5px; }
+  #goto label { color: #3b2a0e; }
+  #goto .hint { color: #4a3612; }
+  #goto input, #goto textarea { background: rgba(255, 246, 224, 0.5); color: #2e1f0a; border-color: rgba(60, 40, 5, 0.4); }
+  #goto .nums { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  #goto .nums label { display: inline-flex; align-items: center; gap: 4px; }
+
+  /* ---------- the page ---------- */
+  #page-card { padding: 8px 10px 10px; }
+  #toolbar { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+  #toolbar .group { display: inline-flex; gap: 4px; align-items: center; }
+  #toolbar .spacer { flex: 1; }
+  #pagenum { font-variant-numeric: tabular-nums; font-size: 13px; color: var(--ink-2); white-space: nowrap; }
+  #pagenum b { color: var(--ink); font-weight: 600; }
+  #slider-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  #slider-row input { flex: 1; }
+  #stats { font-size: 12.5px; color: var(--ink-2); white-space: nowrap; }
+  #stats b { color: var(--brass); }
+  #sheet-wrap {
+    background: var(--parchment); border-radius: 4px; padding: 12px 14px 12px 10px; position: relative; overflow: hidden;
+    box-shadow: inset 0 0 60px rgba(120, 80, 20, 0.22), 0 6px 20px rgba(0, 0, 0, 0.5);
+    background-image: radial-gradient(ellipse 80% 60% at 50% 20%, rgba(255, 250, 230, 0.55), rgba(255, 250, 230, 0) 70%),
+      linear-gradient(180deg, var(--parchment), var(--parchment-2));
+  }
+  #sheet { font-family: var(--mono); font-size: var(--page-fs); line-height: 1.22; color: var(--page-ink); white-space: pre; margin: 0; }
+  #sheet .ln { display: flex; }
+  #sheet .n { flex: none; width: 2.6em; text-align: right; padding-right: 0.8em; color: var(--page-num); user-select: none; font-size: 0.82em; line-height: inherit; align-self: baseline; }
+  #sheet mark { background: var(--mark-en); color: inherit; border-radius: 2px; padding: 0; box-shadow: 0 0 0 1px rgba(207, 167, 90, 0.5); }
+  #sheet mark.hit { background: var(--mark-hit); color: #fff3dc; box-shadow: 0 0 0 1px var(--mark-hit); }
+  #sheet mark.hit.en { background: var(--mark-en); color: var(--page-ink); box-shadow: 0 0 0 1px var(--mark-hit), inset 0 -2px 0 var(--mark-hit); }
+  #sheet .msg { white-space: normal; font-family: var(--serif); font-size: 15px; padding: 20px; }
+  #words { margin-top: 8px; font-size: 13px; color: var(--ink-2); line-height: 1.7; }
+  #words .w { background: rgba(240, 210, 127, 0.14); border: 1px solid rgba(207, 167, 90, 0.35); border-radius: 4px; padding: 0 6px; margin-right: 4px; color: var(--ink); font-family: var(--mono); font-size: 12.5px; }
+
+  /* ---------- search ---------- */
+  #results { margin-top: 8px; display: flex; flex-direction: column; gap: 6px; }
+  .res { background: rgba(0, 0, 0, 0.22); border: 1px solid var(--line); border-radius: 6px; padding: 7px 9px; display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; align-items: center; }
+  .res .k { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--brass); }
+  .res .prev { grid-column: 1 / -1; font-family: var(--mono); font-size: 11.5px; color: var(--ink-2); white-space: pre; overflow: hidden; text-overflow: ellipsis; }
+  .res .prev b { color: var(--ink); font-weight: 700; background: rgba(185, 83, 42, 0.35); border-radius: 2px; }
+  .res .addr { grid-column: 1 / -1; font-size: 12px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+  .res .addr code { font-family: var(--mono); color: var(--ink-2); }
+
+  /* ---------- bookmarks ---------- */
+  #bookmarks { display: flex; flex-direction: column; gap: 4px; }
+  .bm { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; padding: 4px 6px; border-radius: 5px; cursor: pointer; }
+  .bm:hover { background: var(--panel-2); }
+  .bm.now { outline: 1px solid var(--line-2); }
+  .bm .t { font-family: var(--mono); font-size: 12.5px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bm .a { font-size: 11.5px; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bm .x { color: var(--ink-3); background: none; border: 0; padding: 2px 6px; box-shadow: none; }
+  .bm .x:hover { color: var(--brass); background: none; }
+
+  /* ---------- mining ---------- */
+  #mine-out { font-size: 13px; color: var(--ink-2); margin-top: 6px; }
+  #mine-out:empty { display: none; }
+  #mine-out b { color: var(--brass); }
+  #mine-bar { height: 3px; background: var(--panel-2); border-radius: 2px; overflow: hidden; margin-top: 6px; display: none; }
+  #mine-bar.on { display: block; }
+  #mine-bar i { display: block; height: 100%; width: 0; background: var(--brass); transition: width 0.15s linear; }
+
+  /* ---------- footer ---------- */
+  footer { max-width: 1180px; margin: 22px auto 0; color: var(--ink-2); font-size: 13.5px; border-top: 1px solid var(--line); padding-top: 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px 28px; }
+  footer p { margin: 0 0 6px; }
+  footer .epi { font-style: italic; color: var(--ink); font-size: 14.5px; }
+  footer .epi cite { font-style: normal; color: var(--ink-2); font-size: 13px; display: block; margin-top: 2px; }
+  footer .math code { font-family: var(--mono); color: var(--brass); font-size: 12.5px; }
+  footer .keys { color: var(--ink-3); font-size: 12.5px; }
+
+  @media (max-width: 900px) {
+    main { grid-template-columns: minmax(0, 1fr); }
+    #left { order: 2; }
+    #right { order: 1; }
+    footer { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 640px) {
+    body { padding: 10px 12px 20px; }
+    header h1 { font-size: 20px; }
+    #sheet-wrap { padding: 8px 6px 8px 4px; }
+    #sheet .n { width: 2.4em; padding-right: 0.5em; }
+    .card { padding: 9px 10px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #room .spine, #room .wall .band, #room .shelf .glow { transition: none; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Babel Hexagon</h1>
+  <span class="sub">A reading room in Borges's Library: every page that could ever be written, each on its own shelf.</span>
+  <span class="spacer"></span>
+  <a class="back" href="../../#/misc">&larr; Jack V. Le</a>
+</header>
+
+<main>
+  <div id="left">
+    <div class="card" id="room-card">
+      <svg id="room" viewBox="0 0 440 490" role="img" aria-label="Plan of the hexagon and the shelves of the selected wall">
+        <defs>
+          <radialGradient id="lampGlow">
+            <stop offset="0%" stop-color="#ffe3a0" stop-opacity="0.9"/>
+            <stop offset="35%" stop-color="#e2b55e" stop-opacity="0.35"/>
+            <stop offset="100%" stop-color="#e2b55e" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+        <g id="plan"></g>
+        <g id="elevation"></g>
+      </svg>
+    </div>
+
+    <div id="plate" aria-live="polite">
+      <div class="hexline engr">
+        <span>Hexagon</span>
+        <span class="hexname" id="plate-hex">0</span>
+        <span class="hexlen" id="plate-hexlen"></span>
+        <span style="flex:1"></span>
+        <button class="small" id="btn-goto" title="type an address">go to&hellip;</button>
+      </div>
+      <div class="pos engr">
+        <span>Wall <b id="plate-wall">I</b></span>
+        <span>Shelf <b id="plate-shelf">1</b></span>
+        <span>Volume <b id="plate-vol">1</b></span>
+        <span>Page <b id="plate-page">1</b></span>
+      </div>
+      <form id="goto" hidden>
+        <textarea id="goto-hex" rows="2" spellcheck="false" placeholder="hexagon name (0-9, a-z, any length)" aria-label="hexagon name"></textarea>
+        <div class="nums" style="margin-top:6px">
+          <label>wall <input type="number" id="goto-wall" min="1" max="4" value="1"></label>
+          <label>shelf <input type="number" id="goto-shelf" min="1" max="5" value="1"></label>
+          <label>volume <input type="number" id="goto-vol" min="1" max="32" value="1"></label>
+          <label>page <input type="number" id="goto-page" min="1" max="410" value="1"></label>
+          <button type="submit" class="small">go</button>
+          <button type="button" class="small" id="btn-copy-hex" title="copy the full hexagon name">copy name</button>
+          <span class="hint" id="goto-msg"></span>
+        </div>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>Search the Library</h2>
+      <textarea id="q" maxlength="3200" placeholder="Type anything, up to 3,200 characters. Letters, spaces, commas and periods survive; the rest is folded or dropped." aria-label="text to search for"></textarea>
+      <div class="row" style="margin-top:6px">
+        <button class="primary" id="btn-search">search</button>
+        <span class="hint" id="q-hint">Every text is already here. The search computes where.</span>
+      </div>
+      <div id="results"></div>
+    </div>
+
+    <div class="card">
+      <h2>Bookmarks</h2>
+      <div id="bookmarks"><span class="hint">Nothing marked yet. Press the star above the page, or <kbd>B</kbd>.</span></div>
+    </div>
+
+    <div class="card">
+      <h2>English finder</h2>
+      <div class="row">
+        <button id="btn-english" class="on" title="highlight accidental English words (E)">highlight English</button>
+        <button id="btn-mine" title="read random pages for two seconds and keep the most English one">mine for words</button>
+        <span class="hint">~3,000 common words, 4+ letters</span>
+      </div>
+      <div id="mine-out"></div>
+      <div id="mine-bar"><i></i></div>
+      <div id="words"></div>
+    </div>
+  </div>
+
+  <div id="right">
+    <div class="card" id="page-card">
+      <div id="toolbar">
+        <span class="group">
+          <button class="small" id="btn-prev-vol" title="previous volume (shift + left)">&laquo; vol</button>
+          <button class="small" id="btn-prev" title="previous page (left)">&lsaquo; page</button>
+          <span id="pagenum">page <b id="pn">1</b> / 410</span>
+          <button class="small" id="btn-next" title="next page (right)">page &rsaquo;</button>
+          <button class="small" id="btn-next-vol" title="next volume (shift + right)">vol &raquo;</button>
+        </span>
+        <span class="spacer"></span>
+        <span class="group">
+          <button class="small" id="btn-random" title="a random page (R)">random</button>
+          <button class="small icon" id="btn-bookmark" title="bookmark this page (B)" aria-pressed="false">&#9734;</button>
+          <button class="small" id="btn-link" title="copy a link to this page">copy link</button>
+        </span>
+      </div>
+      <div id="slider-row">
+        <input type="range" id="slider" min="1" max="410" value="1" aria-label="page within the volume">
+        <span id="stats"><b>0</b> accidental words</span>
+      </div>
+      <div id="sheet-wrap"><div id="sheet"></div></div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div>
+    <p class="epi">&ldquo;The universe (which others call the Library) is composed of an indefinite and perhaps infinite number of hexagonal galleries&hellip; The Library is unlimited and cyclical.&rdquo;
+      <cite>Jorge Luis Borges, <i>The Library of Babel</i> (1941). Four walls of each hexagon hold five shelves; each shelf holds thirty-two books of four hundred ten pages; each page has forty lines of eighty characters, drawn from twenty-five symbols (here twenty-nine, with four punctuation marks).</cite></p>
+  </div>
+  <div>
+    <p class="math">A page is read as a 3200-digit number <code>P</code> in base 29 and an address (hexagon name in base 36, then wall, shelf, volume, page) as a second number <code>A</code>; the two are tied together by the affine bijection <code>P = (a&middot;A + c) mod 29<sup>3200</sup></code>, which has an inverse <code>A = a&prime;(P &minus; c)</code>, so every page has exactly one shelf and any text you type is sent back through the inverse to find its own. Hexagon names past about 3,000 characters wrap around to the start, so the Library is unlimited and cyclical.</p>
+    <p class="keys">Keys: <kbd>&larr;</kbd> <kbd>&rarr;</kbd> page, <kbd>shift</kbd> + arrows volume, <kbd>R</kbd> random, <kbd>B</kbd> bookmark, <kbd>E</kbd> English, <kbd>/</kbd> search. Links carry the full address. Word list: Peter Norvig&rsquo;s frequency list (MIT), trimmed to about 3,000 words. Inspired by Jonathan Basile&rsquo;s libraryofbabel.info. Nothing leaves your browser.</p>
+  </div>
+</footer>
+
+<script src="babel.js"></script>
+<script src="words.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

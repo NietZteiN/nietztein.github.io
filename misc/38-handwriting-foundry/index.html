@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Handwriting Foundry</title>
+<meta name="description" content="Draw your own letters in the browser and download a real, installable OpenType font. Strokes become outlines; outlines become a .otf you can use anywhere.">
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    --bg: #171318;
+    --bg-2: #241e26;
+    --chrome: rgba(255, 255, 255, 0.045);
+    --chrome-2: rgba(255, 255, 255, 0.09);
+    --line: rgba(240, 230, 212, 0.14);
+    --fg: #efe6d4;
+    --fg-2: #ab9f8d;
+    --fg-3: rgba(239, 230, 212, 0.4);
+    --paper: #f4ecda;
+    --paper-2: #ebdfc3;
+    --paper-line: #d8c69f;
+    --paper-text: #3c3225;
+    --paper-muted: #9a8a66;
+    --ink: #1c1a2b;
+    --wax: #c9553a;
+    --wax-2: #a9412a;
+    --guide: #c9b78e;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, "Times New Roman", serif;
+    --sans: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+    --mono: ui-monospace, "Cascadia Mono", Consolas, Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--fg); }
+  body {
+    font: 15px/1.45 var(--sans);
+    background: linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
+    background-attachment: fixed;
+    min-height: 100vh; display: flex; flex-direction: column;
+    padding: 14px 16px 28px; overflow-x: hidden;
+  }
+  a { color: inherit; }
+  h1 { font-size: 22px; margin: 0; font-weight: 600; letter-spacing: 0.01em; }
+  header { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 12px; }
+  header .sub { color: var(--fg-2); font-size: 14px; }
+  header .spacer { flex: 1; }
+  header .tools { display: flex; gap: 6px; flex-wrap: wrap; }
+  button {
+    font: inherit; color: var(--fg); background: var(--chrome-2); border: 1px solid var(--line);
+    border-radius: 7px; padding: 6px 12px; cursor: pointer; line-height: 1.2; white-space: nowrap;
+  }
+  button:hover { background: rgba(255,255,255,0.14); }
+  button:active { transform: translateY(1px); }
+  button:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+  button.small { font-size: 13px; padding: 4px 10px; }
+  button.wax { background: var(--wax); border-color: transparent; color: #fff6ea; font-weight: 600; }
+  button.wax:hover { background: var(--wax-2); }
+  button:focus-visible, input:focus-visible, select:focus-visible, [contenteditable]:focus-visible { outline: 2px solid var(--wax); outline-offset: 1px; }
+  label { color: var(--fg-2); font-size: 13px; display: inline-flex; align-items: center; gap: 6px; }
+  input[type=range] { accent-color: var(--wax); margin: 0; }
+  input[type=checkbox] { accent-color: var(--wax); margin: 0; }
+  select { font: inherit; color: var(--fg); background: rgba(0,0,0,0.25); border: 1px solid var(--line); border-radius: 7px; padding: 4px 8px; }
+  .hidden { display: none !important; }
+
+  /* ---- the hero sheet ---- */
+  .sheet {
+    position: relative;
+    background: var(--paper);
+    background-image:
+      radial-gradient(ellipse at 15% 10%, rgba(255,255,255,0.45), transparent 55%),
+      radial-gradient(ellipse at 85% 90%, rgba(120, 90, 40, 0.10), transparent 50%);
+    color: var(--paper-text);
+    border-radius: 6px;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.35) inset, 0 18px 40px -18px rgba(0,0,0,0.75), 0 2px 6px rgba(0,0,0,0.35);
+    padding: 18px 26px 16px;
+    margin-bottom: 14px;
+  }
+  .sheet::before { content: ""; position: absolute; inset: 8px; border: 1px solid rgba(120, 90, 40, 0.18); border-radius: 4px; pointer-events: none; }
+  .sheet .top { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; position: relative; z-index: 1; }
+  .sheet .top .name {
+    font: 600 16px/1.2 var(--serif); color: var(--paper-text); background: transparent; border: 0;
+    border-bottom: 1px solid var(--paper-line); padding: 4px 2px; min-width: 10em; width: 14em; max-width: 100%;
+  }
+  .sheet .top .name::placeholder { color: var(--paper-muted); }
+  .sheet .top label { color: var(--paper-muted); }
+  .sheet .top .spacer { flex: 1; }
+  .sheet .top select { color: var(--paper-text); background: rgba(255,255,255,0.35); border-color: var(--paper-line); }
+  #preview {
+    position: relative; z-index: 1;
+    font-family: var(--serif); color: var(--ink);
+    font-size: 48px; line-height: 1.25; min-height: 2.4em;
+    margin: 14px 0 6px; padding: 4px 2px; white-space: pre-wrap; overflow-wrap: anywhere;
+    outline: none; caret-color: var(--wax);
+    -webkit-font-smoothing: antialiased;
+  }
+  #preview:empty::before { content: "Type here to try your hand."; color: var(--paper-muted); }
+  #specimen {
+    position: relative; z-index: 1;
+    font-family: var(--serif); color: var(--ink); opacity: 0.75;
+    font-size: 22px; line-height: 1.4; white-space: pre-wrap; overflow-wrap: anywhere;
+    border-top: 1px dashed var(--paper-line); padding-top: 8px; margin-top: 6px;
+  }
+  #offline { position: relative; z-index: 1; margin: 10px 0 4px; border-top: 1px dashed var(--paper-line); padding-top: 10px; overflow: hidden; }
+  #offline svg { display: block; max-width: 100%; height: auto; }
+  .sheet .foot { position: relative; z-index: 1; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+  .sheet .foot .status { color: var(--paper-muted); font-size: 13px; flex: 1 1 240px; }
+  .sheet .foot .status b { color: var(--paper-text); font-weight: 600; }
+  .sheet .foot .status .warn { color: var(--wax-2); }
+  .sheet .foot button { border-color: var(--paper-line); background: rgba(255,255,255,0.35); color: var(--paper-text); }
+  .sheet .foot button:hover { background: rgba(255,255,255,0.6); }
+  .sheet .foot button.wax { background: var(--wax); color: #fff6ea; border-color: transparent; }
+  .sheet .foot button.wax:hover { background: var(--wax-2); }
+
+  /* ---- the workbench ---- */
+  .bench {
+    display: flex; align-items: center; gap: 10px 14px; flex-wrap: wrap;
+    background: var(--chrome); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; margin-bottom: 12px;
+  }
+  .bench .group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .bench .sep { width: 1px; align-self: stretch; background: var(--line); }
+  .bench #weight { width: 110px; }
+  .bench .val { font-variant-numeric: tabular-nums; color: var(--fg-3); font-size: 12px; min-width: 2.2em; }
+
+  /* ---- the grid paper ---- */
+  .paper {
+    background: var(--paper); color: var(--paper-text); border-radius: 6px;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.35) inset, 0 14px 30px -16px rgba(0,0,0,0.7), 0 2px 6px rgba(0,0,0,0.3);
+    padding: 14px 16px 18px;
+  }
+  .paper h2 { font: 600 11px/1 var(--sans); letter-spacing: 0.1em; text-transform: uppercase; color: var(--paper-muted); margin: 10px 0 8px; }
+  .paper h2:first-child { margin-top: 2px; }
+  .paper h2 .count { font-weight: 400; letter-spacing: 0; text-transform: none; margin-left: 8px; color: var(--paper-muted); opacity: 0.8; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 7px; }
+  .cell {
+    position: relative; background: #f8f1e1; border: 1px solid var(--paper-line); border-radius: 4px;
+    box-shadow: 0 1px 2px rgba(80, 60, 20, 0.08);
+  }
+  .cell.inked { border-color: #c2ad7f; }
+  .cell canvas { display: block; width: 100%; aspect-ratio: 10 / 11; touch-action: none; cursor: crosshair; border-radius: 4px; }
+  .cell .lab { position: absolute; top: 3px; left: 6px; font: 12px/1 var(--mono); color: var(--paper-muted); pointer-events: none; }
+  .cell.inked .lab { color: var(--paper-text); }
+  .cell .undo {
+    position: absolute; top: 2px; right: 2px; width: 22px; height: 22px; padding: 0; font-size: 14px; line-height: 20px;
+    background: transparent; border: 0; color: var(--paper-muted); opacity: 0; border-radius: 4px;
+  }
+  .cell:hover .undo, .cell .undo:focus-visible { opacity: 1; }
+  .cell .undo:hover { background: rgba(120, 90, 40, 0.15); color: var(--paper-text); }
+  @media (hover: none) { .cell.inked .undo { opacity: 0.7; } }
+  .cell.space { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; aspect-ratio: 10 / 11; padding: 8px; }
+  .cell.space .lab { position: static; }
+  .cell.space input { width: 90%; }
+  .cell.space .sw { font: 11px var(--mono); color: var(--paper-muted); }
+
+  /* ---- footer & help ---- */
+  footer { margin-top: 16px; color: var(--fg-2); font-size: 13px; max-width: 70em; }
+  footer p { margin: 4px 0; }
+  .overlay { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(10, 8, 12, 0.82); padding: 18px; z-index: 5; }
+  .overlay.show { display: flex; }
+  .overlay .box { max-width: 500px; background: var(--bg-2); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; max-height: 90vh; overflow: auto; }
+  .overlay h2 { margin: 0 0 8px; font-size: 20px; font-weight: 600; }
+  .overlay p { margin: 8px 0; font-size: 14px; }
+  .overlay p.lic { color: var(--fg-2); font-size: 13px; }
+  kbd { font-family: inherit; background: var(--chrome-2); border: 1px solid var(--line); border-radius: 4px; padding: 0 6px; }
+  #cdnwarn { display: none; background: rgba(201, 85, 58, 0.16); border: 1px solid rgba(201, 85, 58, 0.5); border-radius: 8px; padding: 8px 12px; margin-bottom: 12px; font-size: 14px; }
+  #cdnwarn.show { display: block; }
+
+  @media (max-width: 640px) {
+    body { padding: 12px 12px 24px; }
+    .sheet { padding: 14px 14px 12px; }
+    #preview { font-size: 36px; }
+    #specimen { font-size: 18px; }
+    .grid { grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 6px; }
+    .bench .sep { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Handwriting Foundry</h1>
+  <span class="sub">Draw an alphabet, download a real font.</span>
+  <span class="spacer"></span>
+  <span class="tools">
+    <button id="btn-help" class="small" title="what is this? (?)">?</button>
+    <a href="../../#/misc" class="small" style="align-self:center">&larr; Jack V. Le</a>
+  </span>
+</header>
+
+<div id="cdnwarn" role="status">The font engine (opentype.js) did not load, so there is no .otf export or live preview right now. Drawing, autosave, JSON and the SVG sheet still work; reload when you are back online.</div>
+
+<section class="sheet" aria-label="live preview">
+  <div class="top">
+    <input id="name" class="name" type="text" maxlength="40" placeholder="Font name" spellcheck="false" aria-label="font name">
+    <label>size <input id="size" type="range" min="18" max="120" value="48" aria-label="preview size"></label>
+    <label id="saltwrap" class="hidden">alternates
+      <select id="salt" aria-label="stylistic alternates"><option value="0">off</option><option value="1">set 1</option><option value="2">set 2</option></select>
+    </label>
+    <span class="spacer"></span>
+    <button id="btn-otf" class="wax" title="download the font as an OpenType .otf file">Download .otf</button>
+  </div>
+  <div id="preview" contenteditable="true" spellcheck="false" aria-label="sample paragraph, editable"></div>
+  <div id="specimen" aria-hidden="true"></div>
+  <div id="offline" class="hidden" aria-label="paragraph drawn from the outlines"></div>
+  <div class="foot">
+    <span class="status" id="status">Draw a few letters below; the preview rebuilds as you go.</span>
+    <button id="btn-svg" class="small" title="download every glyph outline as one SVG sheet (works offline)">SVG sheet</button>
+    <button id="btn-export" class="small" title="save your strokes as JSON to continue later or on another device">Export strokes</button>
+    <button id="btn-import" class="small" title="load a strokes JSON exported earlier">Import strokes</button>
+    <input id="file" type="file" accept="application/json,.json" class="hidden">
+  </div>
+</section>
+
+<div class="bench" role="toolbar" aria-label="workbench">
+  <span class="group">
+    <label>pen weight <input id="weight" type="range" min="24" max="130" value="60" aria-label="pen weight"></label>
+    <span class="val" id="weightval">60</span>
+  </span>
+  <span class="sep"></span>
+  <span class="group">
+    <label title="synthesise missing letters from the ones you drew (lowercase from uppercase and vice versa), else from the sample hand"><input id="fill" type="checkbox" checked> fill the gaps</label>
+    <label title="generate two slightly perturbed alternates of every glyph and wire them up as OpenType stylistic alternates (salt)"><input id="jitter" type="checkbox"> jitter alternates</label>
+  </span>
+  <span class="sep"></span>
+  <span class="group">
+    <button id="btn-sample" class="small" title="fill every cell with the built-in sample hand">load sample handwriting</button>
+    <button id="btn-clear" class="small" title="erase every cell">clear all</button>
+    <span class="val" id="savedmsg"></span>
+  </span>
+</div>
+
+<section class="paper" aria-label="glyph cells">
+  <h2>lowercase <span class="count" data-g="lower"></span></h2>
+  <div class="grid" id="g-lower"></div>
+  <h2>uppercase <span class="count" data-g="upper"></span></h2>
+  <div class="grid" id="g-upper"></div>
+  <h2>digits <span class="count" data-g="digit"></span></h2>
+  <div class="grid" id="g-digit"></div>
+  <h2>punctuation and space <span class="count" data-g="punct"></span></h2>
+  <div class="grid" id="g-punct"></div>
+</section>
+
+<footer>
+  <p>Each cell is one glyph: the heavy line is the baseline, the lines above it are x-height, cap height and ascender, the one below is the descender. Draw with a mouse, finger or pen (pressure widens the stroke). Strokes are smoothed with Catmull&ndash;Rom splines, offset into closed outlines, and packed into a CFF OpenType font by <a href="https://opentype.js.org/">opentype.js</a> entirely in your browser; nothing is uploaded. Work autosaves locally. The sample hand is a small stroke alphabet built into the page; the default paragraph is the titles of the latest blog posts here.</p>
+</footer>
+
+<div class="overlay" id="help">
+  <div class="box">
+    <h2>Handwriting Foundry</h2>
+    <p>A tiny type foundry. Draw each letter in its cell, watch the paragraph at the top turn into your handwriting, then press <b>Download .otf</b> and install the file like any other font (double-click it on Windows or macOS). The name you type on the sheet becomes the font family name.</p>
+    <p><b>Fill the gaps</b> keeps the font complete while you are still drawing: a missing lowercase letter is borrowed from your uppercase (scaled to x-height) or vice versa, and anything else comes from the built-in sample hand. <b>Jitter alternates</b> adds two subtly wobbled versions of every glyph as OpenType stylistic alternates (feature <code>salt</code>); pick a set with the alternates menu, or in any app that exposes stylistic alternates.</p>
+    <p><kbd>&#8630;</kbd> in a cell undoes its last stroke; <kbd>Ctrl</kbd>+<kbd>Z</kbd> undoes the last stroke you drew anywhere. <b>Export strokes</b> saves your drawing as JSON so you can finish it later or elsewhere; <b>SVG sheet</b> exports every outline as a vector sheet and needs no font engine at all.</p>
+    <p class="lic">Font metrics: 1000 units per em, ascender 800, descender &minus;200, side bearings 55. Outlines are filled with the nonzero rule, so overlapping strokes simply merge. Everything stays in your browser; the only network request is for opentype.js and the blog index.</p>
+    <p><button id="btn-close" class="small">close</button></p>
+  </div>
+</div>
+
+<script src="sample-font.js"></script>
+<script src="foundry.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/opentype.js/1.3.4/opentype.min.js" onerror="window.__opentypeFailed=true"></script>
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var F = window.FOUNDRY, SAMPLE = window.FOUNDRY_SAMPLE;
+  var KEY = 'foundry38:v1';
+  var THUMB = new URLSearchParams(location.search).get('thumb') === '1';
+  var PANGRAM = 'The quick brown fox jumps over the lazy dog; 0123456789, "so" (it\'s done) - right?!';
+  var INK = '#1c1a2b';
+  var VIEW_TOP = 850, VIEW_W = 1000, VIEW_H = 1100;   // the window each cell shows, in font units
+  var MAX_PTS = 4000, MAX_STROKES = 300;
+
+  var state = { name: 'My Hand', width: 60, fill: true, jitter: false, space: 320, text: '', size: 48, salt: 0, strokes: {} };
+  var cells = {};            // char -> { el, canvas, ctx, cache }
+  var cur = null;            // stroke in progress
+  var lastCell = null;       // for ctrl+z
+  var sampleHand = F.sampleHand(SAMPLE, 'nietztein');
+  var ROSTER = F.GLYPHS.map(function (g) { return g.c; });
+  var otOK = !!window.opentype;
+
+  /* ---------- persistence ---------- */
+  function load() {
+    try {
+      var raw = localStorage.getItem(KEY);
+      if (!raw) return;
+      var d = JSON.parse(raw);
+      applyData(d, true);
+    } catch (e) { /* storage unavailable or corrupt: start fresh */ }
+  }
+  var saveMsgTimer;
+  function save() {
+    try {
+      localStorage.setItem(KEY, JSON.stringify({ v: 1, name: state.name, width: state.width, fill: state.fill, jitter: state.jitter,
+        space: state.space, text: state.text, size: state.size, salt: state.salt, strokes: state.strokes }));
+      $('savedmsg').textContent = 'saved';
+      clearTimeout(saveMsgTimer); saveMsgTimer = setTimeout(function () { $('savedmsg').textContent = ''; }, 1200);
+    } catch (e) { $('savedmsg').textContent = 'autosave unavailable'; }
+  }
+  function num(v, lo, hi, dflt) { v = +v; return isNaN(v) ? dflt : Math.max(lo, Math.min(hi, v)); }
+  function cleanStrokes(obj) {
+    var out = {};
+    if (!obj || typeof obj !== 'object') return out;
+    ROSTER.forEach(function (c) {
+      var list = obj[c];
+      if (!Array.isArray(list)) return;
+      var strokes = [];
+      list.slice(0, MAX_STROKES).forEach(function (s) {
+        if (!Array.isArray(s)) return;
+        var pts = [];
+        s.slice(0, MAX_PTS).forEach(function (p) {
+          if (!Array.isArray(p) || p.length < 2) return;
+          var x = +p[0], y = +p[1], pr = p.length > 2 ? +p[2] : 0.5;
+          if (isNaN(x) || isNaN(y)) return;
+          pts.push([num(x, -300, 1300, 0), num(y, -500, 1100, 0), num(pr, 0, 1, 0.5)]);
+        });
+        if (pts.length) strokes.push(pts);
+      });
+      if (strokes.length) out[c] = strokes;
+    });
+    return out;
+  }
+  function applyData(d, withPrefs) {
+    if (!d || typeof d !== 'object') throw new Error('not a strokes file');
+    state.strokes = cleanStrokes(d.strokes);
+    if (typeof d.name === 'string') state.name = d.name.slice(0, 40);
+    if (d.width != null) state.width = num(d.width, 24, 130, 60);
+    if (d.space != null) state.space = num(d.space, 120, 700, 320);
+    if (withPrefs) {
+      if (typeof d.fill === 'boolean') state.fill = d.fill;
+      if (typeof d.jitter === 'boolean') state.jitter = d.jitter;
+      if (typeof d.text === 'string') state.text = d.text.slice(0, 2000);
+      if (d.size != null) state.size = num(d.size, 18, 120, 48);
+      if (d.salt != null) state.salt = num(d.salt, 0, 2, 0);
+    }
+  }
+
+  /* ---------- cells ---------- */
+  function makeCell(g) {
+    var el = document.createElement('div');
+    el.className = 'cell';
+    var lab = document.createElement('span'); lab.className = 'lab'; lab.textContent = g.c === ' ' ? 'space' : g.c;
+    if (g.c === ' ') {
+      el.classList.add('space');
+      var r = document.createElement('input'); r.type = 'range'; r.min = 120; r.max = 700; r.value = state.space; r.setAttribute('aria-label', 'space width');
+      var sw = document.createElement('span'); sw.className = 'sw'; sw.textContent = state.space + ' units';
+      r.addEventListener('input', function () { state.space = +r.value; sw.textContent = state.space + ' units'; save(); scheduleBuild(); });
+      el.appendChild(lab); el.appendChild(r); el.appendChild(sw);
+      cells[g.c] = { el: el, range: r, sw: sw };
+      return el;
+    }
+    var cv = document.createElement('canvas');
+    cv.setAttribute('aria-label', 'draw the glyph ' + g.c);
+    var undo = document.createElement('button'); undo.className = 'undo'; undo.type = 'button'; undo.title = 'undo last stroke'; undo.innerHTML = '&#8630;';
+    undo.addEventListener('click', function () { undoCell(g.c); });
+    el.appendChild(cv); el.appendChild(lab); el.appendChild(undo);
+    var cell = { el: el, canvas: cv, ctx: cv.getContext('2d'), cache: null };
+    cells[g.c] = cell;
+    bindPointer(g.c, cv);
+    return el;
+  }
+  function buildGrid() {
+    F.GLYPHS.forEach(function (g) { $('g-' + g.g).appendChild(makeCell(g)); });
+  }
+  function hasInk(c) { return !!(state.strokes[c] && state.strokes[c].length); }
+  function updateCounts() {
+    var counts = {};
+    F.GLYPHS.forEach(function (g) { if (g.c === ' ') return; counts[g.g] = counts[g.g] || [0, 0]; counts[g.g][1]++; if (hasInk(g.c)) counts[g.g][0]++; });
+    Array.prototype.forEach.call(document.querySelectorAll('.count'), function (el) {
+      var k = counts[el.getAttribute('data-g')]; el.textContent = k ? (k[0] + ' / ' + k[1]) : '';
+    });
+  }
+
+  /* ---------- rendering a cell ---------- */
+  var dpr = Math.min(2, window.devicePixelRatio || 1);
+  function sizeCells() {
+    var any = null;
+    for (var c in cells) if (cells[c].canvas) { any = cells[c].canvas; break; }
+    if (!any) return;
+    var w = any.getBoundingClientRect().width;
+    if (!w) return;
+    var pw = Math.round(w * dpr), ph = Math.round(w * VIEW_H / VIEW_W * dpr);
+    for (c in cells) {
+      var cv = cells[c].canvas;
+      if (!cv) continue;
+      if (cv.width !== pw || cv.height !== ph) { cv.width = pw; cv.height = ph; }
+      drawCell(c);
+    }
+  }
+  function outlines(c) {
+    var cell = cells[c];
+    if (!cell.cache) cell.cache = (state.strokes[c] || []).map(function (s) { return F.strokeOutline(s, state.width); });
+    return cell.cache;
+  }
+  function drawCell(c, live) {
+    var cell = cells[c];
+    if (!cell || !cell.canvas) return;
+    var ctx = cell.ctx, W = cell.canvas.width, H = cell.canvas.height, k = W / VIEW_W;
+    var Y = function (y) { return (VIEW_TOP - y) * k; };
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+    // guides
+    var guide = function (y, color, width, dash) {
+      ctx.strokeStyle = color; ctx.lineWidth = width; ctx.setLineDash(dash || []);
+      ctx.beginPath(); ctx.moveTo(0, Y(y)); ctx.lineTo(W, Y(y)); ctx.stroke();
+    };
+    guide(F.ASC, '#dccba8', 1, [3 * dpr, 3 * dpr]);
+    guide(F.CAP, '#dccba8', 1);
+    guide(F.XH, '#c9b58b', 1);
+    guide(0, '#a98f58', 1.5 * dpr);
+    guide(F.DESC, '#dccba8', 1, [3 * dpr, 3 * dpr]);
+    ctx.setLineDash([]);
+    // finished strokes as their real outlines
+    ctx.fillStyle = INK;
+    outlines(c).forEach(function (ct) {
+      if (!ct || ct.length < 3) return;
+      ctx.beginPath();
+      for (var i = 0; i < ct.length; i++) { if (i) ctx.lineTo(ct[i][0] * k, Y(ct[i][1])); else ctx.moveTo(ct[i][0] * k, Y(ct[i][1])); }
+      ctx.closePath();
+      ctx.fill('nonzero');
+    });
+    // the stroke in progress, quick and round
+    if (live && live.length) {
+      ctx.strokeStyle = INK; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      ctx.beginPath();
+      for (var j = 0; j < live.length - 1; j++) {
+        ctx.lineWidth = Math.max(1, state.width * k * (0.55 + 0.9 * live[j][2]));
+        ctx.beginPath(); ctx.moveTo(live[j][0] * k, Y(live[j][1])); ctx.lineTo(live[j + 1][0] * k, Y(live[j + 1][1])); ctx.stroke();
+      }
+      if (live.length === 1) {
+        ctx.beginPath(); ctx.arc(live[0][0] * k, Y(live[0][1]), state.width * k / 2, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+    cell.el.classList.toggle('inked', hasInk(c));
+  }
+  function redrawAll() { for (var c in cells) { if (cells[c].canvas) { cells[c].cache = null; drawCell(c); } } }
+
+  /* ---------- pointer input ---------- */
+  function bindPointer(c, cv) {
+    var addPoint = function (e) {
+      var r = cv.getBoundingClientRect();
+      if (!r.width) return;
+      var x = (e.clientX - r.left) / r.width * VIEW_W;
+      var y = VIEW_TOP - (e.clientY - r.top) / r.height * VIEW_H;
+      var p = e.pointerType === 'mouse' ? 0.5 : (e.pressure > 0 ? e.pressure : 0.5);
+      cur.pts.push([Math.max(-150, Math.min(1150, x)), Math.max(-350, Math.min(950, y)), p]);
+    };
+    cv.addEventListener('pointerdown', function (e) {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      if (cur) return;
+      e.preventDefault();
+      cur = { c: c, id: e.pointerId, pts: [] };
+      try { cv.setPointerCapture(e.pointerId); } catch (err) { /* fine */ }
+      addPoint(e);
+      drawCell(c, cur.pts);
+    });
+    cv.addEventListener('pointermove', function (e) {
+      if (!cur || cur.c !== c || cur.id !== e.pointerId) return;
+      e.preventDefault();
+      var evs = (e.getCoalescedEvents && e.getCoalescedEvents()) || [];
+      if (!evs.length) evs = [e];
+      for (var i = 0; i < evs.length; i++) addPoint(evs[i]);
+      if (cur.pts.length > MAX_PTS) cur.pts.length = MAX_PTS;
+      drawCell(c, cur.pts);
+    });
+    var finish = function (e) {
+      if (!cur || cur.c !== c || cur.id !== e.pointerId) return;
+      if (e.type === 'pointerup') addPoint(e);
+      var s = F.smoothStroke(cur.pts);
+      cur = null;
+      if (s.length) {
+        (state.strokes[c] = state.strokes[c] || []).push(s);
+        if (state.strokes[c].length > MAX_STROKES) state.strokes[c].shift();
+        lastCell = c;
+        changed(c);
+      } else drawCell(c);
+    };
+    cv.addEventListener('pointerup', finish);
+    cv.addEventListener('pointercancel', finish);
+    cv.addEventListener('lostpointercapture', function (e) { if (cur && cur.c === c && cur.id === e.pointerId) finish({ type: 'pointercancel', pointerId: e.pointerId }); });
+    cv.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+  }
+  function changed(c) {
+    cells[c].cache = null;
+    drawCell(c);
+    updateCounts();
+    save();
+    scheduleBuild();
+  }
+  function undoCell(c) {
+    if (!hasInk(c)) return;
+    state.strokes[c].pop();
+    if (!state.strokes[c].length) delete state.strokes[c];
+    changed(c);
+  }
+
+  /* ---------- font build & preview ---------- */
+  var buildTimer = null, buildCount = 0, prevFace = null, lastBuffer = null, lastSet = null, lastMade = null;
+  function scheduleBuild() { clearTimeout(buildTimer); buildTimer = setTimeout(build, 350); }
+  function currentSet() {
+    return F.buildGlyphSet(state.strokes, { width: state.width, fill: state.fill, jitter: state.jitter, seed: state.name || 'foundry', space: state.space, sample: sampleHand });
+  }
+  function fmtKB(n) { return (n / 1024).toFixed(1) + ' KB'; }
+  function setStatus(set, extra) {
+    var parts = [];
+    var total = F.GLYPHS.length - 1;
+    parts.push('<b>' + set.drawn + '</b> of ' + total + ' glyphs drawn');
+    if (set.filled) parts.push(set.filled + ' filled in');
+    if (set.missing.length) parts.push('<span class="warn">' + set.missing.length + ' missing' + (state.fill ? '' : ' (turn on "fill the gaps")') + '</span>');
+    if (extra) parts.push(extra);
+    $('status').innerHTML = parts.join(' &middot; ');
+  }
+  function build() {
+    buildTimer = null;
+    lastSet = currentSet();
+    if (!otOK) { setStatus(lastSet, '<span class="warn">no font engine: preview drawn from the outlines, SVG sheet only</span>'); renderOffline(lastSet); return; }
+    var made;
+    try {
+      made = F.makeFont(window.opentype, lastSet, state.name);
+      lastBuffer = made.font.toArrayBuffer();
+      lastMade = made;
+    } catch (e) {
+      setStatus(lastSet, '<span class="warn">font build failed: ' + String(e.message || e).replace(/</g, '&lt;') + '</span>');
+      return;
+    }
+    setStatus(lastSet, fmtKB(lastBuffer.byteLength) + (state.jitter ? (made.salt ? ' &middot; alternates on' : ' &middot; alternates unsupported') : ''));
+    $('btn-otf').disabled = false;
+    var fam = 'FoundryPreview' + (++buildCount);
+    var face;
+    try { face = new FontFace(fam, lastBuffer); } catch (e) { return; }
+    face.load().then(function (f) {
+      document.fonts.add(f);
+      if (prevFace) { try { document.fonts.delete(prevFace); } catch (e) { /* fine */ } }
+      prevFace = f;
+      var stack = '"' + fam + '", ' + getComputedStyle(document.documentElement).getPropertyValue('--serif');
+      $('preview').style.fontFamily = stack;
+      $('specimen').style.fontFamily = stack;
+    }).catch(function (err) {
+      setStatus(lastSet, '<span class="warn">preview failed: ' + String(err && err.message || err).replace(/</g, '&lt;') + '</span>');
+    });
+  }
+  // Without opentype.js, draw the paragraph ourselves: one <path> per glyph, laid out by advance width.
+  function renderOffline(set) {
+    var box = $('offline'), text = state.text || '', size = state.size, k = size / F.UPM, lineH = size * 1.25;
+    var width = Math.max(200, $('preview').clientWidth - 8);
+    var byChar = {}; set.glyphs.forEach(function (g) { byChar[g.c] = g; });
+    var x = 0, y = size * 0.8, out = '', words = text.split(/(\s+)/);
+    var wordW = function (wd) { var w = 0; for (var i = 0; i < wd.length; i++) { var g = byChar[wd[i]]; w += (g ? g.advance : 500) * k; } return w; };
+    words.forEach(function (wd) {
+      if (!wd) return;
+      if (/^\s+$/.test(wd)) { if (wd.indexOf('\n') >= 0) { x = 0; y += lineH; } else x += byChar[' '].advance * k; return; }
+      if (x > 0 && x + wordW(wd) > width) { x = 0; y += lineH; }
+      for (var i = 0; i < wd.length; i++) {
+        var g = byChar[wd[i]];
+        if (!g) { x += 500 * k; continue; }
+        if (g.contours.length) out += '<path transform="translate(' + x.toFixed(1) + ',' + y.toFixed(1) + ') scale(' + k.toFixed(4) + ',' + (-k).toFixed(4) + ')" d="' + F.pathData(g.contours) + '"/>';
+        x += g.advance * k;
+      }
+    });
+    var H = y + size * 0.35;
+    box.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="' + width + '" height="' + Math.ceil(H) + '" viewBox="0 0 ' + width + ' ' + Math.ceil(H) + '" fill="' + INK + '" fill-rule="nonzero">' + out + '</svg>';
+    box.classList.remove('hidden');
+  }
+  function applySalt() {
+    var v = state.jitter ? state.salt : 0;
+    var fs = v ? '"salt" ' + v : 'normal';
+    $('preview').style.fontFeatureSettings = fs;
+    $('specimen').style.fontFeatureSettings = fs;
+    $('saltwrap').classList.toggle('hidden', !state.jitter);
+  }
+
+  /* ---------- downloads ---------- */
+  function download(blob, name) {
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+  }
+  function fileStem() { return F.safeFamily(state.name).replace(/\s+/g, '-'); }
+  $('btn-otf').addEventListener('click', function () {
+    if (!otOK) return;
+    if (buildTimer || !lastBuffer) { clearTimeout(buildTimer); build(); }
+    if (!lastBuffer) return;
+    download(new Blob([lastBuffer], { type: 'font/otf' }), fileStem() + '.otf');
+  });
+  $('btn-svg').addEventListener('click', function () {
+    var svg = F.svgSheet(currentSet(), F.safeFamily(state.name) + ' (Handwriting Foundry)');
+    download(new Blob([svg], { type: 'image/svg+xml' }), fileStem() + '-sheet.svg');
+  });
+  $('btn-export').addEventListener('click', function () {
+    var data = { app: 'handwriting-foundry', v: 1, name: state.name, width: state.width, space: state.space, strokes: state.strokes };
+    download(new Blob([JSON.stringify(data)], { type: 'application/json' }), fileStem() + '.strokes.json');
+  });
+  $('btn-import').addEventListener('click', function () { $('file').value = ''; $('file').click(); });
+  $('file').addEventListener('change', function () {
+    var f = $('file').files && $('file').files[0];
+    if (!f) return;
+    var rd = new FileReader();
+    rd.onload = function () {
+      try {
+        applyData(JSON.parse(String(rd.result)), false);
+        syncControls(); redrawAll(); updateCounts(); save(); scheduleBuild();
+      } catch (e) { alert('Could not read that file: ' + (e.message || e)); }
+    };
+    rd.onerror = function () { alert('Could not read that file.'); };
+    rd.readAsText(f);
+  });
+
+  /* ---------- workbench controls ---------- */
+  function syncControls() {
+    $('name').value = state.name;
+    $('weight').value = state.width; $('weightval').textContent = state.width;
+    $('fill').checked = state.fill; $('jitter').checked = state.jitter;
+    $('size').value = state.size; $('preview').style.fontSize = state.size + 'px';
+    $('salt').value = String(state.salt);
+    if (cells[' ']) { cells[' '].range.value = state.space; cells[' '].sw.textContent = state.space + ' units'; }
+    applySalt();
+  }
+  $('name').addEventListener('input', function () { state.name = $('name').value.slice(0, 40); save(); scheduleBuild(); });
+  $('weight').addEventListener('input', function () { state.width = +$('weight').value; $('weightval').textContent = state.width; redrawAll(); });
+  $('weight').addEventListener('change', function () { save(); scheduleBuild(); });
+  $('fill').addEventListener('change', function () { state.fill = $('fill').checked; save(); scheduleBuild(); });
+  $('jitter').addEventListener('change', function () { state.jitter = $('jitter').checked; applySalt(); save(); scheduleBuild(); });
+  $('salt').addEventListener('change', function () { state.salt = +$('salt').value; applySalt(); save(); });
+  $('size').addEventListener('input', function () { state.size = +$('size').value; $('preview').style.fontSize = state.size + 'px'; });
+  $('size').addEventListener('change', function () { save(); if (!otOK && lastSet) renderOffline(lastSet); });
+  $('preview').addEventListener('input', function () { state.text = $('preview').innerText.slice(0, 2000); save(); if (!otOK && lastSet) renderOffline(lastSet); });
+  $('preview').addEventListener('paste', function (e) {
+    // keep it plain text
+    if (!e.clipboardData) return;
+    e.preventDefault();
+    var t = e.clipboardData.getData('text/plain');
+    if (document.execCommand) document.execCommand('insertText', false, t);
+  });
+  $('btn-sample').addEventListener('click', function () {
+    var any = Object.keys(state.strokes).some(hasInk);
+    if (any && !confirm('Replace the letters you drew with the sample hand?')) return;
+    loadSample();
+  });
+  function loadSample() {
+    state.strokes = JSON.parse(JSON.stringify(sampleHand));
+    if (!state.name || state.name === 'My Hand') { state.name = 'Sample Hand'; $('name').value = state.name; }
+    redrawAll(); updateCounts(); save(); scheduleBuild();
+  }
+  $('btn-clear').addEventListener('click', function () {
+    if (!Object.keys(state.strokes).some(hasInk)) return;
+    if (!confirm('Erase every cell? (Export strokes first if you want to keep them.)')) return;
+    state.strokes = {};
+    redrawAll(); updateCounts(); save(); scheduleBuild();
+  });
+  $('btn-help').addEventListener('click', function () { $('help').classList.add('show'); });
+  $('btn-close').addEventListener('click', function () { $('help').classList.remove('show'); });
+  $('help').addEventListener('click', function (e) { if (e.target === $('help')) $('help').classList.remove('show'); });
+  document.addEventListener('keydown', function (e) {
+    var tag = (e.target && e.target.tagName || '').toLowerCase();
+    var typing = tag === 'input' || tag === 'textarea' || tag === 'select' || (e.target && e.target.isContentEditable);
+    if (e.key === 'Escape') $('help').classList.remove('show');
+    if (typing) return;
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { if (lastCell) { e.preventDefault(); undoCell(lastCell); } }
+    if (e.key === '?') $('help').classList.add('show');
+  });
+  var resizeTimer;
+  window.addEventListener('resize', function () { clearTimeout(resizeTimer); resizeTimer = setTimeout(sizeCells, 120); });
+
+  /* ---------- default paragraph from the blog ---------- */
+  function defaultText(titles) {
+    var t = (titles || []).filter(function (s) { return typeof s === 'string' && s.trim(); }).slice(0, 2);
+    return (t.length ? t.map(function (s) { return s.replace(/[.!?]$/, ''); }).join('. ') + '.\n' : '') + PANGRAM;
+  }
+  function fetchTitles() {
+    return fetch('../../blog/index.json').then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(function (arr) { return (Array.isArray(arr) ? arr : []).map(function (p) { return p && p.title; }); })
+      .catch(function () { return []; });
+  }
+
+  /* ---------- boot ---------- */
+  function setPreviewText(t) { state.text = t; $('preview').textContent = t; if (!otOK && lastSet) renderOffline(lastSet); }
+  buildGrid();
+  state.size = window.innerWidth < 640 ? 36 : 48;
+  if (!THUMB) load();
+  if (THUMB) { state.strokes = JSON.parse(JSON.stringify(sampleHand)); state.name = 'Nietztein Hand'; state.fill = true; state.jitter = false; state.size = 54; }
+  syncControls();
+  $('specimen').textContent = 'abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789 .,;:!?\'"-()';
+  var hadText = !!state.text;
+  if (hadText) $('preview').textContent = state.text; else setPreviewText(PANGRAM);
+  if (!otOK) { $('cdnwarn').classList.add('show'); $('btn-otf').disabled = true; }
+  updateCounts();
+  requestAnimationFrame(function () { sizeCells(); build(); });
+  window.FOUNDRY_APP = { build: build, state: state };   // tiny hook for tests and tinkerers
+  if (!hadText || THUMB) fetchTitles().then(function (titles) { if (state.text === PANGRAM || THUMB) setPreviewText(defaultText(titles)); });
+})();
+</script>
+</body>
+</html>

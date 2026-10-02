@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spectrogram Painter</title>
+<meta name="description" content="Paint a picture and hear it as sound: the canvas is a spectrogram, time runs left to right, pitch runs up, brightness is loudness. Hide a word in audio the way Aphex Twin hid a face.">
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0c0e11;
+    --bg-2: #131619;
+    --panel: #171b1f;
+    --panel-2: #1f242a;
+    --panel-hi: #2a3038;
+    --line: #2d343c;
+    --line-2: #3b434d;
+    --ink: #d9dde2;
+    --ink-2: #8f98a3;
+    --ink-3: #5c646e;
+    --accent: #7dff8c;         /* phosphor green; app.js swaps it per colour map */
+    --accent-dim: rgba(125, 255, 140, 0.18);
+    --accent-glow: rgba(125, 255, 140, 0.35);
+    --amber: #ffb347;
+    --red: #ff5f56;
+    --mono: "IBM Plex Mono", "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    --sans: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); }
+  body {
+    font: 14px/1.45 var(--sans);
+    background: radial-gradient(1200px 600px at 50% -10%, #171c22 0%, var(--bg) 60%);
+    min-height: 100vh; display: flex; flex-direction: column;
+    padding: 12px 16px 22px; overflow-x: hidden;
+  }
+  a { color: inherit; }
+  h1 { font-size: 20px; margin: 0; font-weight: 600; letter-spacing: 0.01em; }
+  header { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+  header .sub { color: var(--ink-2); font-size: 13.5px; }
+  header .spacer { flex: 1; }
+  header .back { color: var(--ink-2); text-decoration: none; font-size: 13px; }
+  header .back:hover { color: var(--ink); }
+
+  button {
+    font: inherit; font-size: 13px; color: var(--ink); background: linear-gradient(180deg, var(--panel-hi), var(--panel-2));
+    border: 1px solid var(--line-2); border-bottom-color: #0d1013; border-radius: 6px; padding: 5px 10px; cursor: pointer; line-height: 1.2;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.05) inset, 0 1px 2px rgba(0,0,0,0.5);
+    white-space: nowrap;
+  }
+  button:hover { background: linear-gradient(180deg, #333a43, var(--panel-hi)); }
+  button:active { transform: translateY(1px); box-shadow: none; }
+  button[aria-pressed="true"], button.on {
+    background: var(--accent-dim); color: var(--accent); border-color: var(--accent);
+    box-shadow: 0 0 10px var(--accent-glow) inset;
+  }
+  button:disabled { opacity: 0.45; cursor: default; }
+  button:focus-visible, input:focus-visible, select:focus-visible, canvas:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  button .key { color: var(--ink-3); font-family: var(--mono); font-size: 11px; margin-left: 6px; }
+  button[aria-pressed="true"] .key { color: inherit; opacity: 0.7; }
+  .seg { display: inline-flex; border: 1px solid var(--line-2); border-radius: 6px; overflow: hidden; }
+  .seg button { border: 0; border-radius: 0; box-shadow: none; padding: 5px 10px; background: var(--panel-2); }
+  .seg button + button { border-left: 1px solid var(--line-2); }
+  .seg button[aria-pressed="true"] { background: var(--accent-dim); }
+
+  /* knurled sliders */
+  input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 22px; background: transparent; margin: 0; cursor: pointer; --fill: 50%; }
+  input[type=range]::-webkit-slider-runnable-track { height: 4px; border-radius: 2px; background: linear-gradient(90deg, var(--accent) var(--fill), #2a2f36 var(--fill)); box-shadow: 0 1px 0 rgba(0,0,0,0.6) inset; }
+  input[type=range]::-moz-range-track { height: 4px; border-radius: 2px; background: #2a2f36; }
+  input[type=range]::-moz-range-progress { height: 4px; border-radius: 2px; background: var(--accent); }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 26px; height: 16px; margin-top: -6px; border-radius: 3px;
+    background: repeating-linear-gradient(90deg, #5f6872 0 2px, #2d3339 2px 4px);
+    border: 1px solid #090b0d; box-shadow: 0 1px 0 #7b848f inset, 0 2px 4px rgba(0,0,0,0.65);
+  }
+  input[type=range]::-moz-range-thumb {
+    width: 26px; height: 16px; border-radius: 3px;
+    background: repeating-linear-gradient(90deg, #5f6872 0 2px, #2d3339 2px 4px);
+    border: 1px solid #090b0d; box-shadow: 0 1px 0 #7b848f inset, 0 2px 4px rgba(0,0,0,0.65);
+  }
+  .slider { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 4px 8px; }
+  .slider label { grid-column: 1 / -1; display: flex; justify-content: space-between; color: var(--ink-2); font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; }
+  .slider label output { color: var(--accent); font-family: var(--mono); font-size: 12px; text-transform: none; }
+  .slider input { grid-column: 1 / -1; }
+
+  /* the deck */
+  .deck { display: grid; grid-template-columns: 236px minmax(0, 1fr); gap: 14px; align-items: start; }
+  .rack { display: flex; flex-direction: column; gap: 10px; }
+  .panel {
+    background: linear-gradient(180deg, #1a1f24, var(--panel)); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.04) inset, 0 6px 18px rgba(0,0,0,0.35);
+  }
+  .panel h2 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-2); margin: 0 0 8px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .panel h2::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+  .row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .row + .row, .row + .slider, .slider + .slider, .slider + .row { margin-top: 8px; }
+  .tools { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .tools button { display: flex; justify-content: space-between; align-items: center; }
+  .tools + .slider { margin-top: 12px; }
+  .hint { color: var(--ink-3); font-size: 12px; line-height: 1.35; }
+  input[type=text] { font: inherit; color: var(--ink); background: #0b0d10; border: 1px solid var(--line-2); border-radius: 6px; padding: 5px 8px; min-width: 0; width: 100%; font-family: var(--mono); letter-spacing: 0.08em; text-transform: uppercase; }
+  input[type=file] { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; }
+  #textpanel, #micpanel { display: none; }
+  #textpanel.show, #micpanel.show { display: block; }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--ink-3); }
+  .dot.live { background: var(--red); box-shadow: 0 0 8px var(--red); }
+
+  /* the scope */
+  .scope { min-width: 0; }
+  .scope-frame {
+    background: #0a0c0f; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px 8px 12px;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.04) inset, 0 6px 18px rgba(0,0,0,0.4);
+  }
+  .screen { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 0 6px; }
+  .screen .label { grid-column: 2; display: flex; justify-content: space-between; align-items: baseline; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); padding: 2px 2px 4px; }
+  .screen .label b { color: var(--ink-2); font-weight: 600; }
+  .screen .label .mono { font-family: var(--mono); color: var(--accent); text-transform: none; letter-spacing: 0; }
+  .yaxis { position: relative; font-family: var(--mono); font-size: 10px; color: var(--ink-3); }
+  .yaxis span { position: absolute; right: 0; transform: translateY(-50%); white-space: nowrap; }
+  .yaxis span::after { content: ""; display: inline-block; width: 4px; height: 1px; background: var(--ink-3); margin-left: 3px; vertical-align: middle; }
+  .stage { position: relative; aspect-ratio: 2.6 / 1; border: 1px solid var(--line-2); border-radius: 4px; overflow: hidden; background: #000; }
+  .stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .stage canvas.img { image-rendering: auto; }
+  .stage canvas.over { touch-action: none; cursor: crosshair; }
+  .stage .playhead { position: absolute; top: 0; bottom: 0; left: 0; width: 2px; background: #fff; opacity: 0; box-shadow: 0 0 6px #fff, 0 0 2px #fff; pointer-events: none; mix-blend-mode: screen; }
+  .stage .playhead.show { opacity: 0.9; }
+  .stage.drop::after { content: "drop the image"; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(125,255,140,0.12); border: 2px dashed var(--accent); color: var(--accent); font-family: var(--mono); letter-spacing: 0.1em; text-transform: uppercase; pointer-events: none; }
+  .stage.analysis { aspect-ratio: 5.2 / 1; }
+  .stage.analysis canvas.over { cursor: default; }
+  .xaxis { grid-column: 2; position: relative; height: 16px; font-family: var(--mono); font-size: 10px; color: var(--ink-3); }
+  .xaxis span { position: absolute; top: 2px; transform: translateX(-50%); }
+  .xaxis span::before { content: ""; position: absolute; left: 50%; top: -3px; width: 1px; height: 3px; background: var(--ink-3); }
+  .xaxis span:first-child { transform: none; }
+  .xaxis span:first-child::before { left: 0; }
+  .xaxis span:last-child { transform: translateX(-100%); }
+  .xaxis span:last-child::before { left: auto; right: 0; }
+
+  /* transport */
+  .transport { margin-top: 10px; display: flex; align-items: center; gap: 10px 14px; flex-wrap: wrap; }
+  .transport .group { display: flex; align-items: center; gap: 6px; }
+  .transport .group.grow { flex: 1 1 160px; min-width: 140px; }
+  #btn-play { min-width: 84px; font-weight: 600; }
+  #btn-play.playing { background: var(--accent); color: #06130a; border-color: var(--accent); }
+  .lbl { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); }
+  #vu { width: 150px; height: 16px; display: block; border-radius: 3px; background: #06080a; border: 1px solid var(--line); }
+  .readout {
+    font-family: var(--mono); font-size: 12.5px; color: var(--amber); background: #0a0806; border: 1px solid #2a2218; border-radius: 6px;
+    padding: 5px 10px; min-width: 196px; text-align: left; letter-spacing: 0.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    box-shadow: 0 0 12px rgba(255,179,71,0.08) inset; text-shadow: 0 0 6px rgba(255,179,71,0.45);
+  }
+  .readout .dim { color: #8a6a3a; }
+  .progress { position: relative; height: 3px; background: #1a1d21; border-radius: 2px; overflow: hidden; margin-top: 8px; }
+  .progress i { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--accent); transition: width 0.1s linear; }
+  .progress.idle i { width: 0 !important; }
+
+  footer { margin-top: 14px; color: var(--ink-3); font-size: 12.5px; max-width: 80em; }
+  footer p { margin: 4px 0; }
+  kbd { font-family: var(--mono); background: var(--panel-2); border: 1px solid var(--line-2); border-radius: 4px; padding: 0 5px; color: var(--ink); font-size: 11px; }
+  .keys { display: inline; }
+  .keys span { white-space: nowrap; margin-right: 10px; }
+  #nojs { color: var(--amber); }
+
+  @media (max-width: 900px) {
+    .deck { grid-template-columns: 1fr; }
+    .rack { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; order: 2; }
+    .rack .panel.wide { grid-column: 1 / -1; }
+    .scope { order: 1; }
+    .stage { aspect-ratio: 2 / 1; }
+    .stage.analysis { aspect-ratio: 4 / 1; }
+  }
+  @media (max-width: 600px) {
+    body { padding: 10px 12px 18px; }
+    .rack { grid-template-columns: 1fr; }
+    .screen { grid-template-columns: 34px minmax(0, 1fr); }
+    .yaxis { font-size: 9px; }
+    .readout { min-width: 0; flex: 1 1 100%; }
+    .transport .group.grow { flex-basis: 100%; }
+  }
+  body.thumb .deck { grid-template-columns: 1fr; }
+  body.thumb .rack, body.thumb footer, body.thumb header { display: none; }
+  body.thumb { padding-top: 8px; }
+  @media (prefers-reduced-motion: reduce) {
+    .progress i { transition: none; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Spectrogram Painter</h1>
+  <span class="sub">Paint a picture, hear it as sound. Hide a word in audio the way Aphex Twin hid a face.</span>
+  <span class="spacer"></span>
+  <a class="back" href="../../#/misc">&larr; Jack V. Le</a>
+</header>
+
+<div class="deck">
+  <aside class="rack" aria-label="tools">
+    <div class="panel">
+      <h2>Tool</h2>
+      <div class="tools" role="group" aria-label="painting tool">
+        <button id="tool-brush" data-tool="brush" aria-pressed="true">brush <span class="key">B</span></button>
+        <button id="tool-eraser" data-tool="eraser" aria-pressed="false">eraser <span class="key">E</span></button>
+        <button id="tool-line" data-tool="line" aria-pressed="false">line <span class="key">L</span></button>
+        <button id="tool-text" data-tool="text" aria-pressed="false">text <span class="key">T</span></button>
+      </div>
+      <div class="slider"><label for="size">size <output id="size-out">6</output></label><input id="size" type="range" min="1" max="40" value="6"></div>
+      <div class="slider"><label for="soft">softness <output id="soft-out">40%</output></label><input id="soft" type="range" min="0" max="100" value="40"></div>
+      <div class="slider"><label for="flow">brightness <output id="flow-out">100%</output></label><input id="flow" type="range" min="5" max="100" value="100"></div>
+      <div id="textpanel">
+        <div class="row" style="margin-top:10px"><input id="word" type="text" maxlength="24" value="HELLO" aria-label="word to stamp" spellcheck="false" autocomplete="off"></div>
+        <div class="slider"><label for="tscale">letter size <output id="tscale-out">8</output></label><input id="tscale" type="range" min="2" max="18" value="8"></div>
+        <div class="row"><button id="btn-stamp" class="small">stamp at centre</button><span class="hint">or click the canvas where the word should go</span></div>
+      </div>
+    </div>
+
+    <div class="panel wide">
+      <h2>Image</h2>
+      <div class="row">
+        <button id="btn-import">import image</button>
+        <input id="file" type="file" accept="image/png,image/jpeg,image/webp,image/gif" aria-label="import an image file">
+        <button id="btn-invert" title="swap bright and dark">invert</button>
+      </div>
+      <p class="hint" style="margin:8px 0 0">Or drop a PNG or JPEG on the canvas. It is turned to greyscale and fitted: dark on light works best inverted.</p>
+    </div>
+
+    <div class="panel">
+      <h2>Samples</h2>
+      <div class="row">
+        <button id="sample-sine">sine wave</button>
+        <button id="sample-jvl">JVL</button>
+        <button id="sample-stair">staircase chord</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Edit</h2>
+      <div class="row">
+        <button id="btn-undo" title="undo (Ctrl+Z)">undo</button>
+        <button id="btn-redo" title="redo (Ctrl+Y)">redo</button>
+        <button id="btn-clear">clear</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Microphone</h2>
+      <div class="row">
+        <button id="btn-mic" aria-pressed="false"><span class="dot" id="mic-dot"></span>&nbsp; listen <span class="key">M</span></button>
+        <span class="hint" id="mic-hint">Draws the room onto the canvas as it sweeps. Whistle.</span>
+      </div>
+      <div id="micpanel">
+        <div class="slider"><label for="gate">gate <output id="gate-out">-72 dB</output></label><input id="gate" type="range" min="-100" max="-30" value="-72"></div>
+      </div>
+    </div>
+  </aside>
+
+  <section class="scope" aria-label="spectrograms">
+    <div class="scope-frame">
+      <div class="screen">
+        <div class="label"><span><b>Painting</b> &middot; what you draw</span><span class="mono" id="cursor-readout">&nbsp;</span></div>
+        <div class="yaxis" id="yaxis-paint" aria-hidden="true"></div>
+        <div class="stage" id="stage-paint">
+          <canvas id="paint" class="img" width="512" height="256" aria-hidden="true"></canvas>
+          <canvas id="over" class="over" width="10" height="10" tabindex="0" role="img" aria-label="Spectrogram canvas. Arrow keys move the cursor, Enter paints with the current tool, Shift moves faster, Escape cancels a line."></canvas>
+          <div class="playhead" id="ph-paint"></div>
+        </div>
+        <div class="label" style="margin-top:8px"><span><b>Analysis</b> &middot; what came out</span><span class="mono" id="render-readout">&nbsp;</span></div>
+        <div class="yaxis" id="yaxis-ana" aria-hidden="true"></div>
+        <div class="stage analysis" id="stage-ana">
+          <canvas id="ana" class="img" width="512" height="256" aria-hidden="true"></canvas>
+          <div class="playhead" id="ph-ana"></div>
+        </div>
+        <div class="xaxis" id="xaxis" aria-hidden="true"></div>
+      </div>
+      <div class="progress idle" id="progress" aria-hidden="true"><i></i></div>
+    </div>
+
+    <div class="transport panel" role="group" aria-label="transport">
+      <div class="group">
+        <button id="btn-play" title="play / stop (Space)">&#9654; play</button>
+        <button id="btn-loop" aria-pressed="true" title="loop (R)">loop</button>
+      </div>
+      <div class="group">
+        <span class="lbl">length</span>
+        <span class="seg" role="group" aria-label="duration">
+          <button data-dur="3" aria-pressed="false">3 s</button>
+          <button data-dur="6" aria-pressed="true">6 s</button>
+          <button data-dur="12" aria-pressed="false">12 s</button>
+        </span>
+      </div>
+      <div class="group grow">
+        <span class="lbl" id="vol-lbl">volume</span>
+        <input id="vol" type="range" min="0" max="100" value="70" aria-labelledby="vol-lbl" style="flex:1">
+      </div>
+      <div class="group">
+        <canvas id="vu" width="300" height="32" role="img" aria-label="level meter"></canvas>
+      </div>
+      <div class="group">
+        <span class="lbl">colours</span>
+        <span class="seg" role="group" aria-label="colour map">
+          <button data-map="phosphor" aria-pressed="true">phosphor</button>
+          <button data-map="magma" aria-pressed="false">magma</button>
+          <button data-map="grey" aria-pressed="false">grey</button>
+        </span>
+      </div>
+      <div class="group">
+        <button id="btn-wav">download .wav</button>
+        <button id="btn-png">download .png</button>
+      </div>
+      <div class="readout" id="status" aria-live="polite">ready</div>
+    </div>
+  </section>
+</div>
+
+<footer>
+  <p id="nojs"></p>
+  <p>The canvas is a spectrogram: 512 time slices across, 256 pitch rows from 100 Hz at the bottom to 8 kHz at the top on a log scale, brightness is loudness. To play it, every column becomes a Hann-windowed frame summing one sinusoid per lit row (fixed random phase per row, so overlap-add is click-free), rendered off the main thread. The analysis strip below runs a 4096-point FFT over the result so you can see what survived: thin horizontal detail plays as tones, vertical edges as clicks, blocky letters as chords.</p>
+  <p class="keys"><span><kbd>B</kbd> <kbd>E</kbd> <kbd>L</kbd> <kbd>T</kbd> tools</span><span><kbd>[</kbd> <kbd>]</kbd> brush size</span><span><kbd>Space</kbd> play</span><span><kbd>R</kbd> loop</span><span><kbd>M</kbd> mic</span><span><kbd>Ctrl</kbd>+<kbd>Z</kbd> undo</span><span>arrows + <kbd>Enter</kbd> paint from the keyboard</span></p>
+  <p>Nothing leaves your browser; the microphone is only opened when you press listen. Inspired by the image Aphex Twin tucked into the end of "Windowlicker" b-side &Delta;M<sup>i</sup>&minus;1 (1999).</p>
+</footer>
+
+<script src="synth.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

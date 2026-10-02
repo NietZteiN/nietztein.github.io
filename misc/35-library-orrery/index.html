@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Library Orrery</title>
+<meta name="description" content="Every book in the library as a body in orbit: the older the book, the farther out and the slower it crawls. Scrub ten thousand years, hunt conjunctions, read tonight's sky.">
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    --bg: #070b14;
+    --bg-2: #0b1222;
+    --panel: rgba(9, 13, 25, 0.78);
+    --panel-2: rgba(255, 255, 255, 0.07);
+    --panel-3: rgba(255, 255, 255, 0.12);
+    --line: rgba(232, 230, 223, 0.13);
+    --ink: #e8e6df;
+    --ink-2: #a9a69c;
+    --ink-3: rgba(232, 230, 223, 0.42);
+    --sun: #f3cd7a;
+    --sun-2: rgba(243, 205, 122, 0.22);
+    --accent: #8fb6dc;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif CJK JP", serif;
+    --sans: -apple-system, "Segoe UI", Helvetica, Arial, "Hiragino Sans", "Yu Gothic", "Noto Sans CJK JP", sans-serif;
+    --side-w: 324px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); }
+  body { font: 14px/1.45 var(--sans); overflow: hidden; -webkit-text-size-adjust: 100%; }
+  a { color: inherit; }
+  h1, h2 { margin: 0; font-weight: 600; }
+  button, input, select { font: inherit; color: var(--ink); }
+  button { background: var(--panel-2); border: 1px solid var(--line); border-radius: 7px; padding: 5px 10px; cursor: pointer; line-height: 1.2; }
+  button:hover { background: var(--panel-3); }
+  button:active { transform: translateY(1px); }
+  button.on { background: var(--sun); color: #1a1407; border-color: transparent; }
+  button.small { font-size: 12px; padding: 3px 8px; }
+  button.lnk { background: none; border: 0; padding: 0; color: var(--ink); text-decoration: underline; text-decoration-color: var(--ink-3); text-underline-offset: 2px; border-radius: 2px; }
+  button.lnk:hover { color: var(--sun); background: none; }
+  :focus-visible { outline: 1px solid var(--sun); outline-offset: 1px; }
+  input[type=text], select { background: rgba(0,0,0,0.3); border: 1px solid var(--line); border-radius: 7px; padding: 6px 9px; width: 100%; }
+  input[type=text]::placeholder { color: var(--ink-3); }
+  select { width: auto; }
+
+  #sky { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; }
+  #sky.drag { cursor: grabbing; }
+  #sky.hit { cursor: pointer; }
+
+  /* header */
+  header { position: fixed; top: 0; left: 0; right: 0; padding: 12px 16px; display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; pointer-events: none; z-index: 3; }
+  header > * { pointer-events: auto; }
+  header h1 { font-size: 20px; font-family: var(--serif); letter-spacing: 0.01em; text-shadow: 0 1px 10px rgba(0,0,0,0.8); }
+  header .sub { color: var(--ink-2); font-size: 13px; text-shadow: 0 1px 8px rgba(0,0,0,0.8); }
+  header .back { color: var(--ink-2); font-size: 13px; text-decoration: none; }
+  header .back:hover { color: var(--sun); }
+
+  /* clock readout on the sky */
+  #clock { position: fixed; left: 16px; top: 52px; z-index: 2; pointer-events: none; font-variant-numeric: tabular-nums; text-shadow: 0 1px 8px rgba(0,0,0,0.9); }
+  #clock .big { font-family: var(--serif); font-size: 30px; line-height: 1.1; }
+  #clock .big.live { color: var(--sun); }
+  #clock .off { color: var(--ink-2); font-size: 12px; letter-spacing: 0.04em; }
+
+  /* side panels */
+  #side { position: fixed; top: 54px; right: 12px; bottom: 62px; width: var(--side-w); overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 8px; z-index: 4; padding-bottom: 4px; scrollbar-width: thin; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); flex: none; }
+  .card h2 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.09em; color: var(--ink-2); margin: 0 0 8px; display: flex; justify-content: space-between; align-items: baseline; }
+  .card h2 .hint { text-transform: none; letter-spacing: 0; font-weight: 400; color: var(--ink-3); }
+  .row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .row + .row { margin-top: 7px; }
+  .muted { color: var(--ink-2); font-size: 12px; }
+  .dim { color: var(--ink-3); }
+  .picker { position: relative; flex: 1 1 120px; min-width: 0; }
+  .picker ul { position: absolute; left: 0; right: 0; top: calc(100% + 4px); max-height: 240px; overflow-y: auto; margin: 0; padding: 4px 0; list-style: none; background: var(--bg-2); border: 1px solid var(--line); border-radius: 8px; z-index: 6; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: none; }
+  .picker ul.show { display: block; }
+  .picker li { padding: 5px 10px; cursor: pointer; display: flex; flex-direction: column; gap: 1px; }
+  .picker li:hover, .picker li.sel { background: var(--panel-3); }
+  .picker li .t { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .picker li .m { font-size: 11px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .picker li .dot, .legend .dot, .chip .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: 0; box-shadow: 0 0 6px currentColor; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; }
+  #ts { flex: 1 1 140px; min-width: 120px; accent-color: var(--sun); margin: 0; }
+  .ctl { display: flex; gap: 4px; align-items: center; }
+  .ctl button { padding: 4px 8px; }
+  #events { margin: 6px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 3px; }
+  #events li { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+  #events li .k { width: 1.2em; text-align: center; color: var(--sun); }
+  #events li .d { flex: 1; font-variant-numeric: tabular-nums; }
+  #events li .in { color: var(--ink-2); font-size: 12px; }
+  #pins { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 3px; }
+  #pins li { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+  #pins li .n { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .legend { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 10px; font-size: 12px; }
+  .legend button { background: none; border: 0; padding: 2px 0; text-align: left; color: var(--ink); display: flex; align-items: center; gap: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-radius: 3px; }
+  .legend button .c { color: var(--ink-3); margin-left: auto; padding-left: 6px; font-variant-numeric: tabular-nums; }
+  .legend button.off { opacity: 0.35; }
+  .about { font-size: 12px; color: var(--ink-2); }
+  .about p { margin: 0 0 6px; }
+  .about p:last-child { margin: 0; }
+  kbd { font-family: inherit; background: var(--panel-2); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; color: var(--ink); font-size: 11px; }
+
+  /* tonight's sky */
+  #strip { position: fixed; left: 12px; right: calc(var(--side-w) + 24px); bottom: 12px; z-index: 3; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); font-size: 13px; line-height: 1.5; }
+  #strip .lab { color: var(--ink-2); font-size: 11px; text-transform: uppercase; letter-spacing: 0.09em; margin-right: 8px; }
+  #strip .sep { color: var(--ink-3); margin: 0 7px; }
+  #strip .sym { color: var(--sun); }
+  #strip .sky-line { display: inline; }
+
+  /* tooltip */
+  #tip { position: fixed; z-index: 7; pointer-events: none; display: none; max-width: 290px; background: var(--bg-2); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font-size: 12px; line-height: 1.4; box-shadow: 0 8px 28px rgba(0,0,0,0.55); }
+  #tip.show { display: block; }
+  #tip .t { font-size: 13px; font-weight: 600; font-family: var(--serif); }
+  #tip .a { color: var(--ink-2); }
+  #tip .g { margin-top: 4px; }
+  #tip .st { margin-top: 5px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  #tip .st b { color: var(--ink); font-weight: 600; }
+  #tip .hint { margin-top: 5px; color: var(--ink-3); font-size: 11px; }
+
+  #btn-panels { display: none; position: fixed; right: 12px; bottom: 12px; z-index: 5; }
+  .sheetbar { display: none; position: sticky; top: -8px; z-index: 2; margin: -8px -10px 0; padding: 8px 12px 6px; background: rgba(7, 11, 20, 0.96); justify-content: space-between; align-items: center; }
+  #fallback { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 8; background: var(--bg-2); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; max-width: 420px; display: none; }
+  #fallback.show { display: block; }
+  #fallback p { margin: 0 0 8px; }
+  #fallback p:last-child { margin: 0; color: var(--ink-2); font-size: 13px; }
+
+  body.thumb #side, body.thumb #strip, body.thumb #btn-panels, body.thumb #clock { display: none; }
+
+  @media (max-width: 760px) {
+    header { padding: 10px 12px; gap: 8px 12px; }
+    header .sub { display: none; }
+    #clock { top: 46px; left: 12px; }
+    #clock .big { font-size: 24px; }
+    #side { top: auto; left: 0; right: 0; bottom: 0; width: auto; max-height: 60vh; padding: 8px 10px 52px; background: rgba(7, 11, 20, 0.92); border-top: 1px solid var(--line); border-radius: 14px 14px 0 0; transform: translateY(105%); transition: transform 0.25s ease; }
+    #side.open { transform: none; }
+    #side .card { backdrop-filter: none; -webkit-backdrop-filter: none; }
+    #strip { right: 12px; bottom: 56px; font-size: 12px; max-height: 72px; overflow: hidden; padding: 6px 10px; }
+    #btn-panels { display: block; }
+    body.sheet #strip { display: none; }
+    body.sheet #btn-panels { display: none; }
+    .sheetbar { display: flex; }
+    .legend { grid-template-columns: 1fr; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #side { transition: none; }
+  }
+</style>
+</head>
+<body>
+<canvas id="sky" aria-label="The library as a solar system" role="img"></canvas>
+
+<header>
+  <h1>Library Orrery</h1>
+  <span class="sub">Every book a planet: the older the book, the farther out and the slower it crawls. The sun is you, today.</span>
+  <a class="back" href="../../#/misc">&larr; Jack V. Le</a>
+</header>
+
+<div id="clock" aria-live="off">
+  <div class="big live" id="clock-date">&nbsp;</div>
+  <div class="off" id="clock-off">live</div>
+</div>
+
+<aside id="side" aria-label="Controls">
+  <div class="sheetbar"><span class="muted">controls</span><button class="small" id="btn-sheet-close">close</button></div>
+  <div class="card">
+    <h2>Find a book <span class="hint">flies the camera there</span></h2>
+    <div class="row">
+      <div class="picker"><input id="q" type="text" placeholder="title or author, e.g. Kant, Murakami, Moby" autocomplete="off" spellcheck="false" aria-label="search"><ul id="q-list" role="listbox"></ul></div>
+    </div>
+    <div class="row" id="sel-row" style="display:none"><span class="chip" id="sel-chip"></span><button class="small" id="sel-clear" title="clear highlight">&times;</button></div>
+  </div>
+
+  <div class="card">
+    <h2>Time <span class="hint" id="t-hint"></span></h2>
+    <div class="row">
+      <input id="ts" type="range" min="-1000" max="1000" value="0" step="1" aria-label="time offset from now, cubic scale">
+    </div>
+    <div class="row">
+      <span class="ctl">
+        <button id="btn-back" class="small" title="step back (←)">&#9664;</button>
+        <button id="btn-play" class="small" title="play / pause (space)">pause</button>
+        <button id="btn-fwd" class="small" title="step forward (→)">&#9654;</button>
+      </span>
+      <select id="speed" aria-label="play speed">
+        <option value="rt">real time</option>
+        <option value="hour">1 hour / s</option>
+        <option value="day">1 day / s</option>
+        <option value="week">1 week / s</option>
+        <option value="month" selected>1 month / s</option>
+        <option value="year">1 year / s</option>
+        <option value="decade">10 years / s</option>
+        <option value="century">100 years / s</option>
+      </select>
+      <button id="btn-now" class="small" title="back to the live clock (N)">now</button>
+    </div>
+    <div class="row">
+      <span class="muted">view</span>
+      <span class="ctl">
+        <button class="small zoomto" data-r="6" title="this century and the last">inner</button>
+        <button class="small zoomto" data-r="17" title="out to the 1700s">1800s</button>
+        <button class="small zoomto" data-r="48" title="out to the Renaissance">1500s</button>
+        <button class="small zoomto" data-r="290" title="the classical world">ancients</button>
+        <button class="small zoomto" data-r="480" title="undated books drift here">Oort</button>
+      </span>
+    </div>
+    <div class="row muted" id="orbit-stat"></div>
+  </div>
+
+  <div class="card">
+    <h2>Conjunctions <span class="hint">as seen from the sun</span></h2>
+    <div class="row">
+      <div class="picker"><input id="pa" type="text" placeholder="first book or author" autocomplete="off" spellcheck="false" aria-label="first body"><ul id="pa-list" role="listbox"></ul></div>
+      <div class="picker"><input id="pb" type="text" placeholder="second" autocomplete="off" spellcheck="false" aria-label="second body"><ul id="pb-list" role="listbox"></ul></div>
+    </div>
+    <div class="row muted" id="pair-stat"></div>
+    <ul id="events"></ul>
+  </div>
+
+  <div class="card" id="pin-card" style="display:none">
+    <h2>Pinned <span class="hint">click a body to pin it</span></h2>
+    <ul id="pins"></ul>
+  </div>
+
+  <div class="card">
+    <h2>Genres <span class="hint">click to isolate</span></h2>
+    <div class="legend" id="legend"></div>
+  </div>
+
+  <div class="card about">
+    <p>Each book's orbital period grows with its age (T = 0.25 + 0.016 &middot; age<sup>1.5</sup> years) and its distance follows from Kepler's third law, so this year's books whizz round in months while Gilgamesh has not yet finished a single lap. An author with several books becomes a moon system on a shared orbit. Undated books drift in the Oort cloud. Phases are fixed at 2000.0, so everyone sees the same sky at the same moment.</p>
+    <p>Drag to pan, wheel or pinch to zoom, hover for a book, click to pin. <kbd>space</kbd> play, <kbd>&larr;</kbd> <kbd>&rarr;</kbd> step, <kbd>N</kbd> now. Data: Jack's library catalogue (assets/data/library.json). Nothing leaves your browser.</p>
+  </div>
+</aside>
+
+<div id="strip" aria-live="polite"><span class="lab">Tonight from the sun</span><span id="strip-body" class="sky-line">reading the sky&hellip;</span></div>
+<button id="btn-panels" class="small">controls</button>
+
+<div id="tip" role="tooltip"></div>
+<div id="fallback"><p id="fallback-msg"></p><p>The orrery needs the catalogue to have anything to orbit; the stars and the sun still render.</p></div>
+
+<script src="orrery.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
