@@ -133,31 +133,46 @@
     }
     return Pa(d + 'L' + x1 + ' ' + baseY + 'Z', { fill: c.L(col, depth) }) + (wins ? G(wins, F('#ffd98c', 0.9 - depth * 0.5)) + G(cool, F('#cfe6ff', 0.8 - depth * 0.5)) : '');
   }
-  // a soft mass of leaves or blossom: shadow, body and lit dabs, brushed by the paint filter
-  function foliage(c, tag, cx, cy, rx, ry, n, cols, depth, a) {
-    var r = c.rnd(tag), s = ['', '', ''];
-    for (var i = 0; i < n; i++) {
-      var ang = r() * 6.283, rad = Math.sqrt(r()), x = cx + Math.cos(ang) * rad * rx, y = cy + Math.sin(ang) * rad * ry, q = (0.16 + r() * 0.2) * Math.min(rx, ry) + 8;
-      s[0] += El(x + q * 0.2, y + q * 0.3, q * 1.1, q * 0.9);
-      s[1] += El(x, y, q, q * 0.82);
-      if (r() < 0.75) s[2] += El(x - q * 0.25, y - q * 0.3, q * 0.6, q * 0.45);
-    }
-    return G(G(s[0], { fill: c.L(cols[0], depth) }) + G(s[1], { fill: c.L(cols[1], depth) }) + G(s[2], F(c.L(cols[2], depth), 0.85)), K.merge({ filter: 'url(#vnf-paint)' }, a));
+  // an irregular lobed dab, the unit a canopy is built from
+  function clusterD(r, x, y, q) {
+    var k = 5 + Math.floor(r() * 3), a0 = r() * 6.283, pts = [], i, d;
+    for (i = 0; i < k; i++) { var an = a0 + i / k * 6.283, rad = q * (0.62 + r() * 0.6); pts.push([x + Math.cos(an) * rad, y + Math.sin(an) * rad * 0.82]); }
+    d = 'M' + Math.round((pts[k - 1][0] + pts[0][0]) / 2) + ' ' + Math.round((pts[k - 1][1] + pts[0][1]) / 2);
+    for (i = 0; i < k; i++) { var p = pts[i], nx = pts[(i + 1) % k]; d += 'Q' + Math.round(p[0]) + ' ' + Math.round(p[1]) + ' ' + Math.round((p[0] + nx[0]) / 2) + ' ' + Math.round((p[1] + nx[1]) / 2); }
+    return d + 'Z';
   }
-  var PINK = ['#d98aa6', '#f4b8cb', '#ffe3ec'], GREEN = ['#2f5d43', '#4f8a5a', '#9bc77c'], PINE = ['#1f3f35', '#2f5f4a', '#5d8f66'];
+  // a canopy of leaves or blossom: many varied clusters in four tones (underside, body, lit, sunlit) with loose
+  // dabs breaking the edge, brushed by the paint filter
+  function foliage(c, tag, cx, cy, rx, ry, n, cols, depth, a) {
+    var r = c.rnd(tag), s = ['', '', '', '', ''], m = Math.min(rx, ry), big = m > 60, N = Math.round(n * (big ? 1.7 : 1.1)), i;
+    for (i = 0; i < N; i++) {
+      var ang = r() * 6.283, rad = Math.pow(r(), 0.62), sy = Math.sin(ang), x = cx + Math.cos(ang) * rad * rx, y = cy + sy * rad * ry * (sy > 0 ? 0.72 : 1), q = (0.1 + r() * 0.15) * m + 5;
+      var up = (cy - y) / ry;   // 1 at the top of the canopy, negative underneath
+      s[0] += clusterD(r, x + q * 0.25, y + q * 0.45, q * 1.15);
+      s[1] += clusterD(r, x, y, q);
+      if (r() < 0.5 + up * 0.4) s[2] += clusterD(r, x - q * 0.3, y - q * 0.32, q * 0.62);
+      if (up > -0.1 && r() < 0.3) s[3] += clusterD(r, x - q * 0.45, y - q * 0.5, q * 0.32);
+    }
+    for (i = 0; i < (big ? n * 1.2 : n * 0.5); i++) {
+      var an2 = r() * 6.283, rd = 0.86 + r() * 0.34, px = cx + Math.cos(an2) * rd * rx, py = cy + Math.sin(an2) * rd * ry * (Math.sin(an2) > 0 ? 0.75 : 1), ps = 3 + r() * (big ? 9 : 4);
+      s[4] += '<ellipse cx="' + Math.round(px) + '" cy="' + Math.round(py) + '" rx="' + num(ps) + '" ry="' + num(ps * 0.6) + '" transform="rotate(' + Math.round(r() * 180) + ' ' + Math.round(px) + ' ' + Math.round(py) + ')"/>';
+    }
+    return G(Pa(s[0], { fill: c.L(cols[0], depth) }) + Pa(s[1], { fill: c.L(cols[1], depth) }) + G(s[4], F(c.L(cols[1], depth), 0.9)) + Pa(s[2], F(c.L(cols[2], depth), 0.9)) + (s[3] ? Pa(s[3], F(c.L(lt(cols[2], 0.55), depth * 0.6), 0.85)) : ''), K.merge({ filter: 'url(#vnf-paint)' }, a));
+  }
+  var PINK = ['#d77f9f', '#f6b4c9', '#ffdbe7'], PINK_DEEP = ['#a85f84', '#cf86a4', '#eaa9c0'], GREEN = ['#2f5d43', '#4f8a5a', '#9bc77c'], PINE = ['#1f3f35', '#2f5f4a', '#5d8f66'];
   function trunk(c, x, y, h, w, depth, tag) {
     var r = c.rnd(tag), col = c.L('#3d2a26', depth), top = y - h;
     var d = 'M' + num(x - w) + ' ' + y + 'C' + num(x - w * 0.5) + ' ' + num(y - h * 0.4) + ' ' + num(x - w * 0.9) + ' ' + num(y - h * 0.7) + ' ' + num(x - w * 0.2) + ' ' + num(top) +
       'L' + num(x + w * 0.3) + ' ' + num(top) + 'C' + num(x + w * 0.8) + ' ' + num(y - h * 0.6) + ' ' + num(x + w * 0.6) + ' ' + num(y - h * 0.3) + ' ' + num(x + w * 1.2) + ' ' + y + 'Z';
     var br = '';
-    for (var i = 0; i < 5; i++) {
-      var by = y - h * (0.55 + r() * 0.4), side = i % 2 ? 1 : -1, len = h * (0.35 + r() * 0.45);
+    for (var i = 0; i < 6; i++) {
+      var by = y - h * (0.62 + r() * 0.38), side = i % 2 ? 1 : -1, len = h * (0.3 + r() * 0.45);
       br += Pa('M' + num(x) + ' ' + num(by) + 'Q' + num(x + side * len * 0.5) + ' ' + num(by - len * 0.15) + ' ' + num(x + side * len) + ' ' + num(by - len * (0.3 + r() * 0.4)), S(col, w * (0.22 + r() * 0.2)));
     }
     return Pa(d, { fill: col }) + br;
   }
   function cherry(c, tag, x, y, s, depth) {
-    return trunk(c, x, y, 260 * s, 16 * s, depth, tag + 't') + foliage(c, tag, x, y - 300 * s, 230 * s, 140 * s, Math.round(26 + 14 * s), PINK, depth);
+    return trunk(c, x, y, 260 * s, 24 * s, depth, tag + 't') + (s < 0.6 ? '' : foliage(c, tag + 'b', x + 20 * s, y - 250 * s, 250 * s, 110 * s, Math.round(8 + 5 * s), PINK_DEEP, depth)) + foliage(c, tag, x, y - 310 * s, 250 * s, 150 * s, Math.round(22 + 12 * s), PINK, depth);
   }
   function tree(c, tag, x, y, s, depth, cols) {
     return trunk(c, x, y, 200 * s, 12 * s, depth, tag + 't') + foliage(c, tag, x, y - 250 * s, 160 * s, 130 * s, 22, cols || GREEN, depth);
@@ -168,7 +183,9 @@
       var x = r() * 1600, y = (y0 || 0) + r() * ((y1 || 900) - (y0 || 0)), s = 3 + r() * 7, a = r() * 360;
       o += El(x, y, s, s * 0.55, F(r() < 0.5 ? '#ffe3ec' : '#f7bfd0', 0.6 + r() * 0.4, { transform: 'rotate(' + Math.round(a) + ' ' + num(x) + ' ' + num(y) + ')' }));
     }
-    return G(o);
+    var near = '';
+    for (var j = 0; j < Math.max(3, n / 9); j++) { var nx = r() * 1600, ny = (y0 || 0) + r() * ((y1 || 900) - (y0 || 0)), ns = 12 + r() * 16; near += El(nx, ny, ns, ns * 0.5, F('#ffd3e0', 0.5 + r() * 0.3, { transform: 'rotate(' + Math.round(r() * 360) + ' ' + num(nx) + ' ' + num(ny) + ')' })); }
+    return G(o) + G(near, { filter: B(4) });
   }
 
   /* ------------------------------------------------------------ interiors */
@@ -199,13 +216,13 @@
     if (o.trees) view += foliage(c, 'wt' + x, x + w * 0.5, y + h * 1.02, w * 0.6, h * 0.34, 22, o.trees === 'pink' ? PINK : GREEN, 0.25);
     var out = R(x - fw - 6, y - fw - 6, w + 2 * fw + 12, h + 2 * fw + 12, F(c.L('#3a3f4c'), 0.25, { filter: B(8) })) +
       R(x - fw, y - fw, w + 2 * fw, h + 2 * fw, { fill: frame }) + G(view, { 'clip-path': cp });
-    out += R(x, y, w, h, { fill: c.grad([[0, '#ffffff', c.night ? 0.03 : 0.22], [1, '#ffffff', 0]], { x1: 0, y1: 0, x2: 1, y2: 1 }) });
+    out += R(x, y, w, h, { fill: c.grad([[0, '#ffffff', c.night ? 0.03 : 0.5], [0.6, '#ffffff', c.night ? 0 : 0.22], [1, '#ffffff', c.night ? 0 : 0.08]], { x1: 0, y1: 0, x2: 1, y2: 1 }) });
     for (i = 1; i < cols; i++) out += R(x + w * i / cols - fw * 0.3, y, fw * 0.6, h, { fill: frame });
     for (i = 1; i < rows; i++) out += R(x, y + h * i / rows - fw * 0.3, w, fw * 0.6, { fill: frame });
     if (o.sill !== false) out += R(x - fw - 14, y + h + fw - 2, w + 2 * fw + 28, 14, { fill: c.L(lt(o.frame || '#e8e4dc', 0.3)) }) + R(x - fw - 14, y + h + fw + 12, w + 2 * fw + 28, 6, F(c.L('#30323c'), 0.3));
     // light
-    var k = c.night ? 0.11 : c.warm ? 0.6 : 0.42;
-    c.post += R(x - 60, y - 60, w + 120, h + 120, F(P.key, k * 0.55, { filter: B(40) }));
+    var k = c.night ? 0.12 : c.warm ? 0.68 : 0.5;
+    c.post += R(x - 70, y - 70, w + 140, h + 140, F(P.key, k * 0.6, { filter: B(40) })) + (c.night ? '' : R(x, y, w, h, F('#ffffff', c.warm ? 0.16 : 0.3, { filter: B(16) })));
     if (o.shaft !== false) {
       var sx = o.sx == null ? -260 : o.sx, fy = o.fy || 900, sp = o.spread || 120;
       c.post += poly([[x, y], [x + w, y], [x + w + sx + sp, fy], [x + sx - sp, fy]], { fill: c.grad([[0, P.key, k * 0.5], [1, P.key, 0.02]]), filter: B(16) });
@@ -723,7 +740,8 @@
   }
 
   function finish(c, body, a, dim, vig) {
-    var out = body + c.post + vignette(c, vig == null ? 0.5 : vig) + (dim ? R(0, 0, 1600, 900, F('#0a0c18', 0.42)) : '');
+    var wash = G(El(260, 150, 760, 420, F(c.P.key, c.night ? 0.07 : 0.13)) + El(1380, 800, 760, 400, F(c.P.shadow, c.night ? 0.2 : 0.13)) + El(1250, 120, 520, 300, F(c.P.haze, 0.1)), { filter: 'url(#vnf-wash)' });
+    var out = body + c.post + wash + vignette(c, vig == null ? 0.5 : vig) + (dim ? R(0, 0, 1600, 900, F('#0a0c18', 0.42)) : '');
     return K.svg('0 0 1600 900', K.defs(c.d) + out, K.merge({ preserveAspectRatio: 'xMidYMid slice' }, a));
   }
 
@@ -778,13 +796,16 @@
     o += R(250, 250, 560, 340, { fill: '#0e121c', rx: 12 }) + R(266, 266, 528, 308, { fill: c.grad([[0, '#1b2c50'], [1, '#0d1730']], { x1: 0, y1: 0, x2: 1, y2: 1 }) }) + codeBars(c, 290, 290, 480, 270, 'dnm', { lh: 17 }) + R(500, 590, 60, 40, { fill: '#0e121c' }) + El(530, 636, 120, 12, { fill: '#0e121c' });
     c.post += R(150, 170, 760, 520, F('#6f9fff', 0.16, { filter: B(40) })) + El(530, 700, 520, 70, F('#6f9fff', 0.22, { filter: B(16) }));
     // lamp
-    o += Pa('M1010 640 L1010 560 L940 430', S('#2a2d38', 10)) + poly([[870, 380], [960, 420], [930, 470], [850, 440]], { fill: '#ffe7bd' }) + poly([[866, 372], [968, 418], [960, 432], [860, 388]], { fill: '#3a3d48' }) + El(1010, 642, 60, 10, { fill: '#2a2d38' });
-    c.post += poly([[850, 440], [930, 470], [1120, 660], [560, 660]], { fill: c.grad([[0, '#ffd59a', 0.5], [1, '#ffd59a', 0.05]]), filter: B(16) }) + El(840, 670, 330, 60, F('#ffd59a', 0.4, { filter: B(16) }));
+    o += El(1030, 642, 64, 11, { fill: '#2a2d38' }) + Pa('M1030 640L1056 500L940 396', S('#343846', 9)) + Ci(1056, 500, 9, { fill: '#4a4f60' }) + poly([[884, 352], [972, 396], [950, 474], [834, 428]], { fill: c.grad([[0, '#4a4f60'], [1, '#2a2d38']], { x1: 0, y1: 0, x2: 1, y2: 1 }) }) + El(892, 452, 60, 15, { fill: '#fff0cf', transform: 'rotate(21 892 452)' }) + El(892, 452, 90, 40, F('#ffdca0', 0.5, { filter: B(8), transform: 'rotate(21 892 452)' })) +
+      // a stack of books at the edge of the light
+      R(1130, 606, 150, 20, { fill: '#6d3f46', rx: 3 }) + R(1140, 588, 130, 18, { fill: '#3f5a7a', rx: 3 }) + R(1136, 572, 120, 16, { fill: '#b9a274', rx: 3 }) + R(1130, 624, 150, 4, F('#000000', 0.35));
+    c.post += poly([[980, 640], [1480, 640], [1600, 900], [1100, 900]], { fill: c.grad([[0, '#9cb3ff', 0.12], [1, '#9cb3ff', 0]]), filter: B(8) });
+    c.post += poly([[834, 428], [950, 474], [1120, 660], [560, 660]], { fill: c.grad([[0, '#ffd59a', 0.5], [1, '#ffd59a', 0.05]]), filter: B(16) }) + El(840, 670, 330, 60, F('#ffd59a', 0.4, { filter: B(16) }));
     // papers, mug, keyboard
     o += G(R(0, 0, 250, 160, { fill: '#e9e1cf' }) + Pa('M24 34 h190 M24 62 h160 M24 90 h200 M24 118 h120', S('#5a6480', 5, 0.6)), { transform: 'translate(900 690) rotate(-10) skewX(-20)' });
     o += G(R(0, 0, 250, 160, { fill: '#f4eedf' }) + Pa('M24 34 h170 M24 62 h200 M24 90 h130', S('#5a6480', 5, 0.6)), { transform: 'translate(1000 720) rotate(6) skewX(-20)' });
     o += R(360, 672, 380, 26, { fill: '#1c1f28', rx: 6 }) + R(372, 678, 356, 8, F('#6f9fff', 0.25, { rx: 3 }));
-    o += R(1280, 590, 70, 70, { fill: '#d9d2c2', rx: 8 }) + El(1315, 592, 35, 9, { fill: '#3d2a20' }) + Pa('M1306 574 q-12 -18 0 -34 q12 -16 0 -32', S('#ffffff', 5, 0.2, { filter: B(4) }));
+    o += R(1330, 590, 70, 70, { fill: '#d9d2c2', rx: 8 }) + El(1365, 592, 35, 9, { fill: '#3d2a20' }) + Pa('M1356 574 q-12 -18 0 -34 q12 -16 0 -32', S('#ffffff', 5, 0.2, { filter: B(4) }));
     return o;
   };
 
@@ -839,12 +860,22 @@
     o += kb + poly([[250, 420], [1350, 420], [1500, 800], [100, 800]], { fill: c.grad([[0, '#6f9fff', 0.3], [1, '#6f9fff', 0]]) });
     // two hands, lit from the screen
     function hand(mx, flip) {
-      var s = flip ? -1 : 1, skin = '#c9a08a', dkS = '#7a5a58', out = '';
-      var fingers = [[-120, 560, 26, -14], [-62, 520, 28, -6], [0, 506, 30, 0], [60, 524, 28, 6], [130, 640, 34, 40]];
-      out += Pa('M' + (mx - 150 * s) + ' 900 C' + (mx - 170 * s) + ' 780 ' + (mx - 150 * s) + ' 700 ' + (mx - 110 * s) + ' 660 L' + (mx + 90 * s) + ' 650 C' + (mx + 150 * s) + ' 720 ' + (mx + 170 * s) + ' 800 ' + (mx + 190 * s) + ' 900 Z', { fill: c.vg(skin, dkS) });
-      fingers.forEach(function (f) {
-        out += G(R(-f[2] / 2, 0, f[2], 190, { fill: c.vg(lt(skin, 0.12), skin), rx: f[2] / 2 }) + R(-f[2] / 2 + 3, 4, f[2] * 0.4, 30, F('#cfe0ff', 0.5, { rx: 6 })), { transform: 'translate(' + (mx + f[0] * s) + ' ' + f[1] + ') rotate(' + (f[3] * s) + ')' });
+      // the back of a hand resting on the keys: a palm, four curved fingers and a thumb, lit cold from the screen
+      var s = flip ? -1 : 1, skin = '#d6ae9c', dkS = '#6b4f60', out = '', hl = '', nails = '';
+      function X(x) { return num(mx + s * x); }
+      out += Pa('M' + X(-150) + ' 900C' + X(-150) + ' 800 ' + X(-128) + ' 708 ' + X(-96) + ' 646C' + X(-40) + ' 622 ' + X(40) + ' 624 ' + X(90) + ' 656C' + X(118) + ' 720 ' + X(128) + ' 800 ' + X(140) + ' 900Z', { fill: c.vg(skin, dkS) });
+      [[-72, 654, -96, 590, -94, 524, 34], [-24, 640, -34, 566, -36, 498, 36], [24, 644, 28, 574, 28, 508, 34], [66, 662, 82, 606, 86, 552, 29]].forEach(function (f) {
+        var d = 'M' + X(f[0]) + ' ' + f[1] + 'Q' + X(f[2]) + ' ' + f[3] + ' ' + X(f[4]) + ' ' + f[5];
+        out += Pa(d, S(dkS, f[6] + 3)) + Pa(d, S(skin, f[6]));
+        hl += 'M' + X(f[0] - 7) + ' ' + (f[1] - 10) + 'Q' + X(f[2] - 7) + ' ' + f[3] + ' ' + X(f[4] - 6) + ' ' + (f[5] + 6);
+        nails += El(mx + s * f[4], f[5] + 2, f[6] * 0.3, f[6] * 0.36, {});
+        out += Pa('M' + X(f[2] - f[6] * 0.34) + ' ' + (f[3] + 4) + 'q' + num(s * f[6] * 0.34) + ' 6 ' + num(s * f[6] * 0.68) + ' 0', S(dkS, 2, 0.45));
       });
+      var th = 'M' + X(-104) + ' 730Q' + X(-150) + ' 700 ' + X(-178) + ' 642';
+      out += Pa(th, S(dkS, 43)) + Pa(th, S(skin, 40)) + G(nails, F('#f3d9d2', 0.75)) + Pa(hl, S('#cfe0ff', 8, 0.4));
+      out += Pa('M' + X(-96) + ' 646C' + X(-40) + ' 622 ' + X(40) + ' 624 ' + X(90) + ' 656', S('#cfe0ff', 3, 0.3));
+      // the cuff of a sleeve
+      out += Pa('M' + X(-176) + ' 900L' + X(-158) + ' 800Q' + X(-10) + ' 770 ' + X(142) + ' 806L' + X(164) + ' 900Z', { fill: c.vg('#3b4a78', '#1d2644') }) + Pa('M' + X(-158) + ' 800Q' + X(-10) + ' 770 ' + X(142) + ' 806', S('#8fa6e8', 4, 0.6));
       return out;
     }
     o += El(520, 800, 260, 60, F('#000000', 0.4, { filter: B(16) })) + El(1080, 800, 260, 60, F('#000000', 0.4, { filter: B(16) }));

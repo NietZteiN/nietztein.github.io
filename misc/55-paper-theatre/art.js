@@ -257,15 +257,17 @@
     function rim(suffix, col, m) {
       return '<filter id="vnf-rim' + suffix + '" x="-12%" y="-6%" width="124%" height="112%" color-interpolation-filters="sRGB">' +
         (m ? '<feColorMatrix in="SourceGraphic" type="matrix" values="' + m[0] + ' 0 0 0 0  0 ' + m[1] + ' 0 0 0  0 0 ' + m[2] + ' 0 0  0 0 0 1 0" result="fig"/>' : '') +
-        '<feGaussianBlur in="SourceAlpha" stdDeviation="12" result="sb"/><feOffset in="sb" dx="10" dy="8" result="so"/><feFlood flood-color="#080a18" flood-opacity="0.38"/><feComposite in2="so" operator="in" result="shadow"/>' +
-        '<feOffset in="SourceAlpha" dx="-3" dy="-2" result="ro"/><feFlood flood-color="' + col + '" flood-opacity="0.85"/><feComposite in2="ro" operator="in" result="rim"/>' +
-        '<feMerge><feMergeNode in="shadow"/><feMergeNode in="rim"/><feMergeNode in="' + (m ? 'fig' : 'SourceGraphic') + '"/></feMerge></filter>';
+        '<feGaussianBlur in="SourceAlpha" stdDeviation="14" result="sb"/><feOffset in="sb" dx="8" dy="10" result="so"/><feFlood flood-color="#080a18" flood-opacity="0.26"/><feComposite in2="so" operator="in" result="shadow"/>' +
+        // the rim sits inside the silhouette, on the edge that faces the light
+        '<feOffset in="SourceAlpha" dx="3.2" dy="2" result="ro"/><feComposite in="SourceAlpha" in2="ro" operator="out" result="edge"/><feFlood flood-color="' + col + '" flood-opacity="' + (m ? 0.7 : 0.42) + '"/><feComposite in2="edge" operator="in" result="rim"/>' +
+        '<feMerge><feMergeNode in="shadow"/><feMergeNode in="' + (m ? 'fig' : 'SourceGraphic') + '"/><feMergeNode in="rim"/></feMerge></filter>';
     }
     return '<svg class="vn-defs" width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute;width:0;height:0;overflow:hidden"><defs>' +
       blur(2, 20) + blur(4, 25) + blur(8, 40) + blur(16, 60) + blur(30, 100) + blur(40, 100) +
       '<filter id="vnf-glow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>' +
       '<filter id="vnf-paint" x="-10%" y="-10%" width="120%" height="120%"><feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="3" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="16" xChannelSelector="R" yChannelSelector="G"/></filter>' +
       '<filter id="vnf-cloud" x="-10%" y="-20%" width="120%" height="140%"><feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="3" seed="7" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="46" xChannelSelector="R" yChannelSelector="G" result="d"/><feGaussianBlur in="d" stdDeviation="5"/></filter>' +
+      '<filter id="vnf-wash" x="-20%" y="-20%" width="140%" height="140%"><feTurbulence type="fractalNoise" baseFrequency="0.006" numOctaves="2" seed="11" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="120" xChannelSelector="R" yChannelSelector="G" result="d"/><feGaussianBlur in="d" stdDeviation="26"/></filter>' +
       rim('', '#fff3d8', null) + rim('-dusk', '#ffbe78', [1.0, 0.86, 0.78]) + rim('-dawn', '#ffd9cc', [0.98, 0.92, 0.95]) + rim('-night', '#a8bfff', [0.74, 0.79, 0.98]) +
       '</defs></svg>';
   }

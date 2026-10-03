@@ -953,3 +953,47 @@ body.thumb.playing #stage { width: 100vw; height: 100vh; aspect-ratio: auto; }
 #stage .vn-end.show { animation: none; }
 #stage .vn-end.show ~ .vn-quick, #stage:has(.vn-end.show) .vn-quick { display: none; }
 :root[data-theme="dark"] { --vn-nvl-a: 0.6; }
+
+/* ---------- Refinements: a literary cherry-blossom VN look -------------- */
+
+:root { --vn-bloom: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%27-34%20-34%2068%2068%27%3E%3Cg%20fill%3D%27%23f2a7bd%27%3E%3Cpath%20transform%3D%27rotate(0)%27%20d%3D%27M0%200C-9%20-9%20-9%20-23%20-2.5%20-30L0%20-26L2.5%20-30C9%20-23%209%20-9%200%200Z%27%2F%3E%3Cpath%20transform%3D%27rotate(72)%27%20d%3D%27M0%200C-9%20-9%20-9%20-23%20-2.5%20-30L0%20-26L2.5%20-30C9%20-23%209%20-9%200%200Z%27%2F%3E%3Cpath%20transform%3D%27rotate(144)%27%20d%3D%27M0%200C-9%20-9%20-9%20-23%20-2.5%20-30L0%20-26L2.5%20-30C9%20-23%209%20-9%200%200Z%27%2F%3E%3Cpath%20transform%3D%27rotate(216)%27%20d%3D%27M0%200C-9%20-9%20-9%20-23%20-2.5%20-30L0%20-26L2.5%20-30C9%20-23%209%20-9%200%200Z%27%2F%3E%3Cpath%20transform%3D%27rotate(288)%27%20d%3D%27M0%200C-9%20-9%20-9%20-23%20-2.5%20-30L0%20-26L2.5%20-30C9%20-23%209%20-9%200%200Z%27%2F%3E%3C%2Fg%3E%3Ccircle%20r%3D%274%27%20fill%3D%27%23fff%27%20opacity%3D%27.7%27%2F%3E%3Cg%20stroke%3D%27%23f2a7bd%27%20stroke-width%3D%271%27%20opacity%3D%27.8%27%3E%3Cpath%20d%3D%27M0%200L0%20-10M0%200L9.5%20-3M0%200L6%208M0%200L-6%208M0%200L-9.5%20-3%27%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E"); --vn-bloom-pale: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%27-34%20-34%2068%2068%27%3E%3Cg%20fill%3D%27%23ffd9e4%27%3E%3Cpath%20transform%3D%27rotate(0)%27%20d%3D%27M0%200C-9%20-9%20-9%20-23%20-2.5%20-30L0%20-26L2.5%20-30C9%20-23%209%20-9%200%200Z%27%2F%3E%3Cpath%20transform%3D%27rotate(72)%27%20d%3D%27M0%200C-9%20-9%20-9%20-23%20-2.5%20-30L0%20-26L2.5%20-30C9%20-23%209%20-9%200%200Z%27%2F%3E%3Cpath%20transform%3D%27rotate(144)%27%20d%3D%27M0%200C-9%20-9%20-9%20-23%20-2.5%20-30L0%20-26L2.5%20-30C9%20-23%209%20-9%200%200Z%27%2F%3E%3Cpath%20transform%3D%27rotate(216)%27%20d%3D%27M0%200C-9%20-9%20-9%20-23%20-2.5%20-30L0%20-26L2.5%20-30C9%20-23%209%20-9%200%200Z%27%2F%3E%3Cpath%20transform%3D%27rotate(288)%27%20d%3D%27M0%200C-9%20-9%20-9%20-23%20-2.5%20-30L0%20-26L2.5%20-30C9%20-23%209%20-9%200%200Z%27%2F%3E%3C%2Fg%3E%3Ccircle%20r%3D%274%27%20fill%3D%27%23fff%27%20opacity%3D%27.7%27%2F%3E%3Cg%20stroke%3D%27%23ffd9e4%27%20stroke-width%3D%271%27%20opacity%3D%27.8%27%3E%3Cpath%20d%3D%27M0%200L0%20-10M0%200L9.5%20-3M0%200L6%208M0%200L-6%208M0%200L-9.5%20-3%27%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E"); --vn-brush: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%20400%2024%27%20preserveAspectRatio%3D%27none%27%3E%3Cpath%20fill%3D%27%23e3c98a%27%20d%3D%27M2%2013C40%207%2090%209%20150%208C230%206%20300%209%20396%2012C398%2013%20396%2015%20390%2015C310%2014%20240%2017%20160%2016C100%2016%2050%2018%208%2017C2%2017%200%2014%202%2013Z%27%2F%3E%3Cpath%20fill%3D%27%23e3c98a%27%20opacity%3D%27.55%27%20d%3D%27M30%2019C80%2018%20130%2020%20190%2019C150%2022%2080%2022%2030%2019ZM250%206C290%205%20330%206%20370%208C330%208%20290%208%20250%206Z%27%2F%3E%3C%2Fsvg%3E"); }
+/* the window: wide glass, a hairline double frame, a faint blossom in the corner, comfortable leading */
+#stage .vn-box { left: 5.5%; right: 5.5%; line-height: 1.62; border-radius: 2px; letter-spacing: 0.012em; }
+#stage .vn-box::before { inset: 4px; opacity: 0.5; }
+#stage .vn-box::after {
+  content: ""; position: absolute; right: 0.5em; top: 0.35em; width: 5.2em; height: 5.2em; pointer-events: none; opacity: 0.2;
+  background: var(--vn-bloom) 62% 38% / 3.3em no-repeat, var(--vn-bloom) 10% 86% / 1.5em no-repeat, var(--vn-bloom) 96% 96% / 1em no-repeat;
+  transform: rotate(14deg);
+}
+.vn-box .vn-name {
+  padding-left: 2.5em; letter-spacing: 0.2em; border-radius: 2px 2px 0 0;
+  background-image: var(--vn-bloom); background-repeat: no-repeat; background-position: 0.9em 48%; background-size: 1em;
+  border-bottom: 1px solid hsl(var(--who-h, 210) 55% 62%);
+}
+.vn-text > span { animation: vn-textin 0.5s ease both; }
+@keyframes vn-textin { from { opacity: 0; filter: blur(1.5px); } to { opacity: 1; filter: none; } }
+body.fx-off .vn-text > span, :root[data-reduced-motion="1"] .vn-text > span { animation: none; }
+@media (prefers-reduced-motion: reduce) { .vn-text > span { animation: none; } }
+/* quick menu: small capitals in the title face */
+.vn-quick button { font-family: var(--font-title); font-weight: 600; text-transform: lowercase; font-variant-caps: small-caps; letter-spacing: 0.22em; font-size: clamp(10px, 1.08cqw, 15px); }
+#stage .vn-quick { right: 6.5%; }
+/* title: a slim vertical subtitle and a blossom by the rule */
+.ts-vert {
+  position: absolute; right: 7%; top: 12%; margin: 0; writing-mode: vertical-rl; text-orientation: upright;
+  font: 500 clamp(14px, 1.9cqw, 29px)/1.5 var(--font-title); letter-spacing: 0.5em; color: #fbeef0; text-shadow: 0 1px 14px rgba(0, 0, 0, 0.7);
+  padding-right: 0.9em; border-right: 1px solid rgba(255, 220, 230, 0.55);
+}
+.ts-vert span { display: block; font-size: 0.5em; letter-spacing: 0.42em; color: #f1cdd6; margin-top: 1.2em; padding-top: 0; }
+.ts-rule { position: relative; width: 8em; }
+.ts-rule::after { content: ""; position: absolute; left: 8.6em; top: -0.55em; width: 1.1em; height: 1.1em; background: var(--vn-bloom) center / contain no-repeat; opacity: 0.9; }
+.ts-menu button { letter-spacing: 0.24em; }
+/* chapter card: a brush stroke for a rule, blossoms scattered behind */
+.vn-scene.chapter { background: #05060c radial-gradient(90% 70% at 50% 50%, #1b1a34, #05060c 80%); }
+.vn-scene.chapter::before {
+  content: ""; position: absolute; inset: 0; opacity: 0.13; pointer-events: none;
+  background: var(--vn-bloom-pale) 12% 22% / 7% no-repeat, var(--vn-bloom-pale) 84% 16% / 4% no-repeat, var(--vn-bloom-pale) 90% 74% / 9% no-repeat, var(--vn-bloom-pale) 22% 82% / 3.5% no-repeat, var(--vn-bloom-pale) 68% 88% / 2.5% no-repeat;
+}
+.vn-scene .vn-title .rule.brush { height: 0.34em; background: var(--vn-brush) center / 100% 100% no-repeat; }
+.vn-scene.in .vn-title .rule.brush { width: 8em; }
+.vn-scene .vn-title .bloom { display: block; width: 0.7em; height: 0.7em; margin: 0.7em auto 0; background: var(--vn-bloom) center / contain no-repeat; opacity: 0.85; }
+@media (max-width: 720px) { .ts-vert { display: none; } }

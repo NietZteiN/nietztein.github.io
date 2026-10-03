@@ -211,7 +211,8 @@
     var decl = {
       id: toks[0], key: toks[0].toLowerCase(), name: toks[0],
       hue: fnv1a(toks[0].toLowerCase()) % 360, skin: 1 + fnv1a('skin:' + toks[0].toLowerCase()) % 5,
-      hair: 'short', clothes: null, glasses: false, hat: false, lattice: null, player: false, page: false, coauthor: false, line: line
+      hair: 'short', clothes: null, glasses: false, hat: false, lattice: null, player: false, page: false, coauthor: false,
+      build: null, hairhue: null, line: line
     };
     var unknown = [];
     for (var i = 1; i < toks.length; i++) {
@@ -221,12 +222,14 @@
         if (k === 'name') decl.name = v;
         else if (k === 'hue') decl.hue = ((parseInt(v, 10) || 0) % 360 + 360) % 360;
         else if (k === 'skin') decl.skin = Math.min(5, Math.max(1, parseInt(v, 10) || 1));
+        else if (k === 'hairhue') decl.hairhue = ((parseInt(v, 10) || 0) % 360 + 360) % 360;
         else if (k === 'lattice') decl.lattice = v === 'dense' ? 'dense' : 'sparse';
         else unknown.push(t);
       } else if (HAIR.indexOf(t) >= 0) decl.hair = t;
       else if (CLOTHES.indexOf(t) >= 0) decl.clothes = t;
       else if (t === 'glasses') decl.glasses = true;
       else if (t === 'hat') decl.hat = true;
+      else if (t === 'fem' || t === 'masc') decl.build = t;
       else if (t === 'player') decl.player = true;
       else if (t === 'page') decl.page = true;
       else if (t === 'coauthor') decl.coauthor = true;
@@ -292,7 +295,7 @@
       if ((m = /^@cast\s+(.+)$/.exec(t))) {
         var decl = parseCastDecl(m[1], ln);
         if (!decl) { issues.push(issue('warn', ln, 'empty @cast', 'write @cast Name [hue=N] [glasses] ...', 'cast-malformed')); continue; }
-        if (decl.unknown.length) issues.push(issue('warn', ln, "unknown @cast trait" + (decl.unknown.length > 1 ? 's' : '') + " '" + decl.unknown.join("', '") + "'", 'traits: name="..." hue=N skin=1-5 ' + HAIR.join('|') + ' ' + CLOTHES.join('|') + ' glasses hat lattice=sparse|dense player page coauthor', 'cast-trait-unknown'));
+        if (decl.unknown.length) issues.push(issue('warn', ln, "unknown @cast trait" + (decl.unknown.length > 1 ? 's' : '') + " '" + decl.unknown.join("', '") + "'", 'traits: name="..." hue=N hairhue=N skin=1-5 ' + HAIR.join('|') + ' ' + CLOTHES.join('|') + ' fem masc glasses hat lattice=sparse|dense player page coauthor', 'cast-trait-unknown'));
         delete decl.unknown;
         cast[decl.key] = decl;
       } else if ((m = /^@include\s+(\S+)/.exec(t))) {

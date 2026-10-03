@@ -696,13 +696,14 @@
     clearStage();
     var first = null;
     for (var i = 0; i < p.ops.length; i++) if (p.ops[i].kind === 'bg') { first = p.ops[i]; break; }
-    var fx = {}; fx[TITLE_FX[first ? first.name : ''] || 'dust'] = true;
+    var fx = {}; fx[TITLE_FX[first ? first.name : ''] || 'dust'] = true; fx.petals = true;   // petals always drift across a title
     syncWorld({ bg: first ? { name: first.name, mod: first.mod } : { name: 'void', mod: null }, cg: null, slots: {}, faces: {}, dist: {}, fx: fx, tone: 'none', flashback: null, oneshot: [], change: null }, null, true);
     var saved = autosave(), canContinue = !!(saved && saved.choiceLog && saved.stopIndex > 1);
     seenList();
     var chapters = p.chapters || [], seenCh = chapters.filter(function (c) { return S.seenAll[c.index] || e.src; });
     var h = '<div class="ts-inner"><p class="ts-kicker">Paper Theatre &nbsp;·&nbsp; 紙芝居</p><h2 class="ts-title">' + esc(m.title || e.title || '') + '</h2><div class="ts-rule"></div>' +
       '<p class="ts-sub">' + esc(shortCite(m, e)) + (m.authors ? '<br>' + esc(m.authors.replace(/\s*\(co-first\)/, '')) : '') + '</p></div>';
+    h += '<p class="ts-vert" aria-hidden="true" lang="ja">紙芝居<span>論文と随想のための小さな劇場</span></p>';
     h += '<ul class="ts-menu" role="menu" aria-label="title menu">' +
       '<li><button type="button" data-t="start">Start</button></li>' +
       (canContinue ? '<li><button type="button" data-t="continue">Continue</button></li>' : '') +
@@ -1143,7 +1144,7 @@
     box.classList.remove('show'); nvlEl.classList.remove('show');
     var chapter = op.kind === 'chapter';
     sceneEl.innerHTML = chapter
-      ? '<div class="vn-title"><small>Chapter</small><span class="num">' + esc(op.n) + '</span><span class="rule"></span>' + esc(op.title) + '</div>'
+      ? '<div class="vn-title"><small>Chapter</small><span class="num">' + esc(op.n) + '</span><span class="rule brush"></span>' + esc(op.title) + '<span class="bloom" aria-hidden="true"></span></div>'
       : '<div class="vn-title">' + esc(op.title) + '<span class="rule"></span></div>';
     sceneEl.className = 'vn-scene show ' + (chapter ? 'chapter' : 'scene');
     if (instant) sceneEl.classList.add('in');
@@ -1771,12 +1772,12 @@
       var base = { glasses: false, hat: false, lattice: null, player: false, page: false, coauthor: false, skin: 3, hair: 'short' };
       [
         { id: 'Jack', hue: 210, glasses: true, hair: 'short', clothes: 'coat' },
-        { id: 'Long', hue: 28, hair: 'long', skin: 2, clothes: 'cardigan' },
-        { id: 'Bob', hue: 330, hair: 'bob', skin: 1, clothes: 'uniform' },
-        { id: 'Ponytail', hue: 140, hair: 'ponytail', skin: 3, clothes: 'hoodie' },
+        { id: 'Long', hue: 28, hair: 'long', skin: 2, clothes: 'cardigan', build: 'fem', hairhue: 340 },
+        { id: 'Bob', hue: 330, hair: 'bob', skin: 1, clothes: 'uniform', build: 'fem' },
+        { id: 'Ponytail', hue: 140, hair: 'ponytail', skin: 3, clothes: 'hoodie', build: 'fem', hairhue: 30 },
         { id: 'Bun', hue: 120, hair: 'bun', skin: 4, clothes: 'shirt' },
         { id: 'Curly', hue: 10, hair: 'curly', skin: 5, clothes: 'cardigan' },
-        { id: 'None', hue: 250, hair: 'none', skin: 1, clothes: 'coat' },
+        { id: 'None', hue: 250, hair: 'none', skin: 1, clothes: 'coat', build: 'masc' },
         { id: 'Hood', hue: 230, hair: 'hood', clothes: 'hoodie' },
         { id: 'Hat', hue: 40, hair: 'short', hat: true, glasses: true, clothes: 'shirt' },
         { id: 'Model', hue: 192, lattice: 'sparse' },
@@ -1789,7 +1790,7 @@
     frame.style.display = 'none';
     var grid = document.createElement('div'); grid.className = 'vn-castgrid' + (params.get('mod') === 'night' ? ' night' : '');
     grid.innerHTML = decls.map(function (d) {
-      return '<h2>' + esc(d.name || d.id) + ' <small>(' + esc([d.hair, d.clothes, d.glasses ? 'glasses' : '', d.hat ? 'hat' : '', d.lattice ? 'lattice=' + d.lattice : '', d.player ? 'player' : '', d.page ? 'page' : '', 'hue=' + d.hue, 'skin=' + d.skin].filter(Boolean).join(' ')) + ')</small></h2><div class="row">' +
+      return '<h2>' + esc(d.name || d.id) + ' <small>(' + esc([d.hair, d.clothes, d.glasses ? 'glasses' : '', d.hat ? 'hat' : '', d.build || '', d.hairhue != null ? 'hairhue=' + d.hairhue : '', d.lattice ? 'lattice=' + d.lattice : '', d.player ? 'player' : '', d.page ? 'page' : '', 'hue=' + d.hue, 'skin=' + d.skin].filter(Boolean).join(' ')) + ')</small></h2><div class="row">' +
         faces.map(function (f) { return '<div class="cell">' + artSprite(d, f) + '<small>' + esc(f) + '</small></div>'; }).join('') + '</div>';
     }).join('');
     $('main').insertBefore(grid, frame);

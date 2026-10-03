@@ -143,10 +143,17 @@ Options, all optional and in any order after the name:
 
 - `name="Display Name"`: what the name tag shows; the bare name is what you type before the colon.
 - `hue=N` (0-359): body colour. `skin=1-5`: a five-step neutral ramp (default hashed from the name).
-- Hair: `short`, `long`, `bob`, `ponytail`, `bun`, `curly`, `none`, `hood`. Accessories: `glasses`, `hat`.
+- Hair: `short`, `long`, `bob`, `ponytail`, `bun`, `curly`, `none`, `hood`. Accessories: `glasses`, `hat` (a beret).
+- `hairhue=N` (0-359): hair colour. Without it the hair is one of a few natural dark tones, always the same one for
+  a given name. Brows and lashes follow the hair.
+- `fem` or `masc`: the figure. `fem` is slimmer with a waist, larger eyes, a skirt and a ribbon; `masc` is broader
+  with narrower eyes, heavier brows, trousers and a tie. Without either the figure is neutral (and, as before, wears
+  a skirt only with `cardigan` or `uniform` and `long` / `bob` / `ponytail` / `bun` hair).
 - Clothes: `coat` (a lab coat over shirt and tie), `hoodie`, `cardigan`, `shirt`, `uniform` (blazer and tie). When
   omitted, one of shirt / coat / cardigan / hoodie is picked from the name, always the same one. `hue=N` colours the
-  hoodie, cardigan, tie or shirt.
+  hoodie, cardigan, tie or shirt, and the eyes. Each outfit has its own way of standing: hands in the coat or
+  hoodie pockets, clasped in long cardigan sleeves, a sketchbook held to the uniform, behind the back or in a
+  trouser pocket with a shirt.
 - `lattice=sparse` or `lattice=dense`: the model character, a figure of light: a luminous body in the cast hue with
   nodes and filaments inside it and long strands of light for hair. `sparse` has fewer nodes with some long-range arcs
   (the reasoning-tuned regime), `dense` a regular lattice with short edges (coder- and instruction-tuned). Name it
@@ -156,7 +163,7 @@ Options, all optional and in any order after the name:
 - `coauthor`: opts a real coauthor in as a speaker; every line they say must then end with `^§x` or `^para` (see *Accuracy rules*).
 
 Faces: `neutral`, `smile`, `puzzled`, `worried`, `surprised`, `thinking`, `deadpan`, `laugh`. Write them as `Jack (smile): ...` or `@show Jack left (thinking)`. The speaker is lit and the others dim. Sprites are
-tall knee-up figures drawn in code; there are no poses and no images.
+thigh-up standing figures drawn in code (about 6.7 heads tall, turned a little to one side); there are no images.
 
 ## Backgrounds
 

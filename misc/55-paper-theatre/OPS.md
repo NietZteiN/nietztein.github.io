@@ -62,6 +62,8 @@ CastDecl = {
   hair: 'short'|'long'|'bob'|'ponytail'|'bun'|'curly'|'none'|'hood',
   clothes: 'coat'|'hoodie'|'cardigan'|'shirt'|'uniform'|null,   // null = the art picks one from the name
   glasses: bool, hat: bool,
+  build: 'fem'|'masc'|null,             // null = the neutral figure
+  hairhue: number|null,                 // 0-359; null = a natural dark tone hashed from the name
   lattice: null|'sparse'|'dense',
   player: bool, page: bool, coauthor: bool,
   line: number
@@ -261,3 +263,9 @@ Test hooks (URL): `autoplay=N|end` (instant, no autosave), `pick=K` (option K at
 Art entry points (art.js, with art-scenes.js and art-cast.js loaded first): `VNArt.background(name, mod)`,
 `VNArt.cg(name)`, `VNArt.sprite(castDecl, face)`, `VNArt.fx(name)`, `VNArt.timeOf(name, mod)` -> `day|dusk|dawn|night`,
 `VNArt.sharedDefs()` (the one hidden `<svg>` of filters every scene and sprite refers to; inject once per page).
+
+Sprites (art-cast.js): `VNArt.sprite` reads `build` (or the flags `fem` / `masc`) and `hairhue` from the cast
+declaration; `normCast` returns `build: 'fem'|'masc'|'neutral'` and the hair palette (`hairCol`, `hairDark`,
+`hairLight`, `hairTip`, `hairLine`). A person sprite is `<svg class="vn-sprite" data-kind="person" data-build data-hair
+data-clothes>` with one top-level `<g filter="url(#vnf-rim)">` (the stage swaps the filter for the hour: an inner rim
+light on the edge that faces the light, a soft contact shadow, the hour's tint) and eight `<g data-face>` groups.
