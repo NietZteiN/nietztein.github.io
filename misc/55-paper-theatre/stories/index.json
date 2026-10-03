@@ -4,17 +4,17 @@
     "file": "obfuscation-src.vn",
     "title": "Two Minutes at the Poster",
     "kind": "paper",
-    "status": "draft",
+    "status": "published",
     "source": "paper:Obfuscation as a Probe of Human and Machine Code Comprehension",
     "pub": "Obfuscation as a Probe of Human and Machine Code Comprehension",
     "links": [
       "../../assets/documents/publications/2026SPLASH-SRC.pdf",
       "https://doi.org/10.1145/3837729.3839573"
     ],
-    "authors": "Jack V. Le",
-    "blurb": "One easel, one printout, a hall full of both. The poster session.",
+    "authors": "J. V. Le",
+    "blurb": "There is a kind of writing that is mostly subtraction.",
     "verify": true,
-    "chips": 16
+    "chips": 38
   },
   {
     "id": "paired-training",
@@ -105,7 +105,7 @@
     "file": "human-obfuscation.vn",
     "title": "Seventy-Five Minutes",
     "kind": "paper",
-    "status": "draft",
+    "status": "published",
     "source": "paper:The Effect of Code Obfuscation on Human Program Comprehension",
     "pub": "The Effect of Code Obfuscation on Human Program Comprehension",
     "arxiv": "2603.07668",
@@ -113,10 +113,10 @@
       "https://arxiv.org/abs/2603.07668",
       "../../assets/documents/publications/2026SPLASH-SRC.pdf"
     ],
-    "authors": "Anh H. N. Nguyen† and Jack V. Le† (co-first), Ilse Lahnstein Coronado, Tien N. Nguyen",
-    "blurb": "Welcome. Fifty undergraduate CS majors sit this study; you are one of them. The session is supervised and lasts 75 minutes.",
+    "authors": "A. H. N. Nguyen†, J. V. Le†, Ilse Lahnstein Coronado, T. N. Nguyen",
+    "blurb": "Afternoon. The light comes in low through the windows and lies across the desks like something left behind.",
     "verify": true,
-    "chips": 17
+    "chips": 22
   },
   {
     "id": "embedding-semiotics",

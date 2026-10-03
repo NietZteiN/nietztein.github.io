@@ -488,6 +488,14 @@ a {
 	border-radius: 3px;
 }
 
+.blog-card-play:empty {
+	display: none;
+}
+
+.blog-card-play {
+	margin-top: .35rem;
+}
+
 .blog-play::before {
 	content: "\25B8\00A0";
 }

@@ -104,6 +104,7 @@
 			'<div class="blog-short">' +
 			escapeHtml(p.summary || '') +
 			'</div>' +
+			'<div class="blog-card-play"></div>' +
 			tagsHtml(p.tags) +
 			'</div>'
 		);
@@ -142,6 +143,7 @@
 			v.list.innerHTML = html;
 			v.list.style.display = '';
 			if (window.Site) window.Site.staggerReveal(v.list, '.pub-year-h2, .blog-card');
+			loadListStoryLinks(v.list);
 			afterRender();
 		});
 	}
@@ -322,6 +324,30 @@
 		}
 		return storiesPromise;
 	}
+	// The same link on each card of the post list, so a story can be opened
+	// without opening the post first.
+	function loadListStoryLinks(listEl) {
+		loadStories().then(function (list) {
+			if (!Array.isArray(list) || !listEl.isConnected) return;
+			var bySlug = {};
+			list.forEach(function (s) {
+				if (s && s.kind === 'blog' && s.status === 'published' && s.slug && s.id) bySlug[s.slug] = s.id;
+			});
+			listEl.querySelectorAll('.blog-card').forEach(function (card) {
+				var id = bySlug[card.getAttribute('data-slug')];
+				var slot = card.querySelector('.blog-card-play');
+				if (!id || !slot || slot.firstChild) return;
+				var a = document.createElement('a');
+				a.className = 'blog-play';
+				a.href = 'misc/55-paper-theatre/?story=' + encodeURIComponent(id);
+				a.target = '_blank';
+				a.rel = 'noopener';
+				a.textContent = 'Play as a visual novel';
+				slot.appendChild(a);
+			});
+		});
+	}
+
 	function loadStoryLink(metaEl, slug) {
 		if (!metaEl) return;
 		loadStories().then(function (list) {
@@ -421,6 +447,7 @@
 
 	// Cards are dynamic, so delegate from the document.
 	document.addEventListener('click', function (e) {
+		if (e.target.closest && e.target.closest('.blog-play')) return;   // let the story link work
 		var card = e.target.closest && e.target.closest('.blog-card');
 		if (!card) return;
 		var slug = card.getAttribute('data-slug');
