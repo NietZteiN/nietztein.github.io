@@ -1,0 +1,169 @@
+[
+	{ "sel": "#top-nav .nav-link[data-route=\"about\"]", "en": "About", "ja": "プロフィール" },
+	{ "sel": "#top-nav .nav-link[data-route=\"education\"]", "en": "Education", "ja": "学歴" },
+	{ "sel": "#top-nav .nav-link[data-route=\"publications\"]", "en": "Publications", "ja": "研究業績" },
+	{ "sel": "#top-nav .nav-link[data-route=\"press\"]", "en": "Writing & press", "ja": "執筆・報道" },
+	{ "sel": "#top-nav .nav-link[data-route=\"blog\"]", "en": "Blog", "ja": "ブログ" },
+	{ "sel": "#top-nav .nav-link[data-route=\"teaching\"]", "en": "Teaching", "ja": "教育歴" },
+	{ "sel": "#top-nav .nav-link[data-route=\"presentations\"]", "en": "Presentations", "ja": "発表" },
+	{ "sel": "#top-nav .nav-link[data-route=\"experience\"]", "en": "Experience", "ja": "経歴" },
+	{ "sel": "#top-nav .nav-link[data-route=\"bookshelf\"]", "en": "Bookshelf", "ja": "本棚" },
+	{ "sel": "#top-nav .nav-link[data-route=\"misc\"]", "en": "Misc", "ja": "その他" },
+
+	{
+		"sel": "#leftPanel > p > span",
+		"en": "Bachelor of Science in Computer Science with Honours student at the University of Texas at Dallas (UT Dallas).",
+		"ja": "テキサス大学ダラス校（UT Dallas）コンピュータサイエンス学士課程（優等）在学。"
+	},
+	{ "sel": "#leftPanel > p > span", "en": "Expected graduation: Dec 2026.", "ja": "2026年12月卒業見込み。" },
+	{ "sel": "#leftPanel > .row > .col-10", "en": "Texas, United States", "ja": "アメリカ合衆国 テキサス州" },
+	{
+		"sel": "#leftPanel > .row > .col-10 > a",
+		"en": "Academic CV [Updated",
+		"prefix": true,
+		"match": "^Academic CV \\[Updated (\\d{1,2})/(\\d{1,2})/(\\d{2})\\]$",
+		"ja": "履歴書（Academic CV）［20{3}年{1}月{2}日更新］"
+	},
+
+	{
+		"sel": "#aboutmeContent .row > p.justify",
+		"en": "Undergraduate researcher at the University of Texas at Dallas since August 2022, with Phi Kappa Phi and Collegium V Honors. His research centers on language models — how they represent meaning, where they generalize, and where they break — with broader interests connecting machine learning to questions about cognition and scientific discovery. He has held a DAAD RISE research internship in Germany and a policy-oriented internship at CSET, alongside applied work in computer vision, software engineering, and ML for materials and scientific text. He teaches and grades introductory CS courses and is active in student organizations and outreach.",
+		"ja": "2022年8月よりテキサス大学ダラス校の学部生研究者として活動しており、ファイ・カッパ・ファイ（Phi Kappa Phi）および Collegium V Honors に所属しています。研究の中心は言語モデルで、意味をどのように表現するのか、どこまで汎化するのか、そしてどこで破綻するのかを扱っています。より広くは、機械学習を認知や科学的発見に関する問いと結びつけることにも関心があります。これまでに、ドイツでの DAAD RISE 研究インターンシップと、CSET での政策志向のインターンシップを経験したほか、コンピュータビジョン、ソフトウェア工学、材料および科学文献を対象とした機械学習といった応用的な仕事にも携わってきました。また、コンピュータサイエンスの入門科目で指導と採点を担当し、学生団体やアウトリーチ活動にも積極的に参加しています。"
+	},
+
+	{ "sel": "#researchinterestsH4", "en": "Research Interests", "ja": "研究関心" },
+	{
+		"sel": "#aboutmeContent li.justify",
+		"en": "Language models and the structure of meaning they learn — including representation analysis, generalization, and behavioral evaluation of frontier systems.",
+		"ja": "言語モデルと、それが学習する意味の構造（表現解析、汎化、最先端システムの挙動評価を含む）。"
+	},
+	{
+		"sel": "#aboutmeContent li.justify",
+		"en": "Connections between large language models and human language processing, drawing on tools from computational linguistics and cognitive science.",
+		"ja": "大規模言語モデルと人間の言語処理とのつながり（計算言語学および認知科学の手法を活用）。"
+	},
+	{
+		"sel": "#aboutmeContent li.justify",
+		"en": "Adjacent interests include machine learning for scientific and patent text, ML for materials science, and fairness and representation evaluation in high-stakes AI systems.",
+		"ja": "関連する関心領域として、科学文献・特許文書を対象とした機械学習、材料科学のための機械学習、重大な影響を伴う（ハイステークスな）AIシステムにおける公平性および代表性（representation）の評価など。"
+	},
+
+	{ "sel": "#honors-and-awards", "en": "Honors and Awards", "ja": "受賞・栄誉" },
+	{
+		"sel": "#aboutmeContent li.abme-honors-bullet",
+		"en": "2026 DAAD RISE Scholarship — $5,000",
+		"html": true,
+		"ja": "<strong>2026年 DAAD RISE 奨学金</strong> — $5,000"
+	},
+	{
+		"sel": "#aboutmeContent li.abme-honors-bullet",
+		"en": "2026 Undergraduate Research Scholarship Award (URSA) — $500",
+		"html": true,
+		"ja": "<strong>2026年 学部生研究奨学賞（Undergraduate Research Scholarship Award, URSA）</strong> — $500"
+	},
+	{
+		"sel": "#aboutmeContent li.abme-honors-bullet",
+		"en": "2026 Spring Archer Fellow — $10,000",
+		"html": true,
+		"ja": "<strong>2026年春学期 アーチャー・フェロー（Archer Fellow）</strong> — $10,000"
+	},
+	{
+		"sel": "#aboutmeContent li.abme-honors-bullet",
+		"en": "2025 Barry Goldwater Scholarship — $7,500",
+		"html": true,
+		"ja": "<strong>2025年 ゴールドウォーター奨学金（Barry Goldwater Scholarship）</strong> — $7,500"
+	},
+	{
+		"sel": "#aboutmeContent li.abme-honors-bullet",
+		"en": "2025 Undergraduate Research Scholarship Award (URSA) — $500",
+		"html": true,
+		"ja": "<strong>2025年 学部生研究奨学賞（Undergraduate Research Scholarship Award, URSA）</strong> — $500"
+	},
+	{
+		"sel": "#aboutmeContent li.abme-honors-bullet",
+		"en": "2024 Undergraduate Research Apprenticeship Fellowship (URAP) — $4,500",
+		"html": true,
+		"ja": "<strong>2024年 学部生研究実習フェローシップ（Undergraduate Research Apprenticeship Fellowship, URAP）</strong> — $4,500"
+	},
+	{
+		"sel": "#aboutmeContent li.abme-honors-bullet",
+		"en": "2024 People’s Choice Award, Association for Computing Machinery Projects",
+		"html": true,
+		"ja": "<strong>2024年 ピープルズ・チョイス賞（People’s Choice Award）</strong>、Association for Computing Machinery Projects"
+	},
+	{
+		"sel": "#aboutmeContent li.abme-honors-bullet",
+		"en": "2024 Leland Dillaha MSEE ’97 Undergraduate Scholarship — $1,000",
+		"html": true,
+		"ja": "<strong>2024年 Leland Dillaha MSEE ’97 学部生奨学金</strong> — $1,000"
+	},
+	{
+		"sel": "#aboutmeContent li.abme-honors-bullet",
+		"en": "2022 National Merit Scholarship, UT Dallas — $3,000",
+		"html": true,
+		"ja": "<strong>2022年 全米メリット奨学金（National Merit Scholarship）</strong>、テキサス大学ダラス校 — $3,000"
+	},
+
+	{ "sel": "#languages", "en": "Languages", "ja": "言語" },
+	{
+		"sel": "#aboutmeContent li.justify",
+		"en": "Japanese — JLPT N1 (150/180; CEFR C1), self-taught.",
+		"ja": "日本語 — 日本語能力試験N1（150/180、CEFR C1）、独学。"
+	},
+	{ "sel": "#places", "en": "Places", "ja": "訪れた場所" },
+
+	{ "sel": "#educationContent h2.academic-year-h2", "en": "University of Texas at Dallas", "ja": "テキサス大学ダラス校" },
+	{
+		"sel": "#educationContent .trnsf-thin",
+		"en": "Richardson, TX — August 2022–Present; expected graduation: Dec 2026",
+		"ja": "テキサス州リチャードソン — 2022年8月〜現在（2026年12月卒業見込み）"
+	},
+	{ "sel": "#educationContent h3", "en": "B.S. in Computer Science with Honours", "ja": "コンピュータサイエンス学士課程（優等）" },
+	{
+		"sel": "#educationContent p.justify",
+		"en": "Minors in Mathematics and Political Science. GPA overall 3.966/4.0; CS-only GPA 3.96/4.0. Honors: The Honor Society of Phi Kappa Phi, Collegium V Honors, and Dean’s List (x3).",
+		"ja": "副専攻：数学、政治学。GPA：全体 3.966/4.0、コンピュータサイエンス科目のみ 3.96/4.0。優等・表彰：ファイ・カッパ・ファイ（The Honor Society of Phi Kappa Phi）、Collegium V Honors、ディーンズ・リスト（Dean’s List、3回）。"
+	},
+	{
+		"sel": "#educationContent p.justify",
+		"en": "Selected coursework at UT Dallas (titles as on transcript)",
+		"ja": "テキサス大学ダラス校での主な履修科目（科目名は成績証明書の表記のまま）"
+	},
+
+	{ "sel": "#educationContent h2.academic-year-h2", "en": "Waseda University", "ja": "早稲田大学" },
+	{
+		"sel": "#educationContent .trnsf-thin",
+		"en": "Study abroad: academic year 2024–2025 · Tokyo, Japan",
+		"ja": "留学：2024–2025年度 · 日本・東京"
+	},
+	{
+		"sel": "#educationContent p.justify",
+		"en": "All coursework was taught in Japanese (readings, lectures, and assessments).",
+		"ja": "履修科目はすべて日本語で行われました（文献、講義、成績評価を含む）。"
+	},
+	{ "sel": "#educationContent p.justify", "en": "Graduate-level courses", "ja": "大学院レベルの科目" },
+	{ "sel": "#educationContent li.justify", "en": "Computer vision", "ja": "コンピュータビジョン" },
+	{ "sel": "#educationContent li.justify", "en": "Natural language processing", "ja": "自然言語処理" },
+	{ "sel": "#educationContent li.justify", "en": "Advanced wireless access", "ja": "先端無線アクセス" },
+	{
+		"sel": "#educationContent li.justify",
+		"en": "Distributed, embedded, and real-time processing",
+		"ja": "分散・組込み・リアルタイム処理"
+	},
+	{ "sel": "#educationContent p.justify", "en": "Other courses", "ja": "その他の科目" },
+	{ "sel": "#educationContent li.justify", "en": "Artificial intelligence and logic", "ja": "人工知能と論理" },
+	{ "sel": "#educationContent li.justify", "en": "Artificial intelligence and complex systems", "ja": "人工知能と複雑系" },
+	{ "sel": "#educationContent li.justify", "en": "Operating systems", "ja": "オペレーティングシステム" },
+	{ "sel": "#educationContent li.justify", "en": "Software engineering", "ja": "ソフトウェア工学" },
+	{ "sel": "#educationContent li.justify", "en": "Data mining", "ja": "データマイニング" },
+
+	{ "sel": "#publicationsContent h3", "en": "Refereed abstracts", "ja": "査読付きアブストラクト" },
+	{ "sel": "#publicationsContent h3", "en": "Workshop papers", "ja": "ワークショップ論文" },
+	{ "sel": "#publicationsContent h3", "en": "Preprints", "ja": "プレプリント" },
+	{ "sel": "#publicationsContent h3", "en": "Philosophical preprints", "ja": "哲学分野のプレプリント" },
+	{ "sel": "#blogContent h3", "en": "Press and mentions", "ja": "報道・メディア掲載" },
+	{ "sel": "#experienceContent h3", "en": "Research", "ja": "研究" },
+	{ "sel": "#experienceContent h3", "en": "Industry", "ja": "産業界" },
+	{ "sel": "#experienceContent h3", "en": "Other experience", "ja": "その他の経験" },
+	{ "sel": "#experienceContent h3", "en": "Community", "ja": "コミュニティ活動" }
+]

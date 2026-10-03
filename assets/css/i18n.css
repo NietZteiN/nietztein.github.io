@@ -1,0 +1,116 @@
+/* EN / 日本語 toggle (assets/js/i18n.js). Tokens come from main.css. */
+
+/* ---------- Navbar button ------------------------------------------------ */
+
+/* Same look as .palette-open / .theme-toggle: a pill that fits a short label. */
+.lang-toggle {
+	appearance: none;
+	border: 1px solid var(--border);
+	background: var(--surface);
+	color: var(--heading);
+	height: 38px;
+	min-width: 38px;
+	padding: 0 .7rem;
+	margin-right: .5rem;
+	border-radius: 999px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	font-size: .8rem;
+	font-weight: 600;
+	line-height: 1;
+	white-space: nowrap;
+	cursor: pointer;
+	transition: transform var(--dur-fast) var(--ease-out), background-color var(--dur-fast) ease,
+		border-color var(--dur-fast) ease, box-shadow var(--dur-fast) ease;
+}
+
+.lang-toggle:hover {
+	transform: scale(1.04);
+	border-color: var(--border-strong);
+}
+
+.lang-toggle:focus-visible {
+	outline: none;
+	box-shadow: 0 0 0 3px var(--accent-ring);
+}
+
+.lang-toggle[aria-pressed="true"] {
+	background: var(--accent-soft);
+	border-color: var(--accent-ring);
+}
+
+.lang-toggle[lang="ja"] {
+	font-family: 'Inter', "Hiragino Sans", "Yu Gothic UI", "Meiryo", "Noto Sans JP", sans-serif;
+}
+
+@media (max-width: 767.98px) {
+	.lang-toggle {
+		margin: .5rem .5rem .25rem 0;
+	}
+}
+
+/* Between md and xl the navbar row has no spare width for one more button
+   (ten links + search + theme + effects already fill the 720/960px container).
+   Make room: a tighter toggle, and the search button drops its "Ctrl K" hint,
+   which has already wrapped onto two lines at these widths. */
+@media (min-width: 768px) and (max-width: 1199.98px) {
+	.lang-toggle {
+		padding: 0 .4rem;
+		margin-right: .25rem;
+		font-size: .74rem;
+	}
+
+	#mainNav:has(> .lang-toggle) .palette-open {
+		width: 38px;
+		padding: 0;
+		margin-right: .25rem;
+	}
+
+	#mainNav:has(> .lang-toggle) .palette-open kbd {
+		display: none !important;
+	}
+}
+
+/* ---------- Japanese typography ------------------------------------------ */
+
+/* i18n.js marks every element it translated with lang="ja" + data-i18n.
+   Latin letters and digits keep the page font; kana and kanji fall through to
+   the system Japanese fonts (nothing is downloaded). */
+html[lang="ja"] [data-i18n],
+.i18n-note {
+	font-family: 'Inter', "Hiragino Sans", "Yu Gothic UI", "Meiryo", "Noto Sans JP", sans-serif;
+	line-break: strict;
+	overflow-wrap: anywhere;
+	letter-spacing: 0;
+}
+
+html[lang="ja"] p[data-i18n],
+html[lang="ja"] li[data-i18n],
+html[lang="ja"] div[data-i18n],
+html[lang="ja"] span[data-i18n] {
+	line-height: 1.85;
+}
+
+/* Justified Japanese opens uneven gaps around Latin words and numbers. */
+html[lang="ja"] .justify[lang="ja"],
+html[lang="ja"] [lang="ja"] .justify {
+	text-align: start;
+	text-justify: auto;
+}
+
+/* "Only some pages are in Japanese" note at the top of About. */
+.i18n-note {
+	margin: .25rem 0 .75rem;
+	font-size: .82rem;
+	line-height: 1.6;
+	color: var(--text-2);
+}
+
+.i18n-note > span {
+	display: inline-block;
+	padding: .2rem .65rem;
+	border: 1px solid var(--border);
+	border-radius: 999px;
+	background: var(--surface);
+}
