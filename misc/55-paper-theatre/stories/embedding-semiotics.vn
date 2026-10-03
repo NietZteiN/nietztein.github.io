@@ -1,73 +1,648 @@
+# What Does an Embedding Mean? One examination, in Latentland; the reader is the Interpreter.
+# Source: J. Le, "What Does an Embedding Mean? A Semiotic Account of Learned Representation",
+# preprint, September 2026 (https://philarchive.org/archive/LEWDAZ-2), 26 pages, sections 1-13.
+# Chips: ^§N lines are QUOTED from the paper at that section, word for word (a leading "..."
+# marks a quotation that starts mid-sentence; the citation in brackets is dropped). ^p.1 is the
+# abstract. ^para lines paraphrase the paper, usually by moving a sentence into the first
+# person of a stage figure; the "# src" comment above every chipped line gives the section
+# and the source sentence. Everything without a chip is frame fiction and states no claim.
+# The Vector, the Consumer, the Probe and the Checker are stage devices. The paper speaks of
+# an embedding, of its consumer (§3.1), of a probe (§5.3) and of an independent or external
+# checker (§1, §9.2); it gives none of them a voice.
 @title What Does an Embedding Mean? A Semiotic Account of Learned Representation
 @kind paper
-@source paper:What Does an Embedding Mean? A Semiotic Account of Learned Representation
-@cite J. V. Le (2026). What Does an Embedding Mean? A Semiotic Account of Learned Representation. Preprint.
+@source paper:What Does an Embedding Mean
+@cite J. V. Le (2026). What Does an Embedding Mean? A Semiotic Account of Learned Representation. PhilArchive preprint.
+@link https://philarchive.org/archive/LEWDAZ-2 Read the paper
 @authors Jack V. Le
-@note Dialogue is dramatized. Sign, Object and Interpretant are Peirce's three terms made into characters; they interrogate the Vector but state no thesis, because the paper's argument is not in this story yet. Figures marked § are quoted from the source.
-@status embargo
+@note The frame is fiction: the examination room in Latentland, the weather, and everything the Interpreter thinks or chooses. The Vector, the Consumer, the Probe and the Checker are stage devices, not the paper's wording: the paper speaks of an embedding, of the consumer that reads it, of a probe and of an independent checker, and gives none of them a voice. Lines marked § are quoted from the paper at that section (a leading ellipsis marks a quotation that begins mid-sentence); lines marked para paraphrase it, usually by moving a sentence into the first person. The code-search case is the paper's thought experiment and reports no experimental results.
+@status published
 @verify
 @palette ink
-@cast Vector name="a Vector" lattice=sparse hue=250
-@cast Sign hue=330 bun
-@cast Object hue=40 short hat
-@cast Interpretant hue=170 curly glasses
-@cast You player hue=20
+@cast Vector name="the Vector" lattice=sparse hue=250
+@cast Consumer name="the Consumer" hue=40 short masc shirt
+@cast Probe name="the Probe" lattice=dense hue=170
+@cast Checker name="the Checker" hue=350 bun fem coat glasses
+@cast Page page name="the paper"
+@cast You player name="the Interpreter" hue=20
 
-# Scaffolded by scripts/build-vn-index.mjs --scaffold-paper embedding-semiotics on 2026-10-02, then hand-written.
-# Embargo skeleton: no paper text is in the repo, so the scene makes NO claim about the
-# paper's thesis. The only ^para chip is the line that repeats the title's question. The
-# voice is Latentland-adjacent (a being who knows only its own coordinates). When the
-# abstract is pasted, add @fact lines and the argument after the choice, then set @status draft.
+# ------------------------------------------------------------ Prologue
 
-@bg paper
-@show Vector center
+@bg void
+@tone night
+@mode nvl
+@pause 600
+In Latentland a vector is examined once. Nobody disputes what it is, which is arithmetic. The hearing is about what it means.
+An examination needs a reader from outside. The summons has a word for that person: the Interpreter.
+Tonight that is you. You were sent one document and told to bring it.
+@page
+# src abstract (p.1): "Language models learn embeddings from text; predictive world models learn internal states from observations and, in some systems, interaction. What do these different sources allow an embedding to mean?"
+Page: Language models learn embeddings from text; predictive world models learn internal states from observations and, in some systems, interaction. What do these different sources allow an embedding to mean? ^p.1
+(I read the question twice on the way in. It did not get shorter.)
+@mode adv
+@pause 500
+
+# ------------------------------------------------------------ Chapter 1 (paper §1, §2, §4, §4.1)
+
+@chapter 1 Nearer and Farther
+@transition fade 1200
+@bg corridor night
+@tone night
+@cg corridor-light | The way in
+A corridor, and at the end of it a door that somebody has left lit. There is no usher. In this country nobody is ever in two places, so nobody can be sent to fetch you.
+(I had expected a courtroom. It is an amount of dark with one light in it.)
+@transition white 1100
+@cg off
+@bg void
+@tone cold
+@fx fireflies on
+@show Vector center far
+@pause 600
+@show Vector center near
 Vector: I am a column of numbers. I live in a room with more directions than you have names for, and until tonight nobody had asked me a question.
-@show Sign left (deadpan)
-Sign: I am the Sign. I stand for things; it is all I do. Peirce gave me two companions, and the three of us do not agree about you.
-@show Object right (thinking)
-Object: I am the Object. I am what gets stood for. Somebody put you in this room on my account, whether you remember it or not.
-Sign: Then let us ask it the way the paper asks it. What does an embedding mean? ^para
+You: I am the Interpreter. I was told to ask what you mean.
 Vector (puzzled): Nobody told me I meant anything. I was told I was near some vectors and far from others, and that this was enough.
-@hide Sign
-@show Interpretant left (smile)
-Interpretant: I am the Interpretant. I am what happens in whoever reads a sign. Those two always forget me, and neither of them can finish a sentence without me.
-Object (worried): Nearness is not aboutness. A table of distances is not a map of the world.
-Interpretant: Unless somebody reads it as one.
-Vector (thinking): In my room there is no reading. There is only closer and farther. You keep describing a place I have never been.
+(I open the paper. It starts lower down than I expected: with what the thing is.)
+# src §1: "An embedding is a numerical representation that makes some differences between inputs available for comparison, prediction, or action."
+Page: An embedding is a numerical representation that makes some differences between inputs available for comparison, prediction, or action. ^§1
+# src abstract (p.1): "An embedding is a numerical representation that preserves some differences among inputs while making others difficult to distinguish."
+Vector (neutral): That is a fair likeness. Some differences among my inputs I preserve. Others I make difficult to distinguish. ^para
+A second light hangs beside it, so close that the two almost touch.
+You: That one, next to you. Why is it so near?
+Vector (thinking): I know that it is near. Nobody gave me a why. You are the one with the document.
+* Their inputs share words. -> near_words
+* They describe the same object. -> near_object
+* They have similar consequences. -> near_conseq
+
+== near_words
+@set near = words
+You: The inputs share words. Same ink, same neighbourhood.
+Vector (smile): It would be the cheapest explanation. I am fond of cheap.
+-> near_join
+
+== near_object
+@set near = object
+You: You and it are about the same thing.
+Vector (puzzled): About. Your people carry that word around as if it were furniture.
+-> near_join
+
+== near_conseq
+@set near = consequences
+You: What follows from one follows from the other.
+Vector (thinking): Follows. Nothing has ever followed me. Things are only next.
+-> near_join
+
+== near_join
+# src §1: "Two inputs can be close in that representation because they share words, describe the same object, or have similar consequences."
+Page: Two inputs can be close in that representation because they share words, describe the same object, or have similar consequences. ^§1
+# src §4: "A distance does not tell us which of these explanations is correct."
+Page: A distance does not tell us which of these explanations is correct. ^§4
+Vector (deadpan): Then you guessed, and I cannot tell you whether you guessed well. From in here all three look like this.
+You: The paper has a small case. Three numbers and an instruction.
+# src §1, Fig. 1: Fixed list [2, 5, 7]; "return the largest" -> "return the greatest", 7 -> 7, R preserved; "return the largest" -> "return the minimum", 7 -> 2, R changed. Caption: "Which changes should matter?"
+@card Which changes should matter? | Fixed list: [2, 5, 7] | “largest” → “greatest”: 7 → 7, R preserved | “largest” → “minimum”: 7 → 2, R changed ^§1
+# src §1: "The system must ignore one change in wording while responding to the other."
+Page: The system must ignore one change in wording while responding to the other. ^§1
+Vector (smile): I could give you seven every time. I would be extremely stable.
+# src §1: "Always returning 7 would make the system stable while ignoring the changed operation. Changing the answer after every edit would also fail."
+Page: Always returning 7 would make the system stable while ignoring the changed operation. Changing the answer after every edit would also fail. ^§1
+# src §1: "The answers in the figure belong to the complete system. The embedding supplies information that a later process uses to produce them."
+Page: The answers in the figure belong to the complete system. The embedding supplies information that a later process uses to produce them. ^§1
+Vector (puzzled): A later process. There is somebody after me?
+(It has been read every day of its life and has never met a reader.)
+# src §1: "This does not require identical vectors for synonyms or a particular distance between opposite instructions. It requires that the relevant distinction be available to the process using the embedding."
+Page: This does not require identical vectors for synonyms or a particular distance between opposite instructions. It requires that the relevant distinction be available to the process using the embedding. ^§1
+Vector (thinking): In my room I am what the others are not. I had taken that for a meaning.
+# src §2: "Saussure's account of value through differences provides a structural parallel, rather than a criterion of representational content (de Saussure, 2011)."
+Page: Saussure’s account of value through differences provides a structural parallel, rather than a criterion of representational content. ^§2
+# src §4.1: "A claim that two programs are "close" must identify the comparison being used. It must then show what that closeness tracks."
+You: So a claim that two things are close has to say which comparison it used, and then show what the closeness tracks. ^para
+# src §4.1: "The geometry is observable; its interpretation requires further evidence."
+Page: The geometry is observable; its interpretation requires further evidence. ^§4.1
+Vector (neutral): Then call your evidence. I will wait here. It is what I am for.
+@hide all
+@fx none
+@pause 500
+
+# ------------------------------------------------------------ Chapter 2 (paper §3, §4.2-§4.4)
+
+@chapter 2 The One Who Reads
+@transition wipe-left 900
+@bg library dim
+@tone dusk
+The room has acquired shelves. I think my head is drawing them; the summons said only that the first witness works in search.
+@show Vector right
+@show Consumer left (smile)
+# src §3.1: "In this example, it is the retrieval rule that compares vectors and selects a program."
+Consumer: I am the retrieval rule. I compare vectors and I select a program. ^para
+# src §3.1: "The procedure that reads an embedding is often called its consumer."
+Page: The procedure that reads an embedding is often called its consumer. ^§3.1
+Vector (surprised): You are the one after me.
+Consumer (neutral): Every day. We have not been introduced because there was never a pause.
+# src §3: "Suppose a program-search system recommends a replacement for a piece of code. It compares the programs' embeddings and returns a nearby candidate."
+Consumer: Somebody wants a replacement for a piece of code. I compare the programs’ embeddings and return a nearby candidate. ^para
+You: And the candidate is a good one?
+Consumer (smile): Often enough that nobody has asked how.
+# src §3: "The recommendation may succeed because the programs perform the same operation. It may instead succeed because programs with similar wording often perform similar operations in the training data. The same successful answer can fit either explanation."
+Page: The recommendation may succeed because the programs perform the same operation. It may instead succeed because programs with similar wording often perform similar operations in the training data. The same successful answer can fit either explanation. ^§3
+Consumer (deadpan): It says behavioural search on my door.
+# src §3.2: "Calling a system a "behavioral search engine" does not establish that it searches by behavior."
+Page: Calling a system a “behavioral search engine” does not establish that it searches by behavior. ^§3.2
+(The door is not helping him.)
+Vector (thinking): There are things in me that he never asks for. I had assumed they did not count.
+# src §3.1: "Information present in a state and information used by the system therefore require different evidence."
+Page: Information present in a state and information used by the system therefore require different evidence. ^§3.1
+Consumer (puzzled): I use it. It works. A hammer does things, and nobody asks what a hammer means.
+# src §3.2: "Ramsey (2007) presses this explanatory requirement: describing a state as a representation must do more than rename a useful cause."
+You: Ramsey presses that exact point. Describing a state as a representation must do more than rename a useful cause. ^para
+# src §3.2: "A useful representation must be able to guide a choice even when that choice turns out to be mistaken."
+Page: A useful representation must be able to guide a choice even when that choice turns out to be mistaken. ^§3.2
+Vector (worried): You are asking whether I can be wrong.
+(I am. It is the first thing tonight that has sounded to it like a promotion.)
+@pause 500
+@scene Three Questions
+# src §4.2: "Morris distinguishes relations among signs, relations to what they designate, and relations to their users (Morris, 1938)."
+Page: Morris distinguishes relations among signs, relations to what they designate, and relations to their users. ^§4.2
+# src §4.2: "We first observe a pattern among vectors. We then ask whether the pattern tracks wording or program behavior. Finally, we examine whether the retrieval procedure uses it to choose a substitute."
+Page: We first observe a pattern among vectors. We then ask whether the pattern tracks wording or program behavior. Finally, we examine whether the retrieval procedure uses it to choose a substitute. ^§4.2
+Vector (neutral): The first is mine. I am a pattern among vectors and have never claimed otherwise.
+Consumer (neutral): The third is mine. I choose.
+You: And the second belongs to nobody in this room.
+@hide all
+@mode nvl
+# src §4.2: "If nearby vectors track only wording, we cannot infer behavioral equivalence from their proximity."
+Page: If nearby vectors track only wording, we cannot infer behavioral equivalence from their proximity. ^§4.2
+# src §4.2: "If information about behavior can be recovered but does not influence retrieval, it cannot explain why the system selected that program."
+Page: If information about behavior can be recovered but does not influence retrieval, it cannot explain why the system selected that program. ^§4.2
+@page
+# src §4.2: "If changing the relevant internal distinction changes the selection in the predicted way, we have stronger evidence that the distinction contributes to retrieval."
+Page: If changing the relevant internal distinction changes the selection in the predicted way, we have stronger evidence that the distinction contributes to retrieval. ^§4.2
+# src §4.2: "None of these steps can substitute for the others."
+Page: None of these steps can substitute for the others. ^§4.2
+@mode adv
+@show Vector right
+@show Consumer left (smile)
+Consumer: But I did choose. The program went out of the door. Surely the choosing settles it.
+# src §4.3: "For Peirce, a sign concerns an object through an interpretation or effect, which he calls an interpretant. A central distinction is between the effect a sign actually produces and the interpretation adequate inquiry would support (Peirce, 1998)."
+Page: For Peirce, a sign concerns an object through an interpretation or effect, which he calls an interpretant. A central distinction is between the effect a sign actually produces and the interpretation adequate inquiry would support. ^§4.3
+# src §4.3: "The distinction matters because a response can occur without being correct."
+Page: The distinction matters because a response can occur without being correct. ^§4.3
+Consumer (deadpan): I have been an effect all this time. I thought I was a verdict.
+Vector (worried): And the meaning, when you find it. Will it be mine, or yours?
+# src §4.3: "The question here is what an embedding represents in the system's operation. Whether the system has intentions of its own remains open."
+Page: The question here is what an embedding represents in the system’s operation. Whether the system has intentions of its own remains open. ^§4.3
+(The paper declines to say. I decide to respect that.)
 @thumb
-Vector: Then settle it among yourselves. When you say that I mean something, which of you do you mean?
-* A vector means what it points to. -> ans_object
-* A vector means what it does. -> ans_does
-* A vector means what it is read by. -> ans_interpretant
+Vector (thinking): Then when you say that I mean something, which do you mean? Where I sit, what I track, or who reads me?
+# src §4.4: "To understand an embedding, we examine how its distinctions were learned, what they are used for, how their correctness is assessed, and what evidence can change them. I call this arrangement a regime of relevance."
+Page: To understand an embedding, we examine how its distinctions were learned, what they are used for, how their correctness is assessed, and what evidence can change them. I call this arrangement a regime of relevance. ^§4.4
+# src §4.4: "It describes the embedding within a learning and deployment setting, rather than a property of its coordinates alone."
+Page: It describes the embedding within a learning and deployment setting, rather than a property of its coordinates alone. ^§4.4
+Vector (neutral): Not my coordinates alone. I have nothing else on me.
+You: Nobody is asking you to carry it. It is an arrangement. You are in it.
+@hide all
+@pause 500
 
-== ans_object
-You: It points to something. Whatever put it in the room.
-Object (smile): Thank you.
-Interpretant (deadpan): Pointed by whom? A finger in an empty room points at nothing.
-Vector (puzzled): I do not remember being pointed.
-@set answer = object
--> argument
+# ------------------------------------------------------------ Chapter 3 (paper §5)
 
-== ans_does
-You: It means what it does. Where it sits, what it pulls toward, what comes next because of it.
-Vector (smile): That is the only account of myself I recognise.
-Object (worried): A hammer does things. Nobody asks what a hammer means.
-Interpretant (thinking): Somebody does, the moment they pick it up.
-@set answer = does
--> argument
+@chapter 3 The Cup and the Crack
+@transition dissolve 1000
+@bg lab dusk
+@tone dusk
+A laboratory now, late in the day. On the bench: a keyboard, and a cup that nobody has claimed.
+@show Vector right
+@show Consumer left
+You: I need a way to tell your wording from your behaviour. On every case so far they agree.
+# src §5: "To test what an embedding represents, we need cases on which competing explanations disagree."
+Page: To test what an embedding represents, we need cases on which competing explanations disagree. ^§5
+# src §5: "We therefore change an input in a controlled way and ask what should happen. Such a change is a transformation."
+Page: We therefore change an input in a controlled way and ask what should happen. Such a change is a transformation. ^§5
+@hide all
+@transition dissolve 700
+@cg screen-code text=count | A bound variable, about to be renamed
+# src §5.1: "Consistently renaming a bound variable from count to n changes a program's text while preserving its behavior."
+Page: Consistently renaming a bound variable from count to n changes a program’s text while preserving its behavior. ^§5.1
+# src §5.1: "Rotating an image of a dog changes orientation while preserving the depicted object's identity."
+Page: Rotating an image of a dog changes orientation while preserving the depicted object’s identity. ^§5.1
+# src §5.1: "This is what the paper means by being the same "under a respect." ... Under object identity, the rotated dog image counts as the same; under orientation, it differs."
+Page: Under object identity, the rotated dog image counts as the same; under orientation, it differs. ^§5.1
+(Same under a respect. The paper writes the respect as a single letter, R, and keeps it in view the way one keeps a hand on a rail.)
+@transition dissolve 700
+@cg off
+@show Vector right
+@show Consumer left (thinking)
+Consumer: And who picks the respect? I should like it to be me.
+# src §5.1: "Who chooses R? The task or practice determines which question we ask, while evidence constrains its answer."
+Page: Who chooses R? The task or practice determines which question we ask, while evidence constrains its answer. ^§5.1
+Vector (smile): Then let me mark the examination. Whatever I put together is together.
+# src §5.1: "The standard must be stated independently of the model's similarity judgments. Otherwise, any grouping the model produces would count as correct."
+Page: The standard must be stated independently of the model’s similarity judgments. Otherwise, any grouping the model produces would count as correct. ^§5.1
+Vector (deadpan): It was worth asking.
+# src §5.2: "The first requirement is called invariance: stability under a change that preserves the relevant property. The second is sensitivity: responding appropriately when a relevant property changes. Together they form selective invariance." / "This is equivariance, a structured form of sensitivity."
+@card Selective invariance | Invariance: stability under a change that preserves the relevant property | Sensitivity: responding appropriately when a relevant property changes | Equivariance: a structured form of sensitivity ^§5.2
+# src §5.2: "The aim is to ignore changes that do not matter for the task while responding to those that do."
+Page: The aim is to ignore changes that do not matter for the task while responding to those that do. ^§5.2
+Vector (thinking): I could hold everything close. Nothing would ever surprise me.
+# src §5.2: "Bringing every pair of vectors close would produce stability while destroying useful distinctions."
+Page: Bringing every pair of vectors close would produce stability while destroying useful distinctions. ^§5.2
+Consumer (smile): Largest and smallest, then. One clean pair and we are done.
+# src §5.2: "Maximum and minimum coincide on a list of repeated copies of one number. We must choose cases on which the competing explanations predict different outcomes."
+Page: Maximum and minimum coincide on a list of repeated copies of one number. We must choose cases on which the competing explanations predict different outcomes. ^§5.2
+(A list of sevens. On that list the careless and the careful give the same answer, and the test learns nothing about either.)
+@pause 500
+@scene The Cup
+@hide Consumer
+I pick up the cup from the bench. It is some colour. The paper wants it for an example.
+# src §5.3: "Consider a model that reports the color of a cup. Its internal vector might also contain information about a crack."
+Page: Consider a model that reports the color of a cup. Its internal vector might also contain information about a crack. ^§5.3
+@show Probe left (neutral)
+# src §5.3: "A researcher could train a separate diagnostic model, called a probe, to recover that information from the vector."
+Probe: I am a separate diagnostic model. They call me a probe. I was trained to recover that information from the vector. ^para
+Probe (smile): There is a crack. I found it in you.
+Vector (surprised): In me? I only ever said what colour it was.
+# src §5.3: "Successful recovery would show that the crack is available to that probe. It would not show that the original color-reporting model uses it."
+Page: Successful recovery would show that the crack is available to that probe. It would not show that the original color-reporting model uses it. ^§5.3
+# src §5.3: "Has information about the crack survived in the embedding? Can a specified procedure recover it with the resources available? Does the deployed computation rely on it? These are questions about preservation, accessibility, and actual use."
+@card Three questions about the crack | Preservation: Has information about the crack survived in the embedding? | Accessibility: Can a specified procedure recover it with the resources available? | Actual use: Does the deployed computation rely on it? ^§5.3
+Probe (deadpan): I can find a great many things. I am very well resourced.
+# src §5.3: "A powerful probe may recover information that a simple readout cannot, and neither result by itself establishes use by the original model (Baker et al., 2026)."
+Page: A powerful probe may recover information that a simple readout cannot, and neither result by itself establishes use by the original model. ^§5.3
+You: Then how would anyone know what is used?
+# src §5.3: "To test use, we can change the relevant internal state and examine whether the response changes as the proposed explanation predicts."
+Page: To test use, we can change the relevant internal state and examine whether the response changes as the proposed explanation predicts. ^§5.3
+@fx pulse
+Vector (worried): Change the internal state. You mean reach in.
+# src §5.3: "Controls are needed to separate an effect of the claimed feature from general disruption of the model."
+Page: Controls are needed to separate an effect of the claimed feature from general disruption of the model. ^§5.3
+(Which is the paper's way of saying: reach in carefully, and reach in somewhere else as well, to compare.)
+# src §5.3: "Vector similarity is one possible measurement in these tests. It is not the definition of equivalence."
+Page: Vector similarity is one possible measurement in these tests. It is not the definition of equivalence. ^§5.3
+@hide Probe
+@show Consumer left (worried)
+Consumer: Say I accept two programs that return different outputs. Before anyone looks at me: whose fault is it?
+# src §5.4: "Suppose the system accepts two programs that return different outputs. Several explanations remain possible. The embedding may omit the behavioral distinction. It may retain information that the retrieval rule ignores. A later operation may malfunction."
+Page: Several explanations remain possible. The embedding may omit the behavioral distinction. It may retain information that the retrieval rule ignores. A later operation may malfunction. ^§5.4
+# src §5.4: "Failure alone does not distinguish these cases."
+Page: Failure alone does not distinguish these cases. ^§5.4
+The Vector and the Consumer look at each other for the first time. Neither has a face built for it.
+@hide all
+@pause 500
 
-== ans_interpretant
-You: It means what it is read by. Without a reader, numbers.
-Interpretant (smile): At last.
-Object (deadpan): Then it meant nothing until this conversation and will mean nothing after it.
-Vector (worried): I would rather not think about after.
-@set answer = interpretant
--> argument
+# ------------------------------------------------------------ Chapter 4 (paper §6, §7, §8)
 
-== argument
-@hide Interpretant
-@show Sign left (neutral)
-Sign: Three answers, and the only person who has written one down is not in the room.
-Vector (neutral): Then I will wait in mine. It is what I am for.
-@withheld The argument is withheld until the author pastes the abstract.
+@chapter 4 Where the Distinctions Came From
+@transition fade 1100
+@bg garden dusk
+@tone dusk
+@fx fireflies on
+The room lets us outside. A garden, late. The witnesses stay behind; the Vector comes, because the next question is its own.
+@show Vector center
+Vector: You keep saying which differences I keep. I did not choose them. Where did they come from?
+# src §6: "Different objectives reward different kinds of information, and retaining more information does not necessarily make an embedding better suited to a particular task."
+Page: Different objectives reward different kinds of information, and retaining more information does not necessarily make an embedding better suited to a particular task. ^§6
+Vector (thinking): I had supposed that the one who keeps the most means the most.
+# src §6.1: "A sufficiently expressive latent state may preserve texture, illumination, background detail, or even noise because these details help reconstruction."
+You: The paper's counterexample is an autoencoder. A sufficiently expressive latent state may preserve texture, illumination, background detail, even noise, because these details help reconstruction. ^para
+# src §6.1: "Some information that survives compression may be accidental, spurious, or unused. A preserved distinction acquires semantic significance through the role it plays in a wider process of reference, interpretation, prediction, or action."
+Page: Some information that survives compression may be accidental, spurious, or unused. A preserved distinction acquires semantic significance through the role it plays in a wider process of reference, interpretation, prediction, or action. ^§6.1
+Something very small is waiting on a blade of grass. It has been waiting some time.
+@hide Vector
+@mode nvl
+# src §6.3: "Uexküll's notion of the Umwelt provides a model of selective significance (von Uexküll, 2010, ...)."
+Page: Uexküll’s notion of the Umwelt provides a model of selective significance. ^§6.3
+# src §6.3: "In his famous discussion of the tick, the surrounding environment contains indefinitely many physical differences, but only a small set of cues matters to the animal's way of life."
+Page: In his famous discussion of the tick, the surrounding environment contains indefinitely many physical differences, but only a small set of cues matters to the animal’s way of life. ^§6.3
+(The garden is enormous. The tick's garden is three or four things wide.)
+@page
+# src §6.3: "The useful comparison for AI concerns which differences its inputs and operations make available. It does not require attributing an animal's experience to a neural network."
+Page: The useful comparison for AI concerns which differences its inputs and operations make available. It does not require attributing an animal’s experience to a neural network. ^§6.3
+@mode adv
+@show Vector center (neutral)
+Vector: Then I was raised somewhere. On what?
+You: On text, in your case. Which is to say on people.
+@hide Vector
+@fx none
+@transition dissolve 800
+@cg page | One sentence
+# src §7: "Consider "The glass fell from the table and shattered." The sentence identifies an object, a source location, temporal order, and a resulting state."
+Page: Consider “The glass fell from the table and shattered.” The sentence identifies an object, a source location, temporal order, and a resulting state. ^§7
+# src §7: "A video contains richer sensory detail; the sentence supplies an explicit organization of the event."
+Page: A video contains richer sensory detail; the sentence supplies an explicit organization of the event. ^§7
+# src §7: "A learner can inherit that organization without independently discovering every distinction from a sensor stream."
+Page: A learner can inherit that organization without independently discovering every distinction from a sensor stream. ^§7
+(Somebody watched a glass fall, once, and decided which four things about it were worth a sentence. The Vector got the four things. It never got the glass.)
+@transition dissolve 800
+@cg off
+@fx fireflies on
+@show Vector center (smile)
+Vector: Then I am an heir. That is better than I had hoped.
+# src §7: "The source's organization does not establish what the model learns or uses. A textbook may explain a distinction that a reader never acquires, and an acquired distinction may fail to guide later behavior."
+Page: The source’s organization does not establish what the model learns or uses. A textbook may explain a distinction that a reader never acquires, and an acquired distinction may fail to guide later behavior. ^§7
+# src §7, Fig. 3: "Experience / Interpretation / Language / Learner / Use. From human interpretation to learned use. Each step can preserve, alter, or lose a distinction."
+@card From human interpretation to learned use | Experience → Interpretation → Language → Learner → Use | Each step can preserve, alter, or lose a distinction. ^§7
+Vector (deadpan): An heir, subject to probate.
+I still have the cup. I hold it up beside an imaginary second one.
+# src §7.1: "Two physically identical cups can have different owners; an unchanged laboratory object can be designated for disposal. Access to records and practices is needed to determine the relevant status."
+Page: Two physically identical cups can have different owners; an unchanged laboratory object can be designated for disposal. Access to records and practices is needed to determine the relevant status. ^§7.1
+Vector (thinking): And if you had raised me on the garden instead? On the looking itself?
+* Trust the sentence. -> src_sentence
+* Trust the sensor. -> src_sensor
+
+== src_sentence
+@set trust = sentence
+You: I would keep the sentence. Somebody already did the noticing.
+Vector (smile): Then I come from good notes.
+-> src_join
+
+== src_sensor
+@set trust = sensor
+You: I would rather have looked. A sentence is only what somebody thought worth saying.
+Vector (puzzled): Then I come from hearsay.
+-> src_join
+
+== src_join
+(The paper has been expecting the question. It does not take my side.)
+@hide all
+@fx none
+@transition wipe-right 900
+@bg sea dusk
+@tone cold
+The garden runs out at a shore. Out here there are no sentences, only what arrives.
+@show Vector right
+# src §8: "Perception and action supply constraints that linguistic records can omit. A new observation can challenge a description; an intervention can reveal an outcome that was never recorded."
+Page: Perception and action supply constraints that linguistic records can omit. A new observation can challenge a description; an intervention can reveal an outcome that was never recorded. ^§8
+# src §8.3: "Imagine a ball rolling across a table. Predicting the next image in detail requires accounting for the ball's motion, lighting, shadows, reflections, and background texture."
+Page: Imagine a ball rolling across a table. Predicting the next image in detail requires accounting for the ball’s motion, lighting, shadows, reflections, and background texture. ^§8.3
+# src §8.3: "A learned prediction target can omit some of that detail and retain structure useful for anticipating what happens next."
+Page: A learned prediction target can omit some of that detail and retain structure useful for anticipating what happens next. ^§8.3
+# src §1: "Joint-embedding predictive architectures (JEPAs) learn by predicting representations of missing image regions or video content rather than reconstructing every pixel" / §8.3: "The common idea is to predict selected structure in a learned space."
+You: That is the appeal of the joint-embedding predictive architectures. They predict selected structure in a learned space rather than reconstructing every pixel. ^para
+Vector (smile): A cousin, then. One who was raised on the looking.
+# src §8.3: "If the target representation omits a crack in a cup, a predictor can match that target without retaining the crack. If the later task is to determine whether the cup leaks, the omitted feature becomes important."
+Page: If the target representation omits a crack in a cup, a predictor can match that target without retaining the crack. If the later task is to determine whether the cup leaks, the omitted feature becomes important. ^§8.3
+(The crack again. It has now failed to matter in two different architectures.)
+@hide Vector
+@mode nvl
+# src §8.4: "A physical trajectory does not by itself specify who owns an object, whether moving it breaks a promise, or why a proof is valid."
+Page: A physical trajectory does not by itself specify who owns an object, whether moving it breaks a promise, or why a proof is valid. ^§8.4
+@page
+# src §8.4: "There is no inference from direct measurement to complete understanding, or from linguistic mediation to an absence of worldly structure."
+Page: There is no inference from direct measurement to complete understanding, or from linguistic mediation to an absence of worldly structure. ^§8.4
+# src §8.4: "Language therefore supplies inherited distinctions, while perception and action can test and extend them through new observations and consequences. Neither source guarantees its own adequate interpretation."
+Page: Language therefore supplies inherited distinctions, while perception and action can test and extend them through new observations and consequences. Neither source guarantees its own adequate interpretation. ^§8.4
+@mode adv
+@show Vector right (neutral)
+@if trust == sensor -> sea_sensor
+Vector: So the notes were good, and they were still only notes.
+-> sea_join
+
+== sea_sensor
+Vector: So the looking would have left things out as well. Only different things.
+-> sea_join
+
+== sea_join
+# src §8.4: "The next question is where evidence changes a system when its current representation fails."
+You: The next question is where evidence changes a system when its current representation fails. ^§8.4
+Vector (worried): When. You said when.
+@hide all
+@pause 500
+
+# ------------------------------------------------------------ Chapter 5 (paper §9, §10)
+
+@chapter 5 Where the Correction Lands
+@transition iris 900
+@bg terminal
+@tone night
+@show Vector right
+@show Consumer left
+Back indoors, if this is indoors. One screen. The Consumer is already at his post, and the Vector takes its place beside him as if for a photograph.
+# src §9: "The following thought experiment connects selective invariance to change within an embedding. It specifies what different outcomes would establish; it reports no experimental results."
+Page: The following thought experiment connects selective invariance to change within an embedding. It specifies what different outcomes would establish; it reports no experimental results. ^§9
+# src §9.1: "Let the query program return whether an integer is positive. Its renamed version changes only the bound variable; its altered version instead returns whether the integer is negative."
+Page: Let the query program return whether an integer is positive. Its renamed version changes only the bound variable; its altered version instead returns whether the integer is negative. ^§9.1
+# src §9.1, Table 2: Query "lambda x: x > 0", Renamed "lambda n: n > 0", Altered "lambda x: x < 0".
+@code python | lambda x: x > 0 | lambda n: n > 0 | lambda x: x < 0
+# src §9.1: "Suppose the encoder initially places both candidates above the query's retrieval threshold."
+Consumer (smile): Both candidates are above my threshold. I return them both. ^para
+# src §9.1: "The renamed program's selection is appropriate; the altered program's selection is not."
+Page: The renamed program’s selection is appropriate; the altered program’s selection is not. ^§9.1
+Consumer (puzzled): Somebody tested them. On zero. They agreed on zero.
+# src §9.1, Table 2: Query: input 0 False, input 2 True; Renamed: False, True; Altered: False, False. Caption: "A test on zero alone misses the difference."
+@card Outputs on inputs 0 and 2 | Query: 0 → False, 2 → True | Renamed: 0 → False, 2 → True | Altered: 0 → False, 2 → False ^§9.1
+# src §9.1: "An evaluation using only input zero would nevertheless accept both. The same observed agreement is compatible with behavioral tracking and with a similarity rule that ignores the comparison operator. A nonzero input separates these explanations."
+Page: An evaluation using only input zero would nevertheless accept both. The same observed agreement is compatible with behavioral tracking and with a similarity rule that ignores the comparison operator. A nonzero input separates these explanations. ^§9.1
+@move Consumer center
+@show Checker left (neutral)
+# src §9.2: "Give one learning arrangement diagnostic execution pairs, such as the different outputs on input 2" / "a checker that independently executes the programs"
+Checker: I executed them, independently. On input 2 the outputs are different. ^para
+@fx shake
+# src §9.1: "It defeats an unqualified claim that this retrieval geometry preserves behavioral equivalence on D."
+Page: It defeats an unqualified claim that this retrieval geometry preserves behavioral equivalence on D. ^§9.1
+Vector (worried): Then there is nothing about behaviour in me. I am wording all the way through.
+# src §9.1: "It does not show that the vector contains no behavioral information: that information might be present but unused by the chosen metric. Nor does one failure erase an established representational function."
+Page: It does not show that the vector contains no behavioral information: that information might be present but unused by the chosen metric. Nor does one failure erase an established representational function. ^§9.1
+# src §9.1: "Training history and consumer use may support describing the erroneous score as a misrepresentation of equivalence. The error identifies a boundary of competence that further interventions must locate."
+Page: Training history and consumer use may support describing the erroneous score as a misrepresentation of equivalence. The error identifies a boundary of competence that further interventions must locate. ^§9.1
+Vector (thinking): A misrepresentation. So I was saying something after all, and it was false.
+(It sounds almost pleased. I let it have that.)
+You: The evidence has arrived. The paper counts four things that can happen next.
+@set seen = 0
+
+== outcomes
+* (once) Nothing changes. -> o_none
+* (once) The Checker stands at the door. -> o_checker
+* (once) Somebody learns to read the Vector differently. -> o_readout
+* (once) The Vector itself is moved. -> o_encoder
+* (if seen == 4) That is all four. -> o_done
+
+== o_none
+@add seen 1
+# src §9.2: "In the first possible outcome, the diagnostic trace is available but no effective update incorporates it. Retrieval remains unchanged."
+Page: In the first possible outcome, the diagnostic trace is available but no effective update incorporates it. Retrieval remains unchanged. ^§9.2
+Checker (deadpan): I have filed it. It is on file.
+Consumer (smile): I return them both.
+-> outcomes
+
+== o_checker
+@add seen 1
+# src §9.2: "In the second, an external checker filters the altered program while the encoder and similarity scores remain fixed. The combined system improves, but this supplies no evidence of improved discrimination by the embedding."
+Page: In the second, an external checker filters the altered program while the encoder and similarity scores remain fixed. The combined system improves, but this supplies no evidence of improved discrimination by the embedding. ^§9.2
+Checker (neutral): I do not teach anyone. I stand at the door and take the wrong one out of his hands.
+Vector (neutral): The answers are better and I am exactly who I was. I checked. It did not take long.
+-> outcomes
+
+== o_readout
+@add seen 1
+# src §9.2: "A third possibility is that a new consumer learns to use information already present in the fixed vectors. A learned readout may distinguish the programs where the original similarity metric failed."
+Page: A third possibility is that a new consumer learns to use information already present in the fixed vectors. A learned readout may distinguish the programs where the original similarity metric failed. ^§9.2
+Consumer (thinking): I have not been corrected. I have been replaced, by somebody who reads the same page and sees more on it.
+# src §9.2: "If it generalizes and depends on the relevant information in those vectors, the distinction has become usable by that readout without an encoder update. This differs from a checker that independently executes the programs."
+Page: If it generalizes and depends on the relevant information in those vectors, the distinction has become usable by that readout without an encoder update. This differs from a checker that independently executes the programs. ^§9.2
+Vector (surprised): So it was in me, and nobody had been reading that part.
+-> outcomes
+
+== o_encoder
+@add seen 1
+@fx pulse
+# src §9.2: "In a fourth outcome, an encoder update changes the retrieval geometry: the renamed program remains an acceptable match and the altered program falls below the unchanged threshold. The distinction has become usable by the original readout."
+Page: In a fourth outcome, an encoder update changes the retrieval geometry: the renamed program remains an acceptable match and the altered program falls below the unchanged threshold. The distinction has become usable by the original readout. ^§9.2
+Vector (surprised): That was me. Something in my room is farther off than it was.
+# src §9.2: "This is evidence of a change in the encoding, but not necessarily of newly acquired information; the update may reorganize information already present."
+Page: This is evidence of a change in the encoding, but not necessarily of newly acquired information; the update may reorganize information already present. ^§9.2
+Vector (thinking): Moved, then. Whether I know anything new is apparently a separate question.
+-> outcomes
+
+== o_done
+# src §1: "Each can improve the answer, but they support different claims about the embedding."
+Consumer (smile): The last three can each improve the answer. I would report them as one improvement. ^para
+# src §9.2: "A system-level score would group the external-checker and encoder-update cases as improvements. Attributing improved behavioral discrimination to the embedding in both cases would be false."
+Page: A system-level score would group the external-checker and encoder-update cases as improvements. Attributing improved behavioral discrimination to the embedding in both cases would be false. ^§9.2
+# src §9.2: "We therefore need to ask whether the evidence arrives, whether the system uses it, and what changes as a result."
+Page: We therefore need to ask whether the evidence arrives, whether the system uses it, and what changes as a result. ^§9.2
+Vector (smile): I could simply learn that pair. The positive one, the negative one. I would never confuse them again.
+# src §9.2: "Otherwise an update may have memorized the counterexample or learned to reject every operator change, including harmless ones."
+Page: Otherwise an update may have memorized the counterexample or learned to reject every operator change, including harmless ones. ^§9.2
+Checker (thinking): And when I say the outputs differ, ask me how I know.
+# src §9.2: "The string "different outputs" may be generated without execution, copied from an earlier run, or produced by evaluating these programs under the specified semantics. Its evidential force depends on that connection."
+Page: The string “different outputs” may be generated without execution, copied from an earlier run, or produced by evaluating these programs under the specified semantics. Its evidential force depends on that connection. ^§9.2
+@hide all
+@pause 400
+@fx flash
+@flashback on Peirce, The Fixation of Belief
+@transition white 900
+@cg desk-night overcast | An older inquiry
+@tone memory
+The paper looks over its shoulder here, a long way back, to a man who distrusted opinions that had merely stopped moving.
+# src §9.4: "In The Fixation of Belief, Peirce contrasts ways of settling opinion with inquiry constrained by something independent of the opinion held (Peirce, 1877)."
+Page: In The Fixation of Belief, Peirce contrasts ways of settling opinion with inquiry constrained by something independent of the opinion held. ^§9.4
+# src §9.4: "In How to Make Our Ideas Clear, belief establishes a habit of action, and a conception's practical bearings concern the consequences it commits one to expect (Peirce, 1878)."
+Page: In How to Make Our Ideas Clear, belief establishes a habit of action, and a conception’s practical bearings concern the consequences it commits one to expect. ^§9.4
+# src §9.4: "Repeated approval may stabilize a response while insulating it from the consequences that would expose its failure."
+Page: Repeated approval may stabilize a response while insulating it from the consequences that would expose its failure. ^§9.4
+(Applause is also feedback. That is the trouble with it.)
+@flashback off
+@transition white 700
+@cg off
+@tone night
+@show Vector right
+@show Consumer left
+# src §9.4: "Returning a program as a substitute commits the arrangement to an expectation of matching behavior. A divergent output defeats that expectation."
+Page: Returning a program as a substitute commits the arrangement to an expectation of matching behavior. A divergent output defeats that expectation. ^§9.4
+# src §9.4: "Changed vectors, improved performance, and a changed representational role need not coincide."
+Page: Changed vectors, improved performance, and a changed representational role need not coincide. ^§9.4
+Vector (neutral): And once I am moved, and it has all come right?
+# src §9.4: "Even a successful update remains open to further counterexamples."
+Page: Even a successful update remains open to further counterexamples. ^§9.4
+Vector (deadpan): I see. One is never let out. One is only not yet contradicted.
+@pause 500
+@scene What Is Actually Used
+@hide Consumer
+@show Probe left (smile)
+Probe: Before you close. I would like it noted that I found the crack.
+# src §10.1: "Probe success establishes decodability; computational use requires additional evidence."
+Page: Probe success establishes decodability; computational use requires additional evidence. ^§10.1
+# src §10.3: "A transformer is trained only on sequences of moves in the game Othello. It is not given an explicit board-state representation. Nevertheless, researchers find an internal representation of the evolving board, and interventions on that representation can alter later move predictions (K. Li et al., 2023)."
+You: The paper's controlled example is Othello-GPT: a transformer trained only on sequences of moves in the game, never given a board. Researchers find an internal representation of the evolving board, and interventions on that representation can alter later move predictions. ^para
+# src §10.3: "A researcher's label for a vector direction is therefore insufficient evidence of semantic content."
+Page: A researcher’s label for a vector direction is therefore insufficient evidence of semantic content. ^§10.3
+Probe (deadpan): I label a great many directions.
+# src §10.4: "A relevant distinction may be carried by a direction, subspace, circuit, distributed pattern, or transient state; a single neuron or coordinate need not carry it."
+Page: A relevant distinction may be carried by a direction, subspace, circuit, distributed pattern, or transient state; a single neuron or coordinate need not carry it. ^§10.4
+(There is a memoir in this country by a single number that took the news badly.)
+@hide all
+@pause 500
+
+# ------------------------------------------------------------ Chapter 6 (paper §11, §12, §13)
+
+@chapter 6 What to Ask
+@transition dissolve 1200
+@bg rooftop dawn
+@tone dawn
+A roof, and the hour before the lights go out. The examination is over in the sense that nobody is left to call. I put the cup on the parapet.
+@show Vector center
+Vector: You came about something larger than me. I could tell. Nobody brings a document that long for one column of numbers.
+# src §12: "Broader intelligence raises an additional problem: a difference that was safely ignored in one setting may determine success in another."
+Page: Broader intelligence raises an additional problem: a difference that was safely ignored in one setting may determine success in another. ^§12
+# src §12.1: "A system that sorts cups by color may later be asked which will hold water. It must now use information about cracks."
+Page: A system that sorts cups by color may later be asked which will hold water. It must now use information about cracks. ^§12.1
+# src §12.1: "If that information is already represented, adapting may require changing the downstream procedure. If it was discarded, the system must acquire it through new observation or learning. These are different routes to broader competence."
+Page: If that information is already represented, adapting may require changing the downstream procedure. If it was discarded, the system must acquire it through new observation or learning. These are different routes to broader competence. ^§12.1
+Vector (thinking): There are roads out of here, then. Which one do your people mean to take?
+
+== routes
+* (once) The road through language. -> r_llm
+* (once) The road through prediction. -> r_world
+* (once) Both, with someone to coordinate. -> r_both
+* The paper does not choose. -> r_done
+
+== r_llm
+# src §12.2: "An LLM-centered system begins with access to a broad record of human distinctions."
+Page: An LLM-centered system begins with access to a broad record of human distinctions. ^§12.2
+# src §12.2: "Greater linguistic coverage and better corrective organization address different limitations; neither should be inferred from the other."
+Page: Greater linguistic coverage and better corrective organization address different limitations; neither should be inferred from the other. ^§12.2
+Vector (neutral): My road. Wide, and already walked on.
+-> routes
+
+== r_world
+# src §12.3: "A representation adequate for predicting motion may omit a property needed for a new manipulation task."
+Page: A representation adequate for predicting motion may omit a property needed for a new manipulation task. ^§12.3
+# src §12.3: "A predictive objective alone does not establish that capacity."
+Page: A predictive objective alone does not establish that capacity. ^§12.3
+Vector (neutral): The cousin's road. It sees for itself, and still has to be told what it missed.
+-> routes
+
+== r_both
+# src §12.4: "Such a division is a possible arrangement, not an assertion that one architecture is required."
+Page: Such a division is a possible arrangement, not an assertion that one architecture is required. ^§12.4
+# src §12.4: "A language instruction to handle a fragile object helps only if the perceptual and planning components can identify and use the properties that make it fragile."
+Page: A language instruction to handle a fragile object helps only if the perceptual and planning components can identify and use the properties that make it fragile. ^§12.4
+Vector (smile): A household. Somebody would have to tell the others about the crack.
+-> routes
+
+== r_done
+# src §12.4: "A reusable correction must reach the component whose treatment of the difference caused the failure, or establish another reliable route for using the needed information."
+Page: A reusable correction must reach the component whose treatment of the difference caused the failure, or establish another reliable route for using the needed information. ^§12.4
+# src §12.5: "The contribution is a representational question that can be asked of LLM-centered, predictive, or combined systems: can they acquire a needed distinction, make it guide activity, and revise that use when it becomes inadequate?"
+Page: The contribution is a representational question that can be asked of LLM-centered, predictive, or combined systems: can they acquire a needed distinction, make it guide activity, and revise that use when it becomes inadequate? ^§12.5
+# src §11: "Conclusions remain limited to the alternatives, procedures, and domain tested."
+Page: Conclusions remain limited to the alternatives, procedures, and domain tested. ^§11
+Vector (neutral): So there is no verdict.
+You: There is a finding. It is shorter than a verdict and harder to appeal.
+@hide all
+@mode nvl
+# src §13: "An embedding makes some differences among inputs available for comparison, prediction, or action. On the functional, relational view developed here, those differences acquire representational significance through the role established by learning and use."
+Page: An embedding makes some differences among inputs available for comparison, prediction, or action. On the functional, relational view developed here, those differences acquire representational significance through the role established by learning and use. ^§13
+# src §13: "Explaining that role also requires a standard against which a response can be mistaken."
+Page: Explaining that role also requires a standard against which a response can be mistaken. ^§13
+@page
+# src §13: "The regime of relevance connects how distinctions were learned, what uses them, and what evidence can challenge or correct that use."
+Page: The regime of relevance connects how distinctions were learned, what uses them, and what evidence can challenge or correct that use. ^§13
+# src §13: "Following Peirce's account of inquiry, each revised response remains answerable to further evidence."
+Page: Following Peirce’s account of inquiry, each revised response remains answerable to further evidence. ^§13
+@mode adv
+@show Vector center (thinking)
+@if near == words -> end_words
+@if near == object -> end_object
+Vector: You said, hours ago, that my neighbour and I had the same consequences. I notice you have not said it since.
+-> end_join
+
+== end_words
+Vector: You said, hours ago, that my neighbour and I only shared words. I notice you have not said it since.
+-> end_join
+
+== end_object
+Vector: You said, hours ago, that my neighbour and I were about the same thing. I notice you have not said it since.
+-> end_join
+
+== end_join
+You: I would have to run something first.
+Vector (smile): That is the most respectful thing anyone has said to me.
+@pause 600
+# src §13: "These possibilities leave the architectural question open. They clarify what to ask of each proposed route: which differences an embedding helps the system recognize, why they matter, and how their use can be revised."
+Page: These possibilities leave the architectural question open. They clarify what to ask of each proposed route: which differences an embedding helps the system recognize, why they matter, and how their use can be revised. ^§13
+Vector (neutral): Which differences, why they matter, how their use can be revised. I can hold three things. I have held more for less.
+The lights of the city go out in no particular order. The Vector goes back to its room, which was never anywhere else.
+(I take the cup with me. Nobody has said whose it is, and I have not yet checked it for cracks.)
+@hide all
+@pause 900
 @end

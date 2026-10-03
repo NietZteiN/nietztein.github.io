@@ -123,14 +123,16 @@
     "file": "embedding-semiotics.vn",
     "title": "What Does an Embedding Mean? A Semiotic Account of Learned Representation",
     "kind": "paper",
-    "status": "embargo",
-    "source": "paper:What Does an Embedding Mean? A Semiotic Account of Learned Representation",
-    "pub": "What Does an Embedding Mean? A Semiotic Account of Learned Representation",
+    "status": "published",
+    "source": "paper:What Does an Embedding Mean",
+    "pub": "What Does an Embedding Mean",
+    "links": [
+      "https://philarchive.org/archive/LEWDAZ-2"
+    ],
     "authors": "Jack V. Le",
-    "blurb": "I am a column of numbers. I live in a room with more directions than you have names for, and until tonight nobody had asked me a question.",
+    "blurb": "In Latentland a vector is examined once. Nobody disputes what it is, which is arithmetic. The hearing is about what it means.",
     "verify": true,
-    "withheld": true,
-    "chips": 1
+    "chips": 122
   },
   {
     "id": "code-as-embedding",

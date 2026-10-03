@@ -555,6 +555,8 @@ body.fx-off .vn-fxlayer, body.fx-off .vn-world::after { display: none; }
 .ts-inner { position: absolute; left: 8%; top: 13%; width: 60%; }
 .ts-kicker { font: 600 clamp(9px, 0.95cqw, 14px)/1 var(--font-body); letter-spacing: 0.5em; text-transform: uppercase; color: #e3c98a; margin: 0 0 1.8em; }
 .ts-title { margin: 0; font: 600 clamp(24px, 4.3cqw, 70px)/1.2 var(--font-title); letter-spacing: 0.03em; text-shadow: 0 2px 30px rgba(0, 0, 0, 0.7); text-wrap: balance; }
+/* Long titles (three lines at full size) would push the credit lines into the menu. */
+.ts-title.is-long { font-size: clamp(19px, 3cqw, 48px); line-height: 1.22; }
 .ts-rule { width: 6em; height: 1px; background: linear-gradient(90deg, #e3c98a, transparent); margin: clamp(10px, 1.8cqw, 26px) 0; font-size: clamp(12px, 1.6cqw, 24px); }
 .ts-sub { margin: 0; font: italic 500 clamp(12px, 1.6cqw, 24px)/1.4 var(--font-vn); color: #d9d4c6; max-width: 34em; }
 .ts-menu { position: absolute; left: 8%; bottom: 9%; display: flex; flex-direction: column; align-items: flex-start; gap: 0.1em; margin: 0; padding: 0; list-style: none; }

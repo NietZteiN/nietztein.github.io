@@ -709,7 +709,7 @@ rendered: { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null }, actor
     var saved = autosave(), canContinue = !!(saved && saved.choiceLog && saved.stopIndex > 1);
     seenList();
     var chapters = p.chapters || [], seenCh = chapters.filter(function (c) { return S.seenAll[c.index] || e.src; });
-    var h = '<div class="ts-inner"><p class="ts-kicker">Paper Theatre &nbsp;·&nbsp; 紙芝居</p><h2 class="ts-title">' + esc(m.title || e.title || '') + '</h2><div class="ts-rule"></div>' +
+    var h = '<div class="ts-inner"><p class="ts-kicker">Paper Theatre &nbsp;·&nbsp; 紙芝居</p><h2 class="ts-title' + ((m.title || e.title || '').length > 44 ? ' is-long' : '') + '">' + esc(m.title || e.title || '') + '</h2><div class="ts-rule"></div>' +
       '<p class="ts-sub">' + esc(shortCite(m, e)) + (m.authors ? '<br>' + esc(m.authors.replace(/\s*\(co-first\)/, '')) : '') + '</p></div>';
     h += '<p class="ts-vert" aria-hidden="true" lang="ja">紙芝居<span>論文と随想のための小さな劇場</span></p>';
     h += '<ul class="ts-menu" role="menu" aria-label="title menu">' +
