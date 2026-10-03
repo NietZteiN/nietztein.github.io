@@ -69,6 +69,9 @@
   // natural dark tones, picked from the name when hairhue is not given
   var HAIRCOL = [[22, 30, 26], [228, 20, 21], [16, 42, 31], [34, 22, 36], [8, 38, 27], [268, 12, 23], [28, 40, 40]];
 
+  // [saturation, lightness] for hairtone=
+  var HAIRTONE = { dark: [30, 19], mid: [36, 32], light: [40, 46], fair: [46, 68] };
+
   function normCast(decl) {
     decl = decl || {};
     if (decl.hairLine && decl.build) return decl;   // already normalised
@@ -85,8 +88,10 @@
     var hue = typeof decl.hue === 'number' ? ((decl.hue % 360) + 360) % 360 : K.hash(name) % 360;
     var skin = decl.skin >= 1 && decl.skin <= 5 ? Math.round(decl.skin) : 1 + (K.hash(name + ':skin') % 5);
     var hh = decl.hairhue != null ? decl.hairhue : decl.hairHue, hc;
-    if (typeof hh === 'number' && isFinite(hh)) { hh = ((hh % 360) + 360) % 360; hc = [hh, 40, 46]; }
-    else hc = HAIRCOL[K.hash(name + ':hh') % HAIRCOL.length];
+    // hairtone=dark|mid|light|fair sets how deep the colour is; hairhue alone stays the bright "light" tone
+    var tone = HAIRTONE[decl.hairtone] || null;
+    if (typeof hh === 'number' && isFinite(hh)) { hh = ((hh % 360) + 360) % 360; hc = tone ? [hh, tone[0], tone[1]] : [hh, 40, 46]; }
+    else { hc = HAIRCOL[K.hash(name + ':hh') % HAIRCOL.length]; if (tone) hc = [hc[0], tone[0], tone[1]]; }
     var build = decl.build === 'fem' || decl.build === 'masc' ? decl.build : has('fem') ? 'fem' : has('masc') ? 'masc' : 'neutral';
     return {
       name: name, display: decl.display || decl.label || decl.name || name, hue: hue, skin: skin, hair: hair, clothes: clothes,
@@ -487,6 +492,7 @@
       o += lower(c, B, skirt, lowCol);
       if (!skirt) o += shape(D('M', B.wn - 4, 598, 'Q', 300, 588, B.wf + 4, 600, 'L', B.wf + 5, 620, 'Q', 300, 608, B.wn - 5, 618, 'Z'), dk(lowCol, 0.3), ln(lowCol)) + R(cx - 14, 594, 24, 22, { fill: '#c8ab72', rx: 3, stroke: '#7a6238', 'stroke-width': 1.4 });
       else o += shape(D('M', B.wn - 6, 592, 'Q', 300, 582, B.wf + 6, 594, 'L', B.wf + 6, 612, 'Q', 300, 600, B.wn - 6, 610, 'Z'), dk(lowCol, 0.2), ln(lowCol));
+      if (c.build === 'masc') o += tie(cx, hsl(hue, 52, 40), 104);
       o += shape(D('M', cx - 20, 286, 'L', cx, 344, 'L', cx - 34, 330, 'L', cx - 40, 298, 'Z'), lt(col, 0.6), line) + shape(D('M', cx + 22, 288, 'L', cx, 344, 'L', cx + 34, 332, 'L', cx + 38, 300, 'Z'), lt(col, 0.3), line);
       if (fem) o += ribbon(cx, hsl((hue + 150) % 360, 48, 52));
       if (!skirt) {
@@ -517,7 +523,7 @@
       (hood ? hp.front + hoodFront(main) : hp.front + hp.top) +
       (c.glasses ? glasses(B) : '') + (c.hat && !hood ? hat(c) : '');
     var fig = G(G(back, { transform: HEAD_ROT }) + fit.behind + fit.body + G(head, { transform: HEAD_ROT }), { transform: LEAN });
-    return spriteRoot(c, defs + G(fig, { filter: 'url(#vnf-rim)' }), { 'data-face': face, 'data-clothes': c.clothes, 'data-hair': c.hair, 'data-build': c.build });
+    return spriteRoot(c, defs + G(G(fig, { 'class': 'vn-fig' }), { filter: 'url(#vnf-rim)' }), { 'data-face': face, 'data-clothes': c.clothes, 'data-hair': c.hair, 'data-build': c.build });
   }
 
   /* ------------------------------------------------------------ the reader, seen from behind */
@@ -534,7 +540,7 @@
       (c.hair === 'bun' ? Ci(300, 384, 46, { fill: c.hairCol }) : '') +
       (c.hair === 'ponytail' ? Pa('M280 560C270 660 290 760 300 840C316 760 330 660 320 560Z', { fill: c.hairCol }) : '') +
       (c.hat ? Pa('M168 500C160 400 250 360 300 360C350 360 440 400 432 500C390 470 210 470 168 500Z', { fill: hsl(c.hue, 30, 22) }) : '');
-    return spriteRoot(c, G(inner, { filter: 'url(#vnf-rim)' }) + R(0, 700, 600, 300, { fill: 'none' }), { 'data-face': 'back' });
+    return spriteRoot(c, G(G(inner, { 'class': 'vn-fig' }), { filter: 'url(#vnf-rim)' }) + R(0, 700, 600, 300, { fill: 'none' }), { 'data-face': 'back' });
   }
 
   /* ------------------------------------------------------------ a floating manuscript sheet */

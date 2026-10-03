@@ -59,6 +59,7 @@
   /* ------------------------------------------------------------ sky */
 
   function stars(c, n, H, tag) {
+    if (c.overcast) return '';                 // a closed sky: no stars, no moon
     var r = c.rnd(tag || 'stars'), o = '', big = '';
     for (var i = 0; i < n; i++) {
       var x = r() * 1600, y = r() * r() * H, rad = 0.5 + r() * 1.5, op = 0.35 + r() * 0.65;
@@ -68,6 +69,7 @@
     return G(o) + G(big, { filter: B(2) });
   }
   function moon(c, x, y, r) {
+    if (c.overcast) return Ci(x, y, r * 5, { fill: c.rg('#8f9cc8', 0.12) });   // only where the cloud is thinner
     return Ci(x, y, r * 7, { fill: c.rg('#b9c8ff', 0.28) }) + Ci(x, y, r * 2.2, { fill: c.rg('#eef2ff', 0.5) }) +
       Ci(x, y, r, { fill: '#f6f3e4' }) + Ci(x - r * 0.3, y - r * 0.2, r * 0.22, F('#cfcab4', 0.35)) + Ci(x + r * 0.28, y + r * 0.3, r * 0.3, F('#cfcab4', 0.28)) + Ci(x + r * 0.1, y - r * 0.5, r * 0.14, F('#cfcab4', 0.3));
   }
@@ -292,7 +294,7 @@
   /* ------------------------------------------------------------ backgrounds */
 
   var BG = {};
-  var DEFAULT_TOD = { night: 'night', cafe: 'dusk', station: 'dusk', room: 'night', server: 'night', terminal: 'night', 'void': 'night', train: 'dusk' };
+  var DEFAULT_TOD = { night: 'night', cafe: 'dusk', station: 'dusk', room: 'night', server: 'night', terminal: 'night', 'void': 'night', train: 'dusk', basement: 'night' };
 
   BG.lab = function (c) {
     var o = wall(c, 640, '#dde2e6', { wainscot: 90, wcol: '#b9c2c9' });
@@ -342,9 +344,20 @@
       Ci(x + w * 0.78, y + h * 0.48, 7, F('#ffb3c0', 0.9));
     return G(o, { filter: B(2) }) + R(x, y, w, h, F('#ffffff', 0.03));
   }
+  // board: 'plot' (default: lines and a curve on axes), 'text' (lines of writing only), 'blank' (wiped)
+  function chalkText(c, x, y, w, h, tag) {
+    var r = c.rnd(tag + 't'), o = '', col = '#f1f0e6';
+    o += Pa('M' + num(x + 44) + ' ' + num(y + 40) + 'h' + num(w * 0.34), S(col, 5, 0.75)) + Pa('M' + num(x + 44) + ' ' + num(y + 52) + 'h' + num(w * 0.34), S('#ffe9a0', 2, 0.6));
+    for (var i = 0; i < 6; i++) {
+      var yy = y + 84 + i * (h - 120) / 6, xx = x + 44 + (i % 3 === 2 ? 30 : 0), left = w - 110 - (i % 3 === 2 ? 30 : 0);
+      while (left > 40) { var len = Math.min(left, 30 + r() * 110); o += Pa('M' + num(xx) + ' ' + num(yy) + 'h' + num(len), S(col, 3, 0.35 + r() * 0.4)); xx += len + 16; left -= len + 16; if (r() < 0.12) break; }
+    }
+    return G(o, { filter: B(2) }) + R(x, y, w, h, F('#ffffff', 0.03));
+  }
   function blackboard(c, x, y, w, h, tag) {
+    var board = (c.opts && c.opts.board) || 'plot';
     return R(x - 14, y - 14, w + 28, h + 34, { fill: c.L('#8a6a4c') }) + R(x, y, w, h, { fill: c.grad([[0, c.L('#2f5146')], [1, c.L('#223d35')]], { x1: 0, y1: 0, x2: 1, y2: 1 }) }) +
-      chalk(c, x, y, w, h, tag) + R(x, y + h + 4, w, 10, { fill: c.L('#b79670') }) + R(x + w * 0.2, y + h - 2, 34, 8, { fill: '#f4f2ea', rx: 2 }) + R(x + w * 0.26, y + h - 2, 26, 8, { fill: '#f3c1c9', rx: 2 });
+      (board === 'text' ? chalkText(c, x, y, w, h, tag) : board === 'blank' ? Pa('M' + num(x + 60) + ' ' + num(y + h * 0.5) + 'q' + num(w * 0.3) + ' -40 ' + num(w * 0.6) + ' 10', S('#f1f0e6', 60, 0.05, { filter: B(8) })) : chalk(c, x, y, w, h, tag)) + R(x, y + h + 4, w, 10, { fill: c.L('#b79670') }) + R(x + w * 0.2, y + h - 2, 34, 8, { fill: '#f4f2ea', rx: 2 }) + R(x + w * 0.26, y + h - 2, 26, 8, { fill: '#f3c1c9', rx: 2 });
   }
 
   BG.lecture = function (c) {
@@ -730,8 +743,47 @@
     return o;
   };
 
+  // a basement bar with an open mic: a strip of window at pavement level, a low stage, one microphone
+  BG.basement = function (c) {
+    var o = R(0, 0, 1600, 900, { fill: c.vg(c.L('#5b3f36'), c.L('#3a2925')) }), r = c.rnd('bricks'), i, br = '';
+    // brick courses
+    for (var row = 0; row < 16; row++) for (var col = 0; col < 14; col++) {
+      var bx = col * 124 - (row % 2 ? 62 : 0), by = row * 42;
+      br += R(bx + 3, by + 3, 118, 36, F(c.L(mix('#7a4f40', '#5a3a30', r())), 0.35 + r() * 0.35, { rx: 2 }));
+    }
+    o += G(br);
+    // the pavement-level window: feet go by up there
+    var cp = c.clip(R(160, 70, 620, 130)), legs = '';
+    for (i = 0; i < 5; i++) { var lx = 220 + i * 120 + r() * 40; legs += R(lx, 70, 16, 130, { rx: 6 }) + R(lx + 26, 70, 16, 130, { rx: 6 }) + El(lx + 12, 196, 22, 8) + El(lx + 40, 196, 22, 8); }
+    o += R(144, 54, 652, 162, { fill: c.L('#2a1d1a') }) + G(R(160, 70, 620, 130, { fill: c.grad(c.skyStops().slice(-2).map(function (st, k) { return [k, st[1]]; })) }) + R(160, 176, 620, 24, { fill: c.L('#6f6a70') }) + G(legs, { fill: c.L('#1d1826'), opacity: 0.7, filter: B(2) }), { 'clip-path': cp });
+    for (i = 1; i < 4; i++) o += R(160 + i * 155 - 4, 70, 8, 130, { fill: c.L('#2a1d1a') });
+    o += R(160, 70, 620, 130, { fill: c.grad([[0, '#ffffff', c.night ? 0.03 : 0.2], [1, '#ffffff', 0]], { x1: 0, y1: 0, x2: 1, y2: 1 }) });
+    c.post += poly([[160, 200], [780, 200], [1000, 760], [220, 760]], { fill: c.grad([[0, c.P.key, c.night ? 0.1 : 0.24], [1, c.P.key, 0.01]]), filter: B(16) });
+    // string lights along the ceiling
+    var bulbs = '';
+    for (i = 0; i < 14; i++) { var ux = 60 + i * 114, uy = 30 + Math.sin(i * 0.9) * 10 + (i % 2) * 8; bulbs += Ci(ux, uy, 7, { fill: '#ffe7b0' }); c.pool(ux, uy + 10, 90, '#ffc878', 0.22); }
+    o += Pa('M0 26 Q400 60 800 28 T1600 30', S(c.L('#1e1814'), 2.5)) + bulbs;
+    // bar shelf on the right with bottles, a chalk sign
+    o += R(1120, 250, 420, 12, { fill: c.L('#2f211c') }) + R(1120, 370, 420, 12, { fill: c.L('#2f211c') });
+    for (i = 0; i < 9; i++) { var bh = 60 + (i % 3) * 14; o += R(1140 + i * 44, 250 - bh, 22, bh, { fill: c.L(['#5d7a5a', '#8a5a3c', '#3f5a7a', '#b9a274'][i % 4]), rx: 5 }) + R(1147 + i * 44, 250 - bh - 16, 8, 18, { fill: c.L('#2a2420') }) + R(1140 + i * 44, 370 - bh + 8, 22, bh - 8, { fill: c.L(['#b9a274', '#5d7a5a', '#8a5a3c', '#6d3f46'][i % 4]), rx: 5 }); }
+    o += R(880, 250, 190, 150, { fill: c.L('#22332d'), rx: 3 }) + R(872, 242, 206, 166, S(c.L('#7a5a43'), 8)) + Pa('M902 290 h130 M902 322 h100 M902 354 h140', S('#f1f0e6', 4, 0.5)) + Pa('M902 270 h60', S('#ffe9a0', 4, 0.7));
+    // floor and the low stage
+    o += R(0, 640, 1600, 260, { fill: c.vg(c.L('#3d2b25'), c.L('#231814')) }) + R(0, 640, 1600, 6, F('#000000', 0.3));
+    o += poly([[250, 700], [1010, 700], [1090, 800], [170, 800]], { fill: c.vg(c.L('#6b4a38'), c.L('#4a3327')) }) + poly([[170, 800], [1090, 800], [1090, 836], [170, 836]], { fill: c.L('#2f211c') }) + Pa('M250 700 L1010 700', S(c.L('#a37652'), 3, 0.6));
+    // stool and the microphone on its stand
+    o += El(820, 742, 46, 12, { fill: c.L('#8f6d52') }) + R(786, 742, 8, 54, { fill: c.L('#5b4032') }) + R(846, 742, 8, 54, { fill: c.L('#5b4032') }) + R(790, 770, 60, 5, { fill: c.L('#5b4032') });
+    o += El(620, 778, 64, 12, { fill: c.L('#16171d') }) + R(616, 420, 8, 360, { fill: c.L('#2a2d38') }) + Pa('M620 424 L652 392', S(c.L('#2a2d38'), 8)) + G(R(-34, -15, 68, 30, { fill: c.L('#3a3e4c'), rx: 15 }) + R(-34, -15, 30, 30, { fill: c.L('#8f95a8'), rx: 15 }) + Pa('M-24 -10 v20 M-16 -13 v26 M-8 -14 v28', S(c.L('#565c70'), 2)), { transform: 'translate(664 380) rotate(-44)' });
+    // one warm spot on the microphone
+    c.post += poly([[560, 0], [760, 0], [900, 800], [380, 800]], { fill: c.grad([[0, '#ffdca0', 0.26], [1, '#ffdca0', 0.05]]), filter: B(30) }) + El(640, 770, 300, 46, F('#ffdca0', 0.3, { filter: B(16) }));
+    // the backs of two chairs, near and soft
+    o += G(R(40, 720, 250, 260, { rx: 30 }) + R(1290, 740, 270, 240, { rx: 30 }), { fill: c.L('#17110f'), filter: B(4) });
+    return o;
+  };
+
   var BG_NAMES = ['lab', 'office', 'lecture', 'server', 'library', 'night', 'cafe', 'terminal', 'paper', 'train', 'garden', 'void',
-    'sakura', 'classroom', 'rooftop', 'corridor', 'station', 'sea', 'room', 'studio'];
+    'sakura', 'classroom', 'rooftop', 'corridor', 'station', 'sea', 'room', 'studio', 'basement'];
+  // rooms: weather is seen through their windows, not falling between the cast
+  var INDOOR = { lab: 1, office: 1, lecture: 1, server: 1, library: 1, cafe: 1, train: 1, classroom: 1, corridor: 1, room: 1, studio: 1, basement: 1 };
 
   function timeOf(name, modifier) {
     if (modifier === 'night' || modifier === 'dawn' || modifier === 'dusk') return modifier;
@@ -748,6 +800,7 @@
   // background(name, modifier, opts) -> <svg viewBox="0 0 1600 900">
   //   modifier: night | dawn | dusk | noon | dim (dim keeps the scene's own hour and lowers the light)
   //   opts: { spines: [{title, genreHue}] } for library; an array is taken as spines.
+  //         { overcast: true } closes the sky (no moon, no stars); { board: 'plot'|'text'|'blank' } for the blackboards.
   function background(name, modifier, opts) {
     if (Array.isArray(opts)) opts = { spines: opts };
     name = String(name || 'void').toLowerCase();
@@ -755,7 +808,9 @@
     if (!BG.hasOwnProperty(name)) name = 'void';
     if (MODS.indexOf(modifier) < 0) modifier = '';
     var tod = timeOf(name, modifier), c = new Ctx('bg:' + name, tod);
-    return finish(c, BG[name](c, opts || {}), { 'class': 'vn-bg-svg', 'data-bg': name, 'data-mod': modifier || null, 'data-tod': tod }, modifier === 'dim');
+    opts = opts || {};
+    c.opts = opts; c.overcast = !!opts.overcast;
+    return finish(c, BG[name](c, opts), { 'class': 'vn-bg-svg', 'data-bg': name, 'data-mod': modifier || null, 'data-tod': tod, 'data-sky': c.overcast ? 'overcast' : null }, modifier === 'dim');
   }
 
   /* ------------------------------------------------------------ event illustrations (CGs) */
@@ -828,7 +883,8 @@
         var len = 60 + r() * 260;
         if (i === 7 && j === 1) {
           // the one identifier someone left readable
-          out += R(xx - 14, y - 6, 300, 46, { fill: '#ffd98c', opacity: 0.16, rx: 8 }) + R(xx - 14, y - 6, 300, 46, S('#ffd98c', 2.5, 0.9, { rx: 8 })) + K.text(xx, y + 28, '_lastNSecs', { 'font-family': MONO, 'font-size': 38, fill: '#ffe9b8', 'font-weight': 600 });
+          var idt = String((c.opts && c.opts.text) || '_lastNSecs').slice(0, 28), idw = idt.length * 23 + 70;
+          out += R(xx - 14, y - 6, idw, 46, { fill: '#ffd98c', opacity: 0.16, rx: 8 }) + R(xx - 14, y - 6, idw, 46, S('#ffd98c', 2.5, 0.9, { rx: 8 })) + K.text(xx, y + 28, idt, { 'font-family': MONO, 'font-size': 38, fill: '#ffe9b8', 'font-weight': 600 });
           c.post += G(El(xx + 136, y + 20, 260, 80, F('#ffd98c', 0.35, { filter: B(30) })), { transform: 'rotate(-3 800 450)' });
           xx += 320; continue;
         }
@@ -887,10 +943,11 @@
     var o = R(0, 0, 1600, 900, { fill: c.vg(c.L('#b9a892'), c.L('#8a7a6a')) });
     // one tall window
     var cp = c.clip(R(420, 60, 760, 540));
-    o += R(396, 36, 808, 588, { fill: c.L('#f1ead8') }) + G(R(420, 60, 760, 540, { fill: c.grad(c.skyStops()) }) + Ci(900, 560, 420, { fill: c.rg(c.P.sun, 0.9) }) + Ci(900, 560, 40, F('#fffdf2', 0.95, { filter: B(4) })) + clouds(c, 5, 100, 420, 0.8, 'tc') + city(c, 'tc', 600, 20, 110, '#4f4666', 0.35, { w: 30, lights: 0.2 }), { 'clip-path': cp });
+    o += R(396, 36, 808, 588, { fill: c.L('#f1ead8') }) + G(R(420, 60, 760, 540, { fill: c.grad(c.skyStops()) }) + (c.night ? G(stars(c, 90, 520, 'tcs'), { transform: 'translate(0 60)' }) + moon(c, 1010, 190, 34) : c.tod === 'day' ? Ci(980, 170, 300, { fill: c.rg(c.P.sun, 0.8) }) + Ci(980, 170, 30, F('#fffdf2', 0.95, { filter: B(4) })) : Ci(900, 560, 420, { fill: c.rg(c.P.sun, 0.9) }) + Ci(900, 560, 40, F('#fffdf2', 0.95, { filter: B(4) }))) + clouds(c, 5, 100, 420, 0.8, 'tc') + city(c, 'tc', 600, 20, 110, '#4f4666', 0.35, { w: 30, lights: 0.2 }), { 'clip-path': cp });
     o += R(792, 60, 16, 540, { fill: c.L('#f1ead8') }) + R(420, 320, 760, 12, { fill: c.L('#f1ead8') });
     o += floor(c, 660, '#8f6f55');
-    c.post += R(340, 0, 920, 680, F(c.P.key, 0.3, { filter: B(40) })) + poly([[420, 600], [1180, 600], [1500, 900], [100, 900]], { fill: c.grad([[0, c.P.key, 0.55], [1, c.P.key, 0.1]]), filter: B(16) });
+    var tk = c.night ? 0.4 : 1;   // the moon throws less light than the sun
+    c.post += R(340, 0, 920, 680, F(c.P.key, 0.3 * tk, { filter: B(40) })) + poly([[420, 600], [1180, 600], [1500, 900], [100, 900]], { fill: c.grad([[0, c.P.key, 0.55 * tk], [1, c.P.key, 0.1 * tk]]), filter: B(16) });
     // two chairs, backs to us, facing the light
     function chair(x, s, tilt) {
       var col = c.L('#2a1f24'), out = El(x + 60 * s, 866, 150 * s, 18 * s, F('#1a1220', 0.5, { filter: B(8) }));
@@ -950,10 +1007,11 @@
   };
 
   CG['window-rain'] = function (c) {
-    var o = R(0, 0, 1600, 900, { fill: c.vg('#0d1428', '#1b2748') }), r = c.rnd('rain'), bk = '', i;
+    // night by default; by day, dusk or dawn the glass takes that hour's (clouded) sky
+    var sk = c.P.sky, o = R(0, 0, 1600, 900, { fill: c.night ? c.vg('#0d1428', '#1b2748') : c.vg(mix(sk[0], '#5a6274', 0.55), mix(sk[sk.length - 2], '#8a90a0', 0.5)) }), r = c.rnd('rain'), bk = '', i;
     // the city, out of focus behind wet glass
     for (i = 0; i < 60; i++) bk += Ci(r() * 1600, 300 + r() * 520, 16 + r() * 46, F(['#ffd98c', '#ff9f8a', '#9fd0ff', '#ffe9c4', '#c9a8ff'][Math.floor(r() * 5)], 0.18 + r() * 0.36));
-    o += G(city(c, 'wr', 900, 200, 560, '#0c1226', 0.2, { w: 90, lights: 0 }), { filter: B(8) }) + G(bk, { filter: B(8) });
+    o += G(city(c, 'wr', 900, 200, 560, c.night ? '#0c1226' : '#3a4258', 0.2, { w: 90, lights: 0 }), { filter: B(8) }) + G(bk, { filter: B(8), opacity: c.night ? null : c.tod === 'day' ? 0.35 : 0.7 });
     // streaks and drops
     var st = '', dr = '';
     for (i = 0; i < 46; i++) { var x = r() * 1600, y = r() * 500, len = 120 + r() * 420; st += Pa('M' + num(x) + ' ' + num(y) + 'q' + num((r() - 0.5) * 16) + ' ' + num(len * 0.5) + ' ' + num((r() - 0.5) * 10) + ' ' + num(len), S('#dfe9ff', 2 + r() * 3, 0.1 + r() * 0.16)); dr += El(x + (r() - 0.5) * 8, y + len, 5 + r() * 5, 8 + r() * 8, F('#eaf2ff', 0.45 + r() * 0.3)); }
@@ -975,10 +1033,18 @@
     return o;
   }
 
-  // cg(name) -> <svg viewBox="0 0 1600 900">; unknown names give an abstract fallback (data-cg="fallback")
-  function cg(name) {
+  // cg(name, modifier, opts) -> <svg viewBox="0 0 1600 900">; unknown names give an abstract fallback (data-cg="fallback")
+  //   modifier: day | dusk | dawn | night repaints the hour for the CGs that have a sky (two-chairs, corridor-light,
+  //   window-rain, tree); the others keep their own. opts: { overcast: true } (no moon, no stars),
+  //   { text: 'identifier' } (the one readable name on screen-code).
+  var CG_HOURS = { 'two-chairs': 1, 'corridor-light': 1, 'window-rain': 1, tree: 1 };
+  function cg(name, modifier, opts) {
     name = String(name || '').toLowerCase();
-    var known = CG.hasOwnProperty(name), tod = known ? CG_TOD[name] : 'night', c = new Ctx('cg:' + name, tod);
+    opts = opts || {};
+    var known = CG.hasOwnProperty(name), tod = known ? CG_TOD[name] : 'night';
+    if (known && CG_HOURS[name] && TOD[modifier]) tod = modifier;
+    var c = new Ctx('cg:' + name, tod);
+    c.opts = opts; c.overcast = !!opts.overcast && name !== 'sea-of-points';
     return finish(c, known ? CG[name](c) : cgFallback(c), { 'class': 'vn-cg-svg', 'data-cg': known ? name : 'fallback', 'data-tod': tod }, false, known && (name === 'sea-of-points' || name === 'screen-code') ? 0.7 : 0.55);
   }
 
@@ -1019,7 +1085,7 @@
   }
 
   return {
-    background: background, BACKGROUNDS: BG_NAMES, MODIFIERS: MODS, timeOf: timeOf, TOD: TOD,
+    background: background, BACKGROUNDS: BG_NAMES, MODIFIERS: MODS, timeOf: timeOf, TOD: TOD, INDOOR: INDOOR,
     cg: cg, CGS: CG_NAMES, fx: fx, FX: FX_NAMES
   };
 });

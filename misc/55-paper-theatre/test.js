@@ -527,6 +527,81 @@ section = 'run';
   eq(r8.advance().op.kind, 'say', 'and play continues after it');
 })();
 
+/* ------------------------------------------------------------------ staging options added in the QA pass */
+section = 'stage-options';
+(function () {
+  var r = parseLint(HEADER + '@cast Ann hairhue=25 hairtone=dark masc shirt\n@cast Bo hairtone=neon\n@bg room night overcast\n@bg classroom board=text\n@bg basement\n@bg lab dusk sideways\nJack: a\n@cg two-chairs night | Late\n@cg screen-code text=total_count\n@cg desk-night overcast\n@cg corridor-light noon purple\nJack: b\n@end');
+  var p = r.p, bgs = p.ops.filter(function (o) { return o.kind === 'bg'; }), cgs = p.ops.filter(function (o) { return o.kind === 'cg'; });
+  eq([p.cast.ann.hairhue, p.cast.ann.hairtone, p.cast.bo.hairtone], [25, 'dark', undefined], 'hairtone parsed; an unknown tone is not taken');
+  eq(bgs[0], { kind: 'bg', name: 'room', mod: 'night', line: bgs[0].line, opts: { overcast: true } }, '@bg name hour overcast');
+  eq([bgs[1].mod, bgs[1].opts], [null, { board: 'text' }], '@bg classroom board=text');
+  eq([bgs[2].name, bgs[2].opts], ['basement', undefined], 'basement is a known background; no opts key when none given');
+  ok(!has(r.issues, 'bg-unknown') && r.issues.filter(function (i) { return i.code === 'bg-mod-unknown'; }).length === 1 && /sideways/.test(find(r.issues, 'bg-mod-unknown').msg), 'an unknown background modifier still warns');
+  eq([cgs[0].name, cgs[0].mod, cgs[0].caption], ['two-chairs', 'night', 'Late'], '@cg name hour | caption');
+  eq([cgs[1].name, cgs[1].opts], ['screen-code', { text: 'total_count' }], '@cg screen-code text=identifier');
+  eq([cgs[2].opts, cgs[2].mod], [{ overcast: true }, undefined], '@cg desk-night overcast');
+  eq([cgs[3].mod, r.issues.filter(function (i) { return i.code === 'cg-malformed'; }).length], ['day', 1], 'noon is day for a CG; an unknown cg modifier warns once');
+  ok(!has(r.issues, 'cg-unknown'), 'modifiers are not part of the cg name');
+  var run = VN.createRun(p); run.advance();
+  eq(run.state.bg, { name: 'lab', mod: 'dusk' }, 'state.bg has no opts when the op has none');
+  run.advance();
+  eq(run.state.cg, { name: 'corridor-light', caption: null, mod: 'day' }, 'state.cg carries the hour');
+  var run2 = VN.createRun(VN.parse(HEADER + '@bg room night overcast\n@cg screen-code text=x | C\nJack: a\n@end')); run2.advance();
+  eq([run2.state.bg, run2.state.cg], [{ name: 'room', mod: 'night', opts: { overcast: true } }, { name: 'screen-code', caption: 'C', opts: { text: 'x' } }], 'state carries the options');
+
+  // a face lasts while the character stays on stage; an entrance without a face is neutral
+  var f = VN.createRun(VN.parse(HEADER + '@cast Ann\n@show Ann left (smile)\nAnn (laugh): one\n@show Ann right\nAnn: two\n@hide Ann\nJack: three\n@show Ann\nAnn: four\n@hide all\nAnn (worried): off stage\n@show Ann left\nAnn: five\n@end'));
+  f.advance(); eq(f.state.faces.ann, 'laugh', 'a line with a face sets it');
+  f.advance(); eq([f.state.faces.ann, f.state.slots.right], ['laugh', 'ann'], 're-showing someone on stage (a move) keeps the face');
+  f.advance(); f.advance(); eq(f.state.faces.ann, 'neutral', 'after @hide, @show without a face is neutral');
+  f.advance(); f.advance(); eq(f.state.faces.ann, 'neutral', 'a face spoken off stage does not follow the character back on');
+})();
+
+/* ------------------------------------------------------------------ routes (chapter jumps, deep links) */
+section = 'routeTo';
+(function () {
+  var src = HEADER + [
+    'Jack: start',
+    '* left -> a', '* right -> b',
+    '== a', '@set side = left', 'Jack: on the left', '-> hub',
+    '== b', '@set side = right', 'Jack: on the right', '-> hub',
+    '== hub',
+    '* (once) one -> h1', '* (once) two -> h2', '* (if seen == 2) out -> out',
+    '== h1', '@add seen 1', 'Jack: first', '-> hub',
+    '== h2', '@add seen 1', 'Jack: second', '-> hub',
+    '== out',
+    '@chapter 2 After',
+    'Jack: done',
+    '@if side == right -> secret', '-> fin',
+    '== secret', 'Jack: only on the right', '-> fin',
+    '== orphan', 'Jack: nobody comes here', '-> fin',
+    '== fin', '@end'
+  ].join('\n');
+  var p = VN.parse(src);
+  var r = VN.routeTo(p, 'b');
+  eq(r && r.choiceLog.map(function (c) { return c.optionIndex; }), [1], 'a label behind the second option is reached by choosing it');
+  var run = VN.createRun(p), stop = run.replay(r.choiceLog, r.stopIndex);
+  eq([stop.op.text, run.state.vars.side, run.state.stops], ['on the right', 'right', r.stopIndex], 'replaying the route lands on the first stop after the label');
+  var ch = VN.routeTo(p, p.chapters[0].index);
+  var run2 = VN.createRun(p), s2 = run2.replay(ch.choiceLog, ch.stopIndex);
+  eq([s2.op.kind, s2.index, run2.state.vars.seen], ['chapter', p.chapters[0].index, 2], 'a chapter behind a (once) hub and an (if) exit is found');
+  eq(ch.choiceLog[0].optionIndex, 0, 'first options by default');
+  var pref = VN.routeTo(p, p.chapters[0].index, { prefer: [{ menuKey: p.ops[p.menus[0]].key, optionIndex: 1 }] });
+  eq(pref.choiceLog[0].optionIndex, 1, 'a preferred (saved) choice is taken where it leads there');
+  var sec = VN.routeTo(p, 'secret');
+  var run3 = VN.createRun(p); run3.replay(sec.choiceLog, sec.stopIndex);
+  eq([sec.choiceLog[0].optionIndex, run3.current().op.text], [1, 'only on the right'], 'a conditional scene is reached through the choice that unlocks it');
+  eq(VN.routeTo(p, 'orphan'), null, 'an unreachable label has no route');
+  eq(VN.routeTo(p, 'nope'), null, 'an unknown label has no route');
+  eq(VN.routeTo(p, 0).stopIndex, 1, 'the first op is stop 1 with no choices');
+  var seenOps = [];
+  var tr = VN.createRun(p, { trace: function (pc) { seenOps.push(pc); } }); tr.advance();
+  eq(seenOps, [0], 'trace reports every op about to run');
+  // snapshot of a routed run can be saved and replayed like any other
+  var snap = run2.snapshot(), run4 = VN.createRun(p), s4 = run4.replay(snap.choiceLog, snap.stopIndex);
+  eq([s4.index, run4.state.vars], [s2.index, run2.state.vars], 'a routed place saves and loads');
+})();
+
 /* ------------------------------------------------------------------ blog segmenter */
 section = 'blog';
 (function () {
@@ -551,8 +626,8 @@ section = 'blog';
   ok(mi > 0 && k[mi - 1] === 'label' && ops[mi - 1].name === 'read_1', 'list -> hub label + menu');
   eq(ops[mi].options.map(function (o) { return [o.text, o.target, o.once]; }), [['Alpha', 'read_1_1', true], ['Beta vs. Gamma', 'read_1_2', true], ['Delta', 'read_1_3', true], ['Continue', 'read_1_done', false]], 'menu options: first sentence, once, Continue');
   eq(ops[mi + 1].name, 'read_1_1', 'section label');
-  eq(ops[mi + 2].text, 'Alpha. Alpha body, e.g. this. nested one.', 'nested item folded into the section');
-  eq(ops[mi + 3], { kind: 'goto', target: 'read_1', line: 0 }, 'section returns to the hub');
+  eq([ops[mi + 2].text, ops[mi + 3].text, ops[mi + 3].cont, ops[mi + 3].ref], ['Alpha. Alpha body, e.g. this.', 'nested one.', true, ops[mi + 2].ref], 'a nested item is a stop of its own in the section, same paragraph chip');
+  eq(ops[mi + 4], { kind: 'goto', target: 'read_1', line: 0 }, 'section returns to the hub');
   var card = ops.filter(function (o) { return o.kind === 'card'; })[0];
   eq([card.title, card.cells[0].value, card.src], ['Figure', 'An image', 'assets/img/x.png'], 'image -> card');
   ok(!ops.some(function (o) { return /ignored|hidden/.test(o.text || ''); }), 'code fences and comments dropped');
@@ -575,6 +650,20 @@ section = 'blog';
   var run = VN.createRun(x), s = run.advance(), guard = 0, sawMenu = false;
   while (s && !s.done && guard++ < 200) { if (s.op.kind === 'menu') { sawMenu = true; s = run.choose(0); } else s = run.advance(); }
   ok(sawMenu && s.done, 'expanded program plays to the end choosing the first option');
+  // long paragraphs are cut into window-sized stops at sentence ends
+  var long = 'One sentence that runs for a while, e.g. about Dr. A. Turing vs. everyone else, and then stops. ' +
+    new Array(9).join('Another sentence follows it with $a. B$ kept whole inside. ') + 'The last one ends here.';
+  var lo = VN.blog('Short one.\n\n' + long + '\n\nAfter.', {});
+  var pieces = lo.filter(function (o) { return o.ref === '\u00b62'; });
+  ok(pieces.length >= 2 && pieces.every(function (o) { return o.text.length <= 380; }), 'a long paragraph becomes several stops of at most a window: ' + pieces.map(function (o) { return o.text.length; }));
+  eq(pieces.map(function (o) { return o.text; }).join(' '), long, 'no text lost or reordered by the split');
+  ok(pieces[0].text.indexOf('e.g. about Dr. A. Turing vs. everyone') > 0, 'abbreviations and initials do not end a sentence');
+  ok(pieces.every(function (o) { return (o.text.split('$').length - 1) % 2 === 0; }), 'math is never split');
+  eq([!!pieces[0].cont, pieces[1].cont], [false, true], 'continuation stops are marked');
+  eq(VN.blog(long + '\n\nSecond.\n\nThird.', {}, { max: 2 }).filter(function (o) { return o.truncated; }).length, 1, 'max counts paragraphs, not the pieces of one');
+  ok(VN.blog(long + '\n\nSecond.\n\nThird.', {}, { max: 2 }).some(function (o) { return o.text === 'Second.'; }), 'the second paragraph is still inside max=2');
+  var nest = VN.blog('- Top one.\n  - child a\n  - child b\n- Top two.', {});
+  eq(nest.filter(function (o) { return o.kind === 'narrate'; }).map(function (o) { return o.text; }), ['Top one.', 'child a.', 'child b.', 'Top two.'], 'nested list items are separate stops');
   eq(VN.blog('', {}), [], 'empty post -> no ops');
   eq(VN.blog('\ufeffJust text.', {})[0].text, 'Just text.', 'BOM tolerated');
 })();

@@ -103,8 +103,8 @@ Jack: Overall, accuracy fell from {human_l0} at L0 to {human_l3} at L3. ^§4
 | `  continuation` | Indented: joined to the previous line. |
 | `... ^§4` / `^p.2` / `^¶3` / `^para` | Trailing citation chip. `§`/`p.` point at a section or page of the source, `¶` at a paragraph of the post (¶1 is the epigraph when the post has one), `para` means "paraphrase of the source" (the only chip allowed on a coauthor's line besides `^§`). |
 | `*em*`, `` `code` ``, `{key}`, `{Name}` | Inline markup. `{key}` resolves facts first, then variables; `{Name}` is a cast member's display name. |
-| `@bg name [night\|dawn\|dusk\|noon\|dim]` | Background, see *Backgrounds*. Unknown names fall back to `void` with a warning that lists the valid names. |
-| `@show Name [left\|center\|right] [(face)] [near\|far]` | Puts a sprite in a slot (first free slot when omitted), optionally closer to or further from the camera. Tokens after the name may come in any order. Sprites fade and slide in. Showing an undeclared name is fatal. |
+| `@bg name [night\|dawn\|dusk\|noon\|dim] [overcast] [board=plot\|text\|blank]` | Background, see *Backgrounds*. The tokens after the name may come in any order. Unknown names fall back to `void` with a warning that lists the valid names. |
+| `@show Name [left\|center\|right] [(face)] [near\|far]` | Puts a sprite in a slot (first free slot when omitted), optionally closer to or further from the camera. Tokens after the name may come in any order. Sprites fade and slide in. Showing an undeclared name is fatal. An entrance without a `(face)` is `neutral`: a face lasts only while the character stays on stage (see *Faces*). |
 | `@move Name left\|center\|right` | Slides a sprite that is on stage to another slot (face and distance kept). |
 | `@hide Name` / `@hide all` | Removes sprites (they fade out). |
 | `@chapter <n> <Title>` | Chapter card: fade to black, large numeral, title, thin rule. A stop. Each chapter is listed in the title screen's *Chapters* menu once the reader has reached it. `n` is the first word (`1`, `II`). |
@@ -113,8 +113,8 @@ Jack: Overall, accuracy fell from {human_l0} at L0 to {human_l3} at L3. ^§4
 | `@flashback on [caption]` / `@flashback off` | Memory mode: warm sepia grade, vignette, film grain, thin letterbox bars and an optional small caption (`@flashback on Spring, the study room`); a white flash on the way in and out. |
 | `@mode nvl` / `@mode adv` | Text presentation. `adv` is the window at the bottom with a name plate; `nvl` is a full-screen page over the dimmed, blurred picture where lines accumulate, for monologue and essay passages. |
 | `@page` | Clears the NVL page (a new page also starts at every `@mode nvl`). A page that overflows drops its oldest lines by itself. |
-| `@fx <name> [on\|off]` | Persistent atmosphere layers: `petals` (sakura), `snow`, `rain`, `dust` (motes in light), `fireflies`; `@fx none` clears them all. One-shot effects fire once on the next line: `@fx shake`, `@fx flash`, `@fx pulse`. |
-| `@cg <name> [\| caption]` / `@cg off` | Full-screen event illustration that replaces background and sprites while shown: `tree`, `desk-night`, `screen-code`, `hands-keyboard`, `two-chairs`, `corridor-light`, `sea-of-points`, `page`, `window-rain`. The optional caption is shown small in a corner. An unknown name warns and draws an abstract fallback. |
+| `@fx <name> [on\|off]` | Persistent atmosphere layers: `petals` (sakura), `snow`, `rain`, `dust` (motes in light), `fireflies`; `@fx none` clears them all. See *Weather and particles* for where they are drawn. One-shot effects fire once on the next line: `@fx shake`, `@fx flash`, `@fx pulse`. |
+| `@cg <name> [day\|dusk\|dawn\|night] [overcast] [text=identifier] [\| caption]` / `@cg off` | Full-screen event illustration that replaces background and sprites while shown: `tree`, `desk-night`, `screen-code`, `hands-keyboard`, `two-chairs`, `corridor-light`, `sea-of-points`, `page`, `window-rain`. The optional caption is shown small in a corner. An unknown name warns and draws an abstract fallback. The hour repaints the CGs that have a sky (`two-chairs`, `corridor-light`, `window-rain`, `tree`; their defaults are dusk, dusk, night, dusk); `overcast` takes the moon and stars out of the `desk-night` window; `text=` sets the one readable identifier on `screen-code` (default `_lastNSecs`; letters, digits, `_ $ .`, no spaces). |
 | `@pause <ms>` | A beat with no text (default 800). Continues by itself; a click skips it; instant under Skip, autoplay and reduced motion. |
 | `@tone <name>` | Colour grade for the whole picture until changed: `none`, `dusk`, `night`, `dawn`, `noon`, `memory`, `cold`. |
 | `@card Title \| cell \| cell` | Fact card. Cells may be `label: value` pairs. |
@@ -127,7 +127,7 @@ Jack: Overall, accuracy fell from {human_l0} at L0 to {human_l3} at L3. ^§4
 | `-> label` / `-> end` | Jump. Unknown target is fatal. |
 | `@thumb` | Marks the stop that `?thumb=1` jumps to for the thumbnail. One per story. |
 | `@withheld [text]` | Shows the embargo card ("Results withheld until the paper is public"), then the end card. Used in `@status embargo` stories. |
-| `@read post [max=N]` | Inlines the blog post as narration (Tier B). Headings become scene boards, lists become a hub menu. Default max 24 paragraphs. |
+| `@read post [max=N]` | Inlines the blog post as narration (Tier B). Headings become scene boards, lists become a hub menu (nested items are stops of their own inside their section), and a paragraph too long for the text window is cut into several stops at sentence ends. Default max 24 paragraphs. |
 | `@end` | End card. End of file also ends the story. |
 
 ## Cast
@@ -146,8 +146,11 @@ Options, all optional and in any order after the name:
 - Hair: `short`, `long`, `bob`, `ponytail`, `bun`, `curly`, `none`, `hood`. Accessories: `glasses`, `hat` (a beret).
 - `hairhue=N` (0-359): hair colour. Without it the hair is one of a few natural dark tones, always the same one for
   a given name. Brows and lashes follow the hair.
+- `hairtone=dark|mid|light|fair`: how deep that colour is. `hairhue=N` alone is the bright `light` tone (hue 25 is
+  ginger); for natural dark hair write `hairhue=25 hairtone=dark` (dark brown), `hairhue=25 hairtone=mid` (chestnut),
+  `hairhue=45 hairtone=fair` (blond). `hairtone` without `hairhue` keeps the hue picked from the name.
 - `fem` or `masc`: the figure. `fem` is slimmer with a waist, larger eyes, a skirt and a ribbon; `masc` is broader
-  with narrower eyes, heavier brows, trousers and a tie. Without either the figure is neutral (and, as before, wears
+  with narrower eyes, heavier brows, trousers and a tie (with `coat`, `uniform` and `shirt`; a hoodie or cardigan has none). Without either the figure is neutral (and, as before, wears
   a skirt only with `cardigan` or `uniform` and `long` / `bob` / `ponytail` / `bun` hair).
 - Clothes: `coat` (a lab coat over shirt and tie), `hoodie`, `cardigan`, `shirt`, `uniform` (blazer and tie). When
   omitted, one of shirt / coat / cardigan / hoodie is picked from the name, always the same one. `hue=N` colours the
@@ -170,13 +173,44 @@ thigh-up standing figures drawn in code (about 6.7 heads tall, turned a little t
 `lab`, `office`, `lecture`, `server`, `library`, `night` (a city under the moon), `cafe`, `terminal`, `paper`
 (a manuscript on a desk), `train`, `garden`, `void` (soft lights in the dark), `sakura` (a hill of cherry trees),
 `classroom`, `rooftop`, `corridor`, `station` (a platform), `sea`, `room` (a student's room), `studio` (an atelier
-with a large canvas).
+with a large canvas), `basement` (a basement bar with an open mic: a strip of window at pavement level, a low stage,
+one microphone; a night scene).
+
+`classroom` and `lecture` have a blackboard: `board=plot` (the default: lines and a curve on axes), `board=text`
+(lines of writing only) or `board=blank`, as in `@bg classroom dusk board=text`. `overcast` closes the sky of any
+scene (no moon, no stars): `@bg room night overcast`.
 
 Each scene is painted in its own time of day and takes an optional modifier: `night`, `dawn`, `dusk`, `noon`, or
 `dim` (same hour, lights low). Without a modifier most scenes are daytime; `night`, `room`, `server`, `terminal` and
 `void` are night scenes and `cafe`, `station` and `train` are dusk. Sprites take the light of the scene they stand in.
 Scenery does not follow the light/dark theme (only the text window and the menus do). `library` draws real spines
 from `../../assets/data/library.json` when it loads, with a silent fallback.
+
+### Faces
+
+A face set by `Name (face): text` or `@show Name (face)` stays while the character is on stage, through `@move` and
+through a second `@show` that only changes the slot or the distance. It does not survive an exit: after `@hide Name`
+(or `@hide all`), `@show Name` without a face brings the character back `neutral`, and a face on a line spoken while
+off stage does not follow the character back on. Say the face on the `@show` when an entrance needs one.
+
+### Weather and particles
+
+- Outdoors (`night`, `garden`, `sakura`, `rooftop`, `station`, `sea`, and the abstract `void`, `terminal`, `paper`)
+  every `@fx` layer falls in front of the cast.
+- In a room (`lab`, `office`, `lecture`, `server`, `library`, `cafe`, `train`, `classroom`, `corridor`, `room`,
+  `studio`, `basement`) the weather layers `rain`, `snow` and `petals` are drawn behind the cast and fainter, as
+  something seen through the windows; `dust` and `fireflies` stay in front.
+- While a `@cg` is up no particle layer is drawn; the layers come back by themselves at `@cg off`. The script does
+  not need to switch them off and on around an illustration.
+- While `@fx rain` or `@fx snow` is on, the sky is closed: backgrounds and the `desk-night` CG lose their moon and
+  stars. To get the same sky without falling rain, write `@bg room night overcast` / `@cg desk-night overcast`.
+
+### The reader's sprite and the choices
+
+A `player` cast member is drawn from behind (head and shoulders); in a slot it stands in front of the others and its
+head clears the text window. Choice bars are placed just above the text window, under the faces, and the cast is
+dimmed a little while a question is up; a list too long for that space scrolls. A `near` sprite is lowered under the
+`@flashback` letterbox so its head is not cut.
 
 ## Staging a scene
 
@@ -306,13 +340,28 @@ Then open, from the site root:
 - `&autoplay=12` / `&autoplay=end` — test hook: advance that many stops instantly
   (option 1 at every menu, or option K+1 with `&pick=K`) or run to the ending, without autosaving;
   `&screen=save|load|config|log|chapters|title` then opens that screen, `&trans=iris` freezes a transition half-way.
-- `?gallery=bg` (`&mod=night|dawn|dusk|dim`) and `?gallery=cg` — every background and every event illustration.
+- `?gallery=bg` (`&mod=night|dawn|dusk|dim`, `&overcast=1`, `&board=text`, `&only=room,basement`) and `?gallery=cg`
+  (`&mod=day|dusk|dawn|night`, `&overcast=1`, `&text=total`) — every background and every event illustration.
 
 A story opens on its title screen (Start, Continue, Chapters, Load, Log, Config, Back to stories) and then plays
 full-bleed. With `?src=` (or `?drafts=1`) a `⚠ n` button at the top right lists every parser and lint issue with line
 numbers; they are mirrored to the browser console, and a fatal issue replaces the stage with a panel that names the
 line. Keys while playing: Space/Enter advance, Backspace back, `L` backlog, `A` auto, `S` skip, `H` or right-click hide
 the window, `C` config, `F` fullscreen, `F5`/`F9` quick save and load, `T` text-only, `?` help, `Esc` title screen.
+
+## Testing in a real browser
+
+`test.js` never opens a browser. The end-to-end matrix drives headless Edge with real mouse, keyboard and touch
+input over the DevTools protocol (no npm packages); it lives with the other scratch tools, outside the repository:
+
+```text
+powershell -ExecutionPolicy Bypass -File <tools>\serve.ps1 -Port 8851
+"C:\Program Files\nodejs\node.exe" <tools>\vn-e2e.mjs                 # everything, about 25 minutes
+"C:\Program Files\nodejs\node.exe" <tools>\vn-e2e.mjs "quick /" back  # only rows whose "group / name" contains a word
+```
+
+It reads the live run through `window.__vnStage` (`{S, prefs, catalog()}`, read-only by convention). Run it after any
+change to `stage.js`, `vn.css` or `index.html`.
 
 ## Testing
 

@@ -39,6 +39,7 @@ var SNAPSHOTS = {
   'bg:sea': [39661, 'bab8d13a'],
   'bg:room': [35930, '4e63b45d'],
   'bg:studio': [58128, '1170da6d'],
+  'bg:basement': [31162, '6badfea3'],
   'bg:lab:night': [45132, '11a19509'],
   'bg:lab:dawn': [28451, '3b071846'],
   'bg:lab:dim': [28193, '9c4d7a22'],
@@ -46,27 +47,36 @@ var SNAPSHOTS = {
   'bg:lab:noon': [28119, 'e346ffc9'],
   'bg:library:spines': [88463, 'b7beef42'],
   'bg:unknown': [3803, 'ce086acb'],
-  'sprite:jack:neutral': [42734, '75e91a62'],
-  'sprite:jack:smile': [42732, '74673313'],
-  'sprite:jack:puzzled': [42734, 'bf82b77b'],
-  'sprite:jack:worried': [42734, '636fc8d7'],
-  'sprite:jack:surprised': [42736, '66ac956c'],
-  'sprite:jack:thinking': [42735, '90a64f69'],
-  'sprite:jack:deadpan': [42734, '452872f8'],
-  'sprite:jack:laugh': [42732, '29aa559c'],
-  'sprite:hair:short': [43533, '57cc9584'],
-  'sprite:hair:long': [44948, '0b0f5ed3'],
-  'sprite:hair:bob': [41602, '530d3ee8'],
-  'sprite:hair:ponytail': [45192, '5342d80c'],
-  'sprite:hair:bun': [43388, '16623903'],
-  'sprite:hair:curly': [48053, '3c11a210'],
-  'sprite:hair:none': [40784, 'cc53f4c6'],
-  'sprite:hair:hood': [42860, '0f85eec3'],
-  'sprite:clothes:coat': [42020, '68927826'],
-  'sprite:clothes:hoodie': [40990, '11a0c0da'],
-  'sprite:clothes:cardigan': [43855, '81cce03a'],
-  'sprite:clothes:shirt': [42343, 'adcf906f'],
-  'sprite:clothes:uniform': [43599, '70dba742'],
+  'bg:night:overcast': [146766, '0a6d3f19'],
+  'bg:room:overcast': [33281, '69f61d10'],
+  'bg:classroom:text': [65250, 'ba40cdcb'],
+  'cg:two-chairs:night': [28076, '69a604ae'],
+  'cg:corridor-light:day': [8931, '1152ec74'],
+  'cg:window-rain:dusk': [48765, '55bbc5c6'],
+  'cg:desk-night:overcast': [29400, 'b64224f9'],
+  'cg:screen-code:text': [17266, '507bfd3a'],
+  'sprite:masc:shirt:dark': [43099, 'd71d515a'],
+  'sprite:jack:neutral': [42756, '4b2b3cc7'],
+  'sprite:jack:smile': [42754, '79096cfa'],
+  'sprite:jack:puzzled': [42756, '8af7c88a'],
+  'sprite:jack:worried': [42756, '06f345c6'],
+  'sprite:jack:surprised': [42758, '9e5ad9b5'],
+  'sprite:jack:thinking': [42757, '95009cb4'],
+  'sprite:jack:deadpan': [42756, '5d29d5c5'],
+  'sprite:jack:laugh': [42754, '62a626bd'],
+  'sprite:hair:short': [43555, '110eb009'],
+  'sprite:hair:long': [44970, '78b9f31c'],
+  'sprite:hair:bob': [41624, 'c741c51f'],
+  'sprite:hair:ponytail': [45214, 'ff83004f'],
+  'sprite:hair:bun': [43410, '51b1371c'],
+  'sprite:hair:curly': [48075, '4af871fd'],
+  'sprite:hair:none': [40806, '6b64e067'],
+  'sprite:hair:hood': [42882, 'e7243994'],
+  'sprite:clothes:coat': [42042, '70439673'],
+  'sprite:clothes:hoodie': [41012, '172093f7'],
+  'sprite:clothes:cardigan': [43877, 'fb84d1e1'],
+  'sprite:clothes:shirt': [42365, 'f4bef444'],
+  'sprite:clothes:uniform': [43621, '00f18155'],
   'cg:tree': [110707, '2d09d62c'],
   'cg:desk-night': [34203, '1b3b9c4d'],
   'cg:screen-code': [17271, 'afcf46cb'],
@@ -85,7 +95,7 @@ var SNAPSHOTS = {
   'sharedDefs': [4895, 'd4820fc4'],
   'lattice:sparse': [21725, 'b8c5815e'],
   'lattice:dense': [31129, 'd3fd2e43'],
-  'player': [1068, '4272fb07'],
+  'player': [1090, '545a4782'],
   'page': [6110, 'c80485ac'],
   'card': [498, '309f3057'],
   'chart:bar': [4163, '4ce89530'],
@@ -93,7 +103,7 @@ var SNAPSHOTS = {
   'code': [498, '6f443bd2'],
   'scene': [1048, 'c0fc2a7c'],
   'endCard': [1338, '236be0b2'],
-  'castGrid': [524746, 'cbdf6b6a'],
+  'castGrid': [524944, '04c9fa77'],
   'palette:slate:light': [372, 'a873ef31'],
   'palette:hue:dark': [409, '6e38266c']
 };
@@ -111,6 +121,15 @@ A.BACKGROUNDS.forEach(function (b) { CASES['bg:' + b] = function () { return A.b
 A.MODIFIERS.forEach(function (m) { CASES['bg:lab:' + m] = function () { return A.background('lab', m); }; });
 CASES['bg:library:spines'] = function () { return A.background('library', 'dim', [{ title: 'A', genreHue: 10 }, { title: 'B', genreHue: 120 }]); };
 CASES['bg:unknown'] = function () { return A.background('attic'); };
+CASES['bg:night:overcast'] = function () { return A.background('night', null, { overcast: true }); };
+CASES['bg:room:overcast'] = function () { return A.background('room', 'night', { overcast: true }); };
+CASES['bg:classroom:text'] = function () { return A.background('classroom', null, { board: 'text' }); };
+CASES['cg:two-chairs:night'] = function () { return A.cg('two-chairs', 'night'); };
+CASES['cg:corridor-light:day'] = function () { return A.cg('corridor-light', 'day'); };
+CASES['cg:window-rain:dusk'] = function () { return A.cg('window-rain', 'dusk'); };
+CASES['cg:desk-night:overcast'] = function () { return A.cg('desk-night', null, { overcast: true }); };
+CASES['cg:screen-code:text'] = function () { return A.cg('screen-code', null, { text: 'total' }); };
+CASES['sprite:masc:shirt:dark'] = function () { return A.sprite({ id: 'M', hair: 'short', clothes: 'shirt', build: 'masc', skin: 2, hue: 210, hairhue: 25, hairtone: 'dark' }, 'neutral'); };
 A.FACES.forEach(function (f) { CASES['sprite:jack:' + f] = function () { return A.sprite(CAST.jack, f); }; });
 A.HAIR.forEach(function (h) { CASES['sprite:hair:' + h] = function () { return A.sprite({ id: 'H-' + h, hair: h, hat: true, skin: 3 }, 'smile'); }; });
 A.CLOTHES.forEach(function (k) { CASES['sprite:clothes:' + k] = function () { return A.sprite({ id: 'C-' + k, hair: 'bob', clothes: k, skin: 2, hue: 200 }, 'neutral'); }; });
@@ -210,7 +229,26 @@ Object.keys(CASES).forEach(function (name) {
   ok(/vn-endcard-ribbon/.test(ec) && /data-action="bibtex"/.test(ec) && /Figures used/.test(ec) && /title="quoted from the source, section 3.2"/.test(ec), 'end card parts');
   ok(A.endCard({ title: 'x' }).indexOf('data-action="bibtex"') < 0, 'end card: no BibTeX without @arxiv');
   ok(/unknown|void/.test(A.background('attic').match(/data-bg="([a-z]+)"/)[1]), 'unknown background falls back to void');
-  ok(A.BACKGROUNDS.length === 20 && ['sakura', 'classroom', 'rooftop', 'corridor', 'station', 'sea', 'room', 'studio'].every(function (n) { return A.BACKGROUNDS.indexOf(n) >= 0; }), 'twenty backgrounds');
+  ok(A.BACKGROUNDS.length === 21 && ['sakura', 'classroom', 'rooftop', 'corridor', 'station', 'sea', 'room', 'studio', 'basement'].every(function (n) { return A.BACKGROUNDS.indexOf(n) >= 0; }), 'twenty-one backgrounds');
+  // options added in the QA pass: every default stays byte-identical, the options repaint
+  ok(A.background('room', 'night', {}) === A.background('room', 'night') && A.cg('desk-night', null, {}) === A.cg('desk-night') && A.cg('two-chairs', 'dusk') === A.cg('two-chairs'), 'empty options and the default hour change nothing');
+  ok(/data-sky="overcast"/.test(A.background('night', null, { overcast: true })) && A.background('night', null, { overcast: true }).length < A.background('night').length - 5000, 'overcast: the night sky loses its stars and moon');
+  ok(A.background('lab', 'noon', { overcast: true }).replace(' data-sky="overcast"', '') === A.background('lab', 'noon'), 'overcast changes nothing where there is no moon or star to hide');
+  ok(A.cg('desk-night', null, { overcast: true }) !== A.cg('desk-night') && A.cg('sea-of-points', null, { overcast: true }) === A.cg('sea-of-points'), 'overcast reaches the desk-night window, never the sea of points');
+  ok(/data-tod="night"/.test(A.cg('two-chairs', 'night')) && /data-tod="day"/.test(A.cg('corridor-light', 'day')) && /data-tod="dusk"/.test(A.cg('window-rain', 'dusk')) && /data-tod="night"/.test(A.cg('screen-code', 'day')), 'cg hour: the CGs with a sky follow the modifier, the others keep their own');
+  ok(/>total<\/text>/.test(A.cg('screen-code', null, { text: 'total' })) && !/_lastNSecs/.test(A.cg('screen-code', null, { text: 'total' })), 'screen-code shows the identifier it is given');
+  ok(A.background('classroom', null, { board: 'text' }) !== A.background('classroom') && A.background('classroom', null, { board: 'plot' }) === A.background('classroom') && A.background('lecture', null, { board: 'blank' }) !== A.background('lecture'), 'blackboard options');
+  ok(A.INDOOR.lab && A.INDOOR.basement && !A.INDOOR.sakura && !A.INDOOR.night && !A.INDOOR.station, 'indoor scenes are listed');
+  (function () {
+    var base = { id: 'T', hair: 'short', clothes: 'shirt', skin: 2, hue: 200 };
+    var n = function (o) { return A.normCast(Object.assign({}, base, o)); };
+    ok(n({ hairhue: 25 }).hairCol === A.hslHex(25, 40, 46), 'hairhue alone keeps the old bright tone');
+    ok(n({ hairhue: 25, hairtone: 'dark' }).hairCol === A.hslHex(25, 30, 19) && n({ hairhue: 25, hairtone: 'fair' }).hairCol === A.hslHex(25, 46, 68), 'hairtone sets the depth of a hairhue');
+    ok(n({ hairtone: 'dark' }).hairHue === n({}).hairHue && n({ hairtone: 'dark' }).hairCol !== n({ hairtone: 'fair' }).hairCol, 'hairtone alone keeps the hashed hue');
+    ok(n({ hairtone: 'purple' }).hairCol === n({}).hairCol, 'unknown hairtone is ignored');
+    var masc = A.sprite(Object.assign({ build: 'masc' }, base), 'neutral'), neutral = A.sprite(base, 'neutral');
+    ok(masc.length > neutral.length && /class="vn-fig"/.test(masc), 'masc + shirt wears a tie; the figure has its own group inside the lit one');
+  })();
   ok(A.background('lab').indexOf('data-tod="day"') > 0 && A.background('lab', 'night').indexOf('data-tod="night"') > 0 && A.background('room').indexOf('data-tod="night"') > 0 && A.background('lab', 'dim').indexOf('data-tod="day"') > 0, 'time of day: default, modifier, dim keeps the hour');
   ok(A.timeOf('station') === 'dusk' && A.timeOf('station', 'noon') === 'day' && A.timeOf('sea', 'dawn') === 'dawn', 'timeOf');
   ok(A.background('sakura') !== A.background('sakura', 'dusk') && A.background('sakura') === A.background('sakura'), 'modifiers repaint; same input, same output');

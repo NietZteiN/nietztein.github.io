@@ -582,7 +582,7 @@
     palette: palette, PALETTES: PALETTES,
     // scenery and cast
     background: background, BACKGROUNDS: BG_NAMES, MODIFIERS: MODIFIERS, timeOf: SC ? SC.timeOf : null, TOD: SC ? SC.TOD : null,
-    cg: SC ? SC.cg : null, CGS: SC ? SC.CGS : [], fx: SC ? SC.fx : null, FX: SC ? SC.FX : [],
+    cg: SC ? SC.cg : null, CGS: SC ? SC.CGS : [], INDOOR: SC ? SC.INDOOR : {}, fx: SC ? SC.fx : null, FX: SC ? SC.FX : [],
     sprite: sprite, lattice: lattice, player: player, page: page, normCast: normCast,
     FACES: FACES, HAIR: HAIR, CLOTHES: CA ? CA.CLOTHES : [], sharedDefs: sharedDefs,
     mix: mix, mul: mul, hslHex: hslHex,

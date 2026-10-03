@@ -42,8 +42,11 @@
 
   var FACES = ['neutral', 'smile', 'puzzled', 'worried', 'surprised', 'thinking', 'deadpan', 'laugh'];
   var BACKGROUNDS = ['lab', 'office', 'lecture', 'server', 'library', 'night', 'cafe', 'terminal', 'paper', 'train', 'garden', 'void',
-    'sakura', 'classroom', 'rooftop', 'corridor', 'station', 'sea', 'room', 'studio'];
+    'sakura', 'classroom', 'rooftop', 'corridor', 'station', 'sea', 'room', 'studio', 'basement'];
   var BG_MODS = ['night', 'dawn', 'dim', 'dusk', 'noon'];
+  var BG_OPTS = { board: ['plot', 'text', 'blank'] };          // @bg classroom board=text
+  var CG_MODS = ['day', 'noon', 'dusk', 'dawn', 'night'];       // @cg two-chairs night | caption
+  var HAIRTONES = ['dark', 'mid', 'light', 'fair'];
   var TRANSITIONS = ['fade', 'dissolve', 'white', 'wipe-left', 'wipe-right', 'iris', 'blinds', 'cut'];
   var DEFAULT_TRANSITION = { name: 'dissolve', ms: 600 };
   var FX = ['petals', 'snow', 'rain', 'dust', 'fireflies'];
@@ -223,6 +226,7 @@
         else if (k === 'hue') decl.hue = ((parseInt(v, 10) || 0) % 360 + 360) % 360;
         else if (k === 'skin') decl.skin = Math.min(5, Math.max(1, parseInt(v, 10) || 1));
         else if (k === 'hairhue') decl.hairhue = ((parseInt(v, 10) || 0) % 360 + 360) % 360;
+        else if (k === 'hairtone' && HAIRTONES.indexOf(v) >= 0) decl.hairtone = v;
         else if (k === 'lattice') decl.lattice = v === 'dense' ? 'dense' : 'sparse';
         else unknown.push(t);
       } else if (HAIR.indexOf(t) >= 0) decl.hair = t;
@@ -403,10 +407,16 @@
           case 'file': meta.file = tail || null; break;
           case 'thumb': thumb = ops.length; ops.push({ kind: 'thumb', line: ln }); break;
           case 'bg':
-            var bt = tail.split(/\s+/);
+            var bt = tail.split(/\s+/).filter(Boolean);
             var bgop = { kind: 'bg', name: bt[0] || 'void', mod: null, line: ln };
-            if (bt[1] && BG_MODS.indexOf(bt[1]) >= 0) bgop.mod = bt[1];
-            else if (bt[1]) issues.push(issue('warn', ln, "unknown background modifier '" + bt[1] + "'", BG_MODS.join(' | '), 'bg-mod-unknown'));
+            // after the name, in any order: one hour (night dawn dusk noon dim), `overcast`, `board=text`
+            for (var bi = 1; bi < bt.length; bi++) {
+              var bkv = /^([a-z]+)=([\w-]+)$/.exec(bt[bi]);
+              if (BG_MODS.indexOf(bt[bi]) >= 0 && !bgop.mod) bgop.mod = bt[bi];
+              else if (bt[bi] === 'overcast') (bgop.opts = bgop.opts || {}).overcast = true;
+              else if (bkv && BG_OPTS[bkv[1]] && BG_OPTS[bkv[1]].indexOf(bkv[2]) >= 0) (bgop.opts = bgop.opts || {})[bkv[1]] = bkv[2];
+              else issues.push(issue('warn', ln, "unknown background modifier '" + bt[bi] + "'", BG_MODS.join(' | ') + ' | overcast | board=plot|text|blank', 'bg-mod-unknown'));
+            }
             if (BACKGROUNDS.indexOf(bgop.name) < 0) issues.push(issue('warn', ln, "unknown background '" + bgop.name + "'; using void", 'known backgrounds: ' + BACKGROUNDS.join(', '), 'bg-unknown'));
             ops.push(bgop); inBody = true;
             break;
@@ -492,12 +502,21 @@
             break;
           }
           case 'cg': {
-            var cgp = tail.split('|'), cgn = (cgp[0] || '').trim();
+            var cgp = tail.split('|'), cgh = (cgp[0] || '').trim().split(/\s+/).filter(Boolean), cgn = cgh[0] || '';
             if (!cgn) { issues.push(issue('warn', ln, 'empty @cg', '@cg name [| caption] | @cg off', 'cg-malformed')); break; }
             if (cgn === 'off') { ops.push({ kind: 'cg', name: null, caption: null, line: ln }); inBody = true; break; }
             if (CGS.indexOf(cgn) < 0) issues.push(issue('warn', ln, "unknown cg '" + cgn + "'; using an abstract fallback", 'known CGs: ' + CGS.join(', '), 'cg-unknown'));
             var cgc = cgp.slice(1).join('|').trim();
-            ops.push({ kind: 'cg', name: cgn, caption: cgc ? interpolateFacts(cgc, facts, cast).text : null, line: ln }); inBody = true;
+            var cgop = { kind: 'cg', name: cgn, caption: cgc ? interpolateFacts(cgc, facts, cast).text : null, line: ln };
+            // after the name: an hour (day dusk dawn night), `overcast`, `text=identifier` (screen-code)
+            for (var ci = 1; ci < cgh.length; ci++) {
+              var ckv = /^text=([\w$.]{1,28})$/.exec(cgh[ci]);
+              if (CG_MODS.indexOf(cgh[ci]) >= 0 && !cgop.mod) cgop.mod = cgh[ci] === 'noon' ? 'day' : cgh[ci];
+              else if (cgh[ci] === 'overcast') (cgop.opts = cgop.opts || {}).overcast = true;
+              else if (ckv) (cgop.opts = cgop.opts || {}).text = ckv[1];
+              else issues.push(issue('warn', ln, "unknown cg modifier '" + cgh[ci] + "'", '@cg name [day|dusk|dawn|night] [overcast] [text=identifier] [| caption]', 'cg-malformed'));
+            }
+            ops.push(cgop); inBody = true;
             break;
           }
           case 'pause': {
@@ -940,6 +959,46 @@
     return head;
   }
 
+  // Cut a long paragraph into window-sized pieces at sentence ends (never inside $math$), so that an
+  // auto-read stop fits the text window instead of scrolling inside it.
+  var CHUNK = 300;
+  function splitSentences(text) {
+    var out = [], re = /[.!?\u2026]["\u201d\u2019)\]]*\s+(?=["\u201c\u2018(\[]?[A-Z0-9$])/g, last = 0, m;
+    while ((m = re.exec(text))) {
+      var end = m.index + m[0].length, head = text.slice(last, end);
+      var before = text.slice(Math.max(0, m.index - 5), m.index);
+      if (m[0].charAt(0) === '.' && /(^|[\s(])(vs|e\.g|i\.e|etc|cf|al|Fig|No|pp?|[A-Z])$/.test(before)) continue;   // abbreviations, initials
+      if ((head.split('$').length - 1) % 2) continue;                                                              // inside math
+      out.push(head.replace(/\s+$/, '')); last = end;
+    }
+    if (last < text.length) out.push(text.slice(last));
+    return out;
+  }
+  function chunkText(text, limit) {
+    limit = limit || CHUNK;
+    if (text.length <= limit * 1.25) return [text];
+    var parts = [];
+    splitSentences(text).forEach(function (sn) {
+      // a single sentence longer than the window: break at a clause, else at a space
+      while (sn.length > limit * 1.25 && sn.indexOf('$') < 0) {
+        var cut = Math.max(sn.lastIndexOf('; ', limit), sn.lastIndexOf(': ', limit), sn.lastIndexOf(', ', limit));
+        if (cut < limit * 0.4) cut = sn.lastIndexOf(' ', limit) - 1;
+        if (cut < limit * 0.4) break;
+        parts.push(sn.slice(0, cut + 1)); sn = sn.slice(cut + 2);
+      }
+      parts.push(sn);
+    });
+    var out = [], cur = '';
+    parts.forEach(function (pt) {
+      if (cur && (cur + ' ' + pt).length > limit) { out.push(cur); cur = pt; }
+      else cur = cur ? cur + ' ' + pt : pt;
+    });
+    if (cur) out.push(cur);
+    // do not leave a few words alone on the last stop
+    if (out.length > 1 && out[out.length - 1].length < 40 && (out[out.length - 2] + out[out.length - 1]).length < limit * 1.25) { var tail = out.pop(); out[out.length - 1] += ' ' + tail; }
+    return out;
+  }
+
   function blog(markdown, meta, opts) {
     opts = opts || {}; meta = meta || {};
     var max = opts.max || 24;
@@ -959,7 +1018,13 @@
     }
     var ops = [], blocking = 0, listNo = 0, truncated = false;
     function push(op) { op.line = 0; if (BLOCKING[op.kind]) blocking++; ops.push(op); }
-    function narrate(text, para) { push({ kind: 'narrate', text: text, ref: para ? '¶' + para : null, chips: [], refs: para ? ['¶' + para] : [] }); }
+    // one paragraph may become several stops (window-sized pieces); only the first counts toward `max`
+    function narrate(text, para, more) {
+      chunkText(text, opts.chunk).forEach(function (t, i) {
+        var op = { kind: 'narrate', text: t, ref: para ? '¶' + para : null, chips: [], refs: para ? ['¶' + para] : [] };
+        if (i || more) { op.cont = true; op.line = 0; ops.push(op); } else push(op);
+      });
+    }
     function say(text, para) { push({ kind: 'say', who: who, key: key, face: null, text: text, ref: para ? '¶' + para : null, chips: [], refs: para ? ['¶' + para] : [] }); }
 
     for (var b = 0; b < blocks.length; b++) {
@@ -999,11 +1064,14 @@
           else if (items.length) items[items.length - 1].push(l.replace(/^\s*([-*+]|\d+[.)])\s+/, '').trim());
           else items.push([l.trim()]);
         }
-        var texts = items.map(function (it) {
-          return it.map(function (x) { return stripInline(x.replace(/^\[[ xX]\]\s*/, '')); }).filter(Boolean).map(function (x) { return /[.!?:;,)]$/.test(x) ? x : x + '.'; }).join(' ');
-        }).filter(Boolean);
+        // each item is [its own text, nested item, nested item, ...]: the nested ones become stops of their own
+        var parts = items.map(function (it) {
+          return it.map(function (x) { return stripInline(x.replace(/^\[[ xX]\]\s*/, '')); }).filter(Boolean).map(function (x) { return /[.!?:;,)]$/.test(x) ? x : x + '.'; });
+        }).filter(function (it) { return it.length; });
+        var texts = parts.map(function (it) { return it[0]; });
+        function section(it) { it.forEach(function (x, xi) { narrate(x, para, xi > 0); }); }
         if (!texts.length) continue;
-        if (texts.length === 1) { narrate(texts[0], para); continue; }
+        if (texts.length === 1) { section(parts[0]); continue; }
         listNo++;
         var hub = 'read_' + listNo, done = hub + '_done';
         var menu = { kind: 'menu', options: [] };
@@ -1013,7 +1081,7 @@
         push(menu);
         for (var si = 0; si < texts.length; si++) {
           push({ kind: 'label', name: hub + '_' + (si + 1) });
-          narrate(texts[si], para);
+          section(parts[si]);
           push({ kind: 'goto', target: hub });
         }
         push({ kind: 'label', name: done });
@@ -1080,6 +1148,7 @@
     var seen = {};
     (opts.seen || []).forEach(function (i) { seen[i] = 1; });
     var current = null;
+    var trace = typeof opts.trace === 'function' ? opts.trace : null;   // trace(opIndex, state): every op about to run
 
     function freshState() {
       return {
@@ -1139,17 +1208,23 @@
     // Non-blocking, non-jumping ops: everything that only dresses the stage.
     function applyOp(op, dressing) {
       switch (op.kind) {
-        case 'bg': state.bg = { name: op.name, mod: op.mod }; takeTransition('bg'); break;
-        case 'cg': state.cg = op.name ? { name: op.name, caption: op.caption } : null; takeTransition('cg'); break;
+        case 'bg': state.bg = { name: op.name, mod: op.mod }; if (op.opts) state.bg.opts = op.opts; takeTransition('bg'); break;
+        case 'cg':
+          state.cg = op.name ? { name: op.name, caption: op.caption } : null;
+          if (state.cg && op.mod) state.cg.mod = op.mod;
+          if (state.cg && op.opts) state.cg.opts = op.opts;
+          takeTransition('cg'); break;
         case 'transition': state.transition = { name: op.name, ms: op.ms }; break;
         case 'show': {
           var slot = op.slot;
+          var onStage = SLOTS.some(function (s) { return state.slots[s] === op.key; });
           // already on stage in another slot: move it
           SLOTS.forEach(function (s) { if (state.slots[s] === op.key && slot && s !== slot) state.slots[s] = null; });
           if (!slot) { slot = SLOTS.filter(function (s) { return state.slots[s] === op.key; })[0] || SLOTS.filter(function (s) { return !state.slots[s]; })[0] || 'right'; }
           state.slots[slot] = op.key;
+          // a face is kept only while the character stays on stage; an entrance without one is neutral
           if (op.face) state.faces[op.key] = op.face;
-          else if (!state.faces[op.key]) state.faces[op.key] = 'neutral';
+          else if (!onStage || !state.faces[op.key]) state.faces[op.key] = 'neutral';
           if (op.dist) state.dist[op.key] = op.dist; else delete state.dist[op.key];
           break;
         }
@@ -1184,6 +1259,7 @@
       for (;;) {
         if (pc >= n) return stopAt(n - 1);
         var op = ops[pc];
+        if (trace) trace(pc, state);
         if (BLOCKING[op.kind]) return stopAt(pc);
         switch (op.kind) {
           case 'goto': { var g = jump(op.target, op.line); if (g < 0) return current; pc = g; continue; }
@@ -1279,6 +1355,44 @@
     return run;
   }
 
+  /* ------------------------------------------------------------------ routes */
+
+  // The choices that lead from the top of the script to the op at `target` (an op index or a label name):
+  // {choiceLog, stopIndex} for run.replay(), or null when no sequence of choices gets there. Options named in
+  // opts.prefer (a saved choice log, matched by menuKey) are tried first, then the options in script order, so
+  // the route found is the reader's own where possible and the first-option one otherwise.
+  function routeTo(program, target, opts) {
+    opts = opts || {};
+    var idx = typeof target === 'number' ? target : resolveTarget(program, String(target));
+    if (!(idx >= 0) || idx >= program.ops.length) return null;
+    var prefer = opts.prefer || [], budget = opts.maxNodes || 600, visited = {}, found = null;
+    function preferred(menuKey, log) {
+      // the n-th visit to a menu takes the n-th saved entry for that menu
+      var nth = 0, k;
+      for (k = 0; k < log.length; k++) if (log[k].menuKey === menuKey) nth++;
+      for (k = 0; k < prefer.length; k++) if (prefer[k].menuKey && prefer[k].menuKey === menuKey && nth-- === 0) return prefer[k].optionIndex;
+      return -1;
+    }
+    function visit(log) {
+      if (found || budget-- <= 0) return;
+      var hit = null;
+      var run = createRun(program, { trace: function (pc, state) { if (pc === idx && hit == null) hit = state.stops + 1; } });
+      var stop = run.replay(log);
+      if (hit != null) { found = { choiceLog: log, stopIndex: hit }; return; }
+      if (!stop || stop.op.kind !== 'menu') return;
+      var st = run.state, key = stop.index + '|' + JSON.stringify(st.vars) + '|' + Object.keys(st.chosen).sort().join(',');
+      if (visited[key]) return;
+      visited[key] = 1;
+      var vis = stop.options.slice(), want = preferred(stop.op.key, log);
+      vis.sort(function (a, b) { return (a.index === want ? -1 : 0) - (b.index === want ? -1 : 0); });
+      for (var v = 0; v < vis.length && !found; v++) {
+        visit(log.concat([{ menuLine: stop.op.line, menuKey: stop.op.key || null, menuIndex: stop.index, optionIndex: vis[v].index }]));
+      }
+    }
+    visit([]);
+    return found;
+  }
+
   /* ------------------------------------------------------------------ bibtex */
 
   function bibtex(meta) {
@@ -1301,13 +1415,13 @@
   /* ------------------------------------------------------------------ export */
 
   return {
-    parse: parse, lint: lint, walk: walk, blog: blog, expand: expand, createRun: createRun,
+    parse: parse, lint: lint, walk: walk, blog: blog, expand: expand, createRun: createRun, routeTo: routeTo,
     interpolate: interpolate, markup: markup, refs: refsOf, describeRef: describeRef, bibtex: bibtex,
     publishBlockers: publishBlockers, evalCond: evalCond, isThought: isThought,
     hash: fnv1a, hashHex: hashHex, rng: rng, mulberry32: mulberry32,
     FACES: FACES, BACKGROUNDS: BACKGROUNDS, BG_MODS: BG_MODS, PALETTES: PALETTES, SLOTS: SLOTS, HAIR: HAIR,
     TRANSITIONS: TRANSITIONS, DEFAULT_TRANSITION: DEFAULT_TRANSITION, FX: FX, FX_ONESHOT: FX_ONESHOT, CGS: CGS, TONES: TONES,
-    DISTANCES: DISTANCES, CLOTHES: CLOTHES, MODES: MODES,
+    DISTANCES: DISTANCES, CLOTHES: CLOTHES, MODES: MODES, BG_OPTS: BG_OPTS, CG_MODS: CG_MODS, HAIRTONES: HAIRTONES,
     STATUSES: STATUSES, BLOCKING: BLOCKING, DEFAULT_NOTE: DEFAULT_NOTE, WITHHELD_TEXT: WITHHELD_TEXT
   };
 });

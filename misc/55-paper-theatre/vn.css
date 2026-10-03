@@ -997,3 +997,55 @@ body.fx-off .vn-text > span, :root[data-reduced-motion="1"] .vn-text > span { an
 .vn-scene.in .vn-title .rule.brush { width: 8em; }
 .vn-scene .vn-title .bloom { display: block; width: 0.7em; height: 0.7em; margin: 0.7em auto 0; background: var(--vn-bloom) center / contain no-repeat; opacity: 0.85; }
 @media (max-width: 720px) { .ts-vert { display: none; } }
+
+/* ---------- QA pass (driven with real input, 2026-10) -------------------- */
+
+/* the quick menu stays reachable over a scene title or a chapter card */
+#stage .vn-scene { z-index: 10; }
+#stage .vn-quick { z-index: 11; }
+
+/* choices: placed above the window by stage.js (placeMenu); a long list scrolls instead of leaving the stage */
+#stage .vn-menu { max-height: 86%; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
+.vn-menu button { flex: 0 0 auto; }
+.vn-menu.many { gap: clamp(3px, 0.5cqw, 8px); font-size: calc(clamp(12px, 1.42cqw, 21px) * var(--vn-fs)); }
+.vn-menu.many button { min-height: 0; padding: 0.4em 2.6em; }
+/* while a question is up the cast steps back a little */
+.vn-sprites { transition: filter 0.3s ease; }
+#stage.menu-up .vn-sprites { filter: brightness(0.7) saturate(0.88); }
+
+/* the "next" marker has the corner to itself: the third little blossom used to sit under it */
+#stage .vn-box::after { background: var(--vn-bloom) 62% 38% / 3.3em no-repeat, var(--vn-bloom) 10% 86% / 1.5em no-repeat; }
+
+/* a listener is dimmed in the figure only; the rim light and the contact shadow keep their own colour (no grey edge) */
+.vn-fig { transition: filter 0.35s ease; }
+.vn-actor.dim svg:has(.vn-fig), .vn-actor.far svg:has(.vn-fig), .vn-actor.far.dim svg:has(.vn-fig) { filter: none; }
+.vn-actor.dim .vn-fig { filter: brightness(0.7) saturate(0.82); }
+.vn-actor.far .vn-fig { filter: brightness(0.92) saturate(0.88); }
+.vn-actor.far.dim .vn-fig { filter: brightness(0.66) saturate(0.75); }
+@media (prefers-contrast: more) { .vn-actor.dim .vn-fig { filter: none; } }
+
+/* an NVL page over an event illustration: the picture stays readable behind the text */
+#stage .vn-world.has-cg ~ .vn-nvl {
+  background: linear-gradient(180deg, rgb(var(--vn-win) / 0.5), rgb(var(--vn-win) / 0.4) 45%, rgb(var(--vn-win) / 0.56));
+  -webkit-backdrop-filter: blur(1.5px) saturate(0.92); backdrop-filter: blur(1.5px) saturate(0.92);
+}
+#stage .vn-world.has-cg ~ .vn-nvl .vn-nvl-page { text-shadow: 0 1px 2px rgb(var(--vn-win) / 0.95), 0 0 12px rgb(var(--vn-win) / 0.9), 0 0 28px rgb(var(--vn-win) / 0.7); }
+
+/* the reader, from behind: head and shoulders stand clear of the text window */
+.vn-actor[data-kind="player"] { height: 100%; bottom: 6%; }
+
+/* a near figure under the flashback letterbox keeps its head */
+#stage.flashback .vn-actor.near { transform: translateX(-50%) scale(1.14) translateY(15%); }
+
+/* particles: weather seen from a room is behind the cast and fainter; nothing falls across an event illustration */
+.vn-fxback { pointer-events: none; overflow: hidden; opacity: 0.85; }
+.vn-world.has-cg .vn-fxlayer, .vn-world.has-cg .vn-fxback { display: none; }
+body.fx-off .vn-fxback { display: none; }
+
+@media (max-aspect-ratio: 4/5) {
+  /* upright phone: the figure ends above the window, so it fades out instead of ending on a hard edge */
+  body.playing .vn-actor svg { -webkit-mask-image: linear-gradient(#000 78%, transparent 98%); mask-image: linear-gradient(#000 78%, transparent 98%); }
+  body.playing .vn-actor[data-kind="player"] { height: 60%; bottom: 8%; }
+  body.playing .vn-text { max-height: 11.4em; }
+  body.playing .vn-menu.many { font-size: calc(14px * var(--vn-fs)); }
+}

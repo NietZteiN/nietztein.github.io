@@ -10,6 +10,7 @@ VN.walk(program, opts)      -> walkReport
 VN.blog(markdown, meta, o)  -> ops[]           (blog post -> story ops, Tier B)
 VN.expand(program, mdText, meta, o) -> program (replaces the @read op with blog() ops, re-indexes labels)
 VN.createRun(program, opts) -> run
+VN.routeTo(program, target, {prefer, maxNodes}) -> {choiceLog, stopIndex} | null   (choices that lead to an op index or label)
 VN.interpolate(text, vars, cast) -> string     (render-time {var} / {Name} substitution)
 VN.markup(text)             -> [{type:'text'|'em'|'code', text}]
 VN.refs(op)                 -> ['§4', ...]     (unique chips on an op: trailing ref + fact chips)
@@ -19,7 +20,7 @@ VN.hash(str)                -> uint32 fnv1a;  VN.hashHex(str) -> 8 hex chars
 VN.rng(seed)                -> () => [0,1)    mulberry32; seed may be a number or a string (hashed)
 VN.isThought(text)          -> bool            (the whole line is wrapped in ( ) or （ ）)
 VN.FACES, VN.BACKGROUNDS, VN.BG_MODS, VN.PALETTES, VN.SLOTS, VN.HAIR, VN.CLOTHES, VN.TRANSITIONS, VN.DEFAULT_TRANSITION,
-VN.FX, VN.FX_ONESHOT, VN.CGS, VN.TONES, VN.DISTANCES, VN.MODES  (constant lists / maps)
+VN.FX, VN.FX_ONESHOT, VN.CGS, VN.TONES, VN.DISTANCES, VN.MODES, VN.BG_OPTS, VN.CG_MODS, VN.HAIRTONES  (constant lists / maps)
 ```
 
 ## Program
@@ -64,6 +65,7 @@ CastDecl = {
   glasses: bool, hat: bool,
   build: 'fem'|'masc'|null,             // null = the neutral figure
   hairhue: number|null,                 // 0-359; null = a natural dark tone hashed from the name
+  hairtone?: 'dark'|'mid'|'light'|'fair', // absent unless written; depth of the hair colour (hairhue alone = 'light')
   lattice: null|'sparse'|'dense',
   player: bool, page: bool, coauthor: bool,
   line: number
@@ -86,7 +88,7 @@ Text ops (`say`, `narrate`, `card`, `chart`) also carry:
 |---|---|
 | `say` | `who` (cast id as declared), `key` (lowercase), `face` (one of FACES or null), `text`, `ref`, `chips`, `refs` |
 | `narrate` | `text`, `ref`, `chips`, `refs` |
-| `bg` | `name` (one of BACKGROUNDS; unknown names are kept as written, lint warns, renderer falls back to `void`), `mod: 'night'|'dawn'|'dusk'|'noon'|'dim'|null` |
+| `bg` | `name` (one of BACKGROUNDS; unknown names are kept as written, lint warns, renderer falls back to `void`), `mod: 'night'|'dawn'|'dusk'|'noon'|'dim'|null`, `opts?: {overcast?: true, board?: 'plot'|'text'|'blank'}` (the key is absent when no option was written) |
 | `show` | `who`, `key`, `slot: 'left'|'center'|'right'|null` (null = first free slot), `face: string|null`, `dist: 'near'|'far'|null` |
 | `move` | `who`, `key`, `slot: 'left'|'center'|'right'` (the sprite slides there; face and distance are kept) |
 | `hide` | `who`, `key`, `all: bool` (`@hide all`) |
@@ -97,7 +99,7 @@ Text ops (`say`, `narrate`, `card`, `chart`) also carry:
 | `mode` | `mode: 'nvl'|'adv'` |
 | `page` | (no fields) clears the NVL page |
 | `fx` | `name` (one of FX: `petals snow rain dust fireflies`, or `none`, or one of FX_ONESHOT: `shake flash pulse`), `on: bool` (false only for `@fx name off`), `oneshot: bool`. Unknown names are dropped with a warning (no op). |
-| `cg` | `name: string|null` (null = `@cg off`; unknown names are kept, lint warns, the renderer draws an abstract fallback), `caption: string|null` |
+| `cg` | `name: string|null` (null = `@cg off`; unknown names are kept, lint warns, the renderer draws an abstract fallback), `caption: string|null`, `mod?: 'day'|'dusk'|'dawn'|'night'` (`noon` is stored as `day`), `opts?: {overcast?: true, text?: string}` (keys absent when not written; an unknown token after the name warns `cg-malformed`) |
 | `pause` | `ms` (default 800, capped at 10000). A beat with no text; a stop that continues by itself. |
 | `tone` | `name` (one of TONES: `none dusk night dawn noon memory cold`; unknown names become `none` with a warning) |
 | `card` | `title`, `cells: [{label: string|null, value: string, chips, ref}]`, `src: string|null` (image url, blog images only), `ref`, `chips`, `refs` |
@@ -170,13 +172,13 @@ VN.walk(program, {maxSteps=20000}) -> {
 ## createRun
 
 ```
-run = VN.createRun(program, {seen: number[] = [], instant: bool})
+run = VN.createRun(program, {seen: number[] = [], instant: bool, trace: fn(opIndex, state)})   // trace: called for every op about to run
 run.state = {
-  pc: number, vars: {}, bg: {name, mod}|null,
+  pc: number, vars: {}, bg: {name, mod, opts?}|null,
   slots: {left: key|null, center: key|null, right: key|null},
   faces: {[key]: face}, dist: {[key]: 'near'|'far'},     // dist has no entry for the default distance
   chosen: {['menuIndex:optionIndex']: true},
-  cg: {name, caption}|null,             // the event illustration on screen (hides background and sprites)
+  cg: {name, caption, mod?, opts?}|null, // the event illustration on screen (hides background, sprites and particles)
   transition: {name, ms}|null,          // armed by @transition, consumed by the next bg / cg op
   change: {bg?: {name, ms}, cg?: {name, ms}}|null,   // what changed on the way to THIS stop and with which transition
                                         // (dissolve 600 when none was armed); null when neither changed. A @bg and a @cg
@@ -215,7 +217,8 @@ Stop = { op, index, state, done: bool, options?: [{index, text, target}] }
 ```
 
 Non-blocking op effects: `bg` -> state.bg; `show` -> slot assignment (named slot, else first free, else `right`) and
-`state.faces[key]`; `say` with a face also updates `state.faces[key]`; `hide` clears slots; `label` -> state.label;
+`state.faces[key]` (the face given, else the one the character already wears if it is on stage, else `neutral`: a face does
+not survive an exit); `say` with a face also updates `state.faces[key]`; `hide` clears slots; `label` -> state.label;
 `set`/`add` -> vars (`add` on a missing or non-numeric var starts from 0). `show` also sets or clears `state.dist[key]`;
 `move` re-slots without touching face or distance; `transition` -> state.transition; `bg`/`cg` -> state.bg / state.cg and
 `state.change.bg` / `state.change.cg`; `flashback`, `tone` -> same-named state; `mode` -> state.mode (+ pageStart when it
@@ -230,16 +233,31 @@ changes); `page` -> pageStart; `fx` -> state.fx (persistent) or state.oneshot (o
 - first block shaped like an epigraph (quoted line + attribution line without terminal period) -> `say{who:'Page', key:'page', face:null}` for the quote and `narrate` for the attribution
 - blockquote -> `say{who: 'Page', key: 'page'}`
 - list (ordered or bulleted) -> `label{name:'read_n'}`, `menu` whose options (all `once`) jump to `read_n_i`; each
-  section is `label`, one `narrate` per item (nested items joined into the item), `goto read_n`; a last option
+  section is `label`, a `narrate` for the item and one more for each nested item (`cont: true`, same chip), `goto read_n`; a last option
   "Continue" jumps to `read_n_done`; `label{name:'read_n_done'}`
 - image `![alt](src)` -> `card{title: 'Figure', cells: [{label: null, value: alt}], src}`
 - fenced code blocks dropped, HTML comments and tags dropped, links reduced to their text, inline markdown stripped
 - KaTeX delimiters (`$...$`, `$$...$$`, `\(...\)`, `\[...\]`) are left exactly as written
-- after `max` blocking ops the rest is cut and a final `narrate` says the post continues (`truncated` flag on it)
+- a paragraph, quote attribution, list item or table longer than about 375 characters is cut at sentence ends into pieces of
+  at most ~300 (`opts.chunk`), never inside `$math$` and not after `e.g.`, `vs.`, `et al.` or an initial; the pieces after the
+  first carry `cont: true` and the same `¶n` chip
+- after `max` blocking ops the rest is cut and a final `narrate` says the post continues (`truncated` flag on it); `cont`
+  pieces and nested items do not count toward `max`, so it still counts paragraphs
 - no `end` op is appended; the caller continues its own script after the expanded region
 
 `VN.expand(program, markdownText, meta)` returns a copy of the program with every `read` op replaced by the blog ops,
 `labels`/`menus`/`thumb` re-indexed. The cast gains a `page` decl (`key 'page'`) if the script has none.
+
+## routeTo
+
+`VN.routeTo(program, target, {prefer = [], maxNodes = 600})` searches the choices depth-first from the top of the script
+for a way to reach `target` (an op index, e.g. `program.chapters[i].index`, or a label name). It returns
+`{choiceLog, stopIndex}` ready for `run.replay(choiceLog, stopIndex)`, or `null` when no sequence of choices gets there
+(or the label is unknown). `stopIndex` is the stop at which the target op is reached: the op itself when it is blocking,
+else the first stop after it. At each menu the option recorded in `prefer` (a saved choice log, matched by `menuKey`; the
+n-th visit to a hub takes the n-th saved entry) is tried first, then the visible options in script order; states already
+seen (same menu, vars and used `(once)` options) are not explored twice. The stage uses it for the Chapters menu and for
+`?at=<label>`, so both land on a place that can be saved, quick-saved and rewound like any other.
 
 ## Stage contract (stage.js)
 
@@ -253,6 +271,16 @@ Everything animated has a settled state: under `prefers-reduced-motion`, `?thumb
 and with Config > Effects off, transitions are cuts, one-shots are skipped, the typewriter is instant and (reduced
 motion / thumb) particles stand still.
 
+Particles: `rain`, `snow`, `petals` go into `.vn-fxback` (behind the sprites, fainter) when `VNArt.INDOOR[state.bg.name]`, else
+into `.vn-fxlayer`; `dust` and `fireflies` are always in front; with `.vn-world.has-cg` both layers are hidden. While
+`state.fx.rain` or `state.fx.snow` is on the stage passes `{overcast: true}` to `VNArt.background` / `VNArt.cg` and repaints
+in place (no transition). The menu is positioned by `placeMenu()` above the text window and `#stage.menu-up` dims the cast.
+
+Deep links and chapter jumps: `?at=<label>` and the Chapters menu replay `VN.routeTo()`; a deep link sets `noSave` (the
+autosave is the reader's own place) but leaves the slots on. Only a target that no choices reach falls back to
+`run.jumpTo()` with `noSlots`, and then the backlog rewinds by `run.back()` (`data-hist`) instead of by replay. An unknown
+label opens the title screen with a toast. `vn:seen:<id>` (`{hash, seen}`) keeps what has been read across Start-over.
+
 Saves: `vn:<id>` is the autosave (`run.snapshot()` + `ts`), `vn:slots:<id>` is `{1..6, q}` of
 `{hash, choiceLog, stopIndex, pc, ts, chapter, text}`; loading is `run.replay(choiceLog, stopIndex)`. `vn:prefs` is
 `{cps, autoSpeed, opacity, effects, size, textOnly}`.
@@ -260,12 +288,16 @@ Saves: `vn:<id>` is the autosave (`run.snapshot()` + `ts`), `vn:slots:<id>` is `
 Test hooks (URL): `autoplay=N|end` (instant, no autosave), `pick=K` (option K at menus), `screen=save|load|config|log|chapters|title`,
 `trans=<name>` (freeze that transition half-way into stop N), `thumb=1`, `cast=1`, `gallery=bg|cg` (`&mod=night`, `&only=a,b`).
 
-Art entry points (art.js, with art-scenes.js and art-cast.js loaded first): `VNArt.background(name, mod)`,
-`VNArt.cg(name)`, `VNArt.sprite(castDecl, face)`, `VNArt.fx(name)`, `VNArt.timeOf(name, mod)` -> `day|dusk|dawn|night`,
+Test hook (JS): `window.__vnStage = {S, prefs, catalog()}`, the live run state for the browser harness (read-only by convention).
+
+Art entry points (art.js, with art-scenes.js and art-cast.js loaded first): `VNArt.background(name, mod, opts)`
+(`opts.overcast`, `opts.board`, `opts.spines`), `VNArt.cg(name, mod, opts)` (`mod` = hour for the CGs with a sky,
+`opts.overcast`, `opts.text`), `VNArt.INDOOR` (map of room backgrounds), `VNArt.sprite(castDecl, face)`, `VNArt.fx(name)`, `VNArt.timeOf(name, mod)` -> `day|dusk|dawn|night`,
 `VNArt.sharedDefs()` (the one hidden `<svg>` of filters every scene and sprite refers to; inject once per page).
 
 Sprites (art-cast.js): `VNArt.sprite` reads `build` (or the flags `fem` / `masc`) and `hairhue` from the cast
 declaration; `normCast` returns `build: 'fem'|'masc'|'neutral'` and the hair palette (`hairCol`, `hairDark`,
 `hairLight`, `hairTip`, `hairLine`). A person sprite is `<svg class="vn-sprite" data-kind="person" data-build data-hair
-data-clothes>` with one top-level `<g filter="url(#vnf-rim)">` (the stage swaps the filter for the hour: an inner rim
+data-clothes>` with one top-level `<g filter="url(#vnf-rim)">` holding one `<g class="vn-fig">` (the stage dims a listener on
+`.vn-fig`, inside the lit group, so the rim light keeps its colour) (the stage swaps the filter for the hour: an inner rim
 light on the edge that faces the light, a soft contact shadow, the hour's tint) and eight `<g data-face>` groups.

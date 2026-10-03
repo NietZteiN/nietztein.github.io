@@ -55,7 +55,7 @@
   /* ------------------------------------------------------------------ DOM */
 
   var stage = $('#stage');
-  var world = $('.vn-world'), bgEl = $('.vn-bg'), spritesEl = $('.vn-sprites'), cgEl = $('.vn-cgart'), fxEl = $('.vn-fxlayer');
+  var world = $('.vn-world'), bgEl = $('.vn-bg'), spritesEl = $('.vn-sprites'), cgEl = $('.vn-cgart'), fxEl = $('.vn-fxlayer'), fxBackEl = $('.vn-fxback');
   var transEl = $('.vn-trans'), flashEl = $('.vn-flash'), captionEl = $('.vn-caption');
   var boardsEl = $('.vn-boards');
   var box = $('.vn-box'), nameEl = $('.vn-name'), textEl = $('.vn-text');
@@ -150,17 +150,17 @@
 
   /* ------------------------------------------------------------------ art adapter */
 
-  function artBackground(name, mod) {
+  function artBackground(name, mod, opts) {
     if (ART && typeof ART.background === 'function') {
-      try { var s = ART.background(name, mod); if (s) return s; } catch (e) { console.warn('art.background failed', e); }
+      try { var s = ART.background(name, mod, opts); if (s) return s; } catch (e) { console.warn('art.background failed', e); }
     }
     return '<svg viewBox="0 0 1600 900" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" preserveAspectRatio="xMidYMid slice">' +
       '<rect width="1600" height="900" fill="#20242e"/><rect x="0" y="620" width="1600" height="280" fill="#2c3240"/>' +
       '<text x="40" y="60" font-family="system-ui, sans-serif" font-size="26" fill="#8a90a0">' + esc(name + (mod ? ' (' + mod + ')' : '')) + '</text></svg>';
   }
-  function artCg(name) {
+  function artCg(name, mod, opts) {
     if (ART && typeof ART.cg === 'function') {
-      try { var s = ART.cg(name); if (s) return s; } catch (e) { console.warn('art.cg failed', e); }
+      try { var s = ART.cg(name, mod, opts); if (s) return s; } catch (e) { console.warn('art.cg failed', e); }
     }
     return artBackground('void', null);
   }
@@ -306,7 +306,7 @@
     entry: null, program: null, run: null, stop: null, id: null, mode: 'picker',
     typing: null, auto: false, skip: false, skipUnseen: false, skipTimer: 0, autoTimer: 0, pauseTimer: 0, wait: null,
     noSave: false, noSlots: false, textOnly: false, hasMath: false, lastFocus: null, holdLast: 0, hidden: false, screen: null,
-    rendered: { bg: null, cg: null, fb: false }, actors: {}, issues: [], seenAll: {}, transTimers: []
+rendered: { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null }, actors: {}, issues: [], seenAll: {}, transTimers: []
   };
 
   function setHue(h) { document.documentElement.style.setProperty('--vn-h', String(((h % 360) + 360) % 360)); }
@@ -325,8 +325,9 @@
   function clearWorld() {
     endTransition();
     bgEl.innerHTML = ''; cgEl.innerHTML = ''; cgEl.classList.remove('show'); world.classList.remove('has-cg');
-    spritesEl.innerHTML = ''; fxEl.innerHTML = '';
-    S.actors = {}; S.rendered = { bg: null, cg: null, fb: false };
+    spritesEl.innerHTML = ''; fxEl.innerHTML = ''; if (fxBackEl) fxBackEl.innerHTML = '';
+    stage.classList.remove('menu-up');
+    S.actors = {}; S.rendered = { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null };
     stage.classList.remove('flashback', 'shake', 'pulse'); flashEl.classList.remove('go');
     stage.removeAttribute('data-tone'); stage.removeAttribute('data-tod');
     captionEl.classList.remove('show'); captionEl.textContent = '';
@@ -337,7 +338,7 @@
     if (S.wait) { clearTimeout(S.wait.timer); S.wait = null; }
     box.classList.remove('show', 'done', 'narr', 'thought'); textEl.innerHTML = ''; nameEl.textContent = '';
     nvlEl.classList.remove('show', 'done'); nvlPage.innerHTML = '';
-    menuEl.classList.remove('show'); menuEl.innerHTML = '';
+    menuEl.classList.remove('show'); menuEl.innerHTML = ''; stage.classList.remove('menu-up');
     sceneEl.className = 'vn-scene'; sceneEl.innerHTML = '';
     boardsEl.classList.remove('show'); boardsEl.innerHTML = '';
     endEl.classList.remove('show'); endEl.innerHTML = '';
@@ -528,13 +529,16 @@
 
   function autosave() { return S.id ? readJSON('vn:' + S.id) : null; }
   function seenList() {
-    var saved = autosave(), all = {};
+    var saved = autosave(), all = {}, kept = S.id ? readJSON(seenKey()) : null;
     if (saved && Array.isArray(saved.seen)) saved.seen.forEach(function (i) { all[i] = 1; });
+    if (kept && kept.hash === (S.program && S.program.hash) && Array.isArray(kept.seen)) kept.seen.forEach(function (i) { all[i] = 1; });
     if (S.run) Object.keys(S.run.seen).forEach(function (i) { all[i] = 1; });
     S.seenAll = all;
     return Object.keys(all).map(Number);
   }
   function newRun() { return VN.createRun(S.program, { seen: seenList() }); }
+  // What has been read outlives the autosave: Start-over deletes the save, not the memory of having read.
+  function seenKey() { return 'vn:seen:' + S.id; }
 
   function openProgram(entry, program, id, opts) {
     S.entry = entry; S.program = program; S.id = id; S.run = null; S.stop = null; S.noSave = false; S.noSlots = false;
@@ -587,11 +591,24 @@
       return;
     }
     if (opts.at != null) {
+      var at = String(opts.at);
+      if (!/^\d+$/.test(at) && program.labels[at] == null) {
+        showTitle();
+        toast('No label “' + at + '” in this story.', 3600);
+        return;
+      }
       beginPlay();
-      S.noSave = true; S.noSlots = !/^\d+$/.test(String(opts.at));
-      stop = gotoAt(opts.at);
+      // A deep link never touches the autosave (the reader's own place), but the moment itself is an ordinary
+      // one: it is reached by replaying a route of choices from the top, so slots, quick save and rewind work.
+      S.noSave = true;
+      if (/^\d+$/.test(at)) stop = gotoAt(at);
+      else {
+        var route = VN.routeTo(program, program.labels[at], { prefer: (autosave() || {}).choiceLog });
+        if (route) stop = S.run.replay(route.choiceLog, route.stopIndex);
+        else { stop = S.run.jumpTo(at); S.noSlots = true; }   // no choices lead here: dress the stage and land on it
+      }
       present(stop, { instant: REDUCED });
-      toast('Deep link: progress is not saved from here', 3200);
+      toast('Deep link: your saved place is untouched; the save slots work from here', 3600);
       return;
     }
     showTitle();
@@ -626,6 +643,7 @@
   }
 
   function startFresh() {
+    if (S.program && S.id) lsSet(seenKey(), JSON.stringify({ hash: S.program.hash, seen: seenList() }));
     lsDel('vn:' + S.id);
     beginPlay();
     present(S.run.advance(), { instant: REDUCED });
@@ -650,24 +668,14 @@
     if (confirmFirst && S.run && S.run.state.stops > 1 && !window.confirm('Start this story over?')) return;
     startFresh();
   }
-  // Jump to a chapter by replaying from the top (saved choices where they exist, the first option otherwise),
-  // so the place can be saved like any other; fall back to a deep link when no such route reaches it.
+  // Jump to a chapter by replaying from the top: the reader's own choices where they lead there, any other
+  // route of choices otherwise, so the place can be saved like any other. Only a chapter that no choices
+  // reach falls back to a bare jump (stage dressed in file order; slots off, rewind by stepping back).
   function jumpChapter(ch) {
-    var saved = autosave(), log = (saved && saved.choiceLog) || [], used = {};
+    var saved = autosave(), log = (S.run && S.run.state.choiceLog.length ? S.run.state.choiceLog : (saved && saved.choiceLog)) || [];
+    var route = VN.routeTo(S.program, ch.index, { prefer: log }), stop = null;
     beginPlay();
-    var run = S.run, stop = run.advance(), guard = 0;
-    while (stop && !stop.done && stop.index !== ch.index && guard++ < 20000) {
-      if (stop.op.kind === 'menu') {
-        var vi = 0;
-        for (var k = 0; k < log.length; k++) if (!used[k] && log[k].menuKey && log[k].menuKey === stop.op.key) {
-          used[k] = 1;
-          for (var v = 0; v < stop.options.length; v++) if (stop.options[v].index === log[k].optionIndex) vi = v;
-          break;
-        }
-        stop = run.choose(vi);
-      } else if (stop.op.kind === 'error') break;
-      else stop = run.advance();
-    }
+    if (route) stop = S.run.replay(route.choiceLog, route.stopIndex);
     if (!stop || stop.index !== ch.index) {
       S.run = newRun();
       stop = S.run.jumpTo(ch.index);
@@ -697,7 +705,7 @@
     var first = null;
     for (var i = 0; i < p.ops.length; i++) if (p.ops[i].kind === 'bg') { first = p.ops[i]; break; }
     var fx = {}; fx[TITLE_FX[first ? first.name : ''] || 'dust'] = true; fx.petals = true;   // petals always drift across a title
-    syncWorld({ bg: first ? { name: first.name, mod: first.mod } : { name: 'void', mod: null }, cg: null, slots: {}, faces: {}, dist: {}, fx: fx, tone: 'none', flashback: null, oneshot: [], change: null }, null, true);
+    syncWorld({ bg: first ? { name: first.name, mod: first.mod, opts: first.opts } : { name: 'void', mod: null }, cg: null, slots: {}, faces: {}, dist: {}, fx: fx, tone: 'none', flashback: null, oneshot: [], change: null }, null, true);
     var saved = autosave(), canContinue = !!(saved && saved.choiceLog && saved.stopIndex > 1);
     seenList();
     var chapters = p.chapters || [], seenCh = chapters.filter(function (c) { return S.seenAll[c.index] || e.src; });
@@ -782,13 +790,25 @@
     });
   }
 
+  // Particles. Weather (rain, snow, petals) falls in front of the cast outdoors; in a room it is drawn behind
+  // the cast and fainter, as something seen through the windows. Dust and fireflies are in the air of the place
+  // itself and stay in front. While a CG is up every layer rests (vn.css) and comes back with `@cg off`.
+  var WEATHER = { rain: 1, snow: 1, petals: 1 };
+  function isIndoor(state) { return !!(state.bg && ART && ART.INDOOR && ART.INDOOR[state.bg.name]); }
   function syncFx(state) {
-    var want = prefs.effects ? Object.keys(state.fx || {}) : [];
-    $$('.vn-fx', fxEl).forEach(function (el) { if (want.indexOf(el.getAttribute('data-fx')) < 0) el.remove(); });
+    var want = prefs.effects ? Object.keys(state.fx || {}) : [], indoor = isIndoor(state);
+    $$('.vn-fx', world).forEach(function (el) { if (want.indexOf(el.getAttribute('data-fx')) < 0) el.remove(); });
     want.forEach(function (name) {
-      if ($('.vn-fx[data-fx="' + name + '"]', fxEl)) return;
-      if (ART && ART.fx) fxEl.insertAdjacentHTML('beforeend', ART.fx(name));
+      var home = indoor && WEATHER[name] && fxBackEl ? fxBackEl : fxEl, el = $('.vn-fx[data-fx="' + name + '"]', world);
+      if (el) { if (el.parentNode !== home) home.appendChild(el); return; }
+      if (ART && ART.fx) home.insertAdjacentHTML('beforeend', ART.fx(name));
     });
+  }
+  // rain or snow closes the sky: no moon, no stars, in the background and in the CGs that have a window
+  function skyOpts(state, opts) {
+    var o = Object.assign({}, opts || {});
+    if (state.fx && (state.fx.rain || state.fx.snow)) o.overcast = true;
+    return o;
   }
 
   function runTransition(tr) {
@@ -816,7 +836,10 @@
   // Bring the painted world to `state`. Returns the milliseconds a transition will take (0 for a cut).
   function syncWorld(state, op, instant) {
     var bg = state.bg || { name: 'void', mod: null };
-    var bgKey = bg.name + '|' + (bg.mod || ''), cgKey = state.cg ? state.cg.name : '', fb = !!state.flashback;
+    var bgOpts = skyOpts(state, bg.opts), cgOpts = state.cg ? skyOpts(state, state.cg.opts) : null;
+    var bgKey = bg.name + '|' + (bg.mod || '') + '|' + JSON.stringify(bg.opts || {}), cgKey = state.cg ? state.cg.name + '|' + (state.cg.mod || '') + '|' + JSON.stringify(state.cg.opts || {}) : '', fb = !!state.flashback;
+    // the weather repaints the sky in place (no transition); a new scene or picture is a change to play
+    var bgPaint = bgKey + '|' + (bgOpts.overcast ? 'o' : ''), cgPaint = cgKey ? cgKey + '|' + (cgOpts.overcast ? 'o' : '') : '';
     var first = S.rendered.bg === null;
     var bgChanged = S.rendered.bg !== bgKey, cgChanged = S.rendered.cg !== cgKey && !(first && !cgKey), fbChanged = S.rendered.fb !== fb;
     var tr = null, wait = 0;
@@ -831,12 +854,12 @@
       var snap = world.cloneNode(true);
       transEl.innerHTML = ''; transEl.appendChild(snap); transEl.className = 'vn-trans on';
     }
-    if (bgChanged) { bgEl.innerHTML = artBackground(bg.name, bg.mod); S.rendered.bg = bgKey; }
-    if (S.rendered.cg !== cgKey) {
-      cgEl.innerHTML = cgKey ? artCg(cgKey) : '';
+    if (S.rendered.bgPaint !== bgPaint) { bgEl.innerHTML = artBackground(bg.name, bg.mod, bgOpts); S.rendered.bg = bgKey; S.rendered.bgPaint = bgPaint; }
+    if (S.rendered.cgPaint !== cgPaint) {
+      cgEl.innerHTML = cgKey ? artCg(state.cg.name, state.cg.mod, cgOpts) : '';
       cgEl.classList.toggle('show', !!cgKey);
       world.classList.toggle('has-cg', !!cgKey);
-      S.rendered.cg = cgKey;
+      S.rendered.cg = cgKey; S.rendered.cgPaint = cgPaint;
     }
     var tod = 'day';
     if (cgKey) { var cs = cgEl.firstElementChild; tod = (cs && cs.getAttribute('data-tod')) || 'night'; }
@@ -879,11 +902,13 @@
     clearTimeout(S.autoTimer); clearTimeout(S.pauseTimer);
     if (S.wait) { clearTimeout(S.wait.timer); S.wait = null; }
     hidePanel();
-    menuEl.classList.remove('show'); menuEl.innerHTML = '';
+    menuEl.classList.remove('show'); menuEl.innerHTML = ''; stage.classList.remove('menu-up');
     boardsEl.classList.remove('show'); boardsEl.innerHTML = '';
     sceneEl.className = 'vn-scene'; sceneEl.innerHTML = '';
     endEl.classList.remove('show'); endEl.innerHTML = '';
     titleEl.classList.remove('show'); pickerEl.classList.remove('show');
+    // whatever held the focus may just have been removed (a choice, the end card): the keys stay with the stage
+    if (!THUMB && !S.screen && (document.activeElement === document.body || !document.activeElement)) stage.focus({ preventScroll: true });
     box.classList.remove('done'); nvlEl.classList.remove('done');
     var instant = !!o.instant || REDUCED || S.skip || S.textOnly;
     var wait = syncWorld(state, op, instant);
@@ -904,7 +929,13 @@
         showLine({ kind: 'narrate', text: 'The post could not be loaded here; read it on the site.', refs: [] }, state, instant);
         break;
       case 'menu':
-        if (nvl) showNvl(null, state, true); else { nvlEl.classList.remove('show'); if (!textEl.textContent || !box.classList.contains('show')) showLastLine(state); box.classList.add('done'); }
+        if (nvl) showNvl(null, state, true);
+        else {
+          nvlEl.classList.remove('show');
+          // arriving by Back, load or rewind the window still holds some other line: show the one that led here
+          if (o.back || o.resumed || o.instant || !textEl.textContent || !box.classList.contains('show')) { if (!showLastLine(state)) box.classList.remove('show'); }
+          box.classList.add('done');
+        }
         showMenu(stop);
         break;
       case 'scene':
@@ -1030,7 +1061,8 @@
       raf = requestAnimationFrame(frame);
     }
     raf = requestAnimationFrame(frame);
-    S.typing = { complete: finish, cancel: function () { cancelAnimationFrame(raf); S.typing = null; } };
+    // completing must also stop the frame loop, or the rest of the line is typed a second time after it
+    S.typing = { complete: function () { cancelAnimationFrame(raf); finish(); }, cancel: function () { cancelAnimationFrame(raf); S.typing = null; } };
   }
   function announceOf(who, text, refs) {
     return (who ? who + ': ' : '') + plainText(text) + ((refs && refs.length) ? ' (' + refs.map(function (r) { return VN && VN.describeRef ? VN.describeRef(r) : r; }).join('; ') + ')' : '');
@@ -1058,10 +1090,11 @@
       if (h[i].kind === 'say' || h[i].kind === 'narrate') {
         var key = h[i].who ? h[i].who.toLowerCase() : null;
         showLine({ kind: h[i].kind, key: key, who: h[i].who, text: h[i].text, refs: h[i].refs, thought: h[i].thought }, state, true);
-        return;
+        return true;
       }
-      if (h[i].kind !== 'choice') return;
+      if (h[i].kind !== 'choice') return false;
     }
+    return false;
   }
   // NVL: lines since the last @page accumulate on a full-stage page; the newest one types itself
   function showNvl(op, state, instant) {
@@ -1128,11 +1161,31 @@
       h += '<button type="button" data-i="' + i + '"><span class="vn-key" aria-hidden="true">' + (i + 1) + '</span><span>' + esc(text) + '</span></button>';
     });
     menuEl.innerHTML = h;
+    menuEl.classList.toggle('many', opts.length > 6);
     menuEl.classList.add('show');
+    stage.classList.add('menu-up');
+    placeMenu();
     $$('button', menuEl).forEach(function (b) { b.addEventListener('click', function (e) { e.stopPropagation(); choose(parseInt(b.getAttribute('data-i'), 10)); }); });
     announce('Choose: ' + opts.map(function (o, i) { return (i + 1) + '. ' + o.text; }).join(' '));
     if (!THUMB && !S.screen) { var first = $('button', menuEl); if (first) first.focus({ preventScroll: true }); }
   }
+  // The choices sit just above the text window (and its name plate), clear of the faces; a list too long for
+  // that space scrolls. With no window (NVL page, boards, text-only) the stylesheet centres them.
+  function placeMenu() {
+    var st = menuEl.style;
+    st.top = st.bottom = st.transform = st.maxHeight = '';
+    if (!menuEl.classList.contains('show') || !box.classList.contains('show') || S.textOnly) return;
+    var sr = stage.getBoundingClientRect(), br = box.getBoundingClientRect();
+    if (!sr.height || !br.height) return;
+    var top = br.top - sr.top;
+    if (nameEl.textContent) top = Math.min(top, nameEl.getBoundingClientRect().top - sr.top);
+    var room = top - sr.height * 0.03 - sr.height * 0.05;      // a gap above the window, a margin under the top edge
+    if (room < 120) return;                                     // no sensible space: keep the centred default
+    st.top = 'auto'; st.transform = 'translateX(-50%)';
+    st.bottom = (sr.height - top + sr.height * 0.03) + 'px';
+    st.maxHeight = room + 'px';
+  }
+  window.addEventListener('resize', placeMenu);
   function choose(i) {
     if (!S.stop || S.stop.op.kind !== 'menu') return;
     var stop = S.run.choose(i);
@@ -1193,7 +1246,7 @@
     h += '<div class="vn-rule"></div>';
     var credits = '';
     if (m.authors) credits += '<dt>' + (m.kind === 'blog' ? 'Written by' : 'Authors') + '</dt><dd class="vn-authors">' + esc(m.authors) + '</dd>';
-    var cast = Object.keys(S.program.cast).map(function (k) { return S.program.cast[k]; }).filter(function (c) { return !c.player && !c.page; }).map(function (c) { return c.name; });
+    var cast = Object.keys(S.program.cast).map(function (k) { return S.program.cast[k]; }).filter(function (c) { return !c.page; }).map(function (c) { return c.name; });
     if (cast.length) credits += '<dt>Cast</dt><dd>' + esc(cast.join(', ')) + '</dd>';
     credits += '<dt>Script, stage, art</dt><dd>Paper Theatre, drawn in code</dd>';
     h += '<dl class="vn-credits">' + credits + '</dl>';
@@ -1392,8 +1445,17 @@
         stop = shadow.advance();
       }
     }
-    for (; hi < h.length; hi++) rows.push({ h: h[hi], stopIndex: null });
+    // a run that began with a bare jump cannot be replayed: its rows rewind by stepping back instead
+    for (; hi < h.length; hi++) rows.push({ h: h[hi], stopIndex: null, hist: S.noSlots && h[hi].kind !== 'choice' ? hi + 1 : null });
     return rows;
+  }
+  function rewindBack(histLen) {
+    if (!S.run) return;
+    var stop = S.run.current(), guard = 0;
+    while (S.run.state.history.length > histLen && guard++ < 600) { var prev = S.run.back(); if (!prev) break; stop = prev; }
+    if (!stop) stop = S.run.advance();
+    present(stop, { instant: true, back: true });
+    stage.focus({ preventScroll: true });
   }
   function rewindTo(stopIndex) {
     if (!S.run) return;
@@ -1487,7 +1549,8 @@
       else if (h.kind === 'chapter') { cls = 'chapter'; who = 'Chapter ' + esc(h.n || ''); text = esc(h.title || ''); }
       else { cls = 'board'; who = esc(h.kind); text = esc(h.title || h.text || ''); }
       return '<li class="' + cls + (r.stopIndex === cur ? ' cur' : '') + '"><span class="w">' + who + '</span><span class="t">' + text + chipsHtml(h.refs) + '</span>' +
-        (r.stopIndex ? '<button type="button" data-rewind="' + r.stopIndex + '" title="rewind to this moment">rewind here</button>' : '<span></span>') + '</li>';
+        (r.stopIndex ? '<button type="button" data-rewind="' + r.stopIndex + '" title="rewind to this moment">rewind here</button>' :
+          r.hist ? '<button type="button" data-hist="' + r.hist + '" title="rewind to this moment">rewind here</button>' : '<span></span>') + '</li>';
     }).join('') + '</ol>';
   }
   function chaptersHtml() {
@@ -1548,6 +1611,9 @@
     });
     $$('button[data-rewind]', screenEl).forEach(function (b) {
       b.addEventListener('click', function () { var k = parseInt(b.getAttribute('data-rewind'), 10); closeScreen(true); rewindTo(k); });
+    });
+    $$('button[data-hist]', screenEl).forEach(function (b) {
+      b.addEventListener('click', function () { var k = parseInt(b.getAttribute('data-hist'), 10); closeScreen(true); rewindBack(k); });
     });
     $$('button[data-ch]', screenEl).forEach(function (b) {
       b.addEventListener('click', function () { var c = S.program.chapters[parseInt(b.getAttribute('data-ch'), 10)]; closeScreen(true); jumpChapter(c); });
@@ -1617,6 +1683,9 @@
     var b = e.target.closest && e.target.closest('button[data-q]');
     if (!b) return;
     e.stopPropagation();
+    // a mouse or touch click must not leave the focus on the button, or the next Space / Enter presses it again
+    // instead of advancing; keyboard activation (detail 0) keeps the focus where the reader put it
+    if (e.detail > 0) stage.focus({ preventScroll: true });
     var q = b.getAttribute('data-q');
     if (q === 'back') back();
     else if (q === 'qsave') { if (writeSlot('q')) toast('Quick saved.', 1400); }
@@ -1629,7 +1698,7 @@
     else if (q === 'config') openScreen('config');
     else if (q === 'hide') setHidden(true);
   });
-  if (btnFull) btnFull.addEventListener('click', function (e) { e.stopPropagation(); toggleFullscreen(); });
+  if (btnFull) btnFull.addEventListener('click', function (e) { e.stopPropagation(); if (e.detail > 0 && S.mode === 'play') stage.focus({ preventScroll: true }); toggleFullscreen(); });
   if (btnTitle) btnTitle.addEventListener('click', function (e) { e.stopPropagation(); if (S.program) showTitle(); });
   if (btnIssues) btnIssues.addEventListener('click', function (e) { e.stopPropagation(); openScreen('issues'); });
   if (btnHelp) btnHelp.addEventListener('click', toggleHelp);
@@ -1719,7 +1788,7 @@
 
   var ptr = null, longTimer = 0;
   function interactive(target) {
-    return !!(target.closest && target.closest('button, a, abbr, input, select, .vn-end, .vn-picker, .vn-panel, .vn-transcript, .vn-board, .vn-screen, .vn-titlescreen, .vn-quick, .vn-topbar'));
+    return !!(target.closest && target.closest('button, a, abbr, input, select, .vn-end, .vn-picker, .vn-panel, .vn-transcript, .vn-screen, .vn-titlescreen, .vn-quick, .vn-topbar'));
   }
   stage.addEventListener('pointerdown', function (e) {
     if (e.button !== 0) return;
@@ -1742,6 +1811,7 @@
     if (S.hidden) { setHidden(false); return; }
     var dx = e.clientX - p.x, dy = e.clientY - p.y;
     if (e.pointerType === 'touch' && Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.2) {
+      ghostUntil = performance.now() + 450;
       if (dx < 0) advance(); else back();
       return;
     }
@@ -1751,9 +1821,18 @@
     if (!S.run) return;
     if (S.stop && S.stop.op.kind === 'menu') return;
     if (S.auto) setAuto(false);
+    if (e.pointerType === 'touch') ghostUntil = performance.now() + 450;
     advance();
     if (document.activeElement !== stage && !(document.activeElement && menuEl.contains(document.activeElement))) stage.focus({ preventScroll: true });
   });
+  // After a touch the browser sends a click to whatever is under the finger by then. When the tap has just
+  // advanced the story that can be a choice bar or an end-card button that was not there when the finger came
+  // down: swallow that one click so a tap never answers a question the reader has not seen.
+  var ghostUntil = 0;
+  stage.addEventListener('click', function (e) {
+    if (e.detail > 0 && performance.now() < ghostUntil && e.target.closest && e.target.closest('button, a')) { e.preventDefault(); e.stopPropagation(); }
+    ghostUntil = 0;
+  }, true);
   stage.addEventListener('pointercancel', function () { ptr = null; clearTimeout(longTimer); });
   // right-click: hide the window to look at the picture, as in any visual novel
   stage.addEventListener('contextmenu', function (e) {
@@ -1802,7 +1881,8 @@
     var names = kind === 'cg' ? (ART.CGS || []).concat(['(fallback)']) : (ART.BACKGROUNDS || []);
     if (only.length) names = only;
     var grid = document.createElement('div'); grid.className = 'vn-gallery';
-    grid.innerHTML = names.map(function (n) { return '<figure>' + (kind === 'cg' ? artCg(n) : artBackground(n, mod)) + '<figcaption>' + esc(n + (mod ? ' ' + mod : '')) + '</figcaption></figure>'; }).join('');
+    var gopts = {}; if (params.get('overcast') === '1') gopts.overcast = true; if (params.get('board')) gopts.board = params.get('board'); if (params.get('text')) gopts.text = params.get('text');
+    grid.innerHTML = names.map(function (n) { return '<figure>' + (kind === 'cg' ? artCg(n, mod, gopts) : artBackground(n, mod, gopts)) + '<figcaption>' + esc(n + (mod ? ' ' + mod : '')) + '</figcaption></figure>'; }).join('');
     $('main').insertBefore(grid, frame);
     setStatus(kind === 'cg' ? 'event illustrations' : 'backgrounds' + (mod ? ' (' + mod + ')' : ''));
   }
@@ -1853,6 +1933,9 @@
       renderPicker();
     });
   }
+
+  // Test hook for the browser harness (read-only by convention): the live run state, prefs and catalogue.
+  window.__vnStage = { S: S, prefs: prefs, catalog: function () { return catalog; } };
 
   boot();
 })();
