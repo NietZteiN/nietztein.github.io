@@ -5,6 +5,19 @@
 // occasionally stretches or yawns, and bolts off the right edge when the page
 // is scrolled fast. Switch it off with Gadgets.set('navcat', false).
 //
+// Visits: another gadget (the living portrait) may invite the cat somewhere
+// else for a while through window.NavCat:
+//   NavCat.visit(host, { ms, instant, hold }) -> boolean. The cat walks off the
+//       left end of the navbar and reappears inside `host` (a 24x16 box the
+//       caller positions; the cat's feet rest on its bottom edge), where it
+//       idles as usual, faces the pointer and purrs when hovered. After `ms`
+//       it goes home by itself. Refused (false) unless the cat is sitting awake
+//       on the navbar, motion is allowed and the window is >= 768px wide.
+//   NavCat.leave(immediate) ends a visit early (immediate: no walk back).
+//   NavCat.state -> 'off' | 'going' | 'perched' | the navbar state.
+// 'navcat:visit' / 'navcat:left' fire on document when the cat arrives / has
+// gone home (for whatever reason, including this gadget being switched off).
+//
 // Debug: ?gadgetDebug=navcat-sleep | navcat-walk | navcat-purr | navcat-sit |
 // navcat-roll | navcat-stretch | navcat-sheet forces a state (sheet draws every
 // frame at 5x in the corner). Harmless otherwise.
@@ -337,6 +350,7 @@
 	}
 
 	function place() {
+		if (visitPhase === 'there') return;   // the host positions a visiting cat
 		if (box) box.style.transform = 'translate3d(' + Math.round(x) + 'px,0,0)';
 	}
 	function currentRoute() {
@@ -391,7 +405,7 @@
 			var dt = Math.min(0.1, Math.max(0, (t - lastStep) / 1000));
 			lastStep = t;
 			var d = target - x;
-			if (Math.abs(d) <= speed * dt) { x = target; arrive(); return state !== 'sit' && state !== 'away'; }
+			if (Math.abs(d) <= speed * dt) { x = target; arrive(); return state !== 'sit' && state !== 'away' && state !== 'hop'; }
 			dir = d < 0 ? -1 : 1;
 			flip = dir < 0;
 			x += dir * speed * dt;
@@ -441,6 +455,9 @@
 				break;
 			case 'yawn':
 				paint(F.yawn, flip);
+				break;
+			case 'hop':
+				paint(F.sit[2], flip);
 				break;
 			case 'away':
 				break;
@@ -521,6 +538,7 @@
 	function arrive() {
 		x = target;
 		place();
+		if (visitPhase === 'going') { perch(); return; }
 		if (target > navW) {
 			state = 'away';
 			need(false);
@@ -542,6 +560,7 @@
 		toWalk(tx, RETURN_SPEED);
 	}
 	function goTo(viaRoute) {
+		if (visitPhase) return;   // out visiting: it walks back to the right tab later
 		var tx = targetX(!viaRoute && state !== 'walk');
 		if (tx === null) return;
 		if (state === 'away') { target = tx; return; }   // comes back to the new tab later
@@ -554,12 +573,121 @@
 		toWalk(tx, speed > RETURN_SPEED ? RETURN_SPEED : WALK_SPEED);
 	}
 
+	// ---- Visiting ---------------------------------------------------------
+	// See the header. visitPhase: '' at home, 'going' while walking off the
+	// navbar, 'there' while sitting in the host element.
+
+	var visitPhase = '', visitHost = null, visitMs = 0, visitHold = false, lastHoverPurr = 0;
+
+	function announce(name) {
+		try { document.dispatchEvent(new CustomEvent(name)); } catch (e) { /* old browsers */ }
+	}
+	function visit(host, opts) {
+		opts = opts || {};
+		if (!active || paused || reduced() || !mqDesktop.matches || visitPhase || !host || !box) return false;
+		if (!opts.instant && state !== 'sit') return false;
+		visitHost = host;
+		visitMs = Math.max(5000, Math.min(60000, +opts.ms || 30000));
+		visitHold = !!opts.hold;
+		visitPhase = 'going';
+		if (opts.instant) { need(false); clearAll(); perch(); return visitPhase === 'there'; }
+		tFlip = true;
+		toWalk(-W - 4, WALK_SPEED);
+		return true;
+	}
+	function perch() {
+		if (!visitHost || !document.documentElement.contains(visitHost)) { visitPhase = ''; visitHost = null; walkHome(); announce('navcat:left'); return; }
+		visitPhase = 'there';
+		need(false);
+		clearIdle();
+		box.style.transform = '';
+		box.classList.remove('is-leaving');
+		box.classList.add('is-perched');
+		visitHost.appendChild(box);
+		flip = false;
+		lastInput = now();
+		toSit();
+		if (!visitHold) setTimer('visit', function () { leave(false); }, visitMs);
+		announce('navcat:visit');
+	}
+	// Put the box back on the navbar, off its left end, and walk to the tab.
+	function walkHome() {
+		var tx = targetX();
+		x = -W - 2;
+		place();
+		if (tx === null) { x = 0; target = 0; place(); toSit(); return; }
+		toWalk(tx, RETURN_SPEED);
+	}
+	function unperch() {
+		clearTimer('visit'); clearTimer('hop');
+		if (box) {
+			box.classList.remove('is-perched', 'is-leaving');
+			if (stage && box.parentNode !== stage) stage.appendChild(box);
+		}
+		visitPhase = ''; visitHost = null;
+	}
+	function leave(immediate) {
+		if (!visitPhase || !active) return;
+		if (visitPhase === 'going') {
+			visitPhase = ''; visitHost = null;
+			if (immediate || paused) { settleHome(); } else { var tx = targetX(); if (tx !== null) toWalk(tx, WALK_SPEED); }
+			announce('navcat:left');
+			return;
+		}
+		if (immediate || paused || reduced()) {
+			unperch();
+			settleHome();
+			announce('navcat:left');
+			return;
+		}
+		if (state === 'hop') return;   // already on its way
+		// a small hop off the frame, then the walk back along the navbar
+		clearTimer('visit');
+		clearIdle();
+		need(false);
+		state = 'hop';
+		render(now());
+		box.classList.add('is-leaving');
+		setTimer('hop', function () {
+			unperch();
+			state = 'sit';
+			walkHome();
+			announce('navcat:left');
+		}, 260);
+	}
+	function settleHome() {
+		need(false);
+		clearIdle();
+		state = 'sit';
+		var tx = targetX(true);
+		x = target = tx === null ? 0 : tx;
+		place();
+		if (!paused) toSit();
+	}
+	// A visiting cat turns its head towards the pointer.
+	function lookAt(e) {
+		if (visitPhase !== 'there' || state !== 'sit' || !box || !e || typeof e.clientX !== 'number') return;
+		var r = box.getBoundingClientRect();
+		var cx = r.left + r.width / 2;
+		if (Math.abs(e.clientX - cx) < 14) return;
+		var f = e.clientX < cx;
+		if (f !== flip) { flip = f; render(now()); }
+	}
+	function onPointerEnter() {
+		if (visitPhase !== 'there' || state !== 'sit' || reduced()) return;
+		var t = now();
+		if (t - lastHoverPurr < 5000) return;
+		lastHoverPurr = t;
+		toAnim('purr', 1500);
+	}
+
 	// ---- Input ------------------------------------------------------------
 
 	var scrollSamples = [], scrollArmAt = 0;
-	function onInput() {
+	function onInput(e) {
 		lastInput = now();
 		if (state === 'sleep' && !paused) wake(false);
+		if (visitPhase === 'there') lookAt(e);
 	}
 	function seedScroll(t) {
 		scrollSamples.length = 0;
@@ -578,7 +706,7 @@
 		var v = 0, first = scrollSamples[0];
 		if (first && t - first[0] >= 90) v = Math.abs(y - first[1]) / (t - first[0]) * 1000;
 		if (prev) v = Math.max(v, Math.abs(y - prev[1]) / Math.max(16, Math.min(300, t - prev[0])) * 1000);
-		if (v > 2600 && t > fleeCooldown && (state === 'sit' || state === 'stretch' || state === 'yawn') && !reduced()) {
+		if (v > 2600 && t > fleeCooldown && !visitPhase && (state === 'sit' || state === 'stretch' || state === 'yawn') && !reduced()) {
 			seedScroll(t);
 			flee();
 		}
@@ -628,6 +756,7 @@
 	}
 	function pause() {
 		if (paused) return;
+		if (visitPhase) leave(true);
 		paused = true;
 		need(false);
 		clearAll();
@@ -723,6 +852,7 @@
 		box.addEventListener('pointerup', onPointerUp);
 		box.addEventListener('pointercancel', onPointerCancel);
 		box.addEventListener('pointerleave', onPointerCancel);
+		box.addEventListener('pointerenter', onPointerEnter);
 		box.addEventListener('contextmenu', prevent);
 		window.addEventListener('hashchange', onHash);
 		window.addEventListener('resize', onResize);
@@ -772,9 +902,13 @@
 
 	function disable() {
 		if (!active) return;
+		var wasOut = !!visitPhase;
+		if (visitPhase) { visitPhase = ''; visitHost = null; }
 		active = false;
 		need(false);
 		clearAll();
+		if (box && box.parentNode && box.parentNode !== stage) box.parentNode.removeChild(box);
+		box.removeEventListener('pointerenter', onPointerEnter);
 		if (resizeRaf) { cancelAnimationFrame(resizeRaf); resizeRaf = 0; }
 		if (ro) { ro.disconnect(); ro = null; }
 		box.removeEventListener('pointerdown', onPointerDown);
@@ -797,7 +931,14 @@
 		scrollSamples.length = 0;
 		pressed = false; paused = false;
 		state = 'sit';
+		if (wasOut) announce('navcat:left');
 	}
+
+	window.NavCat = {
+		visit: visit,
+		leave: leave,
+		get state() { return !active ? 'off' : visitPhase === 'there' ? 'perched' : visitPhase === 'going' ? 'going' : state; },
+	};
 
 	window.Gadgets.register('navcat', { label: 'Navbar cat', enable: enable, disable: disable });
 })();

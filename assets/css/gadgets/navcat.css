@@ -37,6 +37,39 @@
 	image-rendering: crisp-edges;
 }
 
+/* Visiting (NavCat.visit): the box sits inside a host element another gadget
+   positions, e.g. on the top edge of the profile photo. It drops in from
+   above and hops off again before walking home along the navbar. */
+.navcat.is-perched {
+	animation: navcat-land 420ms cubic-bezier(0.3, 1.4, 0.5, 1) both;
+}
+
+.navcat.is-perched.is-leaving {
+	animation: navcat-hop 260ms ease-in both;
+}
+
+@keyframes navcat-land {
+	from {
+		opacity: 0;
+		transform: translate3d(0, -14px, 0);
+	}
+	to {
+		opacity: 1;
+		transform: none;
+	}
+}
+
+@keyframes navcat-hop {
+	from {
+		opacity: 1;
+		transform: none;
+	}
+	to {
+		opacity: 0;
+		transform: translate3d(0, -12px, 0);
+	}
+}
+
 /* Below the md breakpoint the nav collapses into a burger: no ledge to sit on. */
 @media (max-width: 767.98px) {
 	.navcat-stage {
