@@ -22,6 +22,13 @@
     { id: '056', name: 'Belgium',       city: 'Brussels',       tz: 'Europe/Brussels',     lat: 50.85, lon:    4.35, code: 'BRU', continent: 'Europe',        pop:  11738763 },
     { id: '392', name: 'Japan',         city: 'Tokyo',          tz: 'Asia/Tokyo',          lat: 35.68, lon:  139.69, code: 'HND', continent: 'Asia',          pop: 123753041 }
   ];
+  // Other places in the United States, drawn as small ringed pins. To add one: one line.
+  var US_PLACES = [
+    { name: 'Washington, D.C.', lat: 38.90, lon: -77.04 },
+    { name: 'Seattle',          lat: 47.61, lon: -122.33 },
+    { name: 'California',       lat: 36.78, lon: -119.42 },
+    { name: 'Houston',          lat: 29.76, lon: -95.37 }
+  ];
   var WORLD_POP = 8161972572;   // UN World Population Prospects 2024, mid-2024
   var WORLD_COUNTRIES = 195;    // 193 UN members + 2 observer states
   var CONTINENTS_TOTAL = 7;
@@ -324,6 +331,8 @@
       .style('animation-delay', function (d, i) { return (-i * 0.37) + 's'; });
     var pinShadows = gThreads.selectAll('circle.pin-shadow').data(threadData).enter().append('circle').attr('class', 'pin-shadow').attr('r', 3.2);
     var pins = gThreads.selectAll('circle.pin').data(threadData).enter().append('circle').attr('class', 'pin').attr('r', 2.8);
+    var usPins = svg.append('g').selectAll('circle').data(US_PLACES).enter().append('circle').attr('class', 'pin home').attr('r', 2.1).style('stroke-width', 1.1).style('pointer-events', 'auto');
+    usPins.append('title').text(function (d) { return d.name; });
     var homePin = svg.append('circle').attr('class', 'pin home').attr('r', 3.4);
     var outline = svg.append('path').datum(sphere).attr('fill', 'none').attr('stroke', 'rgba(236,231,217,0.3)').attr('stroke-width', 0.8).attr('pointer-events', 'none');
 
@@ -377,6 +386,10 @@
           d3.select(this).style('display', p ? null : 'none').attr('cx', p && (p[0] + 1.2)).attr('cy', p && (p[1] + 1.6));
         });
       }
+      usPins.each(function (d) {
+        var p = visible([d.lon, d.lat]) ? projection([d.lon, d.lat]) : null;
+        d3.select(this).style('display', p ? null : 'none').attr('cx', p && p[0]).attr('cy', p && p[1]);
+      });
       var hp = visible([HOME.lon, HOME.lat]) ? projection([HOME.lon, HOME.lat]) : null;
       homePin.style('display', hp ? null : 'none').attr('cx', hp && hp[0]).attr('cy', hp && hp[1]);
       if ((frame++ & 7) === 0) updateStatus();

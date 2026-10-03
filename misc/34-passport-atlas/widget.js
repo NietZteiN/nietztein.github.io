@@ -31,6 +31,13 @@
     { id: '056', name: 'Belgium',       city: 'Brussels',       lat: 50.85, lon: 4.35,   vlat: 50.6, vlon: 4.5,  cont: 'Europe',        pop: 11738763 },
     { id: '392', name: 'Japan',         city: 'Tokyo',          lat: 35.68, lon: 139.69, vlat: 37,   vlon: 138,  cont: 'Asia',          pop: 123753041 }
   ];
+  // other places in the United States (drawn as small dots; edit freely)
+  var US_PLACES = [
+    { name: 'Washington, D.C.', lat: 38.90, lon: -77.04 },
+    { name: 'Seattle',          lat: 47.61, lon: -122.33 },
+    { name: 'California',       lat: 36.78, lon: -119.42 },
+    { name: 'Houston',          lat: 29.76, lon: -95.37 }
+  ];
   var BY_ID = {}; COUNTRIES.forEach(function (c) { BY_ID[c.id] = c; });
   var VISITED = COUNTRIES.map(function (c) { return c.id; });
   var HOME = BY_ID['840'];
@@ -451,7 +458,7 @@
     function setLabel() {
       var c = hover ? BY_ID[hover] : chipActive ? BY_ID[chipActive] : null;
       if (!c) label.innerHTML = '<b>Home: Texas.</b> Drag the globe; hover a lit country. Shade is night.';
-      else if (c.home) label.innerHTML = '<b>' + c.name + '</b> — home, ' + c.city + ' · ' + c.cont;
+      else if (c.home) label.innerHTML = '<b>' + c.name + '</b> — home, ' + c.city + ' · also ' + US_PLACES.map(function (p) { return p.name; }).join(', ');
       else label.innerHTML = '<b>' + c.name + '</b> — ' + c.city + ' · ' + fmtInt(c.km) + ' km from home · ' + c.cont;
     }
     function setHover(id) {
@@ -520,6 +527,12 @@
         if (c.home) { ctx.strokeStyle = T.accent; ctx.lineWidth = 1.8; ctx.stroke(); }
         ctx.globalAlpha = 1;
       }
+      // other places in the United States
+      for (i = 0; i < US_PLACES.length; i++) {
+        var uq = viewPoint(US_PLACES[i].lon, US_PLACES[i].lat, rot, cx, cy, R); if (uq.z <= 0.02) continue;
+        ctx.globalAlpha = clamp(uq.z * 4, 0.2, 1); ctx.beginPath(); ctx.arc(uq.x, uq.y, 1.7, 0, TAU); ctx.fillStyle = T.bg; ctx.fill();
+        ctx.strokeStyle = T.accent; ctx.lineWidth = 1.1; ctx.stroke(); ctx.globalAlpha = 1;
+      }
       // pulse on the focused country
       if (pulse) {
         var pc = BY_ID[pulse.id], pq = viewPoint(pc.lon, pc.lat, rot, cx, cy, R);
@@ -565,6 +578,10 @@
         var q = project(c.lon, c.lat), x = fx(q), y = fy(q);
         ctx.beginPath(); ctx.arc(x, y, c.home ? 3 : 2, 0, TAU); ctx.fillStyle = c.home ? T.bg : T.accent; ctx.fill();
         if (c.home) { ctx.strokeStyle = T.accent; ctx.lineWidth = 1.5; ctx.stroke(); }
+      }
+      for (i = 0; i < US_PLACES.length; i++) {
+        var uq = project(US_PLACES[i].lon, US_PLACES[i].lat);
+        ctx.beginPath(); ctx.arc(fx(uq), fy(uq), 1.4, 0, TAU); ctx.fillStyle = T.bg; ctx.fill(); ctx.strokeStyle = T.accent; ctx.lineWidth = 1; ctx.stroke();
       }
       ctx.restore();
       ctx.strokeStyle = T.coast; ctx.lineWidth = 0.8; ctx.stroke(P.outline);
