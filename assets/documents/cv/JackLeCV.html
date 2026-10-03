@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="author" content="Jack V. Le">
+<title>Jack V. Le - Curriculum Vitae</title>
+<style>
+	@page { size: Letter; margin: 0.7in 0.75in; }
+	* { box-sizing: border-box; }
+	html { background: #fff; }
+	body {
+		margin: 0;
+		color: #000;
+		background: #fff;
+		font-family: "Latin Modern Roman", "CMU Serif", "Computer Modern", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+		font-size: 10.5pt;
+		line-height: 1.24;
+		font-kerning: normal;
+		font-variant-ligatures: common-ligatures;
+		text-rendering: optimizeLegibility;
+		-webkit-print-color-adjust: exact;
+		print-color-adjust: exact;
+	}
+	@media screen {
+		body { width: 8.5in; max-width: 100%; margin: 0 auto; padding: 0.75in; }
+	}
+	a { color: inherit; text-decoration: none; }
+	p { margin: 0; }
+
+	/* Header */
+	header { text-align: center; margin-bottom: 9pt; }
+	h1 { margin: 0 0 3pt; font-size: 21pt; font-weight: 700; letter-spacing: 0.01em; line-height: 1.15; }
+	.contact { font-size: 10.5pt; }
+	.contact span + span::before { content: "\00B7"; margin: 0 0.75em; }
+
+	/* Sections */
+	section { margin-top: 8pt; }
+	h2 {
+		margin: 0 0 4.5pt;
+		padding-bottom: 1.5pt;
+		border-bottom: 0.6pt solid #000;
+		font-size: 12pt;
+		font-weight: 700;
+		font-variant: small-caps;
+		letter-spacing: 0.035em;
+		line-height: 1.2;
+		break-after: avoid;
+		page-break-after: avoid;
+	}
+	h3 {
+		margin: 6pt 0 3pt;
+		font-size: 10.5pt;
+		font-weight: 700;
+		font-style: italic;
+		break-after: avoid;
+		page-break-after: avoid;
+	}
+	.keep { break-inside: avoid; page-break-inside: avoid; }
+
+	/* Entries */
+	.e { break-inside: avoid; page-break-inside: avoid; margin-bottom: 3.5pt; }
+	.e.tight { margin-bottom: 1.5pt; }
+	.row { display: flex; justify-content: space-between; align-items: baseline; gap: 1.5em; }
+	.row > .l { flex: 1 1 auto; min-width: 0; }
+	.row > .d { flex: 0 0 auto; white-space: nowrap; text-align: right; }
+	.sub { margin-top: 0.5pt; }
+	ul { margin: 1.5pt 0 0; padding-left: 1.5em; }
+	li { margin: 0 0 1pt; text-align: justify; hyphens: auto; }
+	li::marker { font-size: 0.85em; }
+
+	/* Publications */
+	.pub {
+		break-inside: avoid; page-break-inside: avoid;
+		margin: 0 0 3pt; padding-left: 1.5em; text-indent: -1.5em;
+		text-align: justify; hyphens: auto;
+	}
+	.note { font-size: 9.5pt; margin-top: 1pt; }
+	sup { font-size: 0.7em; line-height: 0; text-indent: 0; }
+	.nw { white-space: nowrap; display: inline-block; text-indent: 0; }
+</style>
+</head>
+<body>
+
+<header>
+	<h1>Jack V. Le</h1>
+	<div class="contact">
+		<span>Texas, United States</span><span><a href="https://nietztein.github.io/">nietztein.github.io</a></span><span><a href="mailto:jvl210002@utdallas.edu">jvl210002@utdallas.edu</a></span>
+	</div>
+</header>
+
+<section>
+	<div class="keep">
+		<h2>Education</h2>
+		<div class="e">
+			<div class="row"><div class="l"><b>University of Texas at Dallas</b>, Richardson, TX, United States</div><div class="d">August 2022 – Present</div></div>
+			<div class="row"><div class="l">Bachelor of Science in Computer Science with Honours</div><div class="d">Graduation: Dec 2026</div></div>
+			<div class="sub">Minors: Mathematics and Political Science</div>
+			<div class="sub">GPA: overall 3.966/4.0; CS-only 3.96/4.0</div>
+			<div class="sub">Honors: The Honor Society of Phi Kappa Phi, Collegium V Honors, Dean’s List (x3)</div>
+		</div>
+	</div>
+	<div class="e">
+		<div class="row"><div class="l"><b>Waseda University</b>, Tokyo, Japan</div><div class="d">Academic year 2024 – 2025</div></div>
+		<div class="sub">Study abroad; all coursework taught in Japanese (readings, lectures, and assessments).</div>
+		<div class="sub">Graduate-level courses: computer vision; natural language processing; advanced wireless access; distributed, embedded, and real-time processing.</div>
+	</div>
+</section>
+
+<section>
+	<div class="keep">
+		<h2>Refereed Abstracts</h2>
+		<p class="pub"><b>J. V. Le</b>. <i>Do Machines Struggle Where Humans Do? Obfuscation as a Probe of Human and Machine Code Comprehension.</i> [2-page extended abstract; peer-reviewed]. ACM Student Research Competition, SPLASH/ISSTA, 2026.</p>
+	</div>
+</section>
+
+<section>
+	<div class="keep">
+		<h2>Workshop Papers</h2>
+		<p class="pub"><b>J. V. Le</b> and Tien Nguyen. <i>Attributing Gains in Paired Training: Objective or Data Direction?</i> Third NeurIPS Workshop on Attributing Model Behavior at Scale: Data Attribution and Provenance (ATTRIB 2026). 43 of 83 submissions accepted (51.8%). Non-archival.</p>
+	</div>
+</section>
+
+<section>
+	<div class="keep">
+		<h2>Preprints</h2>
+		<p class="pub">Vincent Hanke, <b>J. V. Le</b>, Adam Dziedzic, and Franziska Boenisch. <i>Router-Free Modular Storage for Knowledge Unlearning in Large Language Models.</i> Submitted to ICLR.</p>
+	</div>
+	<p class="pub"><b>J. V. Le</b>, Ilse Lahnstein Coronado, Anh Nguyen, and Tien Nguyen. <i>Fast Errors or Slow Effort? Divergent Dual-Process Signatures of Code Obfuscation in Humans and Language Models.</i> Submitted to the ACM International Conference on the Foundations of Software Engineering (FSE).</p>
+	<p class="pub"><b>J. V. Le</b>, Rebecca Gelles, Catherine Aiken, and Katherine Quinn. <i>Extreme Summarization of Worldwide Scientific and Patent Document Clusters for Landscape Analysis.</i> Submitted to Scientometrics.</p>
+	<p class="pub"><span class="nw"><b>J. V. Le</b><sup>†</sup>,</span> Anh <span class="nw">Nguyen<sup>†</sup>,</span> and Tien Nguyen. <i>Do Machines Struggle Where Humans Do? LLM and Human Comprehension of Obfuscated Code.</i> arXiv:2606.31725 [cs.SE]. Submitted to the ACM International Conference on the Foundations of Software Engineering (FSE).</p>
+	<p class="pub">A. H. N. <span class="nw">Nguyen<sup>†</sup>,</span> <span class="nw"><b>J. V. Le</b><sup>†</sup>,</span> Ilse Lahnstein Coronado, and T. N. Nguyen. <i>The Effect of Code Obfuscation on Human Program Comprehension.</i> arXiv:2603.07668 [cs.SE].</p>
+	<p class="pub"><b>J. V. Le</b>. <i>What Does an Embedding Mean? A Semiotic Account of Learned Representation.</i> Preprint, 2026.</p>
+	<p class="pub">K. Tanaka-Ishii and <b>J. V. Le</b>. <i>Code as Embedding as AI.</i> Submitted to Minds and Machines.</p>
+	<p class="note"><sup>†</sup> Co-first authors (equal contribution).</p>
+</section>
+
+<section>
+	<div class="keep">
+		<h2>Presentations</h2>
+		<p class="pub"><i>Towards Verifiable LLM Outputs for Software Development.</i> Gulf Coast Undergraduate Research Symposium, Rice University, Oct 2026.</p>
+	</div>
+	<p class="pub"><i>Exact Unlearning for Large Language Models.</i> DAAD RISE Research Symposium, 2026.</p>
+	<p class="pub"><i>Head Shape Analysis Using Custom Feature Extraction.</i> UT Dallas Undergraduate Research Scholars Awards Symposium, 2025.</p>
+	<p class="pub"><i>Evaluating Large Language Models in Scientific Research: Practical Applications and Challenges.</i> UT Dallas Summer Platform for Undergraduate Students, 2024.</p>
+	<p class="pub"><i>Coding Semantics: Sentiment Analysis for Movie Reviews.</i> [Co-presented]. Association for Computing Machinery UT Dallas Research Conference, 2023.</p>
+</section>
+
+<section>
+	<div class="keep">
+		<h2>Research Experience</h2>
+		<div class="e">
+			<div class="row"><div class="l"><b>Undergraduate Researcher</b> with Dr. Tien Nguyen</div><div class="d">Fall 2025 – Present</div></div>
+			<div class="sub">Worked on <i>Attention Reallocation for LLMs in Software Engineering</i> project.</div>
+		</div>
+	</div>
+	<div class="e">
+		<div class="row"><div class="l"><b>Intern Researcher (DAAD RISE)</b> at SprintML, CISPA Helmholtz Center</div><div class="d">Summer 2026</div></div>
+		<div class="sub">Worked on <i>Efficient Exact Unlearning for LLMs</i> project.</div>
+	</div>
+	<div class="e">
+		<div class="row"><div class="l"><b>Research Assistant</b> with Dr. Kumiko Tanaka-Ishii</div><div class="d">Fall 2024 – Summer 2025</div></div>
+		<div class="sub">Worked on <i>Recurrence Quantification Analysis of Frontier AI Models</i> project.</div>
+		<ul>
+			<li>Collaborating with Dr. Tanaka-Ishii to explore patterns in language dimensions using advanced mathematical techniques like correlation dimension and recurrence quantification analysis.</li>
+		</ul>
+	</div>
+	<div class="e">
+		<div class="row"><div class="l"><b>Undergraduate Researcher</b> with Dr. Ovidiu Daescu</div><div class="d">Spring 2024 – Present</div></div>
+		<div class="sub">Worked on <i>Computer Vision and Feature Selection</i> project.</div>
+		<ul>
+			<li>Innovating new metrics and methods for feature extraction and selection to enhance model precision in computer vision research under Dr. Daescu, specifically focused on identifying cranial deformities.</li>
+			<li>Created and defined key metrics such as aspect ratio, symmetry, and convexity from segmentation masks to differentiate head shapes, improving the model’s ability to classify cranial abnormalities.</li>
+			<li>Expanding the dataset by generating synthetic images using Generative Adversarial Networks (GANs) to introduce more variations and improve model robustness in real-world scenarios.</li>
+		</ul>
+	</div>
+	<div class="e">
+		<div class="row"><div class="l"><b>Research Intern</b> with Hsu Lab</div><div class="d">Summer 2024</div></div>
+		<div class="sub">Worked on <i>Machine Learning Applications in Materials Science</i> project.</div>
+		<ul>
+			<li>Collaborated with Dr. Hsu to apply Large Language Models (LLMs) and machine learning techniques to complex Materials Science experiments.</li>
+			<li>Focused on applications such as image segmentation and Bayesian inference, addressing intricate challenges in materials science research.</li>
+			<li>Developed custom segmentation algorithms to process images, allowing precise measurement of grain areas and chemical line widths, overcoming challenges posed by traditional methods.</li>
+		</ul>
+	</div>
+	<div class="e">
+		<div class="row"><div class="l"><b>Student Researcher</b> with Dr. Doug DeGroot</div><div class="d">Fall 2023</div></div>
+		<div class="sub">Worked on <i>Coding Semantics: Sentiment Analysis in Movie Reviews</i> project.</div>
+		<ul>
+			<li>Collaborated with a team and academic advisor to determine the direction of an open-ended sentiment analysis project, leading to the development of models using BERT and XGBoost.</li>
+			<li>Developed sentiment analysis models that accurately classified 90 percent of movie review sentiments, showcasing the effectiveness of the chosen methodologies.</li>
+			<li>Presented research findings to a panel of university academics and industry professionals, receiving positive feedback for the project’s innovative approach.</li>
+		</ul>
+	</div>
+</section>
+
+<section>
+	<div class="keep">
+		<h2>Industry Experience</h2>
+		<div class="e">
+			<div class="row"><div class="l"><b>Center for Security and Emerging Technology</b>, Georgetown University</div><div class="d">Spring 2026</div></div>
+			<div class="sub">Intern</div>
+		</div>
+	</div>
+	<div class="e">
+		<div class="row"><div class="l"><b>Onplanetz</b></div><div class="d">Fall 2024 – Spring 2025</div></div>
+		<div class="sub">AI Engineer Intern</div>
+		<ul>
+			<li>Design and implement AI-driven recommendation systems to optimize study plans and identify students’ weak areas.</li>
+			<li>Processed educational datasets using text recognition tools and organized them into structured formats for AI training.</li>
+		</ul>
+	</div>
+	<div class="e">
+		<div class="row"><div class="l"><b>Relativity</b></div><div class="d">Fall 2024</div></div>
+		<div class="sub">AI Studio Fellow</div>
+		<ul>
+			<li>Collaborated with a team of five on the <i>Evaluating Frontier Models for Bias and Representation</i> project to systematically assess and quantify biases in frontier AI models.</li>
+			<li>Conducted comprehensive testing of AI models to uncover systematic biases, exceeding the accuracy and depth of existing bias detection methodologies.</li>
+			<li>Presented actionable insights to company leaders, aimed at mitigating the impact of biases in AI applications within the justice system.</li>
+		</ul>
+	</div>
+</section>
+
+<section>
+	<div class="keep">
+		<h2>Teaching Experience</h2>
+		<div class="e tight row"><div class="l"><b>UTD CS 2340 Computer Architecture</b>, Grader</div><div class="d">Fall 2026</div></div>
+	</div>
+	<div class="e tight row"><div class="l"><b>UTD CS 1337 Computer Science I</b>, Grader</div><div class="d">Fall 2025</div></div>
+	<div class="e tight row"><div class="l"><b>UTD CS 2336 Computer Science II</b>, Grader</div><div class="d">Spring 2024</div></div>
+	<div class="e tight row"><div class="l"><b>UTD CS 1337 Computer Science I</b>, Teaching Assistant</div><div class="d">Spring 2024</div></div>
+	<div class="e tight row"><div class="l"><b>UTD CS 1334 Programming Fundamentals for Non-Majors</b>, Teaching Assistant</div><div class="d">Fall 2023</div></div>
+	<div class="e tight row"><div class="l"><b>Garland ISD Various Math Courses</b>, Substitute Teacher</div><div class="d">Fall 2023 – Present</div></div>
+	<div class="e tight row"><div class="l"><b>Jeremy E. Watson Educational Center</b>, Japanese Instructor</div><div class="d">Fall 2023 – Spring 2024</div></div>
+	<div class="e tight row"><div class="l"><b>ICODE School Introduction to Web Development</b>, Technical Lead</div><div class="d">Fall 2023 – Spring 2024</div></div>
+</section>
+
+<section>
+	<div class="keep">
+		<h2>Other Experience</h2>
+		<div class="e tight row"><div class="l"><b>UT Dallas Office of Research</b>, Research Information Systems Worker</div><div class="d">Summer 2024</div></div>
+	</div>
+	<div class="e tight row"><div class="l"><b>Break Through Tech AI</b>, AI/ML Fellow</div><div class="d">May 2024 – May 2025</div></div>
+	<div class="e tight row"><div class="l"><b>ACM UTD</b>, Back-end Developer</div><div class="d">Feb 2024 – Apr 2024</div></div>
+	<div class="e tight row"><div class="l"><b>UTDesign</b>, Frontend Software Developer</div><div class="d">Jan 2024 – May 2024</div></div>
+	<div class="e tight row"><div class="l"><b>Wolters Kluwer Tax and Accounting</b>, Extern</div><div class="d">Mar 2023</div></div>
+</section>
+
+<section>
+	<div class="keep">
+		<h2>Awards</h2>
+		<div class="e tight">2026 DAAD RISE Scholarship – $5,000</div>
+	</div>
+	<div class="e tight">2026 Undergraduate Research Scholarship Award (URSA) – $500</div>
+	<div class="e tight">2026 Spring Archer Fellow – $10,000</div>
+	<div class="e tight">2025 Barry Goldwater Scholarship – $7,500</div>
+	<div class="e tight">2025 Undergraduate Research Scholarship Award (URSA) – $500</div>
+	<div class="e tight">2024 Undergraduate Research Apprenticeship Fellowship Award (URAP) – $4,500</div>
+	<div class="e tight">2024 People’s Choice Award, Association for Computing Machinery Projects</div>
+	<div class="e tight">2024 Leland Dillaha MSEE ’97 Undergraduate Scholarship – $1,000</div>
+	<div class="e tight">2022 National Merit Scholarship, UT Dallas – $3,000</div>
+</section>
+
+<section>
+	<div class="keep">
+		<h2>Languages</h2>
+		<div class="e tight">Japanese: JLPT N1, 150/180 (CEFR C1); self-taught</div>
+	</div>
+</section>
+
+<section>
+	<div class="keep">
+		<h2>Community Involvement</h2>
+		<div class="e tight row"><div class="l"><b>UT Design</b>, Code Review Volunteer</div><div class="d">Summer 2024</div></div>
+	</div>
+	<div class="e tight row"><div class="l"><b>UTD Society of Asian Scientists and Engineers</b>, Secretary and Chair</div><div class="d">January 2023 – August 2024</div></div>
+	<div class="e tight row"><div class="l"><b>UTD Artificial Intelligence Society</b>, Officer</div><div class="d">October 2022 – May 2023</div></div>
+</section>
+
+</body>
+</html>
