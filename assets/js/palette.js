@@ -1,5 +1,11 @@
 // Command palette: Ctrl/Cmd+K (or "/") opens a searchable list of sections,
-// blog posts, external links and actions.
+// blog posts, external links and actions. With a query it searches the whole
+// site: publications, presentations, teaching, experience, honors, press
+// (indexed once from the DOM), the bookshelf (assets/data/library.json, fetched
+// the first time a query has 2+ characters) and the misc toys.
+//
+// ?paletteDebug=<query> opens the palette on load with that query typed (for
+// headless screenshots).
 //
 // Markup is built lazily on first open and appended to <body>:
 //   .palette-backdrop            dims the page, click closes
@@ -25,6 +31,22 @@
 	var POSTS_INDEX = 'blog/index.json';
 	var THEATRE_URL = 'misc/55-paper-theatre/';
 	var STORIES_INDEX = THEATRE_URL + 'stories/index.json';
+	var LIBRARY_URL = 'assets/data/library.json';
+
+	// Order of the groups when nothing else decides it (see filterItems).
+	var GROUP_ORDER = [
+		'Sections', 'Publications', 'Presentations', 'Teaching', 'Experience', 'Honors', 'Press',
+		'Bookshelf', 'Misc', 'Posts', 'Stories', 'Links', 'Actions',
+	];
+	// Most rows a group may show while a query is present. Groups not listed
+	// here (Sections, Posts, Stories, Links, Actions) are never cut.
+	var GROUP_CAPS = {
+		Publications: 6, Presentations: 6, Teaching: 6, Experience: 6, Honors: 6, Press: 6,
+		Bookshelf: 8, Misc: 6,
+	};
+	var BOOK_MIN_QUERY = 2;
+	var BOOK_DEBOUNCE_MS = 120;
+	var FLASH_MS = 1500;
 
 	var SECTIONS = [
 		{ label: 'About', hash: '#/about', keywords: 'home bio research interests honors awards' },
@@ -54,6 +76,47 @@
 			run: function () {
 				var btn = document.getElementById('theme-toggle');
 				if (btn) btn.click();
+			},
+		},
+		{
+			label: 'Print CV',
+			keywords: 'print paper pdf resume curriculum vitae printer',
+			run: function () {
+				if (window.Site && typeof window.Site.printCV === 'function') window.Site.printCV();
+				else if (window.print) window.print();
+			},
+		},
+		{
+			label: 'Download all citations (.bib)',
+			keywords: 'bibtex cite citation references export publications papers',
+			// Only offered when a citation module is on the page.
+			when: function () {
+				return !!citeDownloader();
+			},
+			run: function () {
+				var fn = citeDownloader();
+				if (fn) fn();
+			},
+		},
+		{
+			label: 'Research map: Loop',
+			keywords: 'glance gallery human machine loop view about',
+			run: function () {
+				showGlance('loop');
+			},
+		},
+		{
+			label: 'Research map: 3D',
+			keywords: 'glance gallery three dimensional model view about',
+			run: function () {
+				showGlance('3d');
+			},
+		},
+		{
+			label: 'Research map: Timeline',
+			keywords: 'glance gallery history years chronology view about',
+			run: function () {
+				showGlance('timeline');
 			},
 		},
 	];
@@ -112,6 +175,166 @@
 		window.open(url, '_blank', 'noopener');
 	}
 
+	function reducedMotion() {
+		try {
+			return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+		} catch (e) {
+			return false;
+		}
+	}
+
+	function textOf(node) {
+		return node ? String(node.textContent || '').replace(/\s+/g, ' ').trim() : '';
+	}
+
+	function qsa(sel, root) {
+		try {
+			return Array.prototype.slice.call((root || document).querySelectorAll(sel));
+		} catch (e) {
+			return [];
+		}
+	}
+
+	function closestClass(node, className) {
+		while (node && node !== document) {
+			if (node.classList && node.classList.contains(className)) return node;
+			node = node.parentNode;
+		}
+		return null;
+	}
+
+	function yearIn(s) {
+		var m = /\b(?:19|20)\d\d\b/.exec(s || '');
+		return m ? m[0] : '';
+	}
+
+	// ---- Jump and highlight -----------------------------------------------
+
+	var flash = null; // { node, saved, timers }
+
+	function endFlash() {
+		if (!flash) return;
+		flash.timers.forEach(clearTimeout);
+		var st = flash.node.style;
+		st.outline = flash.saved.outline;
+		st.outlineOffset = flash.saved.outlineOffset;
+		st.borderRadius = flash.saved.borderRadius;
+		st.transition = flash.saved.transition;
+		flash = null;
+	}
+
+	// A ring around the element for about 1.5s, set inline so no stylesheet is
+	// needed. With reduced motion the ring does not fade, it is just removed.
+	function flashNode(node) {
+		endFlash();
+		var st = node.style;
+		if (!st) return;
+		flash = {
+			node: node,
+			saved: {
+				outline: st.outline,
+				outlineOffset: st.outlineOffset,
+				borderRadius: st.borderRadius,
+				transition: st.transition,
+			},
+			timers: [],
+		};
+		st.outline = '2px solid var(--accent, #1f5fd6)';
+		st.outlineOffset = '6px';
+		st.borderRadius = '6px';
+		if (!reducedMotion()) {
+			flash.timers.push(
+				setTimeout(function () {
+					st.transition = 'outline-color 400ms ease';
+					st.outlineColor = 'transparent';
+				}, FLASH_MS - 400)
+			);
+		}
+		flash.timers.push(setTimeout(endFlash, FLASH_MS));
+	}
+
+	function scrollToNode(node) {
+		try {
+			node.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth', block: 'center' });
+		} catch (e) {
+			node.scrollIntoView();
+		}
+	}
+
+	// Calls done(node) once the node is laid out (its section is shown by the
+	// router on hashchange, which may be a tick or two away).
+	function whenVisible(getNode, done) {
+		var tries = 0;
+		function attempt() {
+			var node = getNode();
+			var shown = node && document.body.contains(node) && node.getClientRects().length > 0;
+			if (shown) done(node);
+			else if (tries++ < 30) setTimeout(attempt, 50);
+		}
+		setTimeout(attempt, 80);
+	}
+
+	// Go to a section, then bring one of its elements into view and ring it.
+	function jumpTo(hash, node) {
+		goHash(hash);
+		whenVisible(
+			function () {
+				return node;
+			},
+			function (n) {
+				scrollToNode(n);
+				flashNode(n);
+			}
+		);
+	}
+
+	// ---- Action helpers ---------------------------------------------------
+
+	function citeDownloader() {
+		var c = window.Cite;
+		if (!c) return null;
+		var names = ['downloadAll', 'downloadAllBib', 'downloadBib', 'exportAll'];
+		for (var i = 0; i < names.length; i++) {
+			if (typeof c[names[i]] === 'function') return c[names[i]].bind(c);
+		}
+		return null;
+	}
+
+	// Research map on the About page (glance.js). The gallery reads the
+	// 'glance-view' key when it builds; if it is already built, its thumbnail
+	// button switches it live.
+	function showGlance(view) {
+		try {
+			window.localStorage.setItem('glance-view', view);
+		} catch (e) {
+			/* private mode etc. */
+		}
+		goHash('#/about');
+		whenVisible(
+			function () {
+				return document.getElementById('cv-glance');
+			},
+			function (box) {
+				try {
+					window.dispatchEvent(new CustomEvent('glance:view', { detail: { view: view } }));
+				} catch (e) {
+					/* no CustomEvent constructor */
+				}
+				var btn = box.querySelector('.glance-thumb[data-view="' + view + '"]');
+				if (!btn) {
+					var want = view.toLowerCase();
+					qsa('button', box).some(function (b) {
+						if (textOf(b).toLowerCase().indexOf(want) === -1) return false;
+						btn = b;
+						return true;
+					});
+				}
+				if (btn) btn.click();
+				scrollToNode(box);
+			}
+		);
+	}
+
 	// ---- Items ------------------------------------------------------------
 
 	function makeItem(group, label, keywords, hint, run) {
@@ -122,6 +345,7 @@
 			search: (label + ' ' + (keywords || '')).toLowerCase(),
 			labelLower: label.toLowerCase(),
 			run: run,
+			when: null, // optional: the item is listed only while this returns true
 		};
 	}
 
@@ -148,8 +372,218 @@
 	});
 
 	ACTIONS.forEach(function (a) {
-		actionItems.push(makeItem('Actions', a.label, a.keywords, '', a.run));
+		var it = makeItem('Actions', a.label, a.keywords, '', a.run);
+		if (a.when) it.when = a.when;
+		actionItems.push(it);
 	});
+
+	// ---- Page content (indexed once from the DOM) --------------------------
+
+	var domItems = [];
+	var domIndexed = false;
+
+	function addDom(group, label, keywords, hint, hash, node) {
+		if (!label) return;
+		domItems.push(
+			makeItem(group, label, keywords, hint, function () {
+				jumpTo(hash, node);
+			})
+		);
+	}
+
+	// Year heading of the row an entry sits in ("2026").
+	function rowYear(node) {
+		var row = closestClass(node, 'row');
+		var h = row ? row.querySelector('.pub-year-h2, .academic-year-h2') : null;
+		return textOf(h);
+	}
+
+	// Nearest heading above the entry's row or list ("Workshop papers").
+	function headingAbove(node) {
+		var n = node ? node.previousElementSibling : null;
+		while (n) {
+			if (/^H[2-5]$/.test(n.tagName) && !/year-h2/.test(n.className)) return textOf(n);
+			n = n.previousElementSibling;
+		}
+		return '';
+	}
+
+	function indexPubBlocks(group, hash, rootSel) {
+		qsa(rootSel + ' .pub-block').forEach(function (block) {
+			var title = textOf(block.querySelector('.lucida-console.h5'));
+			var authors = textOf(block.querySelector('.pub-authors'));
+			var venue = textOf(block.querySelector('.pub-congress'));
+			var year = rowYear(block) || yearIn(authors) || yearIn(venue);
+			var kind = headingAbove(closestClass(block, 'row'));
+			addDom(group, title, [authors, venue, kind, year].join(' '), year, hash, block);
+		});
+	}
+
+	function indexDom() {
+		if (domIndexed) return;
+		domIndexed = true;
+		domItems = [];
+
+		indexPubBlocks('Publications', '#/publications', '#publicationsContent');
+
+		// Presentations have no wrapper: a title line followed by a venue line.
+		qsa('#presentationsContent .lucida-console.h5').forEach(function (title) {
+			var next = title.nextElementSibling;
+			var venue = next && !/\bh5\b/.test(next.className) && !/^H\d$/.test(next.tagName) ? textOf(next) : '';
+			var year = rowYear(title) || yearIn(venue);
+			addDom('Presentations', textOf(title), venue + ' talk ' + year, year, '#/presentations', title);
+		});
+
+		qsa('#academicContent .academic-block').forEach(function (block) {
+			var name = textOf(block.querySelector('.academic-name')) || textOf(block.querySelector('.lucida-console.h5'));
+			var role = textOf(block.querySelector('.academic-rol'));
+			var when = textOf(block.querySelector('.academic-year')) || rowYear(block);
+			var hint = role && when ? role + ' · ' + when : role || when;
+			addDom('Teaching', name, role + ' ' + when + ' teaching course', hint, '#/teaching', block);
+		});
+
+		qsa('#experienceContent li').forEach(function (li) {
+			var full = textOf(li);
+			var role = textOf(li.querySelector('strong'));
+			// "Role, Place — what; when." -> label "Role, Place", hint "when".
+			var head = full.split(/\s[—–]\s/)[0];
+			var label = head.length <= 70 ? head : role || head.slice(0, 70);
+			var tail = full.lastIndexOf(';') !== -1 ? full.slice(full.lastIndexOf(';') + 1).replace(/\.$/, '').trim() : '';
+			var kind = headingAbove(li.parentNode);
+			var hint = tail && tail.length <= 28 ? tail : kind;
+			addDom('Experience', label, full + ' ' + kind, hint, '#/experience', li);
+		});
+
+		qsa('#aboutmeContent .abme-honors-bullet').forEach(function (li) {
+			var full = textOf(li);
+			var name = textOf(li.querySelector('strong')) || full.slice(0, 70);
+			addDom('Honors', name, full + ' honor award scholarship', yearIn(full), '#/about', li);
+		});
+
+		indexPubBlocks('Press', '#/press', '#blogContent');
+
+		qsa('.misc-grid .misc-card').forEach(function (card) {
+			var href = card.getAttribute('href');
+			var title = textOf(card.querySelector('.misc-title'));
+			if (!href || !title) return;
+			domItems.push(
+				makeItem('Misc', title, textOf(card.querySelector('.misc-desc')) + ' toy ' + href, href, function () {
+					openExternal(href);
+				})
+			);
+		});
+	}
+
+	// ---- Bookshelf (assets/data/library.json, fetched on demand) -----------
+
+	var books = null; // [{ id, title, author, year, tl, search, item }]
+	var booksLoading = false;
+	var booksFailed = false;
+	var booksWaiting = null; // callback of the newest query waiting on the fetch
+	var bookQuery = ''; // the query bookMatches was computed for
+	var bookMatches = []; // every matching book for bookQuery, best first
+	var bookTimer = 0;
+
+	// Silent on failure: the Bookshelf group is then simply absent.
+	function loadBooks(done) {
+		if (books) {
+			done();
+			return;
+		}
+		booksWaiting = done;
+		if (booksLoading || booksFailed || !window.fetch) return;
+		booksLoading = true;
+		fetch(LIBRARY_URL)
+			.then(function (r) {
+				return r.ok ? r.json() : null;
+			})
+			.then(function (data) {
+				booksLoading = false;
+				var rows = data && Array.isArray(data.books) ? data.books : null;
+				if (!rows) {
+					booksFailed = true;
+					return;
+				}
+				var out = [];
+				rows.forEach(function (b) {
+					if (!b || !b.id || !b.t) return;
+					var title = String(b.t);
+					var author = String(b.a || '');
+					out.push({
+						id: String(b.id),
+						title: title,
+						author: author,
+						year: b.y ? String(b.y) : '',
+						tl: title.toLowerCase(),
+						search: (title + ' ' + author).toLowerCase(),
+						item: null,
+					});
+				});
+				books = out;
+				var cb = booksWaiting;
+				booksWaiting = null;
+				if (cb) cb();
+			})
+			.catch(function () {
+				booksLoading = false;
+				booksFailed = true;
+			});
+	}
+
+	function bookItem(b) {
+		if (!b.item) {
+			b.item = makeItem('Bookshelf', b.title, b.author, b.author || b.year, function () {
+				goHash('#/bookshelf/' + encodeURIComponent(b.id));
+			});
+		}
+		return b.item;
+	}
+
+	// Books whose title+author contain every word of q. Title prefix matches
+	// first, then title substring, then the rest; ties keep shelf order.
+	function matchBooks(q, pool) {
+		var words = q.split(' ');
+		var hits = [];
+		pool.forEach(function (b, i) {
+			for (var w = 0; w < words.length; w++) {
+				if (b.search.indexOf(words[w]) === -1) return;
+			}
+			var at = b.tl.indexOf(q);
+			hits.push({ book: b, score: at === 0 ? 0 : at !== -1 ? 1 : 2, index: i });
+		});
+		hits.sort(function (a, b) {
+			return a.score - b.score || a.index - b.index;
+		});
+		return hits.map(function (h) {
+			return h.book;
+		});
+	}
+
+	function normQuery(query) {
+		return (query || '').trim().toLowerCase().replace(/\s+/g, ' ');
+	}
+
+	// Brings bookMatches up to date for the query. Any change is a scan of the
+	// library, so it waits for a pause in typing; the list is then re-rendered
+	// with the Bookshelf group in place.
+	function updateBooks(query) {
+		var q = normQuery(query);
+		clearTimeout(bookTimer);
+		if (q === bookQuery) return;
+		if (q.length < BOOK_MIN_QUERY) {
+			bookQuery = '';
+			bookMatches = [];
+			return;
+		}
+		bookTimer = setTimeout(function () {
+			loadBooks(function () {
+				if (!isOpen || normQuery(input.value) !== q) return;
+				bookMatches = matchBooks(q, books);
+				bookQuery = q;
+				render(input.value, true);
+			});
+		}, BOOK_DEBOUNCE_MS);
+	}
 
 	// Runtime actions (gadgets). Returns a function that removes them again.
 	function addActions(actions) {
@@ -239,40 +673,81 @@
 			});
 	}
 
+	function listed(it) {
+		if (!it.when) return true;
+		try {
+			return !!it.when();
+		} catch (e) {
+			return false;
+		}
+	}
+
+	// What an empty query shows: the short lists only.
+	function baseItems() {
+		return sectionItems.concat(postItems, storyItems, linkItems, actionItems).filter(listed);
+	}
+
+	// What a query searches (books are matched separately, see updateBooks).
 	function allItems() {
-		return sectionItems.concat(postItems, storyItems, linkItems, actionItems);
+		return sectionItems.concat(domItems, postItems, storyItems, linkItems, actionItems).filter(listed);
 	}
 
 	// Case-insensitive match: every whitespace-separated word of the query must
 	// appear in label+keywords. Label prefix matches rank first, then label
 	// substring matches, then keyword-only matches; ties keep list order.
+	//
+	// Results stay together by group. Within a group they are ranked as above
+	// and cut to the group's cap; the groups themselves are ordered by their
+	// best match, ties in GROUP_ORDER.
 	function filterItems(query) {
-		var q = (query || '').trim().toLowerCase();
-		var items = allItems();
-		if (!q) return items;
+		var q = normQuery(query);
+		if (!q) return baseItems();
 
-		var words = q.split(/\s+/);
-		var scored = [];
-		items.forEach(function (it, i) {
-			var ok = true;
+		var words = q.split(' ');
+		var groups = {};
+		function add(it, score, index) {
+			var g = groups[it.group] || (groups[it.group] = { name: it.group, best: 3, rows: [] });
+			g.rows.push({ item: it, score: score, index: index });
+			if (score < g.best) g.best = score;
+		}
+
+		allItems().forEach(function (it, i) {
 			for (var w = 0; w < words.length; w++) {
-				if (it.search.indexOf(words[w]) === -1) {
-					ok = false;
-					break;
-				}
+				if (it.search.indexOf(words[w]) === -1) return;
 			}
-			if (!ok) return;
-			var score = 2;
-			if (it.labelLower.indexOf(q) === 0) score = 0;
-			else if (it.labelLower.indexOf(q) !== -1) score = 1;
-			scored.push({ item: it, score: score, index: i });
+			var at = it.labelLower.indexOf(q);
+			add(it, at === 0 ? 0 : at !== -1 ? 1 : 2, i);
 		});
-		scored.sort(function (a, b) {
-			return a.score - b.score || a.index - b.index;
-		});
-		return scored.map(function (s) {
-			return s.item;
-		});
+
+		if (bookQuery === q) {
+			bookMatches.slice(0, GROUP_CAPS.Bookshelf).forEach(function (b, i) {
+				var at = b.tl.indexOf(q);
+				add(bookItem(b), at === 0 ? 0 : at !== -1 ? 1 : 2, i);
+			});
+		}
+
+		function rank(name) {
+			var i = GROUP_ORDER.indexOf(name);
+			return i === -1 ? GROUP_ORDER.length : i;
+		}
+		var out = [];
+		Object.keys(groups)
+			.map(function (k) {
+				return groups[k];
+			})
+			.sort(function (a, b) {
+				return a.best - b.best || rank(a.name) - rank(b.name);
+			})
+			.forEach(function (g) {
+				g.rows.sort(function (a, b) {
+					return a.score - b.score || a.index - b.index;
+				});
+				var cap = GROUP_CAPS[g.name] || g.rows.length;
+				g.rows.slice(0, cap).forEach(function (r) {
+					out.push(r.item);
+				});
+			});
+		return out;
 	}
 
 	// ---- DOM --------------------------------------------------------------
@@ -306,7 +781,7 @@
 		input = el('input', 'palette-input');
 		input.id = 'palette-input';
 		input.type = 'text';
-		input.setAttribute('placeholder', 'Search sections, posts, links…');
+		input.setAttribute('placeholder', 'Search papers, books, toys, posts…');
 		input.setAttribute('autocomplete', 'off');
 		input.setAttribute('autocorrect', 'off');
 		input.setAttribute('autocapitalize', 'off');
@@ -341,6 +816,7 @@
 
 		backdrop.addEventListener('click', close);
 		input.addEventListener('input', function () {
+			updateBooks(input.value);
 			render(input.value);
 		});
 		input.addEventListener('keydown', onInputKey);
@@ -364,7 +840,10 @@
 		});
 	}
 
-	function render(query) {
+	// keep: a late re-render (books arriving) must not move the selection off
+	// the row the reader has already arrowed to.
+	function render(query, keep) {
+		var held = keep && selected > 0 ? results[selected] : null;
 		results = filterItems(query);
 		selected = 0;
 		list.innerHTML = '';
@@ -393,6 +872,9 @@
 		list.innerHTML = html;
 		input.setAttribute('aria-activedescendant', 'palette-item-0');
 		list.scrollTop = 0;
+
+		var at = held ? results.indexOf(held) : -1;
+		if (at > 0) select(at);
 	}
 
 	function select(i, scroll) {
@@ -478,6 +960,7 @@
 	function open() {
 		if (isOpen) return;
 		build();
+		indexDom();
 		lastFocused = document.activeElement;
 		isOpen = true;
 
@@ -486,6 +969,7 @@
 		dialog.classList.add('is-open');
 
 		input.value = '';
+		updateBooks('');
 		render('');
 		input.focus();
 
@@ -500,6 +984,7 @@
 	function close() {
 		if (!isOpen) return;
 		isOpen = false;
+		clearTimeout(bookTimer);
 		document.body.classList.remove('palette-is-open');
 		backdrop.classList.remove('is-open');
 		dialog.classList.remove('is-open');
@@ -555,10 +1040,31 @@
 		});
 	}
 
-	if (document.readyState === 'loading') {
-		document.addEventListener('DOMContentLoaded', bindTrigger);
-	} else {
+	// ?paletteDebug=<query>: open on load with the query typed.
+	function debugOpen() {
+		var m = /[?&]paletteDebug(?:=([^&#]*))?(?:&|#|$)/.exec(window.location.search || '');
+		if (!m) return;
+		var q = '';
+		try {
+			q = decodeURIComponent((m[1] || '').replace(/\+/g, ' '));
+		} catch (e) {
+			q = m[1] || '';
+		}
+		open();
+		input.value = q;
+		updateBooks(q);
+		render(q);
+	}
+
+	function boot() {
 		bindTrigger();
+		debugOpen();
+	}
+
+	if (document.readyState === 'loading') {
+		document.addEventListener('DOMContentLoaded', boot);
+	} else {
+		boot();
 	}
 
 	window.Palette = { open: open, close: close, toggle: toggle, addActions: addActions };
