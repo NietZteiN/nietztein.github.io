@@ -4,8 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Paper Theatre</title>
-<meta name="description" content="Every paper and post as a two-minute visual novel: a bet, a result, a citation. One engine; each story is a plain-text script.">
+<meta name="description" content="Every paper and post as a short visual novel: chapters, flashbacks, a bet, a result, a citation. One engine; each story is a plain-text script.">
 <link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Shippori+Mincho:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="vn.css">
 <script>
   // Theme before first paint: the site's localStorage key, else the OS, ?theme= overrides.
@@ -22,10 +25,11 @@
 <body>
 <header class="vn-header">
   <h1>Paper Theatre<span class="vn-jp" aria-hidden="true">紙芝居</span></h1>
-  <span class="sub">Every paper and post as a two-minute visual novel: a bet, a result, a citation.</span>
+  <span class="sub">Every paper and post as a short visual novel: a bet, a result, a citation.</span>
   <span class="spacer"></span>
   <div class="tools">
     <select id="story" aria-label="choose a story"><option value="">Choose a story…</option></select>
+    <button id="btn-help" type="button" title="help and keys (?)">Help</button>
     <button id="btn-theme" type="button" aria-label="switch theme" title="switch light / dark (D)">☾</button>
     <a class="back" href="../../#/misc">&larr; Jack V. Le</a>
   </div>
@@ -34,46 +38,57 @@
 <main>
   <div class="vn-frame">
     <div id="stage" role="region" aria-label="story" tabindex="0">
-      <div class="vn-bg" aria-hidden="true"><div class="vn-bg-a"></div><div class="vn-bg-b out"></div></div>
-      <div class="vn-sprites" aria-hidden="true">
-        <div class="vn-slot left empty" data-slot="left"></div>
-        <div class="vn-slot center empty" data-slot="center"></div>
-        <div class="vn-slot right empty" data-slot="right"></div>
+      <div class="vn-world" aria-hidden="true">
+        <div class="vn-bg"></div>
+        <div class="vn-sprites"></div>
+        <div class="vn-cgart"></div>
+        <div class="vn-fxlayer"></div>
+        <div class="vn-tone"></div>
       </div>
-      <div class="vn-cg"></div>
+      <div class="vn-trans" aria-hidden="true"></div>
+      <div class="vn-memory" aria-hidden="true"></div>
+      <div class="vn-bars" aria-hidden="true"><i></i><i></i></div>
+      <div class="vn-flash" aria-hidden="true"></div>
+      <div class="vn-caption" aria-hidden="true"></div>
+      <div class="vn-boards"></div>
       <div class="vn-transcript" aria-hidden="true"></div>
+      <div class="vn-nvl" aria-hidden="true"><div class="vn-nvl-page"></div><span class="vn-next" aria-hidden="true">&#9670;</span></div>
       <div class="vn-box" aria-hidden="true">
         <div class="vn-name" title="open the backlog (L)"></div>
         <div class="vn-text"></div>
-        <span class="vn-next" aria-hidden="true">&#9660;</span>
+        <span class="vn-next" aria-hidden="true">&#9670;</span>
       </div>
       <span class="vn-live" aria-live="polite" aria-atomic="true"></span>
       <div class="vn-menu" role="group" aria-label="choices"></div>
+      <div class="vn-quick" role="toolbar" aria-label="quick menu">
+        <button type="button" data-q="back" title="previous line (Left arrow)">Back</button>
+        <button type="button" data-q="qsave" title="quick save (F5)">Q.Save</button>
+        <button type="button" data-q="qload" title="quick load (F9)">Q.Load</button>
+        <button type="button" data-q="save" title="save to a slot">Save</button>
+        <button type="button" data-q="load" title="load from a slot">Load</button>
+        <button type="button" data-q="auto" aria-pressed="false" title="advance by itself (A)">Auto</button>
+        <button type="button" data-q="skip" aria-pressed="false" title="skip text you have seen; Shift skips unseen text too (S)">Skip</button>
+        <button type="button" data-q="log" title="backlog with rewind (L)">Log</button>
+        <button type="button" data-q="config" title="settings (C)">Config</button>
+        <button type="button" data-q="hide" title="hide the window to see the art (H or right-click)">Hide</button>
+      </div>
       <div class="vn-scene" aria-hidden="true"></div>
       <div class="vn-end"></div>
+      <div class="vn-titlescreen"></div>
+      <div class="vn-screen" role="dialog" aria-modal="true" aria-labelledby="vn-screen-title" hidden></div>
       <div class="vn-picker"></div>
       <div class="vn-panel"></div>
       <div class="vn-badges" aria-hidden="true"></div>
+      <div class="vn-topbar">
+        <button type="button" id="btn-issues" title="script issues" hidden></button>
+        <button type="button" id="btn-title" title="back to the title screen (Esc)">Title</button>
+        <button type="button" id="btn-full" title="fullscreen (F)" aria-label="toggle fullscreen">&#x26F6;</button>
+      </div>
       <div class="vn-toast" role="status"></div>
     </div>
   </div>
 
-  <div class="vn-toolbar" aria-label="playback controls">
-    <span class="grp">
-      <button id="btn-back" type="button" title="previous line (Left arrow or Backspace)"><span class="lbl">Back</span> <kbd>&larr;</kbd></button>
-      <button id="btn-auto" type="button" aria-pressed="false" title="advance by itself (A)"><span class="lbl">Auto</span> <kbd>A</kbd></button>
-      <button id="btn-skip" type="button" aria-pressed="false" title="skip text you have seen; Shift+S skips unseen text (S)"><span class="lbl">Skip</span> <kbd>S</kbd></button>
-      <button id="btn-log" type="button" title="backlog with rewind (L)"><span class="lbl">Log</span> <kbd>L</kbd></button>
-    </span>
-    <span class="grp">
-      <button id="btn-text" type="button" aria-pressed="false" title="text-only transcript, no stage art (T)"><span class="lbl">Text-only</span> <kbd>T</kbd></button>
-      <button id="btn-help" type="button" title="help and keys (H or ?)"><span class="lbl">Help</span> <kbd>?</kbd></button>
-      <button id="btn-restart" type="button" title="start this story over (R)"><span class="lbl">Restart</span> <kbd>R</kbd></button>
-    </span>
-    <span class="spacer"></span>
-    <label class="cps" title="typewriter speed, characters per second">speed <input id="cps" type="range" min="15" max="80" step="1" value="28" aria-label="typewriter speed in characters per second"><span id="cps-val">28 cps</span></label>
-    <span class="vn-status" id="status" aria-live="polite"></span>
-  </div>
+  <span class="vn-status" id="status" aria-live="polite"></span>
 
   <details class="vn-errors" id="errors">
     <summary><span>Script issues</span> <span class="n" id="errors-n">0</span></summary>
@@ -83,21 +98,14 @@
 
 <footer>
   <p>A kamishibai (紙芝居) is a street theatre of paper boards slid through a wooden frame. Here every board is a paper or a blog post from this site, told as a short visual novel: a hook, a question, a bet you place, the result as the source printed it, and a citation card. Figures marked § are quoted from the source; dialogue is dramatized.</p>
-  <p>Stories are plain-text <code>.vn</code> scripts in <a href="stories/">stories/</a>; the engine is one dependency-free file. Progress and preferences are kept in your browser. Nothing leaves your browser.</p>
+  <p>Stories are plain-text <code>.vn</code> scripts in <a href="stories/">stories/</a>; the engine and all of its art are code, with no images. Progress, saves and preferences are kept in your browser. Nothing leaves your browser.</p>
 </footer>
-
-<div class="vn-overlay" id="log" role="dialog" aria-modal="true" aria-labelledby="log-title" hidden>
-  <div class="vn-dialog">
-    <header><h2 id="log-title">Backlog</h2><button type="button" class="vn-close" data-close="log">Close <kbd>Esc</kbd></button></header>
-    <div class="body"><ol class="vn-log-list" id="log-list"></ol></div>
-  </div>
-</div>
 
 <div class="vn-overlay" id="help" role="dialog" aria-modal="true" aria-labelledby="help-title" hidden>
   <div class="vn-dialog">
     <header><h2 id="help-title">Paper Theatre</h2><button type="button" class="vn-close" data-close="help">Close <kbd>Esc</kbd></button></header>
     <div class="body">
-      <p>Pick a story. Each line types itself out; press once to finish the line, again to go on. When a question comes up, choose with the buttons or the number keys. Choices change reactions, never the reported figures. The end card has the citation, the figures used and where to read the source.</p>
+      <p>Pick a story, then Start. Each line types itself out; press once to finish the line, again to go on. When a question comes up, choose with the bars or the number keys. Choices change reactions, never the reported figures. The ending has the citation, the figures used and where to read the source.</p>
       <h3>Keys</h3>
       <div class="keys">
         <span><kbd>Space</kbd><kbd>Enter</kbd><kbd>&rarr;</kbd></span><span>advance (first press completes the line); hold <kbd>Space</kbd> to skip</span>
@@ -106,22 +114,28 @@
         <span><kbd>A</kbd></span><span>auto-advance (pauses on choices)</span>
         <span><kbd>S</kbd></span><span>skip seen text; <kbd>Shift</kbd>+<kbd>S</kbd> skips unseen text too</span>
         <span><kbd>L</kbd></span><span>backlog, with “rewind here”</span>
+        <span><kbd>H</kbd> or right-click</span><span>hide the text window; any key brings it back</span>
+        <span><kbd>F</kbd></span><span>fullscreen</span>
+        <span><kbd>C</kbd></span><span>config: text speed, auto speed, window opacity, effects, font size</span>
+        <span><kbd>F5</kbd> / <kbd>F9</kbd></span><span>quick save / quick load</span>
         <span><kbd>T</kbd></span><span>text-only transcript</span>
         <span><kbd>D</kbd></span><span>light / dark</span>
         <span><kbd>R</kbd></span><span>restart the story</span>
-        <span><kbd>H</kbd> or <kbd>?</kbd></span><span>this help</span>
-        <span><kbd>Esc</kbd></span><span>close a panel</span>
+        <span><kbd>?</kbd></span><span>this help</span>
+        <span><kbd>Esc</kbd></span><span>close a screen; from the story, back to its title screen</span>
       </div>
       <h3>Touch</h3>
-      <p>Tap the stage to advance, swipe left to advance and right to go back, long-press to toggle auto, tap the name tag for the backlog.</p>
+      <p>Tap the stage to advance, swipe left to advance and right to go back, long-press to toggle auto, tap the name plate for the backlog. The quick menu sits at the bottom right of the text window.</p>
       <h3>Links</h3>
-      <p><code>?story=id</code>, <code>&amp;at=label</code> for a moment, <code>?post=slug</code> to auto-read a blog post, <code>?src=stories/draft.vn</code> to preview a script, <code>?drafts=1</code> to list drafts, <code>?theme=dark</code>, <code>?cast=1</code> for the cast sheet.</p>
-      <p>Your place in each story and your speed setting are saved in this browser only.</p>
+      <p><code>?story=id</code>, <code>&amp;at=label</code> for a moment, <code>?post=slug</code> to auto-read a blog post, <code>?src=stories/draft.vn</code> to preview a script, <code>?drafts=1</code> to list drafts, <code>?theme=dark</code>, <code>?cast=1</code> for the cast sheet, <code>?gallery=bg</code> or <code>?gallery=cg</code> for the scenery.</p>
+      <p>Your place in each story, six save slots per story and your settings are saved in this browser only.</p>
     </div>
   </div>
 </div>
 
 <script src="vn.js"></script>
+<script src="art-scenes.js"></script>
+<script src="art-cast.js"></script>
 <script src="art.js"></script>
 <script src="stage.js"></script>
 </body>

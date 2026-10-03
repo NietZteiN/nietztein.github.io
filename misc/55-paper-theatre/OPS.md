@@ -1,6 +1,6 @@
 # Paper Theatre op contract (vn.js)
 
-Published by Agent A. `vn.js` is a UMD module: `window.VN` in the browser, `module.exports` in Node.
+`vn.js` is a UMD module: `window.VN` in the browser, `module.exports` in Node.
 It never touches the DOM. Everything below is plain JSON-able data.
 
 ```
@@ -17,7 +17,9 @@ VN.describeRef(ref)         -> 'quoted from the source, section 4'   (abbr title
 VN.bibtex(meta)             -> string | ''     (needs meta.arxiv)
 VN.hash(str)                -> uint32 fnv1a;  VN.hashHex(str) -> 8 hex chars
 VN.rng(seed)                -> () => [0,1)    mulberry32; seed may be a number or a string (hashed)
-VN.FACES, VN.BACKGROUNDS, VN.PALETTES, VN.SLOTS, VN.HAIR  (constant lists / maps)
+VN.isThought(text)          -> bool            (the whole line is wrapped in ( ) or （ ）)
+VN.FACES, VN.BACKGROUNDS, VN.BG_MODS, VN.PALETTES, VN.SLOTS, VN.HAIR, VN.CLOTHES, VN.TRANSITIONS, VN.DEFAULT_TRANSITION,
+VN.FX, VN.FX_ONESHOT, VN.CGS, VN.TONES, VN.DISTANCES, VN.MODES  (constant lists / maps)
 ```
 
 ## Program
@@ -33,6 +35,7 @@ program = {
   labels:  { [name]: opIndex },         // index of the `label` op
   menus:   number[],                    // indices of menu ops
   thumb:   number|null,                 // index of the `thumb` marker op (?thumb=1 replays to the stop after it)
+  chapters: [{n, title, index, line}],  // one per @chapter, in file order; index = op index of the `chapter` op
   issues:  Issue[]                      // parse-time issues only; VN.lint() returns the full list
 }
 
@@ -56,7 +59,8 @@ CastDecl = {
   key: 'jack',                          // lowercase lookup key
   name: 'Jack',                         // display name (name="..." or id)
   hue: number, skin: 1..5,
-  hair: 'short'|'long'|'bun'|'curly'|'none'|'hood',
+  hair: 'short'|'long'|'bob'|'ponytail'|'bun'|'curly'|'none'|'hood',
+  clothes: 'coat'|'hoodie'|'cardigan'|'shirt'|'uniform'|null,   // null = the art picks one from the name
   glasses: bool, hat: bool,
   lattice: null|'sparse'|'dense',
   player: bool, page: bool, coauthor: bool,
@@ -73,15 +77,27 @@ Text ops (`say`, `narrate`, `card`, `chart`) also carry:
 - `ref: string|null` the trailing citation chip without the caret (`'§4'`, `'p.2'`, `'¶3'`, `'para'`). If the line has no trailing chip but used a fact, `ref` is the first fact's ref.
 - `chips: [{key, value, ref}]` one per interpolated fact, in order of appearance (may repeat a key).
 - `refs: string[]` unique union of `ref` and `chips[].ref` (same as `VN.refs(op)`).
+- `thought: bool` (`say` and `narrate` only) true when the whole text is wrapped in ASCII `( )` or full-width `（ ）`
+  parentheses. The stage sets such lines in the thought style (italic, softer colour). No new syntax.
 
 | kind | fields |
 |---|---|
 | `say` | `who` (cast id as declared), `key` (lowercase), `face` (one of FACES or null), `text`, `ref`, `chips`, `refs` |
 | `narrate` | `text`, `ref`, `chips`, `refs` |
-| `bg` | `name` (one of BACKGROUNDS; unknown names are kept as written, lint warns, renderer falls back to `void`), `mod: 'night'|'dawn'|'dim'|null` |
-| `show` | `who`, `key`, `slot: 'left'|'center'|'right'|null` (null = first free slot), `face: string|null` |
+| `bg` | `name` (one of BACKGROUNDS; unknown names are kept as written, lint warns, renderer falls back to `void`), `mod: 'night'|'dawn'|'dusk'|'noon'|'dim'|null` |
+| `show` | `who`, `key`, `slot: 'left'|'center'|'right'|null` (null = first free slot), `face: string|null`, `dist: 'near'|'far'|null` |
+| `move` | `who`, `key`, `slot: 'left'|'center'|'right'` (the sprite slides there; face and distance are kept) |
 | `hide` | `who`, `key`, `all: bool` (`@hide all`) |
-| `scene` | `title` |
+| `scene` | `title` (a light title board over the picture) |
+| `chapter` | `n` (the first token, kept as a string: `1`, `II`), `title` (may be empty). A chapter card: black, large numeral, title, thin rule. Registered in `program.chapters`. |
+| `transition` | `name` (one of TRANSITIONS: `fade` through black, `dissolve`, `white`, `wipe-left`, `wipe-right`, `iris`, `blinds`, `cut`; unknown names become `dissolve` with a warning), `ms` (default 600, capped at 10000). Arms the transition for the NEXT `bg` or `cg` change. |
+| `flashback` | `on: bool`, `caption: string|null` (only with `on`) |
+| `mode` | `mode: 'nvl'|'adv'` |
+| `page` | (no fields) clears the NVL page |
+| `fx` | `name` (one of FX: `petals snow rain dust fireflies`, or `none`, or one of FX_ONESHOT: `shake flash pulse`), `on: bool` (false only for `@fx name off`), `oneshot: bool`. Unknown names are dropped with a warning (no op). |
+| `cg` | `name: string|null` (null = `@cg off`; unknown names are kept, lint warns, the renderer draws an abstract fallback), `caption: string|null` |
+| `pause` | `ms` (default 800, capped at 10000). A beat with no text; a stop that continues by itself. |
+| `tone` | `name` (one of TONES: `none dusk night dawn noon memory cold`; unknown names become `none` with a warning) |
 | `card` | `title`, `cells: [{label: string|null, value: string, chips, ref}]`, `src: string|null` (image url, blog images only), `ref`, `chips`, `refs` |
 | `chart` | `type: 'bar'|'range'`, `title`, `unit: string|null`, `series: [{label, value, num, lo, hi, loNum, hiNum, chips, ref}]`, `ref`, `chips`, `refs`. For `bar`: `value`/`num`; for `range`: `lo`/`hi` strings and `loNum`/`hiNum`. `num*` are parsed floats or null. |
 | `code` | `lang: string`, `lines: string[]` |
@@ -99,8 +115,9 @@ Text ops (`say`, `narrate`, `card`, `chart`) also carry:
 `Cond = {name: string, op: '=='|'!='|'truthy'|'falsy', value: string|number|null}`.
 Values compare loosely as strings (`'1' == 1`).
 
-Blocking stops: `say narrate menu scene card chart code withheld read end` (plus synthetic `error`).
-Non-blocking: `bg show hide goto set add if label thumb`.
+Blocking stops: `say narrate menu scene chapter pause card chart code withheld read end` (plus synthetic `error`).
+Non-blocking: `bg show move hide transition flashback mode page fx cg tone goto set add if label thumb`.
+`walk()` treats every new op as a plain step (no branching); `pause` and `menu` stops are not recorded in `state.history`.
 
 ## Issues
 
@@ -108,8 +125,10 @@ Non-blocking: `bg show hide goto set add if label thumb`.
 Issue = { level: 'fatal'|'warn', line: number, msg: string, hint: string, code: string, file?: string }
 ```
 
-Codes (fatal): `kind-missing`, `unknown-jump`, `option-no-target`, `show-undeclared`, `if-malformed`, `option-malformed`.
-Codes (warn): `title-missing`, `cite-missing`, `speaker-undeclared`, `face-unknown`, `bg-unknown`, `numeric-literal`, `chip-in-branch`, `coauthor-unchipped`, `chart-literal`, `fact-no-ref`, `include-missing`, `placeholder-unknown`, `directive-unknown`, `status-unknown`, `palette-unknown`, `slot-unknown`, `links-extra`, `header-after-body`, `no-chips`, `unreachable-label`, `walk-loop`, `walk-cap`, `set-malformed`, `menu-empty`.
+Codes (fatal): `kind-missing`, `unknown-jump`, `option-no-target`, `show-undeclared` (also `@move` of an undeclared name), `show-malformed`, `move-malformed`, `if-malformed`, `option-malformed`.
+Codes (warn): `title-missing`, `cite-missing`, `speaker-undeclared`, `face-unknown`, `bg-unknown`, `numeric-literal`, `chip-in-branch`, `coauthor-unchipped`, `chart-literal`, `fact-no-ref`, `include-missing`, `placeholder-unknown`, `directive-unknown`, `status-unknown`, `palette-unknown`, `slot-unknown`, `links-extra`, `header-after-body`, `no-chips`, `unreachable-label`, `walk-loop`, `walk-cap`, `set-malformed`, `menu-empty`, `bg-mod-unknown`, `transition-unknown`, `transition-malformed`, `fx-unknown`,
+`fx-malformed`, `cg-unknown`, `cg-malformed`, `tone-unknown`, `mode-unknown`, `flashback-malformed`, `pause-malformed`, `chapter-malformed`.
+The four `*-unknown` name warnings list the valid names in `hint`.
 
 `lint(program, {kind})`: `kind` overrides `meta.kind` for the paper-only rules. A `published` paper story is
 "publishable" only if lint has no fatal and none of: `numeric-literal`, `chip-in-branch`, `coauthor-unchipped`,
@@ -122,6 +141,15 @@ Example wording (test.js asserts on these):
 - `line 20: figure without a citation chip: "40.5%"` hint: `use a {fact} or end the line with ^§n`
 - `line 44: chipped figure inside a choice-dependent branch` hint: `choices change reactions, never reported figures`
 - `line 50: coauthor 'Anh' speaks without ^§n or ^para`
+- `line 7: unknown transition 'swirl'; using dissolve` hint: `transitions: fade, dissolve, white, wipe-left, wipe-right, iris, blinds, cut`
+- `line 8: unknown fx 'confetti'; ignored` hint: `fx: petals, snow, rain, dust, fireflies, none; one-shot: shake, flash, pulse`
+- `line 9: unknown cg 'dragon'; using an abstract fallback` hint: `known CGs: tree, desk-night, ...`
+- `line 10: unknown tone 'sepia'; using none` hint: `tones: none, dusk, night, dawn, noon, memory, cold`
+
+Speaker detection: `Name: text` is a `say` only when `Name` is in `@cast`. Otherwise the line is narration; the
+`speaker-undeclared` warning fires only when the prefix is a single capitalised word (`Result: ...`), so prose such as
+`Nearly three: the rain ...` or `the short version: ...` passes silently. The numeric-literal lint ignores digits that
+are part of a declared cast id or display name (`Participant 23`).
 
 ## walk
 
@@ -144,19 +172,33 @@ run = VN.createRun(program, {seen: number[] = [], instant: bool})
 run.state = {
   pc: number, vars: {}, bg: {name, mod}|null,
   slots: {left: key|null, center: key|null, right: key|null},
-  faces: {[key]: face}, chosen: {['menuIndex:optionIndex']: true},
+  faces: {[key]: face}, dist: {[key]: 'near'|'far'},     // dist has no entry for the default distance
+  chosen: {['menuIndex:optionIndex']: true},
+  cg: {name, caption}|null,             // the event illustration on screen (hides background and sprites)
+  transition: {name, ms}|null,          // armed by @transition, consumed by the next bg / cg op
+  change: {bg?: {name, ms}, cg?: {name, ms}}|null,   // what changed on the way to THIS stop and with which transition
+                                        // (dissolve 600 when none was armed); null when neither changed. A @bg and a @cg
+                                        // between the same two stops each keep their own; the stage plays the cg's.
+  flashback: {caption: string|null}|null,
+  mode: 'adv'|'nvl', pageStart: number, // NVL page = say/narrate rows of history[pageStart..]; @page and @mode reset it
+  fx: {[name]: true},                   // persistent particle layers that are on
+  oneshot: string[],                    // shake/flash/pulse fired on the way to this stop (cleared at the next advance)
+  tone: string,                         // 'none' by default
+  chapter: {n, title, index}|null,      // the last chapter card passed
   history: [HistoryEntry], choiceLog: [{menuLine, menuKey, menuIndex, optionIndex}],
   label: string|null, stops: number         // stops = count of stops reached so far (1-based index of the current one)
 }
-HistoryEntry = {index, kind, who|null, text, refs, title?}  |  {kind:'choice', menuIndex, optionIndex, text}
+HistoryEntry = {index, kind, who|null, text, refs, title?, n? (chapter), thought?: true, nvl?: true}
+             |  {kind:'choice', menuIndex, optionIndex, text}
 
 run.advance()          -> Stop       executes non-blocking ops until a blocking op; at a menu it returns the same
                                      menu stop again (call choose); after `end` returns the end stop with done:true
 run.choose(i)          -> Stop       i = index into stop.options (the visible list); records choiceLog, then advance()
 run.back()             -> Stop|null  pops the snapshot stack (max 500) and returns the previous stop
 run.jumpTo(labelOrIdx) -> Stop       sets pc (label name or op index), keeps vars, then advance(). On a fresh run
-                                     (no stop yet, i.e. a ?at= deep link) it first applies every bg/show/hide/set
-                                     op that precedes the target in file order, so the stage is dressed.
+                                     (no stop yet, i.e. a ?at= deep link) it first applies every non-blocking stage op
+                                     (bg cg show move hide flashback mode page fx tone set label) that precedes the
+                                     target in file order, so the stage is dressed; one-shots and transitions are dropped.
 run.replay(choiceLog, stopIndex?) -> Stop   rebuilds from the start by stepping; consumes log entries at menus
                                      (matched by menuKey, then menuLine, else by order); stops after `stopIndex`
                                      stops when given, otherwise at the first menu with no log entry or at the end
@@ -172,7 +214,10 @@ Stop = { op, index, state, done: bool, options?: [{index, text, target}] }
 
 Non-blocking op effects: `bg` -> state.bg; `show` -> slot assignment (named slot, else first free, else `right`) and
 `state.faces[key]`; `say` with a face also updates `state.faces[key]`; `hide` clears slots; `label` -> state.label;
-`set`/`add` -> vars (`add` on a missing or non-numeric var starts from 0).
+`set`/`add` -> vars (`add` on a missing or non-numeric var starts from 0). `show` also sets or clears `state.dist[key]`;
+`move` re-slots without touching face or distance; `transition` -> state.transition; `bg`/`cg` -> state.bg / state.cg and
+`state.change.bg` / `state.change.cg`; `flashback`, `tone` -> same-named state; `mode` -> state.mode (+ pageStart when it
+changes); `page` -> pageStart; `fx` -> state.fx (persistent) or state.oneshot (one-shot); `fx none` empties state.fx.
 
 ## blog() output
 
@@ -193,3 +238,26 @@ Non-blocking op effects: `bg` -> state.bg; `show` -> slot assignment (named slot
 
 `VN.expand(program, markdownText, meta)` returns a copy of the program with every `read` op replaced by the blog ops,
 `labels`/`menus`/`thumb` re-indexed. The cast gains a `page` decl (`key 'page'`) if the script has none.
+
+## Stage contract (stage.js)
+
+The stage reads only the Stop and its state. For each stop it: brings the painted world to `state` (background or CG,
+sprites keyed by cast key with slot, distance, face and speaker light, particle layers from `state.fx`, `data-tone`,
+flashback grade/bars/caption), plays `state.change` as a transition (the old picture is held on a layer above the new
+one), fires `state.oneshot`, then shows the op: `say`/`narrate` in the ADV window or on the NVL page by `state.mode`,
+`chapter`/`scene` cards, `pause` (auto-continues after `ms`), boards, menu, end.
+
+Everything animated has a settled state: under `prefers-reduced-motion`, `?thumb=1`, `?autoplay=`, Skip, Back, Load
+and with Config > Effects off, transitions are cuts, one-shots are skipped, the typewriter is instant and (reduced
+motion / thumb) particles stand still.
+
+Saves: `vn:<id>` is the autosave (`run.snapshot()` + `ts`), `vn:slots:<id>` is `{1..6, q}` of
+`{hash, choiceLog, stopIndex, pc, ts, chapter, text}`; loading is `run.replay(choiceLog, stopIndex)`. `vn:prefs` is
+`{cps, autoSpeed, opacity, effects, size, textOnly}`.
+
+Test hooks (URL): `autoplay=N|end` (instant, no autosave), `pick=K` (option K at menus), `screen=save|load|config|log|chapters|title`,
+`trans=<name>` (freeze that transition half-way into stop N), `thumb=1`, `cast=1`, `gallery=bg|cg` (`&mod=night`, `&only=a,b`).
+
+Art entry points (art.js, with art-scenes.js and art-cast.js loaded first): `VNArt.background(name, mod)`,
+`VNArt.cg(name)`, `VNArt.sprite(castDecl, face)`, `VNArt.fx(name)`, `VNArt.timeOf(name, mod)` -> `day|dusk|dawn|night`,
+`VNArt.sharedDefs()` (the one hidden `<svg>` of filters every scene and sprite refers to; inject once per page).

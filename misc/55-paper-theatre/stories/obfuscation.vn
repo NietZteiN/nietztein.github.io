@@ -6,61 +6,444 @@
 @link https://arxiv.org/abs/2606.31725 Read the paper
 @link ../../assets/documents/publications/2026SPLASH-SRC.pdf Two-page SRC abstract
 @authors Jack V. Le† and Anh Nguyen† (co-first), Tien Nguyen
-@note Dialogue is dramatized. Figures marked § are quoted from the source. The Model is a composite of the reasoning-tuned regime, not any one system.
+@note The frame story is fiction: the night, the weather, the rooms, the tree, and every line of dialogue. Participant 23 is an invented composite, not a real participant. Coauthors did not say these lines and are not voiced. The Model is a personification of the reasoning-tuned regime, not any one system. Only lines marked § report the study; they are quoted or closely paraphrased from the two-page SPLASH SRC abstract and the arXiv abstracts.
 @status published
 @verify
 @palette slate
 @include _facts/obfuscation.vn
-@cast Jack hue=210 glasses
+@cast Jack hue=210 skin=2 glasses short hoodie
+@cast P23 name="Participant 23" hue=28 hood hoodie
 @cast Model name="a reasoning-tuned model" lattice=sparse hue=192
-@cast You player hue=20
+@cast Page page name="Wittgenstein, Philosophical Investigations"
 
-@bg lab
-@show Jack left
-Jack: Obfuscation is almost always measured without people, on two untested assumptions: that difficulty is monotonic, and that what burdens a person burdens a model. ^§1
-@card Five tiers | L0: original, name masked | L1: uninformative renaming | L1b: adversarial renaming | L2: control-flow flattening | L3: both
-Jack: {n_humans} CS undergraduates, a {session_min}-minute supervised session, twelve output-prediction questions each: {n_answers} answers with paired response times. {n_models} language models on the same tiers.
-@thumb
-Jack (smile): Before the numbers, place a bet.
-* Harder tier, lower accuracy. Always. -> bet_monotonic
-* It depends on the language. -> bet_language
+# ------------------------------------------------------------ Prologue
 
-== bet_monotonic
-@show You right
-You: More obfuscation, more pain. A straight line down.
-Jack (deadpan): That is the assumption the field runs on. Let us see.
-@set bet = monotonic
--> humans
+@bg void
+@tone night
+@mode nvl
+@pause 600
+A name is a promise.
+`total` promises a sum. `count` promises a number of things. `_lastNSecs` promises the last few seconds of something.
+The machine that runs the program has never read a promise in its life. It keeps none and breaks none. It just runs.
+Only a reader can be lied to.
+@page
+For a long time now I have been collecting the ways a reader can be lied to. I have five of them, arranged in order of cruelty. Or so I assumed.
+Tonight I find out whether there are two kinds of reader in the world, or one.
+@mode adv
+@pause 400
+@show Page center
+Page: If a lion could talk, we could not understand him.
+@hide Page
+@pause 500
 
-== bet_language
-@show You right (thinking)
-You: JavaScript and Python will not break the same way.
-Jack (smile): A hedge. Fair.
-@set bet = language
--> humans
+# ------------------------------------------------------------ Chapter 1
 
-== humans
-@chart range Human accuracy by tier | all languages={human_l0}..{human_l3} | JavaScript={js_l0}..{js_l3} | Python under renaming={py_l0}..{py_rename} unit=%
-Jack: Overall, accuracy fell from {human_l0} at L0 to {human_l3} at L3. JavaScript declined steadily, {js_l0} to {js_l3}.
-Jack: Python went the other way under renaming: {py_l0} to {py_rename}, with L3 easier than L2. Difficulty is non-monotonic and language-specific. ^§4
-@if bet == monotonic -> react_monotonic
-You: So the language mattered after all.
--> models
+@chapter 1 Two in the Morning
+@bg lab night
+@tone night
+@fx rain on
+@transition fade 1200
+@cg desk-night | The lab, the night before the deadline
+The lab at two in the morning. One desk lamp, one laptop, one paper cup that has been empty since midnight.
+Rain on the window. In Texas it does not rain so much as arrive.
+The draft is two pages long and the deadline is in the morning. Every sentence in it is true. I am no longer sure I know what it says.
+@cg off
+@show Jack left (thinking)
+Jack: Again. From the top.
+@mode nvl
+Obfuscation is the craft of making a program hard to read without changing what it does. Its target is human comprehension. ^§abs
+And yet it is almost always measured without people, on two untested assumptions: that difficulty is monotonic, and that what burdens a person burdens an automated analyst, which now usually means a language model. ^§1
+Recent work asks only whether obfuscation degrades a model. Never whether a model's difficulty tracks a human's, nor where comprehension breaks. ^§1
+@page
+The stakes fit in one sentence. If models fail where humans do, obfuscated code is a benchmark of human-like reasoning. If they do not, strong scores mask brittle competence. ^§1
+That is the version for reviewers.
+The version for two in the morning is shorter. I get lost in code. I wanted to know whether a mind that is nothing like mine gets lost in the same places.
+@mode adv
+Jack (neutral): Five ways to lie to a reader.
+@card The five tiers | L0: the original function, its name masked | L1: uninformative renaming | L1b: adversarial renaming | L2: control-flow flattening | L3: both at once ^§2.1
+L1 takes the names away. What is left is short, disjoint identifiers, and nothing to lean on but structure. ^§2.1
+L1b gives the names back, wrong. Misleading names, all drawn from a single semantic domain, so that the lie is at least consistent. ^§2.1
+L2 leaves the names alone and hides the order of events behind dispatchers and indirect jumps. ^§2.1
+L3 does both, and was built as the upper bound on difficulty. ^§2.1
+Every tier was verified to behave exactly like the original on the study's inputs. The program is never deceived. Only its reader. ^§2.1
+Jack (thinking): Before I read the results again. What did I want them to say?
+* That it gets lost where I do. Hard is hard. -> hope_same
+* That it does not. It is not a mind like mine. -> hope_other
 
-== react_monotonic
-You: Python got *easier*?
-Jack: Under renaming, yes. No one had measured it with people.
--> models
+== hope_same
+@set hope = same
+(A lonely thing to want at this hour. Company in confusion.)
+Jack (smile): If it stumbles where we stumble, at least there is someone else on the staircase.
+-> ch1_out
 
-== models
+== hope_other
+@set hope = other
+(Tidy. Machines over there, people over here, a clean line down the middle of the lab.)
+Jack (deadpan): If it stumbles somewhere else, at least I will know which of us I am.
+-> ch1_out
+
+== ch1_out
+@hide Jack
+@transition dissolve 900
+@cg window-rain | Rain, and the reflection of one lamp
+The rain gets louder, the way it does when you stop typing.
+To learn where a machine gets lost I first had to learn where people do. So before the machine room there was another room.
+A classroom, a clock, and {n_humans_lc} people I was not allowed to help.
+@pause 600
+
+# ------------------------------------------------------------ Chapter 2
+
+@chapter 2 Seventy-Five Minutes
+@fx none
+@fx flash
+@flashback on The study room
+@bg classroom
+@transition white 900
+@cg off
+@tone memory
+@fx dust on
+Dust in a bar of afternoon light. Rows of desks. A clock that someone had decided should tick.
+{n_humans} undergraduate CS majors sat one supervised session: {session_min} minutes, {n_questions} questions. ^§3.2
+Each of them reported their own experience, language by language, in {n_bands} bands. ^§3.2
+The task was output prediction. Here is a function. Here is an input. Write down the exact output. ^§3.1
+I like it because it leaves no room for charm. There is one executable ground truth, and answers are scored by exact match against it. ^§3.2
+The functions were small and deterministic, {n_snippets_lang} per language, in Python and JavaScript. ^§3.1
+Each person saw every base function at exactly one tier, balanced across participants, with the input held constant. ^§3.2
+We ran it together, my co-first author and I, under our advisor. My part, that afternoon, was to sit at the front and be furniture.
+@show P23 right far
+In the fourth row sat the person I still think about. On my sheet they were a number. Twenty-three.
+I have changed everything else about them. There is no one left to recognise. What remains is a way of holding a pencil.
+@pause 400
+Somewhere past the half hour, Twenty-three reached a function dressed in L1b.
+@transition dissolve 700
+@cg screen-code | Illustrative only; the study's functions are not reproduced here
+The paper's own example of the trap is a variable named `_lastNSecs`.
+It does not hold the last seconds of anything. It tracks recursion depth. ^§2.2
+There is an old experiment in which the word RED is printed in blue ink, and you are asked to name the ink. You know the answer. Your mouth says the other one.
+Adversarial renaming is that experiment moved into code: a name that baits a fast, confident, wrong answer. ^§2.2
+@cg off
+@show P23 right near (thinking)
+Twenty-three wrote an answer almost at once. Then the pencil stopped above the paper.
+(A proctor is furniture. Furniture does not stare.)
+* Look at the clock instead. -> look_away
+* Keep watching. -> keep_watching
+
+== look_away
+@set watched = no
+I looked at the clock. The second hand went round as if someone were tracing it by hand.
+When I looked back there was a line through the first answer and a second answer underneath. I never saw the thinking. Only its fossil.
+-> after_watch
+
+== keep_watching
+@set watched = yes
+I watched. I am not proud of it.
+@cg page | An answer, crossed out
+A finger went down the page one line at a time, lips moving, the way a child reads. The way everyone reads when the names stop helping.
+Then a single line through the first answer, and a second answer underneath, written slowly.
+@cg off
+-> after_watch
+
+== after_watch
+@pause 500
+When the time was up they brought their sheets to the front. Twenty-three came last.
+@move P23 center
+P23 (puzzled): The one with the seconds. It wasn't about seconds, was it?
+@show Jack left (neutral)
+Jack: I can't tell you that.
+P23 (smile): You just did.
+P23 (neutral): Will you tell me properly? When it's done?
+* "When it's published. Ask me then." -> promise
+* "I'm not supposed to. Not even afterwards." -> no_promise
+
+== promise
+@set promise = yes
+P23 (laugh): I'll hold you to that.
+They never did. People in studies go back to their lives. It is one of the better things about them.
+-> ch2_out
+
+== no_promise
+@set promise = no
+P23 (deadpan): Convenient.
+Jack (smile): It's the method.
+-> ch2_out
+
+== ch2_out
+@hide all
+{n_answers} answers came out of that room, each one paired with whether it was right and how long it took. ^§3.2
+@pause 500
+In my memory there is a tree in bloom outside that window.
+@transition dissolve 1200
+@cg tree | The tree outside the window
+I have checked. There is no such tree outside that building.
+Memory renames its variables too.
+@pause 600
+@cg off
+@fx dust off
+@flashback off
+
+# ------------------------------------------------------------ Chapter 3
+
+@chapter 3 The Curve That Would Not Go Down
+@transition dissolve 1000
+@bg lab night
+@tone night
+@fx rain on
+@show Jack left (neutral)
+Nearly three. The rain has settled in for the night, like a guest who has found the good chair.
+I expected a staircase. Five tiers, five steps down, each a little darker than the last. Everyone expects the staircase. It is the first of the two assumptions.
+@chart range Human accuracy, L0 to the far end | all languages={human_l0}..{human_l3} | JavaScript={js_l0}..{js_l3} | Python under renaming={py_l0}..{py_rename} unit=%
+Jack: Seen from far enough away, the staircase is there. Human accuracy falls from {human_l0} at L0 to {human_l3} at L3.
+(Fewer than half right, with nothing hidden at all. Reading code is hard before anyone lies to you.)
+Jack: JavaScript behaves. It declines steadily, {js_l0} to {js_l3}, with flattening hurting less than renaming. ^§4
+Jack (puzzled): And then there is Python.
+@fx shake
+Python rises under renaming. {py_l0} to {py_rename}. And L3, the tier built to be the worst, comes out above L2. ^§4
+Take the names away from Python, and people read it better.
+The earlier human study had already put it carefully: certain renaming transformations perform comparably to, or occasionally better than, the unobfuscated baseline. ^§abs
+The two pages do not say why. Neither will I, tonight. They say what it is: evidence against monotonic difficulty, a reproducible Python renaming effect. ^§4
+Jack (thinking): Difficulty is non-monotonic and language-specific. ^§4
+And experience travels badly. It predicts performance mostly inside its own language, with limited transfer to the other. ^§abs
+@pause 400
+Then there is the clock.
+@mode nvl
+There are two ways to read. Dual-process theory calls them System 1 and System 2: one fast, one deliberate. ^§2.2
+The fast one reads names. It sees `total` and believes in a sum. It is how anyone gets through a file before lunch.
+Obfuscation is a cognitive tax on that. It strips the cues the fast system lives on and forces the slow one to trace. ^§2.2
+@page
+The clock agrees. Response time jumps by {rt_jump} once code is obfuscated, and then it plateaus. ^§4
+Errors cluster at the extremes of time. The very fast, and the very slow. ^§4
+Performance is highest in a moderate range. Careful deliberation can help; extremely long times often mean confusion. ^§abs
+@page
+And one line I cannot read as if it were only about data.
+Correct answers on L1b are slower than incorrect ones. ^§4
+@mode adv
+@hide Jack
+@fx none
+@fx flash
+@flashback on The fourth row
+@transition white 600
+@bg classroom
+@tone memory
+@fx dust on
+@show P23 center near (thinking)
+A pencil, stopped above a page.
+@if watched == yes -> fb_watched
+I had been looking at the clock. All I ever saw was the line through the first answer.
+-> fb_join
+
+== fb_watched
+The finger going down the lines. The lips moving.
+-> fb_join
+
+== fb_join
+The fast answer was already written. All Twenty-three had to do was believe it.
+(Slower, and right. Or slower, and merely slower. I never matched the face to a row. I did not want to.)
+@hide all
+@fx dust off
+@flashback off
+@transition dissolve 800
+@bg lab night
+@tone night
+@fx rain on
+@show Jack left (neutral)
+Jack: So that is where people get lost. In the names. In the order of things. In a hurry.
+Jack (thinking): Now the other reader.
+
+# ------------------------------------------------------------ Chapter 4
+
+@chapter 4 The Sea of Points
+@hide all
+@fx none
+@transition wipe-left 900
+@cg corridor-light | The corridor to the machine room
+The models do not live in the lab. They live down the hall, behind a door that hums.
+@cg off
+@transition iris 900
 @bg server
-@hide You
-@show Model right (puzzled)
-Model: And where did we struggle?
-Jack: Take a variable named `_lastNSecs` that actually tracks recursion depth. It baits a fast, confident, wrong answer: a Stroop trap. ^§2.2
-Jack: Reasoning-tuned models tracked human task-level difficulty, Spearman {rho_reason}. Coder- and instruction-tuned models did not, {rho_other}, whatever their size.
-Model (thinking): So the most accurate model was not the most human-like.
-Jack: That is the paper in one sentence. And alignment means shared difficulty, not shared mechanism: no model reproduced the Python renaming gain. ^§4
-Model (deadpan): The longer I think, the worse I do. {rho_cot}.
-Jack (smile): Which is why the question was never whether you fail, but whether you fail where we do.
+@tone cold
+@show Jack left (neutral)
+{n_models} language models, from {model_sizes}. Small ones, as these things go. ^§3.3
+Three regimes. Reasoning-tuned, instruction-tuned, coder-tuned. All of them on the same five tiers. ^§3.3
+Of these, {n_models_human} enter the human comparison, on the same set of functions the people read. ^§3.3
+The prompts were standardised and then varied on purpose: reasoning depth, memory load, distractors, token budget, scaffolding. {n_runs} runs. ^§3.3
+To say where reading breaks, I borrowed a map from people who teach programming.
+@card The Block Model | Atoms: identifiers | Blocks: methods | Relations: data flow | Macro: purpose ^§2.3
+Adversarial renaming corrupts the atoms. Flattening attacks blocks and relations. The length of a chain of thought stands in for effort at the macro level. ^§2.3
+I cannot watch a model the way I watched a person. There is no pencil. There is an answer, a measure of how confident it was, and the length of its chain of thought. ^§3.3
+So I do what readers do with anything that will not show its face. I imagine one.
+@hide Jack
+@fx pulse
+@bg sea night
+@transition white 1200
+@cg sea-of-points | Where a model keeps what it has read
+@tone night
+@fx fireflies on
+@mode nvl
+No floor. No walls. Points of light out to the horizon, each one a word, or the ghost of a word, hung at its distance from every other.
+In here `total` floats near `sum`. `_lastNSecs` floats among the clocks. Nothing floats near recursion depth unless it is told to.
+A name, here, is a place. To rename a thing is to move it across the sea while it sleeps.
+@page
+None of this is in the paper. The paper has correlations. This is only what I see when I close my eyes over a table of them.
+@mode adv
+@transition dissolve 900
+@cg off
+@show Model center far
+@pause 600
+@show Model center near
+@thumb
+Model: You came to see where I get lost.
+@show Jack left (neutral)
+@move Model right
+@if hope == other -> greet_other
+Jack: I hoped you would get lost where I do.
+Model (smile): Then you came for company, and called it a study.
+-> greet_join
+
+== greet_other
+Jack: I expected you to get lost somewhere else entirely.
+Model (deadpan): Then you came for a border, and called it a study.
+-> greet_join
+
+== greet_join
+Model (neutral): Ask. I can only answer in your own figures. I have no others.
+@set asked = 0
+
+== ask
+* (once) Where do you get lost? -> ask_where
+* (once) What does a lying name do to you? -> ask_name
+* (once) What happens when you think for longer? -> ask_long
+* (if asked == 3) That is everything I measured. -> ask_done
+
+== ask_where
+@add asked 1
+Model (thinking): It depends which of us you ask.
+Model: The reasoning-tuned among us track your difficulty, task by task. Spearman {rho_reason}. What was hard for your fifty was hard for us.
+Model: The coder-tuned and the instruction-tuned do not. {rho_other}, regardless of size.
+Jack (puzzled): Including the ones that score best?
+Model (deadpan): The most accurate model is not the most human-like. ^§4
+Model: And it does not matter how seasoned the human is. The alignment holds across all {n_bands} of your experience bands, {rho_bands}. ^§4
+Model (neutral): We align with you on difficulty. Not on language. ^§4
+-> ask
+
+== ask_name
+@add asked 1
+Model (thinking): You named a depth after a clock. In here that is two injuries at once.
+Model: One is displacement: the name now sits far from what the thing does. The other is a spike in perplexity: a name I did not expect to meet there. ^§2.3
+Model: Either one alone, I shrug off. Accuracy barely moves. Together they collapse it to {adv_collapse}.
+Jack (thinking): Non-additive.
+Model (neutral): Your word. And your level: the atom. The identifier, the smallest thing a reader reads. ^§2.3
+-> ask
+
+== ask_long
+@add asked 1
+Model (thinking): You have a pencil that slows down. I have a chain of thought that gets longer.
+Model: Its length tracks how difficult the task is. ^§abs
+Model (worried): It does not rescue me. Length and accuracy run opposite ways. {rho_cot}.
+Jack: The longer you think, the more often you are wrong.
+Model (deadpan): The longer I think, the more lost I already was. You measured a correlation. Do not hand me a cause.
+Model (neutral): And when you flatten the control flow, my failures follow the complexity of the dispatcher's state. That is the relational level: what leads to what. ^§4
+-> ask
+
+== ask_done
+@transition dissolve 1000
+@cg two-chairs | Two readers
+Two chairs. I had not noticed them before. Perhaps they arrive when the questions run out.
+Jack (thinking): So we are lost in the same places.
+Model: The same places. Not the same way.
+Model: Your experts gained under adversarial names. No model reproduced that. And none of us reproduced what happened in Python when the names were taken away. ^§4
+Model (neutral): Alignment reflects shared difficulty. Not identical mechanism. ^§4
+@pause 700
+Jack: Twenty-three slowed down, and crossed something out.
+Model (thinking): I have nothing to cross out. Everything I wrote is still there, getting longer.
+@if hope == other -> react_other
+(I had wanted company. What I got is a neighbour: someone on the far side of a wall, awake at the same hours for reasons of their own.)
+-> react_join
+
+== react_other
+(I had wanted a border. What I got is a shared address: different houses, the same bad streets.)
+-> react_join
+
+== react_join
+@cg off
+Model (smile): It is nearly morning where you are.
+@fx fireflies off
+@hide all
+@pause 600
+
+# ------------------------------------------------------------ Chapter 5
+
+@chapter 5 What the Rain Left
+@fx none
+@transition fade 1400
+@bg rooftop dawn
+@tone dawn
+The rain stopped at some point without telling me. The roof is wet, and the sky is the colour of a screen about to wake.
+@show Jack left (neutral)
+Jack: Say it plainly. The way the two pages do.
+@mode nvl
+One. Difficulty is not a staircase. It is non-monotonic and language-specific. JavaScript declines steadily; Python rises under renaming. ^§4
+Two. Effort fits the dual-process account. Time jumps once code is obfuscated, then plateaus, and errors gather at the extremes. ^§4
+Three. Only reasoning-tuned models track human difficulty. Coder- and instruction-tuned models do not, regardless of size. ^§4
+Four. The most accurate model is not the most human-like. Alignment, rather than raw accuracy, is what separates robust comprehension from brittle pattern matching. ^§abs
+Five. Shared difficulty is not identical mechanism. No model reproduced the human gains. ^§4
+@page
+The sentence about the lion is usually read as a wall. A lion's life is so unlike ours that its words, even in our language, would not be words to us.
+I used to find that restful. A wall asks nothing of you.
+But the two pages say that something unlike me found hard what {n_humans_lc} people in a classroom found hard. Not by the same mechanism. The same tasks. ^§4
+That is not understanding the lion. It is noticing that the lion slows down at the same bend in the river.
+It is less than I wanted. It is more than a wall.
+@mode adv
+@hide Jack
+@transition dissolve 900
+@cg hands-keyboard | The last edit
+Back at the desk I change one word in the abstract, and change it back.
+* Submit. -> submit
+* Read it once more, from the top. -> once_more
+
+== once_more
+I read it once more, from the top. It says what it said. That is the most a draft can do for you.
+-> submit
+
+== submit
+@fx pulse
+@pause 700
+Sent.
+The confirmation page is the least literary document I have read all year. I am very fond of it.
+@cg off
+@card What the paper found | Humans: {human_l0} at L0, {human_l3} at L3, but not monotonically | JavaScript falls, {js_l0} to {js_l3} | Python rises under renaming, {py_l0} to {py_rename} | Reasoning-tuned models track human difficulty: {rho_reason} | Other regimes do not: {rho_other} | Chain-of-thought length against accuracy: {rho_cot} | Shared difficulty, not identical mechanism ^§4
+
+# ------------------------------------------------------------ Epilogue
+
+@scene Epilogue
+@transition dissolve 1500
+@bg sakura dawn
+@tone dawn
+@fx petals on
+@show Jack left far
+On the way out I pass the place where the tree is not.
+It is summer in Texas. Nothing is in bloom. I know what the season promises and what it does not.
+Petals anyway.
+@if promise == yes -> extra
+-> last
+
+== extra
+@show P23 right far
+(I owe someone an answer.)
+Jack (smile): It wasn't about seconds.
+Jack: You were slow, and you were careful, and for once those were the same thing.
+Twenty-three is not there either. They would say I had done it again: told them by not telling them.
+@hide P23
+-> last
+
+== last
+@hide all
+@transition dissolve 1200
+@cg tree | The tree that is not there
+@mode nvl
+Do machines struggle where humans do.
+Some of them. In the same places. Not in the same way. ^§4
+I am keeping the question mark in the title. It has earned its place.
+@mode adv
+@pause 900
+@fx petals off
 @end

@@ -1,0 +1,154 @@
+# Engine demo: every directive of the visual-novel stage in one short script.
+# Not a story (the leading underscore keeps it out of the picker and the manifest).
+# Preview: ?src=stories/_demo-effects.vn   (add &autoplay=N to land on a stop)
+
+@title The Stage, Tried Out
+@kind blog
+@source A demo of the Paper Theatre directives
+@status draft
+@palette night
+@note A test card for the engine. Nothing here is quoted from anywhere.
+@cast Aoi name="Aoi" hue=345 long cardigan skin=1
+@cast Ren name="Ren" hue=215 short glasses coat skin=2
+@cast Mika name="Mika" hue=150 ponytail hoodie skin=3
+@cast Model name="the Model" lattice=sparse hue=192
+@cast You player hue=30
+
+@bg sakura
+@fx petals on
+@mode nvl
+Every spring the hill behind the school does this, and every spring somebody stops to look.
+This page is NVL mode: lines gather on a full page over the dimmed picture.
+(A line wrapped in parentheses is a thought. It is set in italics, in a softer colour.)
+@page
+A page break clears it. Then the story goes back to the window at the bottom.
+@mode adv
+
+@chapter 1 The Hill
+@show Aoi left (smile)
+Aoi (smile): You came. I was starting to think the petals would be gone first.
+@show Ren right (thinking)
+Ren (thinking): The active speaker is lit. The other one dims and waits.
+Aoi (laugh): He always explains the stage directions out loud.
+@thumb
+Ren (deadpan): Somebody has to.
+@show Mika center (surprised) far
+Mika (surprised): A third sprite, standing further back.
+@move Mika right
+@move Ren center
+Mika (smile): And now we have changed places.
+@hide Mika
+@show Aoi left near
+Aoi (worried): Closer. Is this too close?
+@show Aoi left
+* It is fine. -> fine
+* A little. -> little
+
+== fine
+Aoi (smile): Good.
+-> after
+
+== little
+Aoi (puzzled): Noted.
+-> after
+
+== after
+@hide all
+@fx none
+@transition fade 900
+@bg classroom dusk
+The classroom at dusk, reached through black.
+@flashback on Spring, the study room
+@fx dust on
+@show Aoi center (neutral)
+Aoi: This is a memory: sepia, grain, letterbox bars, a caption in the corner.
+(I remember the dust more than the lesson.)
+@flashback off
+@hide all
+@fx none
+
+@chapter 2 Transitions
+@transition dissolve 700
+@bg rooftop
+Dissolve, the default.
+@transition white 900
+@bg sea
+White, through light.
+@transition wipe-left 800
+@bg station
+Wipe-left.
+@transition wipe-right 800
+@bg corridor
+Wipe-right.
+@transition iris 900
+@bg studio
+Iris.
+@transition blinds 900
+@bg room
+Blinds.
+@transition cut
+@bg garden
+Cut.
+
+@scene Weather
+@bg night
+@fx snow on
+Snow.
+@fx snow off
+@fx rain on
+Rain.
+@fx rain off
+@fx fireflies on
+Fireflies.
+@fx none
+@fx shake
+A shake.
+@fx flash
+A flash.
+@fx pulse
+A pulse.
+@pause 600
+
+@chapter 3 Illustrations
+@transition fade 800
+@cg tree | The tree on the hill
+A full-screen illustration replaces the background and the sprites while it is shown.
+@cg desk-night
+The desk, at night.
+@cg screen-code
+One identifier someone left readable.
+@cg hands-keyboard
+Hands on the keys.
+@cg two-chairs
+Two chairs.
+@cg corridor-light
+A corridor, and light at the end of it.
+@cg page
+A page.
+@cg window-rain
+Rain on the glass.
+@cg sea-of-points | The inside of the model
+@show Model center
+Model: And this is where I live.
+@cg off
+
+@scene Tones
+@bg lecture
+@tone dusk
+Dusk.
+@tone night
+Night.
+@tone dawn
+Dawn.
+@tone noon
+Noon.
+@tone memory
+Memory.
+@tone cold
+Cold.
+@tone none
+@card A paper card | pinned: to the scene | ruled: like an index card
+@chart bar A chalkboard | this=3 | that=5 ^para
+@code js | function f(_lastNSecs) { | return _lastNSecs < 3; | }
+You: And that is the whole stage.
+@end

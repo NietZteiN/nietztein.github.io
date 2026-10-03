@@ -41,13 +41,23 @@
   /* ------------------------------------------------------------------ constants */
 
   var FACES = ['neutral', 'smile', 'puzzled', 'worried', 'surprised', 'thinking', 'deadpan', 'laugh'];
-  var BACKGROUNDS = ['lab', 'office', 'lecture', 'server', 'library', 'night', 'cafe', 'terminal', 'paper', 'train', 'garden', 'void'];
-  var BG_MODS = ['night', 'dawn', 'dim'];
+  var BACKGROUNDS = ['lab', 'office', 'lecture', 'server', 'library', 'night', 'cafe', 'terminal', 'paper', 'train', 'garden', 'void',
+    'sakura', 'classroom', 'rooftop', 'corridor', 'station', 'sea', 'room', 'studio'];
+  var BG_MODS = ['night', 'dawn', 'dim', 'dusk', 'noon'];
+  var TRANSITIONS = ['fade', 'dissolve', 'white', 'wipe-left', 'wipe-right', 'iris', 'blinds', 'cut'];
+  var DEFAULT_TRANSITION = { name: 'dissolve', ms: 600 };
+  var FX = ['petals', 'snow', 'rain', 'dust', 'fireflies'];
+  var FX_ONESHOT = ['shake', 'flash', 'pulse'];
+  var CGS = ['tree', 'desk-night', 'screen-code', 'hands-keyboard', 'two-chairs', 'corridor-light', 'sea-of-points', 'page', 'window-rain'];
+  var TONES = ['none', 'dusk', 'night', 'dawn', 'noon', 'memory', 'cold'];
+  var DISTANCES = ['near', 'far'];
+  var CLOTHES = ['coat', 'hoodie', 'cardigan', 'shirt', 'uniform'];
+  var MODES = ['adv', 'nvl'];
   var PALETTES = { slate: 210, paper: 40, ink: 250, night: 230, ochre: 28, moss: 120 };
   var SLOTS = ['left', 'center', 'right'];
-  var HAIR = ['short', 'long', 'bun', 'curly', 'none', 'hood'];
+  var HAIR = ['short', 'long', 'bob', 'ponytail', 'bun', 'curly', 'none', 'hood'];
   var STATUSES = ['draft', 'embargo', 'published'];
-  var BLOCKING = { say: 1, narrate: 1, menu: 1, scene: 1, card: 1, chart: 1, code: 1, withheld: 1, read: 1, end: 1, error: 1 };
+  var BLOCKING = { say: 1, narrate: 1, menu: 1, scene: 1, chapter: 1, pause: 1, card: 1, chart: 1, code: 1, withheld: 1, read: 1, end: 1, error: 1 };
   var HEADER_ONLY = { title: 1, kind: 1, source: 1, cite: 1, arxiv: 1, link: 1, authors: 1, note: 1, status: 1, palette: 1, cast: 1, fact: 1, include: 1, verify: 1, file: 1 };
   var DEFAULT_NOTE = 'Dialogue is dramatized; coauthors did not say these lines. Figures marked § are quoted from the source.';
   var WITHHELD_TEXT = 'Results withheld until the paper is public.';
@@ -160,6 +170,12 @@
     return out;
   }
 
+  // A line wholly wrapped in ASCII or full-width parentheses is an inner thought.
+  function isThought(text) {
+    var t = String(text == null ? '' : text).trim();
+    return t.length > 2 && ((t.charAt(0) === '(' && t.charAt(t.length - 1) === ')') || (t.charAt(0) === '\uff08' && t.charAt(t.length - 1) === '\uff09'));
+  }
+
   function refsOf(op) {
     var r = [];
     if (op.ref) r.push(op.ref);
@@ -195,7 +211,7 @@
     var decl = {
       id: toks[0], key: toks[0].toLowerCase(), name: toks[0],
       hue: fnv1a(toks[0].toLowerCase()) % 360, skin: 1 + fnv1a('skin:' + toks[0].toLowerCase()) % 5,
-      hair: 'short', glasses: false, hat: false, lattice: null, player: false, page: false, coauthor: false, line: line
+      hair: 'short', clothes: null, glasses: false, hat: false, lattice: null, player: false, page: false, coauthor: false, line: line
     };
     var unknown = [];
     for (var i = 1; i < toks.length; i++) {
@@ -208,6 +224,7 @@
         else if (k === 'lattice') decl.lattice = v === 'dense' ? 'dense' : 'sparse';
         else unknown.push(t);
       } else if (HAIR.indexOf(t) >= 0) decl.hair = t;
+      else if (CLOTHES.indexOf(t) >= 0) decl.clothes = t;
       else if (t === 'glasses') decl.glasses = true;
       else if (t === 'hat') decl.hat = true;
       else if (t === 'player') decl.player = true;
@@ -265,7 +282,7 @@
       links: [], authors: null, note: DEFAULT_NOTE, status: 'draft', palette: { name: null, hue: 0 },
       verify: false, includes: [], file: null
     };
-    var cast = {}, facts = {}, ops = [], labels = {}, menus = [], thumb = null;
+    var cast = {}, facts = {}, ops = [], labels = {}, menus = [], thumb = null, chapters = [];
     var i, t, ln, m;
 
     // Pass 1: header directives that later lines depend on (cast, facts, includes).
@@ -275,7 +292,7 @@
       if ((m = /^@cast\s+(.+)$/.exec(t))) {
         var decl = parseCastDecl(m[1], ln);
         if (!decl) { issues.push(issue('warn', ln, 'empty @cast', 'write @cast Name [hue=N] [glasses] ...', 'cast-malformed')); continue; }
-        if (decl.unknown.length) issues.push(issue('warn', ln, "unknown @cast trait" + (decl.unknown.length > 1 ? 's' : '') + " '" + decl.unknown.join("', '") + "'", 'traits: name="..." hue=N skin=1-5 ' + HAIR.join('|') + ' glasses hat lattice=sparse|dense player page coauthor', 'cast-trait-unknown'));
+        if (decl.unknown.length) issues.push(issue('warn', ln, "unknown @cast trait" + (decl.unknown.length > 1 ? 's' : '') + " '" + decl.unknown.join("', '") + "'", 'traits: name="..." hue=N skin=1-5 ' + HAIR.join('|') + ' ' + CLOTHES.join('|') + ' glasses hat lattice=sparse|dense player page coauthor', 'cast-trait-unknown'));
         delete decl.unknown;
         cast[decl.key] = decl;
       } else if ((m = /^@include\s+(\S+)/.exec(t))) {
@@ -295,6 +312,7 @@
       var ip = interpolateFacts(sc.text, facts, cast);
       var op = { kind: kind, text: ip.text, ref: sc.ref || (ip.chips.length ? ip.chips[0].ref : null), chips: ip.chips, line: ln };
       op.refs = refsOf(op);
+      op.thought = isThought(ip.text);
       return op;
     }
     function cellOf(raw) {
@@ -385,18 +403,26 @@
             var bt = tail.split(/\s+/);
             var bgop = { kind: 'bg', name: bt[0] || 'void', mod: null, line: ln };
             if (bt[1] && BG_MODS.indexOf(bt[1]) >= 0) bgop.mod = bt[1];
-            else if (bt[1]) issues.push(issue('warn', ln, "unknown background modifier '" + bt[1] + "'", 'night | dawn | dim', 'bg-mod-unknown'));
+            else if (bt[1]) issues.push(issue('warn', ln, "unknown background modifier '" + bt[1] + "'", BG_MODS.join(' | '), 'bg-mod-unknown'));
             if (BACKGROUNDS.indexOf(bgop.name) < 0) issues.push(issue('warn', ln, "unknown background '" + bgop.name + "'; using void", 'known backgrounds: ' + BACKGROUNDS.join(', '), 'bg-unknown'));
             ops.push(bgop); inBody = true;
             break;
           case 'show':
-            var sm = /^(\S+)\s*(left|center|right)?\s*(?:\(([a-z]+)\))?\s*(left|center|right)?\s*$/.exec(tail);
-            if (!sm) { issues.push(issue('fatal', ln, 'malformed @show', '@show Name [left|center|right] [(face)]', 'show-malformed')); break; }
+            var stoks = tail.split(/\s+/).filter(Boolean), sslot = null, sface = null, sdist = null, sbad = !stoks.length;
+            for (var sti = 1; sti < stoks.length; sti++) {
+              var stk = stoks[sti], sfm = /^\(([a-z]+)\)$/.exec(stk);
+              if (sfm) sface = sfm[1];
+              else if (SLOTS.indexOf(stk) >= 0) sslot = stk;
+              else if (DISTANCES.indexOf(stk) >= 0) sdist = stk;
+              else sbad = true;
+            }
+            var sm = sbad ? null : [tail, stoks[0], sslot, sface, null];
+            if (!sm) { issues.push(issue('fatal', ln, 'malformed @show', '@show Name [left|center|right] [(face)] [near|far]', 'show-malformed')); break; }
             var who = sm[1], sdecl = cast[who.toLowerCase()];
             if (!sdecl) { issues.push(issue('fatal', ln, "@show of undeclared name '" + who + "'", 'add "@cast ' + who + '" to the header', 'show-undeclared')); break; }
             var face = sm[3] || null;
             if (face && FACES.indexOf(face) < 0) { issues.push(issue('warn', ln, "unknown face '" + face + "'; using neutral", 'faces: ' + FACES.join(', '), 'face-unknown')); face = 'neutral'; }
-            ops.push({ kind: 'show', who: sdecl.id, key: sdecl.key, slot: sm[2] || sm[4] || null, face: face, line: ln }); inBody = true;
+            ops.push({ kind: 'show', who: sdecl.id, key: sdecl.key, slot: sm[2] || sm[4] || null, face: face, dist: sdist, line: ln }); inBody = true;
             break;
           case 'hide':
             var hw = tail.split(/\s+/)[0] || 'all';
@@ -408,6 +434,81 @@
             }
             inBody = true;
             break;
+          case 'move': {
+            var mvm = /^(\S+)\s+(\S+)\s*$/.exec(tail);
+            if (!mvm) { issues.push(issue('fatal', ln, 'malformed @move', '@move Name left|center|right', 'move-malformed')); break; }
+            var mdecl = cast[mvm[1].toLowerCase()];
+            if (!mdecl) { issues.push(issue('fatal', ln, "@move of undeclared name '" + mvm[1] + "'", 'add "@cast ' + mvm[1] + '" to the header', 'show-undeclared')); break; }
+            if (SLOTS.indexOf(mvm[2]) < 0) { issues.push(issue('warn', ln, "unknown slot '" + mvm[2] + "'; @move ignored", 'slots: ' + SLOTS.join(', '), 'slot-unknown')); break; }
+            ops.push({ kind: 'move', who: mdecl.id, key: mdecl.key, slot: mvm[2], line: ln }); inBody = true;
+            break;
+          }
+          case 'chapter': {
+            var chm = /^(\S+)\s*(.*)$/.exec(tail);
+            if (!chm) { issues.push(issue('warn', ln, 'empty @chapter', '@chapter 1 The Title', 'chapter-malformed')); break; }
+            var chop2 = { kind: 'chapter', n: chm[1], title: interpolateFacts(chm[2].trim(), facts, cast).text, line: ln };
+            chapters.push({ n: chop2.n, title: chop2.title, index: ops.length, line: ln });
+            ops.push(chop2); inBody = true;
+            break;
+          }
+          case 'transition': {
+            var trt = tail.split(/\s+/).filter(Boolean);
+            var trop = { kind: 'transition', name: trt[0] || DEFAULT_TRANSITION.name, ms: DEFAULT_TRANSITION.ms, line: ln };
+            if (TRANSITIONS.indexOf(trop.name) < 0) {
+              issues.push(issue('warn', ln, "unknown transition '" + trop.name + "'; using dissolve", 'transitions: ' + TRANSITIONS.join(', '), 'transition-unknown'));
+              trop.name = DEFAULT_TRANSITION.name;
+            }
+            if (trt[1] != null) {
+              if (/^\d+$/.test(trt[1])) trop.ms = Math.min(10000, parseInt(trt[1], 10));
+              else issues.push(issue('warn', ln, "@transition duration must be milliseconds (got '" + trt[1] + "')", '@transition fade 800', 'transition-malformed'));
+            }
+            ops.push(trop); inBody = true;
+            break;
+          }
+          case 'flashback': {
+            var fbm = /^(on|off)\b\s*(.*)$/.exec(tail);
+            if (!fbm) { issues.push(issue('warn', ln, 'malformed @flashback', '@flashback on [caption] | @flashback off', 'flashback-malformed')); break; }
+            ops.push({ kind: 'flashback', on: fbm[1] === 'on', caption: fbm[1] === 'on' && fbm[2].trim() ? interpolateFacts(fbm[2].trim(), facts, cast).text : null, line: ln }); inBody = true;
+            break;
+          }
+          case 'mode':
+            if (MODES.indexOf(tail) < 0) { issues.push(issue('warn', ln, "unknown @mode '" + tail + "'", '@mode nvl | @mode adv', 'mode-unknown')); break; }
+            ops.push({ kind: 'mode', mode: tail, line: ln }); inBody = true;
+            break;
+          case 'page': ops.push({ kind: 'page', line: ln }); inBody = true; break;
+          case 'fx': {
+            var fxt = tail.split(/\s+/).filter(Boolean), fxn = fxt[0] || '';
+            if (fxn !== 'none' && FX.indexOf(fxn) < 0 && FX_ONESHOT.indexOf(fxn) < 0) {
+              issues.push(issue('warn', ln, "unknown fx '" + fxn + "'; ignored", 'fx: ' + FX.join(', ') + ', none; one-shot: ' + FX_ONESHOT.join(', '), 'fx-unknown'));
+              break;
+            }
+            var fxon = true;
+            if (fxt[1] === 'off') fxon = false;
+            else if (fxt[1] != null && fxt[1] !== 'on') issues.push(issue('warn', ln, "@fx takes on or off (got '" + fxt[1] + "')", '@fx petals on | @fx petals off', 'fx-malformed'));
+            ops.push({ kind: 'fx', name: fxn, on: fxon, oneshot: FX_ONESHOT.indexOf(fxn) >= 0, line: ln }); inBody = true;
+            break;
+          }
+          case 'cg': {
+            var cgp = tail.split('|'), cgn = (cgp[0] || '').trim();
+            if (!cgn) { issues.push(issue('warn', ln, 'empty @cg', '@cg name [| caption] | @cg off', 'cg-malformed')); break; }
+            if (cgn === 'off') { ops.push({ kind: 'cg', name: null, caption: null, line: ln }); inBody = true; break; }
+            if (CGS.indexOf(cgn) < 0) issues.push(issue('warn', ln, "unknown cg '" + cgn + "'; using an abstract fallback", 'known CGs: ' + CGS.join(', '), 'cg-unknown'));
+            var cgc = cgp.slice(1).join('|').trim();
+            ops.push({ kind: 'cg', name: cgn, caption: cgc ? interpolateFacts(cgc, facts, cast).text : null, line: ln }); inBody = true;
+            break;
+          }
+          case 'pause': {
+            var pms = /^(\d+)?$/.exec(tail);
+            if (!pms) issues.push(issue('warn', ln, "@pause takes milliseconds (got '" + tail + "')", '@pause 800', 'pause-malformed'));
+            ops.push({ kind: 'pause', ms: pms && pms[1] ? Math.min(10000, parseInt(pms[1], 10)) : 800, line: ln }); inBody = true;
+            break;
+          }
+          case 'tone': {
+            var tn = tail || 'none';
+            if (TONES.indexOf(tn) < 0) { issues.push(issue('warn', ln, "unknown tone '" + tn + "'; using none", 'tones: ' + TONES.join(', '), 'tone-unknown')); tn = 'none'; }
+            ops.push({ kind: 'tone', name: tn, line: ln }); inBody = true;
+            break;
+          }
           case 'scene': ops.push({ kind: 'scene', title: interpolateFacts(tail, facts, cast).text, line: ln }); inBody = true; break;
           case 'card': {
             var parts = tail.split('|').map(function (s) { return s.trim(); });
@@ -510,7 +611,9 @@
           ops.push(sop); inBody = true;
           continue;
         }
-        issues.push(issue('warn', ln, "'" + sp[1] + "' is not in @cast; treated as narration", 'add "@cast ' + sp[1] + '" to the header or remove the colon', 'speaker-undeclared'));
+        // "Nearly three: the rain..." is prose. Only a single capitalised word before the colon looks
+        // like a forgotten @cast, and only that is worth a loud warning.
+        if (/^[A-Z][\wÀ-ɏ'.\-]*$/.test(sp[1])) issues.push(issue('warn', ln, "'" + sp[1] + "' is not in @cast; treated as narration", 'add "@cast ' + sp[1] + '" to the header or remove the colon', 'speaker-undeclared'));
       }
       ops.push(textOp('narrate', t, ln)); inBody = true;
     }
@@ -528,7 +631,7 @@
 
     return {
       id: opts.id || null, hash: hashHex(text), meta: meta, cast: cast, facts: facts, ops: ops,
-      labels: labels, menus: menus, thumb: thumb, issues: issues
+      labels: labels, menus: menus, thumb: thumb, chapters: chapters, issues: issues
     };
   }
 
@@ -605,7 +708,7 @@
     for (i = 0; i < ops.length; i++) if (ops[i].kind === 'set' || ops[i].kind === 'add') setNames[ops[i].name] = 1;
     for (i = 0; i < ops.length; i++) {
       op = ops[i];
-      var txt = op.kind === 'say' || op.kind === 'narrate' ? op.text : op.kind === 'scene' ? op.title : null;
+      var txt = op.kind === 'say' || op.kind === 'narrate' ? op.text : (op.kind === 'scene' || op.kind === 'chapter') ? op.title : null;
       if (txt == null) continue;
       var re = /\{([A-Za-z_][\w\-]*)\}/g, pm;
       while ((pm = re.exec(txt))) {
@@ -641,8 +744,15 @@
       if (chipped && branchOnly[i]) issues.push(issue('warn', op.line, 'chipped figure inside a choice-dependent branch', 'choices change reactions, never reported figures', 'chip-in-branch'));
       if (op.kind === 'say' || op.kind === 'narrate') {
         if (paper && !chipped) {
-          var lit = hasNumericLiteral(op.text);
-          if (lit) issues.push(issue('warn', op.line, 'figure without a citation chip: "' + numericSnippet(op.text) + '"', 'use a {fact} or end the line with ^§n', 'numeric-literal'));
+          // a number inside a declared cast name ("Participant 23") is a name, not a figure
+          var bare = op.text;
+          for (var ck in program.cast) {
+            var cn = program.cast[ck];
+            if (/\d/.test(cn.name)) bare = bare.split(cn.name).join(' ');
+            if (/\d/.test(cn.id)) bare = bare.split(cn.id).join(' ');
+          }
+          var lit = hasNumericLiteral(bare);
+          if (lit) issues.push(issue('warn', op.line, 'figure without a citation chip: "' + numericSnippet(bare) + '"', 'use a {fact} or end the line with ^§n', 'numeric-literal'));
         }
         if (op.kind === 'say') {
           var cd = program.cast[op.key];
@@ -943,15 +1053,16 @@
       } else ops.push(op);
     }
     out.ops = ops;
-    out.labels = {}; out.menus = []; out.thumb = null;
+    out.labels = {}; out.menus = []; out.thumb = null; out.chapters = [];
     for (var j = 0; j < ops.length; j++) {
       if (ops[j].kind === 'label' && out.labels[ops[j].name] == null) out.labels[ops[j].name] = j;
       else if (ops[j].kind === 'menu') out.menus.push(j);
       else if (ops[j].kind === 'thumb') out.thumb = j;
+      else if (ops[j].kind === 'chapter') out.chapters.push({ n: ops[j].n, title: ops[j].title, index: j, line: ops[j].line });
     }
     if (!out.cast.page) {
       var pageKey = Object.keys(out.cast).filter(function (k) { return out.cast[k].page; })[0];
-      if (!pageKey) out.cast.page = { id: 'Page', key: 'page', name: 'the page', hue: fnv1a('page') % 360, skin: 3, hair: 'none', glasses: false, hat: false, lattice: null, player: false, page: true, coauthor: false, line: 0 };
+      if (!pageKey) out.cast.page = { id: 'Page', key: 'page', name: 'the page', hue: fnv1a('page') % 360, skin: 3, hair: 'none', clothes: null, glasses: false, hat: false, lattice: null, player: false, page: true, coauthor: false, line: 0 };
     }
     return out;
   }
@@ -968,7 +1079,10 @@
     var current = null;
 
     function freshState() {
-      return { pc: 0, vars: {}, bg: null, slots: { left: null, center: null, right: null }, faces: {}, chosen: {}, history: [], choiceLog: [], label: null, stops: 0 };
+      return {
+        pc: 0, vars: {}, bg: null, slots: { left: null, center: null, right: null }, faces: {}, dist: {}, chosen: {}, history: [], choiceLog: [], label: null, stops: 0,
+        cg: null, transition: null, change: null, flashback: null, mode: 'adv', pageStart: 0, fx: {}, oneshot: [], tone: 'none', chapter: null
+      };
     }
     function errorStop(msg, hint, line) {
       current = { op: { kind: 'error', msg: msg, hint: hint || '', line: line | 0 }, index: state.pc, state: state, done: true };
@@ -982,6 +1096,9 @@
     function record(op, idx) {
       var h = { index: idx, kind: op.kind, who: op.who || null, text: op.text || op.title || '', refs: op.refs || [] };
       if (op.title) h.title = op.title;
+      if (op.kind === 'chapter') h.n = op.n;
+      if (op.thought) h.thought = true;
+      if (state.mode === 'nvl') h.nvl = true;
       state.history.push(h);
     }
     function pushSnapshot() {
@@ -994,7 +1111,8 @@
       state.stops++;
       seen[idx] = 1;
       if (op.kind === 'say' && op.face) state.faces[op.key] = op.face;
-      if (op.kind !== 'menu' && op.kind !== 'end') record(op, idx);
+      if (op.kind === 'chapter') state.chapter = { n: op.n, title: op.title, index: idx };
+      if (op.kind !== 'menu' && op.kind !== 'end' && op.kind !== 'pause') record(op, idx);
       current = { op: op, index: idx, state: state, done: op.kind === 'end' };
       if (op.kind === 'menu') {
         current.options = visibleOptions(op, idx);
@@ -1007,35 +1125,70 @@
       if (t < 0) { errorStop("jump to unknown label '" + target + "' (line " + line + ')', 'declare it with "== ' + target + '"', line); return -1; }
       return t;
     }
+    // The transition armed by @transition is consumed by the next bg / cg change. A @bg and a @cg between
+    // the same two stops each keep their own: state.change = {bg?: {name, ms}, cg?: {name, ms}}.
+    function takeTransition(what) {
+      var t = state.transition || DEFAULT_TRANSITION;
+      if (!state.change) state.change = {};
+      state.change[what] = { name: t.name, ms: t.ms };
+      state.transition = null;
+    }
+    // Non-blocking, non-jumping ops: everything that only dresses the stage.
+    function applyOp(op, dressing) {
+      switch (op.kind) {
+        case 'bg': state.bg = { name: op.name, mod: op.mod }; takeTransition('bg'); break;
+        case 'cg': state.cg = op.name ? { name: op.name, caption: op.caption } : null; takeTransition('cg'); break;
+        case 'transition': state.transition = { name: op.name, ms: op.ms }; break;
+        case 'show': {
+          var slot = op.slot;
+          // already on stage in another slot: move it
+          SLOTS.forEach(function (s) { if (state.slots[s] === op.key && slot && s !== slot) state.slots[s] = null; });
+          if (!slot) { slot = SLOTS.filter(function (s) { return state.slots[s] === op.key; })[0] || SLOTS.filter(function (s) { return !state.slots[s]; })[0] || 'right'; }
+          state.slots[slot] = op.key;
+          if (op.face) state.faces[op.key] = op.face;
+          else if (!state.faces[op.key]) state.faces[op.key] = 'neutral';
+          if (op.dist) state.dist[op.key] = op.dist; else delete state.dist[op.key];
+          break;
+        }
+        case 'move': {
+          var from = SLOTS.filter(function (s) { return state.slots[s] === op.key; })[0];
+          if (from && from !== op.slot) state.slots[from] = null;
+          state.slots[op.slot] = op.key;
+          if (!state.faces[op.key]) state.faces[op.key] = 'neutral';
+          break;
+        }
+        case 'hide':
+          SLOTS.forEach(function (s) { if (op.all || state.slots[s] === op.key) state.slots[s] = null; });
+          break;
+        case 'flashback': state.flashback = op.on ? { caption: op.caption } : null; break;
+        case 'mode': if (state.mode !== op.mode) { state.mode = op.mode; state.pageStart = state.history.length; } break;
+        case 'page': state.pageStart = state.history.length; break;
+        case 'fx':
+          if (op.name === 'none') state.fx = {};
+          else if (op.oneshot) { if (!dressing) state.oneshot.push(op.name); }
+          else if (op.on) state.fx[op.name] = true;
+          else delete state.fx[op.name];
+          break;
+        case 'tone': state.tone = op.name; break;
+        case 'label': state.label = op.name; break;
+        case 'set': state.vars[op.name] = op.value; break;
+        case 'add': if (!dressing) state.vars[op.name] = (parseFloat(state.vars[op.name]) || 0) + op.value; break;
+      }
+    }
     function runFrom(pc) {
+      state.oneshot = [];
+      state.change = null;
       for (;;) {
         if (pc >= n) return stopAt(n - 1);
         var op = ops[pc];
         if (BLOCKING[op.kind]) return stopAt(pc);
         switch (op.kind) {
-          case 'bg': state.bg = { name: op.name, mod: op.mod }; break;
-          case 'show': {
-            var slot = op.slot;
-            // already on stage in another slot: move it
-            SLOTS.forEach(function (s) { if (state.slots[s] === op.key && slot && s !== slot) state.slots[s] = null; });
-            if (!slot) { slot = SLOTS.filter(function (s) { return state.slots[s] === op.key; })[0] || SLOTS.filter(function (s) { return !state.slots[s]; })[0] || 'right'; }
-            state.slots[slot] = op.key;
-            if (op.face) state.faces[op.key] = op.face;
-            else if (!state.faces[op.key]) state.faces[op.key] = 'neutral';
-            break;
-          }
-          case 'hide':
-            SLOTS.forEach(function (s) { if (op.all || state.slots[s] === op.key) state.slots[s] = null; });
-            break;
-          case 'label': state.label = op.name; break;
-          case 'thumb': break;
-          case 'set': state.vars[op.name] = op.value; break;
-          case 'add': state.vars[op.name] = (parseFloat(state.vars[op.name]) || 0) + op.value; break;
           case 'goto': { var g = jump(op.target, op.line); if (g < 0) return current; pc = g; continue; }
           case 'if': {
             if (evalCond(op.cond, state.vars)) { var t = jump(op.target, op.line); if (t < 0) return current; pc = t; continue; }
             break;
           }
+          default: applyOp(op, false);
         }
         pc++;
       }
@@ -1085,12 +1238,10 @@
         if (!current) {
           for (var d = 0; d < idx; d++) {
             var dop = ops[d];
-            if (dop.kind === 'bg') state.bg = { name: dop.name, mod: dop.mod };
-            else if (dop.kind === 'show') { var ds = dop.slot || SLOTS.filter(function (s) { return !state.slots[s]; })[0] || 'right'; SLOTS.forEach(function (s) { if (state.slots[s] === dop.key) state.slots[s] = null; }); state.slots[ds] = dop.key; state.faces[dop.key] = dop.face || state.faces[dop.key] || 'neutral'; }
-            else if (dop.kind === 'hide') SLOTS.forEach(function (s) { if (dop.all || state.slots[s] === dop.key) state.slots[s] = null; });
-            else if (dop.kind === 'set') state.vars[dop.name] = dop.value;
-            else if (dop.kind === 'label') state.label = dop.name;
+            if (dop.kind === 'chapter') state.chapter = { n: dop.n, title: dop.title, index: d };
+            else if (!BLOCKING[dop.kind] && dop.kind !== 'goto' && dop.kind !== 'if') applyOp(dop, true);
           }
+          state.transition = null; state.change = null;
         }
         current = null;
         return runFrom(idx);
@@ -1149,9 +1300,11 @@
   return {
     parse: parse, lint: lint, walk: walk, blog: blog, expand: expand, createRun: createRun,
     interpolate: interpolate, markup: markup, refs: refsOf, describeRef: describeRef, bibtex: bibtex,
-    publishBlockers: publishBlockers, evalCond: evalCond,
+    publishBlockers: publishBlockers, evalCond: evalCond, isThought: isThought,
     hash: fnv1a, hashHex: hashHex, rng: rng, mulberry32: mulberry32,
     FACES: FACES, BACKGROUNDS: BACKGROUNDS, BG_MODS: BG_MODS, PALETTES: PALETTES, SLOTS: SLOTS, HAIR: HAIR,
+    TRANSITIONS: TRANSITIONS, DEFAULT_TRANSITION: DEFAULT_TRANSITION, FX: FX, FX_ONESHOT: FX_ONESHOT, CGS: CGS, TONES: TONES,
+    DISTANCES: DISTANCES, CLOTHES: CLOTHES, MODES: MODES,
     STATUSES: STATUSES, BLOCKING: BLOCKING, DEFAULT_NOTE: DEFAULT_NOTE, WITHHELD_TEXT: WITHHELD_TEXT
   };
 });

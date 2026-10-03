@@ -1,12 +1,21 @@
 /*
  * Paper Theatre - stage.js (browser only).
  *
- * The renderer: story picker, kamishibai stage layers, typewriter, menus,
- * boards, end card, backlog, text-only transcript, save/resume, deep links,
- * theme, keyboard and touch. Pure logic lives in vn.js (window.VN) and the
- * procedural art in art.js (window.VNArt). Both are optional at load time:
- * without VNArt the stage draws grey placeholders; without VN it shows an
- * "engine not loaded" panel instead of crashing.
+ * The renderer: story picker (inside the kamishibai frame), then a full-bleed
+ * visual-novel stage: per-story title screen, painted world (background, cast,
+ * event CG, particles, colour grade, flashback), transitions, the ADV text
+ * window with its quick menu, NVL pages, choices, chapter cards, boards, the
+ * ending, six save slots, config, backlog, text-only transcript, deep links,
+ * theme, keyboard and touch.
+ *
+ * Pure logic lives in vn.js (window.VN) and the procedural art in art.js
+ * (window.VNArt, with art-scenes.js and art-cast.js). Both are optional at
+ * load time: without VNArt the stage draws grey placeholders; without VN it
+ * shows an "engine not loaded" panel instead of crashing.
+ *
+ * Every animated effect has a settled state: under reduced motion, ?autoplay,
+ * ?thumb and Skip, transitions are cuts, particles stand still and text is
+ * instant.
  */
 (function () {
   'use strict';
@@ -16,11 +25,18 @@
   var params = new URLSearchParams(location.search);
   var THUMB = params.get('thumb') === '1';
   var CASTGRID = params.get('cast') === '1';
+  var GALLERY = params.get('gallery');
   var DRAFTS = params.get('drafts') === '1';
-  var AUTOPLAY = params.get('autoplay');   // test hook: advance N stops instantly (option 1 at menus); "end" runs to the end card
+  var AUTOPLAY = params.get('autoplay');   // test hook: advance N stops instantly; "end" runs to the end card. &pick=K takes option K at menus, &screen=save|load|config|log|chapters opens that screen
+  var PICK = parseInt(params.get('pick'), 10) || 0;
+  var HOOK_SCREEN = params.get('screen');
+  var HOOK_CLICK = parseInt(params.get('click'), 10) || 0;   // test hook: Start, then N animated advances (typewriter, transitions, timers all live)
+  var HOOK_TRANS = params.get('trans');    // test hook: with &autoplay=N, freeze that transition half-way into stop N
   var REDUCED = THUMB || !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   var KATEX = 'https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/';
   var DEFAULT_STORY = 'obfuscation';
+  var SLOT_NAMES = ['left', 'center', 'right'];
+  var DEFAULT_TR = { name: 'dissolve', ms: 600 };
 
   function $(s, r) { return (r || document).querySelector(s); }
   function $$(s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); }
@@ -39,14 +55,18 @@
   /* ------------------------------------------------------------------ DOM */
 
   var stage = $('#stage');
-  var bgA = $('.vn-bg-a'), bgB = $('.vn-bg-b');
-  var slots = { left: $('.vn-slot.left'), center: $('.vn-slot.center'), right: $('.vn-slot.right') };
-  var cg = $('.vn-cg');
+  var world = $('.vn-world'), bgEl = $('.vn-bg'), spritesEl = $('.vn-sprites'), cgEl = $('.vn-cgart'), fxEl = $('.vn-fxlayer');
+  var transEl = $('.vn-trans'), flashEl = $('.vn-flash'), captionEl = $('.vn-caption');
+  var boardsEl = $('.vn-boards');
   var box = $('.vn-box'), nameEl = $('.vn-name'), textEl = $('.vn-text');
+  var nvlEl = $('.vn-nvl'), nvlPage = $('.vn-nvl-page');
   var live = $('.vn-live');
   var menuEl = $('.vn-menu');
+  var quickEl = $('.vn-quick');
   var sceneEl = $('.vn-scene');
   var endEl = $('.vn-end');
+  var titleEl = $('.vn-titlescreen');
+  var screenEl = $('.vn-screen');
   var pickerEl = $('.vn-picker');
   var panelEl = $('.vn-panel');
   var badgesEl = $('.vn-badges');
@@ -55,29 +75,36 @@
   var selectEl = $('#story');
   var statusEl = $('#status');
   var errorsEl = $('#errors'), errorsN = $('#errors-n'), errorsList = $('#errors-list');
-  var btn = {
-    back: $('#btn-back'), auto: $('#btn-auto'), skip: $('#btn-skip'), log: $('#btn-log'),
-    text: $('#btn-text'), help: $('#btn-help'), restart: $('#btn-restart'), theme: $('#btn-theme')
-  };
-  var cpsEl = $('#cps'), cpsVal = $('#cps-val');
-  var logOverlay = $('#log'), logList = $('#log-list');
+  var btnTheme = $('#btn-theme'), btnHelp = $('#btn-help'), btnFull = $('#btn-full'), btnTitle = $('#btn-title'), btnIssues = $('#btn-issues');
   var helpOverlay = $('#help');
+  function qbtn(name) { return $('button[data-q="' + name + '"]', quickEl); }
 
   /* ------------------------------------------------------------------ prefs + theme */
 
-  var prefs = Object.assign({ cps: 28, textOnly: false, sound: false, size: 1 }, readJSON('vn:prefs') || {});
-  prefs.cps = clamp(parseInt(prefs.cps, 10) || 28, 15, 80);
+  var prefs = Object.assign({ cps: 34, autoSpeed: 1, opacity: 0.74, effects: true, size: 1, textOnly: false }, readJSON('vn:prefs') || {});
+  prefs.cps = clamp(parseInt(prefs.cps, 10) || 34, 15, 80);
+  prefs.autoSpeed = clamp(parseFloat(prefs.autoSpeed) || 1, 0.5, 2.5);
+  prefs.opacity = clamp(parseFloat(prefs.opacity) || 0.74, 0.3, 1);
+  prefs.size = clamp(parseFloat(prefs.size) || 1, 0.85, 1.35);
+  prefs.effects = prefs.effects !== false;
   function savePrefs() { lsSet('vn:prefs', JSON.stringify(prefs)); }
+  function applyPrefs() {
+    var st = document.documentElement.style;
+    st.setProperty('--vn-win-a', String(prefs.opacity));
+    st.setProperty('--vn-fs', String(prefs.size));
+    document.body.classList.toggle('fx-off', !prefs.effects);
+  }
+  applyPrefs();
 
   var themeOverride = params.get('theme');
   function currentTheme() { return document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light'; }
   function applyTheme(t, persist) {
     document.documentElement.setAttribute('data-theme', t);
-    if (btn.theme) { btn.theme.textContent = t === 'dark' ? '☀' : '☾'; btn.theme.setAttribute('aria-label', t === 'dark' ? 'switch to light theme' : 'switch to dark theme'); }
+    if (btnTheme) { btnTheme.textContent = t === 'dark' ? '☀' : '☾'; btnTheme.setAttribute('aria-label', t === 'dark' ? 'switch to light theme' : 'switch to dark theme'); }
     if (persist) lsSet('theme', t);
   }
   applyTheme(themeOverride === 'light' || themeOverride === 'dark' ? themeOverride : currentTheme(), false);
-  if (btn.theme) btn.theme.addEventListener('click', function () { applyTheme(currentTheme() === 'dark' ? 'light' : 'dark', true); });
+  if (btnTheme) btnTheme.addEventListener('click', function () { applyTheme(currentTheme() === 'dark' ? 'light' : 'dark', true); });
   window.addEventListener('storage', function (e) { if (e.key === 'theme' && (e.newValue === 'light' || e.newValue === 'dark')) applyTheme(e.newValue, false); });
   if (window.matchMedia) {
     try {
@@ -86,6 +113,7 @@
   }
   if (REDUCED) document.documentElement.setAttribute('data-reduced-motion', '1');
   if (THUMB) document.body.classList.add('thumb');
+  if (ART && ART.sharedDefs) document.body.insertAdjacentHTML('afterbegin', ART.sharedDefs());
 
   /* ------------------------------------------------------------------ small UI helpers */
 
@@ -115,22 +143,26 @@
     return '<abbr class="vn-chip" title="' + esc(d) + '">' + esc(ref) + '</abbr>';
   }
   function chipsHtml(refs) { return (refs || []).map(chipHtml).join(''); }
+  function fmtDate(ts) {
+    var d = new Date(ts); function p(n) { return (n < 10 ? '0' : '') + n; }
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+  }
 
   /* ------------------------------------------------------------------ art adapter */
 
-  function placeholderSvg(w, h, label, fill) {
-    return '<svg viewBox="0 0 ' + w + ' ' + h + '" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
-      '<rect width="' + w + '" height="' + h + '" fill="' + (fill || 'var(--vn-bg-2)') + '"/>' +
-      '<text x="' + (w / 2) + '" y="' + (h / 2) + '" text-anchor="middle" font-family="system-ui, sans-serif" font-size="' + Math.round(h / 20) + '" fill="var(--vn-ink-3)">' + esc(label) + '</text></svg>';
-  }
   function artBackground(name, mod) {
     if (ART && typeof ART.background === 'function') {
       try { var s = ART.background(name, mod); if (s) return s; } catch (e) { console.warn('art.background failed', e); }
     }
     return '<svg viewBox="0 0 1600 900" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" preserveAspectRatio="xMidYMid slice">' +
-      '<defs><linearGradient id="vnph" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--vn-bg-2)"/><stop offset="1" stop-color="var(--vn-bg)"/></linearGradient></defs>' +
-      '<rect width="1600" height="900" fill="url(#vnph)"/><rect x="0" y="620" width="1600" height="280" fill="var(--vn-bg-3)" opacity="0.5"/>' +
-      '<text x="40" y="60" font-family="system-ui, sans-serif" font-size="26" fill="var(--vn-ink-3)">' + esc(name + (mod ? ' (' + mod + ')' : '')) + '</text></svg>';
+      '<rect width="1600" height="900" fill="#20242e"/><rect x="0" y="620" width="1600" height="280" fill="#2c3240"/>' +
+      '<text x="40" y="60" font-family="system-ui, sans-serif" font-size="26" fill="#8a90a0">' + esc(name + (mod ? ' (' + mod + ')' : '')) + '</text></svg>';
+  }
+  function artCg(name) {
+    if (ART && typeof ART.cg === 'function') {
+      try { var s = ART.cg(name); if (s) return s; } catch (e) { console.warn('art.cg failed', e); }
+    }
+    return artBackground('void', null);
   }
   function artSprite(decl, face) {
     if (ART && typeof ART.sprite === 'function') {
@@ -138,15 +170,15 @@
     }
     var hue = decl && typeof decl.hue === 'number' ? decl.hue : 0;
     var label = (decl && decl.name) || '?';
-    return '<svg viewBox="0 0 500 900" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
-      '<rect x="110" y="330" width="280" height="570" rx="60" fill="hsl(' + hue + ' 18% 62%)" opacity="0.85"/>' +
-      '<circle cx="250" cy="230" r="110" fill="var(--vn-skin-2)" opacity="0.9"/>' +
-      '<text x="250" y="880" text-anchor="middle" font-family="system-ui, sans-serif" font-size="30" fill="var(--vn-ink)" opacity="0.6">' + esc(label) + (face && face !== 'neutral' ? ' (' + esc(face) + ')' : '') + '</text></svg>';
+    return '<svg viewBox="0 0 600 1000" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
+      '<rect x="170" y="330" width="260" height="670" rx="60" fill="hsl(' + hue + ' 18% 62%)" opacity="0.85"/>' +
+      '<circle cx="300" cy="220" r="100" fill="#e9c3a0" opacity="0.9"/>' +
+      '<text x="300" y="960" text-anchor="middle" font-family="system-ui, sans-serif" font-size="30" fill="#fff" opacity="0.7">' + esc(label) + (face && face !== 'neutral' ? ' (' + esc(face) + ')' : '') + '</text></svg>';
   }
   function artBoard(op) {
     if (ART) {
-      var fn = typeof ART[op.kind] === 'function' ? ART[op.kind] : (typeof ART.board === 'function' ? ART.board : null);
-      if (fn) { try { var s = fn(op); if (s) return s; } catch (e) { console.warn('art.' + op.kind + ' failed', e); } }
+      var fn = typeof ART[op.kind] === 'function' ? ART[op.kind] : null;
+      if (fn && op.kind !== 'scene') { try { var s = fn(op); if (s) return s; } catch (e) { console.warn('art.' + op.kind + ' failed', e); } }
     }
     return null;
   }
@@ -155,7 +187,7 @@
     if (art) return art;
     var h = '<div class="vn-board vn-board-' + op.kind + '">';
     if (op.kind === 'card') {
-      h += '<div class="vn-kicker">Card</div><h3>' + esc(op.title) + chipsHtml(op.refs) + '</h3><ul>';
+      h += '<h3>' + esc(op.title) + chipsHtml(op.refs) + '</h3><ul>';
       (op.cells || []).forEach(function (c) {
         h += '<li>' + (c.label != null ? '<b>' + esc(c.label) + '</b><span>' + esc(c.value) + '</span>' : esc(c.value)) + '</li>';
       });
@@ -236,9 +268,12 @@
   }
 
   function renderPicker(notice) {
+    setMode('picker');
+    clearStage();
+    document.title = 'Paper Theatre';
     var groups = [['Papers', []], ['Posts', []], ['Coming soon', []]];
     catalog.forEach(function (e) { for (var i = 0; i < groups.length; i++) if (groups[i][0] === groupOf(e)) groups[i][1].push(e); });
-    var h = '<div class="vn-bill"><h2>Paper Theatre</h2><p class="vn-lede">Every paper and post as a two-minute visual novel: a hook, a question, a bet, the result as the source printed it, a citation.</p>';
+    var h = '<div class="vn-bill"><h2>Paper Theatre</h2><p class="vn-lede">Every paper and post as a short visual novel: a hook, a question, a bet, the result as the source printed it, a citation.</p>';
     if (notice) h += '<p class="vn-notice">' + esc(notice) + '</p>';
     var any = false;
     groups.forEach(function (g) {
@@ -258,6 +293,8 @@
     pickerEl.innerHTML = h;
     pickerEl.classList.add('show');
     stage.setAttribute('aria-label', 'story picker');
+    if (selectEl) selectEl.value = '';
+    try { var u = new URL(location.href); u.searchParams.delete('story'); u.searchParams.delete('post'); u.searchParams.delete('at'); u.hash = ''; if (!params.get('src')) history.replaceState(null, '', u.toString()); } catch (e) { /* ignore */ }
     $$('button[data-story]', pickerEl).forEach(function (b) {
       b.addEventListener('click', function () { openStory(b.getAttribute('data-story')); });
     });
@@ -266,28 +303,50 @@
   /* ------------------------------------------------------------------ run state */
 
   var S = {
-    entry: null, program: null, run: null, stop: null, id: null,
-    typing: null, auto: false, skip: false, skipUnseen: false, skipTimer: 0, autoTimer: 0,
-    noSave: false, rendered: { left: null, center: null, right: null, bg: null },
-    textOnly: false, hasMath: false, lastFocus: null, holdLast: 0
+    entry: null, program: null, run: null, stop: null, id: null, mode: 'picker',
+    typing: null, auto: false, skip: false, skipUnseen: false, skipTimer: 0, autoTimer: 0, pauseTimer: 0, wait: null,
+    noSave: false, noSlots: false, textOnly: false, hasMath: false, lastFocus: null, holdLast: 0, hidden: false, screen: null,
+    rendered: { bg: null, cg: null, fb: false }, actors: {}, issues: [], seenAll: {}, transTimers: []
   };
 
   function setHue(h) { document.documentElement.style.setProperty('--vn-h', String(((h % 360) + 360) % 360)); }
+  function setMode(m) {
+    S.mode = m;
+    document.body.classList.toggle('playing', m !== 'picker');
+    stage.classList.toggle('in-play', m === 'play');
+    stage.classList.toggle('at-title', m === 'title');
+    if (m !== 'play') { setHidden(false); }
+  }
 
+  function endTransition() {
+    S.transTimers.forEach(clearTimeout); S.transTimers = [];
+    transEl.className = 'vn-trans'; transEl.innerHTML = '';
+  }
+  function clearWorld() {
+    endTransition();
+    bgEl.innerHTML = ''; cgEl.innerHTML = ''; cgEl.classList.remove('show'); world.classList.remove('has-cg');
+    spritesEl.innerHTML = ''; fxEl.innerHTML = '';
+    S.actors = {}; S.rendered = { bg: null, cg: null, fb: false };
+    stage.classList.remove('flashback', 'shake', 'pulse'); flashEl.classList.remove('go');
+    stage.removeAttribute('data-tone'); stage.removeAttribute('data-tod');
+    captionEl.classList.remove('show'); captionEl.textContent = '';
+  }
   function clearStage() {
     stopTyping();
-    clearTimeout(S.autoTimer); clearTimeout(S.skipTimer);
-    box.classList.remove('show', 'done', 'narr'); textEl.innerHTML = ''; nameEl.textContent = '';
+    clearTimeout(S.autoTimer); clearTimeout(S.skipTimer); clearTimeout(S.pauseTimer);
+    if (S.wait) { clearTimeout(S.wait.timer); S.wait = null; }
+    box.classList.remove('show', 'done', 'narr', 'thought'); textEl.innerHTML = ''; nameEl.textContent = '';
+    nvlEl.classList.remove('show', 'done'); nvlPage.innerHTML = '';
     menuEl.classList.remove('show'); menuEl.innerHTML = '';
-    sceneEl.classList.remove('show', 'in'); sceneEl.innerHTML = '';
-    cg.classList.remove('show'); cg.innerHTML = '';
+    sceneEl.className = 'vn-scene'; sceneEl.innerHTML = '';
+    boardsEl.classList.remove('show'); boardsEl.innerHTML = '';
     endEl.classList.remove('show'); endEl.innerHTML = '';
+    titleEl.classList.remove('show'); titleEl.innerHTML = '';
     pickerEl.classList.remove('show');
     transcriptEl.innerHTML = '';
+    closeScreen(true);
     hidePanel();
-    Object.keys(slots).forEach(function (k) { slots[k].innerHTML = ''; slots[k].className = 'vn-slot ' + k + ' empty'; });
-    S.rendered = { left: null, center: null, right: null, bg: null };
-    bgA.innerHTML = ''; bgB.innerHTML = '';
+    clearWorld();
   }
 
   function setUrl(entryId, label) {
@@ -361,7 +420,7 @@
 
   function hasReadOp(program) { return program.ops.some(function (o) { return o.kind === 'read'; }); }
 
-  // Load one story (manifest entry, or {src} / {post} descriptors) and start it.
+  // Load one story (manifest entry, or {src} / {post} descriptors) and open it.
   function loadStory(desc, opts) {
     opts = opts || {};
     if (!VN) { showEngineMissing(); return Promise.resolve(); }
@@ -401,20 +460,22 @@
           var issues = VN.lint(program);
           // auto-read posts are not authored scripts: only fatals are worth a panel
           if (desc.auto) issues = issues.filter(function (i) { return i.level === 'fatal'; });
-          renderIssues(issues, desc.src || (desc.file ? 'stories/' + desc.file : id));
+          renderIssues(issues, desc.src || (desc.file ? 'stories/' + desc.file : id), !!desc.src);
           var fatal = issues.filter(function (i) { return i.level === 'fatal'; });
           if (fatal.length) {
             S.entry = desc; S.program = program; S.run = null; S.id = id;
+            setMode('picker');
             clearStage();
             showPanel('The script has a fatal issue', '<p>' + esc(fatal[0].msg) + '</p>' + (fatal[0].hint ? '<p><code>' + esc(fatal[0].hint) + '</code></p>' : '') + '<p>Fix it and reload; the full list is under the stage.</p>');
             setStatus('');
             return;
           }
-          startRun(desc, program, id, opts);
+          openProgram(desc, program, id, opts);
         });
       });
     }).catch(function (err) {
       console.warn(err);
+      setMode('picker');
       clearStage();
       if (location.protocol === 'file:') showFileMessage();
       else showPanel('Could not load the story', '<p>' + esc(String(err && err.message || err)) + '</p><p>Check the path, or pick another story from the list.</p>');
@@ -430,11 +491,16 @@
     return loadStory(e, opts || {});
   }
 
-  /* ------------------------------------------------------------------ issues panel */
+  /* ------------------------------------------------------------------ issues */
 
-  function renderIssues(issues, file) {
-    if (!errorsEl) return;
+  function renderIssues(issues, file, loudInPlay) {
     issues = issues || [];
+    S.issues = issues;
+    if (btnIssues) {
+      btnIssues.hidden = !(issues.length && (loudInPlay || DRAFTS));
+      btnIssues.textContent = '⚠ ' + issues.length;
+    }
+    if (!errorsEl) return;
     if (!issues.length) { errorsEl.classList.remove('show'); errorsEl.open = false; errorsList.innerHTML = ''; errorsN.textContent = '0'; return; }
     var fatal = issues.filter(function (i) { return i.level === 'fatal'; }).length;
     errorsN.textContent = fatal ? fatal + ' fatal, ' + (issues.length - fatal) + ' warning' + (issues.length - fatal === 1 ? '' : 's') : issues.length + ' warning' + (issues.length === 1 ? '' : 's');
@@ -458,14 +524,21 @@
     showPanel('Serve the folder', '<p>Stories are fetched over HTTP, which browsers block from <code>file://</code>.</p><p>Run <code>npx serve</code> (or any static server) in the repository root and open <code>http://localhost:3000/misc/55-paper-theatre/</code>, or open this toy from the site.</p>');
   }
 
-  /* ------------------------------------------------------------------ starting a run */
+  /* ------------------------------------------------------------------ opening a story: title screen or straight in */
 
-  function startRun(entry, program, id, opts) {
-    S.entry = entry; S.program = program; S.id = id; S.noSave = false;
-    S.auto = false; S.skip = false; S.skipUnseen = false; badges();
-    btn.auto.classList.remove('on'); btn.auto.setAttribute('aria-pressed', 'false');
-    btn.skip.classList.remove('on'); btn.skip.setAttribute('aria-pressed', 'false');
-    clearStage();
+  function autosave() { return S.id ? readJSON('vn:' + S.id) : null; }
+  function seenList() {
+    var saved = autosave(), all = {};
+    if (saved && Array.isArray(saved.seen)) saved.seen.forEach(function (i) { all[i] = 1; });
+    if (S.run) Object.keys(S.run.seen).forEach(function (i) { all[i] = 1; });
+    S.seenAll = all;
+    return Object.keys(all).map(Number);
+  }
+  function newRun() { return VN.createRun(S.program, { seen: seenList() }); }
+
+  function openProgram(entry, program, id, opts) {
+    S.entry = entry; S.program = program; S.id = id; S.run = null; S.stop = null; S.noSave = false; S.noSlots = false;
+    setAuto(false); setSkip(false);
     setStatus('');
     setHue(program.meta.palette.hue);
     var title = program.meta.title || entry.title || id;
@@ -474,13 +547,9 @@
     S.hasMath = program.ops.some(function (o) { return o.text && /\$[^$]+\$|\\\(|\\\[/.test(o.text); });
     if (S.hasMath) loadKatex();
 
-    var saved = readJSON('vn:' + id);
-    var seen = saved && Array.isArray(saved.seen) ? saved.seen : [];
-    S.run = VN.createRun(program, { seen: seen });
-    var stop, instant = THUMB || REDUCED;
-
-    if (!THUMB && !(document.activeElement && menuEl.contains(document.activeElement))) stage.focus({ preventScroll: true });
+    var stop;
     if (THUMB) {
+      beginPlay();
       stop = S.run.advance();
       var guard = 0;
       while (stop && !stop.done && guard++ < 5000) {
@@ -493,105 +562,303 @@
       return;
     }
     if (AUTOPLAY != null) {
+      beginPlay();
       S.noSave = true;
-      stop = gotoAt(AUTOPLAY === 'end' ? '1000000' : String(parseInt(AUTOPLAY, 10) || 1));
+      var an = AUTOPLAY === 'end' ? 1000000 : (parseInt(AUTOPLAY, 10) || 1), frozen = null;
+      if (HOOK_TRANS && an > 1 && AUTOPLAY !== 'end') {
+        // test hook: hold the named transition half-way between stop N-1 and stop N
+        stop = gotoAt(String(an - 1));
+        present(stop, { instant: true });
+        frozen = world.cloneNode(true);
+        stop = stop.op.kind === 'menu' ? S.run.choose(Math.min(PICK, stop.options.length - 1)) : S.run.advance();
+      } else stop = gotoAt(String(an));
       present(stop, { instant: true });
+      if (frozen) {
+        transEl.innerHTML = ''; transEl.appendChild(frozen);
+        transEl.className = 'vn-trans on t-' + HOOK_TRANS;
+        transEl.style.setProperty('--ms', '1000ms');
+        if (HOOK_TRANS === 'fade' || HOOK_TRANS === 'white') { var cv = document.createElement('div'); cv.className = 'vn-cover'; cv.style.transition = 'none'; cv.style.opacity = '0.6'; transEl.appendChild(cv); }
+        else { transEl.style.animationDelay = '-500ms'; transEl.style.animationPlayState = 'paused'; }
+      }
+      if (HOOK_SCREEN) {
+        if (HOOK_SCREEN === 'save' || HOOK_SCREEN === 'load') { writeSlot('1'); writeSlot('q'); }
+        if (HOOK_SCREEN === 'title') showTitle(); else openScreen(HOOK_SCREEN);
+      }
       return;
     }
     if (opts.at != null) {
-      S.noSave = true;
+      beginPlay();
+      S.noSave = true; S.noSlots = !/^\d+$/.test(String(opts.at));
       stop = gotoAt(opts.at);
-      present(stop, { instant: instant });
-      setStatus('Deep link: progress is not saved from here');
+      present(stop, { instant: REDUCED });
+      toast('Deep link: progress is not saved from here', 3200);
       return;
     }
-    if (saved && saved.choiceLog && !opts.fresh) {
-      if (saved.hash === program.hash) {
-        stop = S.run.replay(saved.choiceLog, saved.stopIndex);
-        present(stop, { instant: true, resumed: true });
-        if (stop && !stop.done && saved.stopIndex > 1) toast('Resumed where you left off. Press R to restart.');
-        return;
-      }
-      stop = S.run.replay(saved.choiceLog, saved.stopIndex);
-      if (S.run.state.choiceLog.length < saved.choiceLog.length || (stop && stop.op.kind === 'error')) {
-        S.run = VN.createRun(program, { seen: seen });
-        lsDel('vn:' + id);
-        stop = S.run.advance();
-        present(stop, { instant: instant });
-        toast('The script changed since your last visit and your choices no longer match; starting over.', 4200);
-        return;
-      }
-      present(stop, { instant: true, resumed: true });
-      toast('The script changed since your last visit; resumed by your choices.', 3600);
-      return;
+    showTitle();
+    if (HOOK_CLICK > 0) {
+      // test hook: Start, then N real (animated) advances 350 ms apart, taking the first option at menus
+      startFresh();
+      var left = HOOK_CLICK, iv = setInterval(function () {
+        if (left-- <= 0 || !S.stop || S.stop.op.kind === 'end') { clearInterval(iv); return; }
+        if (S.stop.op.kind === 'menu') choose(Math.min(PICK, S.stop.options.length - 1)); else advance();
+      }, 350);
     }
-    stop = S.run.advance();
-    present(stop, { instant: instant });
+  }
+
+  function beginPlay() {
+    setMode('play');
+    clearStage();
+    S.run = newRun();
+    S.stop = null;
+    S.noSave = false; S.noSlots = false;
+    if (!THUMB) stage.focus({ preventScroll: true });
   }
 
   function gotoAt(at) {
     var n = parseInt(at, 10);
     if (String(n) === String(at) && n > 0) {
       var stop = S.run.advance(), guard = 0;
-      while (stop && !stop.done && S.run.state.stops < n && guard++ < 10000) stop = stop.op.kind === 'menu' ? S.run.choose(0) : S.run.advance();
+      while (stop && !stop.done && S.run.state.stops < n && guard++ < 10000) stop = stop.op.kind === 'menu' ? S.run.choose(Math.min(PICK, stop.options.length - 1)) : S.run.advance();
       return stop;
     }
     if (S.program.labels[at] == null) { toast('No label “' + at + '” in this story; starting from the top.'); return S.run.advance(); }
     return S.run.jumpTo(at);
   }
 
-  function restart(confirmFirst) {
-    if (!S.program || !S.run) return;
-    if (confirmFirst && S.run.state.stops > 1 && !window.confirm('Start this story over?')) return;
+  function startFresh() {
     lsDel('vn:' + S.id);
-    var seen = Object.keys(S.run.seen).map(Number);
-    S.run = VN.createRun(S.program, { seen: seen });
-    S.noSave = false;
-    clearStage();
-    setStatus('');
+    beginPlay();
     present(S.run.advance(), { instant: REDUCED });
-    stage.focus({ preventScroll: true });
+  }
+  function continueSaved() {
+    var saved = autosave();
+    if (!saved || !saved.choiceLog) { startFresh(); return; }
+    beginPlay();
+    var stop = S.run.replay(saved.choiceLog, saved.stopIndex);
+    if (saved.hash !== S.program.hash && (S.run.state.choiceLog.length < saved.choiceLog.length || (stop && stop.op.kind === 'error'))) {
+      lsDel('vn:' + S.id);
+      S.run = newRun();
+      present(S.run.advance(), { instant: REDUCED });
+      toast('The script changed since your last visit and your choices no longer match; starting over.', 4200);
+      return;
+    }
+    present(stop, { instant: true, resumed: true });
+    if (saved.hash !== S.program.hash) toast('The script changed since your last visit; resumed by your choices.', 3600);
+  }
+  function restart(confirmFirst) {
+    if (!S.program) return;
+    if (confirmFirst && S.run && S.run.state.stops > 1 && !window.confirm('Start this story over?')) return;
+    startFresh();
+  }
+  // Jump to a chapter by replaying from the top (saved choices where they exist, the first option otherwise),
+  // so the place can be saved like any other; fall back to a deep link when no such route reaches it.
+  function jumpChapter(ch) {
+    var saved = autosave(), log = (saved && saved.choiceLog) || [], used = {};
+    beginPlay();
+    var run = S.run, stop = run.advance(), guard = 0;
+    while (stop && !stop.done && stop.index !== ch.index && guard++ < 20000) {
+      if (stop.op.kind === 'menu') {
+        var vi = 0;
+        for (var k = 0; k < log.length; k++) if (!used[k] && log[k].menuKey && log[k].menuKey === stop.op.key) {
+          used[k] = 1;
+          for (var v = 0; v < stop.options.length; v++) if (stop.options[v].index === log[k].optionIndex) vi = v;
+          break;
+        }
+        stop = run.choose(vi);
+      } else if (stop.op.kind === 'error') break;
+      else stop = run.advance();
+    }
+    if (!stop || stop.index !== ch.index) {
+      S.run = newRun();
+      stop = S.run.jumpTo(ch.index);
+      S.noSave = true; S.noSlots = true;
+      toast('Jumped straight to the chapter: progress is not saved from here', 3200);
+    }
+    present(stop, { instant: REDUCED });
   }
 
-  /* ------------------------------------------------------------------ presenting a stop */
+  /* ------------------------------------------------------------------ title screen */
+
+  function shortCite(m, e) {
+    if (m.kind === 'blog') return 'A blog post' + ((m.date || (e && e.post && e.post.date)) ? ' · ' + (m.date || e.post.date) : '');
+    var c = m.cite || '';
+    var ax = /(arXiv:\s*[\d.]*\d)(?:\s*\[[^\]]+\])?\.?\s*(.*)$/.exec(c);
+    var year = (/\((\d{4})\)/.exec(c) || [])[1];
+    if (ax) return (ax[2] ? ax[2].replace(/\.$/, '') + ' · ' : '') + ax[1] + (year ? ' · ' + year : '');
+    var parts = c.split(/\.\s+/).filter(Boolean);
+    return parts.length > 1 ? parts.slice(-1)[0].replace(/\.$/, '') + (year ? ' · ' + year : '') : (m.source && m.sourceKind === 'text' ? m.source : 'A paper');
+  }
+  var TITLE_FX = { sakura: 'petals', garden: 'petals', night: 'fireflies', station: 'fireflies', sea: 'dust', rooftop: 'dust' };
+  function showTitle() {
+    var p = S.program, m = p.meta, e = S.entry || {};
+    stopTyping(); setAuto(false); setSkip(false);
+    setMode('title');
+    clearStage();
+    var first = null;
+    for (var i = 0; i < p.ops.length; i++) if (p.ops[i].kind === 'bg') { first = p.ops[i]; break; }
+    var fx = {}; fx[TITLE_FX[first ? first.name : ''] || 'dust'] = true;
+    syncWorld({ bg: first ? { name: first.name, mod: first.mod } : { name: 'void', mod: null }, cg: null, slots: {}, faces: {}, dist: {}, fx: fx, tone: 'none', flashback: null, oneshot: [], change: null }, null, true);
+    var saved = autosave(), canContinue = !!(saved && saved.choiceLog && saved.stopIndex > 1);
+    seenList();
+    var chapters = p.chapters || [], seenCh = chapters.filter(function (c) { return S.seenAll[c.index] || e.src; });
+    var h = '<div class="ts-inner"><p class="ts-kicker">Paper Theatre &nbsp;·&nbsp; 紙芝居</p><h2 class="ts-title">' + esc(m.title || e.title || '') + '</h2><div class="ts-rule"></div>' +
+      '<p class="ts-sub">' + esc(shortCite(m, e)) + (m.authors ? '<br>' + esc(m.authors.replace(/\s*\(co-first\)/, '')) : '') + '</p></div>';
+    h += '<ul class="ts-menu" role="menu" aria-label="title menu">' +
+      '<li><button type="button" data-t="start">Start</button></li>' +
+      (canContinue ? '<li><button type="button" data-t="continue">Continue</button></li>' : '') +
+      (chapters.length ? '<li><button type="button" data-t="chapters"' + (seenCh.length ? '' : ' disabled title="chapters you have reached appear here"') + '>Chapters</button></li>' : '') +
+      '<li><button type="button" data-t="load">Load</button></li>' +
+      '<li><button type="button" data-t="log"' + (canContinue ? '' : ' disabled') + '>Log</button></li>' +
+      '<li><button type="button" data-t="config">Config</button></li>' +
+      '<li><button type="button" data-t="back">Back to stories</button></li></ul>';
+    h += '<div class="ts-foot">' + (m.status === 'draft' ? 'draft · ' : m.status === 'embargo' ? 'coming soon · ' : '') + 'dialogue is dramatized</div>';
+    titleEl.innerHTML = h;
+    titleEl.classList.add('show');
+    setUrl(S.entry && !S.entry.src ? S.id : null, null);
+    $$('button[data-t]', titleEl).forEach(function (b) {
+      b.addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        var t = b.getAttribute('data-t');
+        if (t === 'start') { if (canContinue && !window.confirm('Start from the beginning? Your place is kept in the save slots, not the autosave.')) return; startFresh(); }
+        else if (t === 'continue') continueSaved();
+        else if (t === 'chapters') openScreen('chapters');
+        else if (t === 'load') openScreen('load');
+        else if (t === 'log') { continueSaved(); openScreen('log'); }
+        else if (t === 'config') openScreen('config');
+        else if (t === 'back') renderPicker();
+      });
+    });
+    announce((m.title || '') + '. Title menu.');
+    var f = $('button[data-t="continue"]', titleEl) || $('button[data-t="start"]', titleEl);
+    if (f) f.focus({ preventScroll: true });
+  }
+
+  /* ------------------------------------------------------------------ the world: background, CG, cast, particles, grade */
 
   function castOf(key) { return (S.program && S.program.cast && S.program.cast[key]) || null; }
   function displayName(key, who) { var c = castOf(key); return c ? c.name : (who || key); }
+  function hueOf(key) { var c = castOf(key); return c ? c.hue : 210; }
 
-  function syncVisuals(state, op) {
-    // background crossfade
-    var bg = state.bg || { name: 'void', mod: null };
-    var bgKey = bg.name + '|' + (bg.mod || '');
-    if (S.rendered.bg !== bgKey) {
-      var incoming = bgA.classList.contains('out') ? bgA : (S.rendered.bg == null ? bgA : bgB);
-      var outgoing = incoming === bgA ? bgB : bgA;
-      incoming.innerHTML = artBackground(bg.name, bg.mod);
-      incoming.classList.remove('out');
-      if (S.rendered.bg != null) outgoing.classList.add('out'); else { outgoing.classList.add('out'); outgoing.innerHTML = ''; }
-      S.rendered.bg = bgKey;
-    }
-    // sprites
-    var speakerKey = op && op.kind === 'say' ? op.key : null;
-    Object.keys(slots).forEach(function (slot) {
-      var key = state.slots[slot];
-      var el = slots[slot];
-      if (!key) {
-        if (S.rendered[slot]) { el.className = 'vn-slot ' + slot + ' empty'; S.rendered[slot] = null; if (REDUCED) el.innerHTML = ''; }
-        return;
-      }
-      var face = (speakerKey === key && op.face) ? op.face : (state.faces[key] || 'neutral');
-      var sig = key + '|' + face;
-      if (S.rendered[slot] !== sig) {
-        var decl = castOf(key) || { id: key, key: key, name: key, hue: hash32(key) % 360, skin: 3, hair: 'short' };
-        var sameChar = S.rendered[slot] && S.rendered[slot].split('|')[0] === key;
-        el.innerHTML = artSprite(decl, face);
-        S.rendered[slot] = sig;
-        if (sameChar && !REDUCED) { el.classList.remove('swap'); void el.offsetWidth; el.classList.add('swap'); }
-      }
-      var cls = 'vn-slot ' + slot;
-      if (speakerKey) cls += speakerKey === key ? ' speaking' : ' dim';
-      el.className = cls;
+  function restartAnim(el, cls) { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
+  function flash() { restartAnim(flashEl, 'go'); }
+
+  function syncActors(state, op, instant) {
+    var speaker = op && op.kind === 'say' ? op.key : null, want = {}, onStage = false;
+    SLOT_NAMES.forEach(function (slot) { var k = state.slots[slot]; if (k) { want[k] = slot; if (k === speaker) onStage = true; } });
+    Object.keys(S.actors).forEach(function (k) {
+      if (want[k]) return;
+      var el = S.actors[k].el; delete S.actors[k];
+      if (instant) el.remove();
+      else { el.classList.add('exit'); setTimeout(function () { el.remove(); }, 520); }
     });
+    Object.keys(want).forEach(function (k) {
+      var face = (speaker === k && op.face) ? op.face : (state.faces[k] || 'neutral');
+      var a = S.actors[k], fresh = false;
+      if (!a) {
+        var decl = castOf(k) || { id: k, key: k, name: k, hue: hash32(k) % 360, skin: 3, hair: 'short' };
+        var el = document.createElement('div');
+        el.setAttribute('data-key', k);
+        el.innerHTML = artSprite(decl, face);
+        var svg = el.firstElementChild;
+        el.setAttribute('data-kind', (svg && svg.getAttribute('data-kind')) || 'person');
+        a = S.actors[k] = { el: el, face: face };
+        fresh = !instant;
+        spritesEl.appendChild(el);
+      } else if (a.face !== face) {
+        var groups = $$('.vn-face', a.el);
+        if (groups.length) groups.forEach(function (g) { g.classList.toggle('is-on', g.getAttribute('data-face') === face); });
+        else a.el.innerHTML = artSprite(castOf(k), face);
+        a.face = face;
+      }
+      var cls = 'vn-actor pos-' + want[k] + (state.dist && state.dist[k] ? ' ' + state.dist[k] : '');
+      if (speaker && onStage) cls += speaker === k ? ' speaking' : ' dim';
+      if (fresh) {
+        a.el.className = cls + ' enter';
+        void a.el.offsetWidth;
+        requestAnimationFrame(function () { a.el.classList.remove('enter'); });
+        setTimeout(function () { a.el.classList.remove('enter'); }, 60);   // headless browsers may not run the frame
+      } else a.el.className = cls;
+    });
+  }
+
+  function syncFx(state) {
+    var want = prefs.effects ? Object.keys(state.fx || {}) : [];
+    $$('.vn-fx', fxEl).forEach(function (el) { if (want.indexOf(el.getAttribute('data-fx')) < 0) el.remove(); });
+    want.forEach(function (name) {
+      if ($('.vn-fx[data-fx="' + name + '"]', fxEl)) return;
+      if (ART && ART.fx) fxEl.insertAdjacentHTML('beforeend', ART.fx(name));
+    });
+  }
+
+  function runTransition(tr) {
+    var ms = clamp(tr.ms || 600, 60, 10000);
+    transEl.style.setProperty('--ms', ms + 'ms');
+    if (tr.name === 'fade' || tr.name === 'white') {
+      var cover = document.createElement('div');
+      cover.className = 'vn-cover';
+      transEl.classList.add('t-' + tr.name);
+      transEl.appendChild(cover);
+      void cover.offsetWidth;
+      cover.classList.add('in');
+      S.transTimers.push(setTimeout(function () {
+        var w = $('.vn-world', transEl); if (w) w.remove();
+        transEl.classList.add('out');
+        S.transTimers.push(setTimeout(endTransition, ms / 2 + 40));
+      }, ms / 2));
+    } else {
+      transEl.classList.add('t-' + tr.name);
+      S.transTimers.push(setTimeout(endTransition, ms + 40));
+    }
+    return ms;
+  }
+
+  // Bring the painted world to `state`. Returns the milliseconds a transition will take (0 for a cut).
+  function syncWorld(state, op, instant) {
+    var bg = state.bg || { name: 'void', mod: null };
+    var bgKey = bg.name + '|' + (bg.mod || ''), cgKey = state.cg ? state.cg.name : '', fb = !!state.flashback;
+    var first = S.rendered.bg === null;
+    var bgChanged = S.rendered.bg !== bgKey, cgChanged = S.rendered.cg !== cgKey && !(first && !cgKey), fbChanged = S.rendered.fb !== fb;
+    var tr = null, wait = 0;
+    endTransition();
+    if (!instant && prefs.effects && !first && (bgChanged || cgChanged)) {
+      var ch = state.change || {};
+      tr = (cgChanged && ch.cg) || (bgChanged && ch.bg) || ch.cg || ch.bg || DEFAULT_TR;
+      if (tr.name === 'cut') tr = null;
+    }
+    if (tr) {
+      // hold the old picture on the transition layer; the new one is drawn underneath
+      var snap = world.cloneNode(true);
+      transEl.innerHTML = ''; transEl.appendChild(snap); transEl.className = 'vn-trans on';
+    }
+    if (bgChanged) { bgEl.innerHTML = artBackground(bg.name, bg.mod); S.rendered.bg = bgKey; }
+    if (S.rendered.cg !== cgKey) {
+      cgEl.innerHTML = cgKey ? artCg(cgKey) : '';
+      cgEl.classList.toggle('show', !!cgKey);
+      world.classList.toggle('has-cg', !!cgKey);
+      S.rendered.cg = cgKey;
+    }
+    var tod = 'day';
+    if (cgKey) { var cs = cgEl.firstElementChild; tod = (cs && cs.getAttribute('data-tod')) || 'night'; }
+    else if (ART && ART.timeOf) tod = ART.timeOf(bg.name, bg.mod);
+    stage.setAttribute('data-tod', tod);
+    stage.setAttribute('data-tone', state.tone || 'none');
+    if (fbChanged) {
+      stage.classList.toggle('flashback', fb);
+      if (!instant && prefs.effects && !first) flash();
+      S.rendered.fb = fb;
+    }
+    var cap = fb && state.flashback.caption ? state.flashback.caption : (state.cg && state.cg.caption) || '';
+    captionEl.textContent = cap;
+    captionEl.classList.toggle('show', !!cap);
+    captionEl.classList.toggle('cg', !(fb && state.flashback.caption));
+    syncFx(state);
+    syncActors(state, op, instant || !!tr);
+    if (tr) wait = runTransition(tr);
+    if (!instant && prefs.effects) (state.oneshot || []).forEach(function (name) {
+      if (name === 'flash') flash();
+      else if (name === 'shake' || name === 'pulse') restartAnim(stage, name);
+    });
+    return wait;
   }
 
   function labelAt(index) {
@@ -600,38 +867,54 @@
     return best;
   }
 
+  /* ------------------------------------------------------------------ presenting a stop */
+
   function present(stop, o) {
     o = o || {};
     if (!stop) { toast('Nothing further back.'); return; }
     S.stop = stop;
     var op = stop.op, state = stop.state;
     stopTyping();
-    clearTimeout(S.autoTimer);
+    clearTimeout(S.autoTimer); clearTimeout(S.pauseTimer);
+    if (S.wait) { clearTimeout(S.wait.timer); S.wait = null; }
     hidePanel();
-    menuEl.classList.remove('show'); menuEl.innerHTML = ''; menuEl.style.bottom = '';
-    cg.classList.remove('show'); cg.innerHTML = '';
-    sceneEl.classList.remove('show', 'in'); sceneEl.innerHTML = '';
+    menuEl.classList.remove('show'); menuEl.innerHTML = '';
+    boardsEl.classList.remove('show'); boardsEl.innerHTML = '';
+    sceneEl.className = 'vn-scene'; sceneEl.innerHTML = '';
     endEl.classList.remove('show'); endEl.innerHTML = '';
-    pickerEl.classList.remove('show');
-    box.classList.remove('done');
-    syncVisuals(state, op);
+    titleEl.classList.remove('show'); pickerEl.classList.remove('show');
+    box.classList.remove('done'); nvlEl.classList.remove('done');
     var instant = !!o.instant || REDUCED || S.skip || S.textOnly;
+    var wait = syncWorld(state, op, instant);
+    var nvl = state.mode === 'nvl';
+
+    function later(fn) {
+      if (!wait) { fn(); return; }
+      box.classList.remove('show'); nvlEl.classList.remove('show');
+      S.wait = { fn: fn, timer: setTimeout(function () { S.wait = null; fn(); }, wait) };
+    }
 
     switch (op.kind) {
       case 'say':
       case 'narrate':
-        showLine(op, state, instant);
+        later(function () { if (nvl) showNvl(op, state, instant); else showLine(op, state, instant); });
         break;
       case 'read':
         showLine({ kind: 'narrate', text: 'The post could not be loaded here; read it on the site.', refs: [] }, state, instant);
         break;
       case 'menu':
-        if (!textEl.textContent) showLastLine(state);
-        box.classList.add('done');
+        if (nvl) showNvl(null, state, true); else { nvlEl.classList.remove('show'); if (!textEl.textContent || !box.classList.contains('show')) showLastLine(state); box.classList.add('done'); }
         showMenu(stop);
         break;
       case 'scene':
+      case 'chapter':
         showScene(op, instant);
+        break;
+      case 'pause':
+        box.classList.remove('show'); nvlEl.classList.remove('show');
+        if (instant) S.pauseTimer = setTimeout(function () { if (S.stop === stop && !S.skip) advance({ instant: true }); }, 0);
+        else S.pauseTimer = setTimeout(function () { if (S.stop === stop) advance(); }, Math.max(wait, 0) + op.ms);
+        if (S.skip) scheduleSkip();
         break;
       case 'card':
       case 'chart':
@@ -640,6 +923,7 @@
         showBoard(op, instant);
         break;
       case 'end':
+        box.classList.remove('show'); nvlEl.classList.remove('show');
         showEnd();
         break;
       case 'error':
@@ -647,21 +931,22 @@
         announce('Runtime error: ' + op.msg);
         break;
     }
+    stage.classList.toggle('no-window', !box.classList.contains('show') || S.textOnly);
     if (S.textOnly) renderTranscript();
     if (!THUMB) setUrl(S.entry && !S.entry.src ? S.id : null, labelAt(stop.index));
     save();
-    btn.back.disabled = state.stops <= 1 && !o.back;
+    var b = qbtn('back'); if (b) b.disabled = state.stops <= 1 && !o.back;
     if (op.kind === 'menu' || op.kind === 'end' || op.kind === 'error') { if (S.skip) setSkip(false); }
   }
 
   function save() {
-    if (!S.run || S.noSave || THUMB || !S.id) return;
+    if (!S.run || S.noSave || THUMB || !S.id || S.mode !== 'play') return;
     var snap = S.run.snapshot();
     snap.ts = Date.now();
     lsSet('vn:' + S.id, JSON.stringify(snap));
   }
 
-  /* ------------------------------------------------------------------ the text box + typewriter */
+  /* ------------------------------------------------------------------ text: typewriter shared by the window and the NVL page */
 
   var segmenter = null;
   try { if (window.Intl && Intl.Segmenter) segmenter = new Intl.Segmenter(undefined, { granularity: 'grapheme' }); } catch (e) { segmenter = null; }
@@ -686,47 +971,47 @@
   function plainText(text) {
     return (VN && VN.markup ? VN.markup(text) : [{ type: 'text', text: text }]).map(function (t) { return t.text; }).join('');
   }
+  function isThought(op, text) { return !!(op.thought || (VN && VN.isThought && VN.isThought(text))); }
 
-  function showLine(op, state, instant) {
-    var who = op.kind === 'say' ? displayName(op.key, op.who) : '';
-    var text = VN && VN.interpolate ? VN.interpolate(op.text, state.vars, S.program.cast) : op.text;
+  // Fill `el` with the whole line (markup, math placeholders, chips) and return what the typewriter needs.
+  function buildLine(el, text, refs) {
     var tokens = splitMath(VN && VN.markup ? VN.markup(text) : [{ type: 'text', text: text }]);
-    nameEl.textContent = who;
-    box.classList.toggle('narr', op.kind !== 'say');
-    box.classList.add('show');
-    textEl.innerHTML = '';
-    var units = [];      // [{node, g}]
-    var mathEls = [];
+    var units = [], mathEls = [];
     tokens.forEach(function (t) {
-      var el;
-      if (t.type === 'em') el = document.createElement('em');
-      else if (t.type === 'code') el = document.createElement('code');
-      else if (t.type === 'math') { el = document.createElement('span'); el.className = 'vn-math'; el.setAttribute('data-tex', t.text); mathEls.push(el); }
-      else el = document.createElement('span');
-      var node = document.createTextNode('');
+      var node;
+      if (t.type === 'em') node = document.createElement('em');
+      else if (t.type === 'code') node = document.createElement('code');
+      else if (t.type === 'math') { node = document.createElement('span'); node.className = 'vn-math'; node.setAttribute('data-tex', t.text); mathEls.push(node); }
+      else node = document.createElement('span');
+      var tn = document.createTextNode('');
+      node.appendChild(tn);
       el.appendChild(node);
-      textEl.appendChild(el);
-      var gs = graphemes(t.type === 'math' ? (t.display ? '$$' + t.text + '$$' : '$' + t.text + '$') : t.text);
-      gs.forEach(function (g) { units.push({ node: node, g: g }); });
+      var full = t.type === 'math' ? (t.display ? '$$' + t.text + '$$' : '$' + t.text + '$') : t.text;
+      tn.data = full;
+      graphemes(full).forEach(function (g) { units.push({ node: tn, g: g }); });
     });
     var chips = document.createElement('span');
-    chips.innerHTML = chipsHtml(op.refs);
-    chips.style.visibility = 'hidden';
-    textEl.appendChild(chips);
-    var announceText = (who ? who + ': ' : '') + plainText(text) + ((op.refs && op.refs.length) ? ' (' + op.refs.map(function (r) { return VN && VN.describeRef ? VN.describeRef(r) : r; }).join('; ') + ')' : '');
+    chips.innerHTML = chipsHtml(refs);
+    el.appendChild(chips);
+    return { units: units, mathEls: mathEls, chips: chips };
+  }
 
+  function typeLine(container, line, announceText, instant) {
+    var units = line.units;
     function finish() {
       units.forEach(function (u) { if (!u.done) { u.node.data += u.g; u.done = true; } });
-      chips.style.visibility = '';
-      box.classList.add('done');
+      line.chips.style.visibility = '';
+      container.classList.add('done');
       S.typing = null;
-      renderMath(mathEls);
+      renderMath(line.mathEls);
       announce(announceText);
       scheduleAuto(units.length);
       if (S.skip) scheduleSkip();
     }
-    if (instant || !units.length) { finish(); return; }
-
+    if (instant || !units.length) { units.forEach(function (u) { u.done = true; }); finish(); return; }
+    var seenNodes = [];
+    units.forEach(function (u) { if (seenNodes.indexOf(u.node) < 0) { seenNodes.push(u.node); u.node.data = ''; } });
+    line.chips.style.visibility = 'hidden';
     var i = 0, acc = 0, last = 0, raf = 0;
     var base = 1000 / clamp(prefs.cps, 15, 80);
     function frame(ts) {
@@ -746,17 +1031,65 @@
     raf = requestAnimationFrame(frame);
     S.typing = { complete: finish, cancel: function () { cancelAnimationFrame(raf); S.typing = null; } };
   }
+  function announceOf(who, text, refs) {
+    return (who ? who + ': ' : '') + plainText(text) + ((refs && refs.length) ? ' (' + refs.map(function (r) { return VN && VN.describeRef ? VN.describeRef(r) : r; }).join('; ') + ')' : '');
+  }
+
+  // ADV: the glass window at the bottom with its name plate
+  function showLine(op, state, instant) {
+    var who = op.kind === 'say' ? displayName(op.key, op.who) : '';
+    var text = VN && VN.interpolate ? VN.interpolate(op.text, state.vars, S.program.cast) : op.text;
+    nvlEl.classList.remove('show');
+    nameEl.textContent = who;
+    box.style.setProperty('--who-h', String(op.kind === 'say' ? hueOf(op.key) : 210));
+    box.classList.toggle('narr', op.kind !== 'say');
+    box.classList.toggle('thought', isThought(op, text));
+    box.classList.remove('done');
+    box.classList.add('show');
+    stage.classList.remove('no-window');
+    textEl.innerHTML = '';
+    typeLine(box, buildLine(textEl, text, op.refs), announceOf(who, text, op.refs), instant);
+  }
   // A menu reached by resume, rewind or ?thumb has no line on screen yet: show the last one.
   function showLastLine(state) {
     var h = state.history || [];
     for (var i = h.length - 1; i >= 0; i--) {
       if (h[i].kind === 'say' || h[i].kind === 'narrate') {
         var key = h[i].who ? h[i].who.toLowerCase() : null;
-        showLine({ kind: h[i].kind, key: key, who: h[i].who, text: h[i].text, refs: h[i].refs }, state, true);
+        showLine({ kind: h[i].kind, key: key, who: h[i].who, text: h[i].text, refs: h[i].refs, thought: h[i].thought }, state, true);
         return;
       }
       if (h[i].kind !== 'choice') return;
     }
+  }
+  // NVL: lines since the last @page accumulate on a full-stage page; the newest one types itself
+  function showNvl(op, state, instant) {
+    var h = state.history || [], rows = [];
+    for (var i = state.pageStart || 0; i < h.length; i++) if (h[i].kind === 'say' || h[i].kind === 'narrate') rows.push(h[i]);
+    box.classList.remove('show');
+    nvlEl.classList.remove('done');
+    nvlEl.classList.add('show');
+    nvlPage.innerHTML = '';
+    var line = null, who = '', text = '';
+    rows.forEach(function (r, idx) {
+      var cur = !!op && idx === rows.length - 1;
+      var t = VN.interpolate(r.text, state.vars, S.program.cast), p = document.createElement('p');
+      p.className = (cur ? 'cur' : 'old') + ((r.thought || VN.isThought(t)) ? ' thought' : '');
+      if (r.kind === 'say') {
+        var key = r.who ? r.who.toLowerCase() : '', w = document.createElement('span');
+        w.className = 'who'; w.textContent = displayName(key, r.who); w.style.setProperty('--who-h', String(hueOf(key)));
+        p.appendChild(w);
+        if (cur) who = w.textContent;
+      }
+      var built = buildLine(p, t, r.refs);
+      if (cur) { line = built; text = t; }
+      nvlPage.appendChild(p);
+    });
+    // a page that has run out of room lets its oldest lines go
+    var guard = 0;
+    while (nvlPage.scrollHeight > nvlPage.clientHeight + 2 && nvlPage.children.length > 1 && guard++ < 60) nvlPage.removeChild(nvlPage.firstChild);
+    if (line) typeLine(nvlEl, line, announceOf(who, text, op.refs), instant);
+    else nvlEl.classList.add('done');
   }
   function stopTyping() { if (S.typing) { S.typing.cancel(); S.typing = null; } }
   function completeLine() { if (S.typing) { var t = S.typing; S.typing = null; t.complete(); return true; } return false; }
@@ -784,7 +1117,7 @@
     });
   }
 
-  /* ------------------------------------------------------------------ menus, scenes, boards, end card */
+  /* ------------------------------------------------------------------ choices, title boards, inserts, ending */
 
   function showMenu(stop) {
     var opts = stop.options || [];
@@ -794,13 +1127,10 @@
       h += '<button type="button" data-i="' + i + '"><span class="vn-key" aria-hidden="true">' + (i + 1) + '</span><span>' + esc(text) + '</span></button>';
     });
     menuEl.innerHTML = h;
-    // sit just above the text box, whatever its height
-    var sh = stage.clientHeight || 1, bh = box.classList.contains('show') && !S.textOnly ? box.offsetHeight : 0;
-    menuEl.style.bottom = bh ? Math.min(62, (bh / sh) * 100 + 4).toFixed(1) + '%' : '';
     menuEl.classList.add('show');
     $$('button', menuEl).forEach(function (b) { b.addEventListener('click', function (e) { e.stopPropagation(); choose(parseInt(b.getAttribute('data-i'), 10)); }); });
     announce('Choose: ' + opts.map(function (o, i) { return (i + 1) + '. ' + o.text; }).join(' '));
-    if (!THUMB) { var first = $('button', menuEl); if (first) first.focus({ preventScroll: true }); }
+    if (!THUMB && !S.screen) { var first = $('button', menuEl); if (first) first.focus({ preventScroll: true }); }
   }
   function choose(i) {
     if (!S.stop || S.stop.op.kind !== 'menu') return;
@@ -810,20 +1140,23 @@
   }
 
   function showScene(op, instant) {
-    box.classList.remove('show');
-    sceneEl.innerHTML = '<div class="vn-title"><small>Scene</small>' + esc(op.title) + '</div>';
-    sceneEl.classList.add('show');
+    box.classList.remove('show'); nvlEl.classList.remove('show');
+    var chapter = op.kind === 'chapter';
+    sceneEl.innerHTML = chapter
+      ? '<div class="vn-title"><small>Chapter</small><span class="num">' + esc(op.n) + '</span><span class="rule"></span>' + esc(op.title) + '</div>'
+      : '<div class="vn-title">' + esc(op.title) + '<span class="rule"></span></div>';
+    sceneEl.className = 'vn-scene show ' + (chapter ? 'chapter' : 'scene');
     if (instant) sceneEl.classList.add('in');
-    else requestAnimationFrame(function () { requestAnimationFrame(function () { sceneEl.classList.add('in'); }); });
-    announce('Scene: ' + op.title);
-    scheduleAuto(op.title.length + 20);
+    else { void sceneEl.offsetWidth; sceneEl.classList.add('in'); }
+    announce((chapter ? 'Chapter ' + op.n + (op.title ? ': ' : '') : 'Scene: ') + op.title);
+    scheduleAuto(op.title.length + (chapter ? 50 : 20));
     if (S.skip) scheduleSkip();
   }
 
   function showBoard(op, instant) {
-    box.classList.remove('show');
-    cg.innerHTML = boardHtml(op);
-    cg.classList.add('show');
+    box.classList.remove('show'); nvlEl.classList.remove('show');
+    boardsEl.innerHTML = boardHtml(op);
+    boardsEl.classList.add('show');
     var text = op.kind === 'withheld' ? op.text : (op.title || op.lang || '');
     if (op.kind === 'card') text += '. ' + (op.cells || []).map(function (c) { return (c.label ? c.label + ': ' : '') + c.value; }).join('; ');
     if (op.kind === 'chart') text += '. ' + (op.series || []).map(function (s) { return s.label + ' ' + (op.type === 'range' ? s.lo + ' to ' + s.hi : s.value); }).join('; ');
@@ -845,6 +1178,7 @@
     return order.map(function (k) { return facts[k] || { key: k, value: '', ref: null }; });
   }
 
+  // The ending: a staff roll that is also the citation card.
   function showEnd() {
     var m = S.program.meta, e = S.entry || {};
     var kindLabel = m.kind === 'blog' ? 'Blog post' : 'Paper';
@@ -852,14 +1186,21 @@
     var links = (m.links || []).slice(0, 2);
     var h = '<div class="vn-end-card" tabindex="-1">';
     if (m.verify) h += '<div class="vn-ribbon" title="figures not yet re-checked against the source">Unverified draft</div>';
+    h += '<p class="vn-fin">Fin</p>';
     h += '<div class="vn-kicker">' + esc(kindLabel) + (date ? ' · ' + esc(date) : '') + ' · The end</div>';
     h += '<h2>' + esc(m.title || e.title || '') + '</h2>';
-    if (m.authors) h += '<p class="vn-authors">' + esc(m.authors) + '</p>';
+    h += '<div class="vn-rule"></div>';
+    var credits = '';
+    if (m.authors) credits += '<dt>' + (m.kind === 'blog' ? 'Written by' : 'Authors') + '</dt><dd class="vn-authors">' + esc(m.authors) + '</dd>';
+    var cast = Object.keys(S.program.cast).map(function (k) { return S.program.cast[k]; }).filter(function (c) { return !c.player && !c.page; }).map(function (c) { return c.name; });
+    if (cast.length) credits += '<dt>Cast</dt><dd>' + esc(cast.join(', ')) + '</dd>';
+    credits += '<dt>Script, stage, art</dt><dd>Paper Theatre, drawn in code</dd>';
+    h += '<dl class="vn-credits">' + credits + '</dl>';
     if (m.cite) h += '<blockquote class="vn-cite">' + esc(m.cite) + '</blockquote>';
     h += '<div class="vn-links">';
     links.forEach(function (l, i) { h += '<a href="' + esc(l.url) + '" target="_blank" rel="noopener"' + (i === 0 ? ' class="primary"' : '') + '>' + esc(l.label || (m.kind === 'blog' ? 'Read the post' : 'Read the paper')) + '</a>'; });
     if (m.arxiv && VN && VN.bibtex) h += '<button type="button" class="vn-bib">Copy BibTeX</button><span class="vn-copied" aria-live="polite"></span>';
-    h += '<button type="button" class="vn-replay">Replay</button></div>';
+    h += '<button type="button" class="vn-replay">Replay</button><button type="button" class="vn-totitle">Title</button></div>';
     var facts = usedFacts().filter(function (f) { return f.value; });
     if (facts.length) {
       h += '<h4>Figures used</h4><ul class="vn-facts">' + facts.map(function (f) {
@@ -873,9 +1214,10 @@
         return '<li><button type="button" data-story="' + esc(c.id) + '">' + esc(c.title) + '<small>' + esc(groupOf(c)) + '</small></button></li>';
       }).join('') + '</ul>';
     }
-    h += '</div>';
+    h += '<p class="vn-theend">紙芝居</p></div>';
     endEl.innerHTML = h;
     endEl.classList.add('show');
+    stage.classList.add('no-window');
     var bib = $('.vn-bib', endEl);
     if (bib) bib.addEventListener('click', function (ev) {
       ev.stopPropagation();
@@ -885,45 +1227,52 @@
       if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(ok, fail); else fail();
     });
     $('.vn-replay', endEl).addEventListener('click', function (ev) { ev.stopPropagation(); restart(false); });
+    $('.vn-totitle', endEl).addEventListener('click', function (ev) { ev.stopPropagation(); showTitle(); });
     $$('button[data-story]', endEl).forEach(function (b) { b.addEventListener('click', function (ev) { ev.stopPropagation(); openStory(b.getAttribute('data-story')); }); });
     announce('The end. ' + (m.title || '') + (m.cite ? '. ' + m.cite : ''));
-    if (!THUMB) { var card = $('.vn-end-card', endEl); if (card) card.focus({ preventScroll: true }); }
+    if (!THUMB && !S.screen) { var card = $('.vn-end-card', endEl); if (card) card.focus({ preventScroll: true }); }
     if (S.auto) setAuto(false);
   }
 
-  /* ------------------------------------------------------------------ advance / back / auto / skip */
+  /* ------------------------------------------------------------------ advance / back / auto / skip / hide */
 
-  function canAdvance() { return S.run && S.stop && S.stop.op.kind !== 'menu' && S.stop.op.kind !== 'end' && S.stop.op.kind !== 'error'; }
+  function canAdvance() { return S.mode === 'play' && S.run && S.stop && S.stop.op.kind !== 'menu' && S.stop.op.kind !== 'end' && S.stop.op.kind !== 'error'; }
 
   function advance(o) {
     o = o || {};
-    if (!S.run || !S.stop) return;
+    if (S.mode !== 'play' || !S.run || !S.stop) return;
+    if (S.wait) { var w = S.wait; S.wait = null; clearTimeout(w.timer); endTransition(); w.fn(); if (!o.instant) return; }
     if (S.typing) { if (!o.instant) { completeLine(); return; } completeLine(); }
     if (!canAdvance()) return;
-    clearTimeout(S.autoTimer);
+    clearTimeout(S.autoTimer); clearTimeout(S.pauseTimer);
     var stop = S.run.advance();
     present(stop, { instant: !!o.instant });
   }
   function back() {
-    if (!S.run) return;
-    clearTimeout(S.autoTimer);
+    if (S.mode !== 'play' || !S.run) return;
+    clearTimeout(S.autoTimer); clearTimeout(S.pauseTimer);
     if (S.auto) setAuto(false);
     var stop = S.run.back();
-    if (!stop) { toast('This is the beginning.'); return; }
+    while (stop && stop.op.kind === 'pause') stop = S.run.back();   // a beat is not a place to stand
+    if (!stop) {
+      toast('This is the beginning.');
+      if (!S.run.current()) present(S.run.replay([], 1), { instant: true, back: true });
+      return;
+    }
     present(stop, { instant: true, back: true });
   }
 
   function setAuto(on) {
     S.auto = on;
-    btn.auto.classList.toggle('on', on); btn.auto.setAttribute('aria-pressed', String(on));
+    var b = qbtn('auto'); if (b) { b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); }
     badges();
     clearTimeout(S.autoTimer);
     if (on) { if (S.skip) setSkip(false); if (!S.typing) scheduleAuto(60); }
   }
   function scheduleAuto(chars) {
     clearTimeout(S.autoTimer);
-    if (!S.auto || document.hidden || !canAdvance()) return;
-    S.autoTimer = setTimeout(function () { if (S.auto && !document.hidden) advance(); }, 1200 + 35 * (chars || 0));
+    if (!S.auto || document.hidden || !canAdvance() || S.screen) return;
+    S.autoTimer = setTimeout(function () { if (S.auto && !document.hidden && !S.screen) advance(); }, (1200 + 35 * (chars || 0)) / prefs.autoSpeed);
   }
   document.addEventListener('visibilitychange', function () {
     if (document.hidden) clearTimeout(S.autoTimer);
@@ -932,12 +1281,13 @@
 
   function setSkip(on, unseen) {
     S.skip = on; S.skipUnseen = on && !!unseen;
-    btn.skip.classList.toggle('on', on); btn.skip.setAttribute('aria-pressed', String(on));
+    var b = qbtn('skip'); if (b) { b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); }
     badges();
     clearTimeout(S.skipTimer);
     if (on) {
       if (S.auto) setAuto(false);
       S.seenAtSkipStart = Object.assign({}, S.run ? S.run.seen : {});
+      if (S.wait) { var w = S.wait; S.wait = null; clearTimeout(w.timer); endTransition(); w.fn(); }
       if (S.typing) completeLine();
       scheduleSkip();
     }
@@ -947,43 +1297,102 @@
     if (!S.skip || !canAdvance()) { if (S.skip && !canAdvance()) setSkip(false); return; }
     S.skipTimer = setTimeout(function () {
       if (!S.skip || !canAdvance()) { setSkip(false); return; }
+      clearTimeout(S.pauseTimer);
       var stop = S.run.advance();
       var unseen = !S.seenAtSkipStart[stop.index];
       if (unseen && !S.skipUnseen) { setSkip(false); present(stop, { instant: REDUCED }); return; }
       present(stop, { instant: true });
-    }, 120);
+    }, 110);
+  }
+  function toggleSkip(shift) {
+    if (S.skip) setSkip(false);
+    else if (shift) { if (window.confirm('Skip text you have not read yet?')) setSkip(true, true); }
+    else setSkip(true, false);
   }
 
-  /* ------------------------------------------------------------------ backlog */
+  function setHidden(on) {
+    S.hidden = on;
+    stage.classList.toggle('ui-hidden', on);
+    if (on) { setAuto(false); setSkip(false); announce('Text window hidden. Press any key to bring it back.'); }
+  }
+
+  function toggleFullscreen() {
+    var el = document.documentElement;
+    try {
+      if (document.fullscreenElement) document.exitFullscreen();
+      else if (el.requestFullscreen) el.requestFullscreen();
+      else toast('Fullscreen is not available here.');
+    } catch (e) { toast('Fullscreen is not available here.'); }
+  }
+
+  /* ------------------------------------------------------------------ save slots */
+
+  function slotsKey() { return 'vn:slots:' + S.id; }
+  function readSlots() { return readJSON(slotsKey()) || {}; }
+  function lastLineText(state) {
+    var h = state.history || [];
+    for (var i = h.length - 1; i >= 0; i--) {
+      if (h[i].kind === 'say') return displayName((h[i].who || '').toLowerCase(), h[i].who) + ': ' + plainText(VN.interpolate(h[i].text, state.vars, S.program.cast));
+      if (h[i].kind === 'narrate') return plainText(VN.interpolate(h[i].text, state.vars, S.program.cast));
+      if (h[i].kind !== 'choice') return (h[i].title || h[i].text || h[i].kind);
+    }
+    return '';
+  }
+  function writeSlot(k) {
+    if (!S.run || S.mode !== 'play') return false;
+    if (S.noSlots) { toast('This place was reached by a deep link and cannot be saved.'); return false; }
+    var snap = S.run.snapshot(), st = S.run.state, all = readSlots();
+    snap.ts = Date.now();
+    snap.chapter = st.chapter ? 'Chapter ' + st.chapter.n + (st.chapter.title ? ' · ' + st.chapter.title : '') : (st.label ? st.label : 'Prologue');
+    snap.text = lastLineText(st).slice(0, 160);
+    delete snap.seen;
+    all[k] = snap;
+    lsSet(slotsKey(), JSON.stringify(all));
+    return true;
+  }
+  function loadSlot(k) {
+    var d = readSlots()[k];
+    if (!d) { toast(k === 'q' ? 'No quick save yet.' : 'That slot is empty.'); return; }
+    beginPlay();
+    var stop = S.run.replay(d.choiceLog, d.stopIndex);
+    present(stop, { instant: true, resumed: true });
+    toast(d.hash !== S.program.hash ? 'Loaded; the script changed since this save, so it was replayed by your choices.' : 'Loaded.', 2200);
+  }
+
+  /* ------------------------------------------------------------------ backlog rows (also the transcript) */
 
   function historyRows() {
     var rows = [], stops = 0, choices = 0;
     (S.run.state.history || []).forEach(function (h) {
-      if (h.kind === 'choice') { stops++; choices++; rows.push({ h: h, stopIndex: stops, choices: choices - 1 }); }
+      if (h.kind === 'choice') { stops++; choices++; rows.push({ h: h, stopIndex: null, choices: choices - 1 }); }
       else { stops++; rows.push({ h: h, stopIndex: stops, choices: choices }); }
     });
     return rows;
   }
-  function renderLog() {
-    var rows = historyRows();
-    if (!rows.length) { logList.innerHTML = '<li class="vn-log-empty">Nothing yet.</li>'; return; }
-    var cur = S.run.state.stops;
-    logList.innerHTML = rows.map(function (r, i) {
-      var h = r.h, cls = h.kind === 'choice' ? 'pick' : h.kind === 'say' ? 'say' : h.kind === 'narrate' ? 'narr' : 'board';
-      var text;
-      if (h.kind === 'choice') text = '> picked: ' + esc(h.text);
-      else if (h.kind === 'say') text = '<b>' + esc(displayName(h.who ? h.who.toLowerCase() : '', h.who)) + '</b>' + esc(plainText(VN.interpolate(h.text, {}, S.program.cast)));
-      else if (h.kind === 'narrate') text = esc(plainText(VN.interpolate(h.text, {}, S.program.cast)));
-      else text = '<b>' + esc(h.kind) + '</b>' + esc(h.title || h.text || '');
-      return '<li class="' + cls + (r.stopIndex === cur ? ' cur' : '') + '"><span class="t">' + text + chipsHtml(h.refs) + '</span><button type="button" data-rewind="' + r.stopIndex + '" title="rewind to this moment">rewind here</button></li>';
-    }).join('');
-    $$('button[data-rewind]', logList).forEach(function (b) {
-      b.addEventListener('click', function () {
-        var k = parseInt(b.getAttribute('data-rewind'), 10);
-        closeOverlay(logOverlay);
-        rewindTo(k);
-      });
-    });
+  // History has no entries for menus or pauses, but both count as stops: walk a shadow run with the
+  // same choices and note the stop number at which each recorded line was reached (for "rewind here").
+  function stopIndexOfRows() {
+    var h = S.run.state.history || [], log = S.run.state.choiceLog, target = S.run.state.stops, rows = [], hi = 0;
+    if (!S.noSlots) {
+      var shadow = VN.createRun(S.program, {}), stop = shadow.advance(), li = 0, guard = 0;
+      while (stop && hi < h.length && guard++ < 100000) {
+        var kind = stop.op.kind;
+        if (kind === 'menu') {
+          if (shadow.state.stops >= target || !log[li] || h[hi].kind !== 'choice') break;
+          var vi = 0;
+          for (var v = 0; v < stop.options.length; v++) if (stop.options[v].index === log[li].optionIndex) vi = v;
+          rows.push({ h: h[hi++], stopIndex: null }); li++;
+          stop = shadow.choose(vi);
+          continue;
+        }
+        if (kind === 'error') break;
+        if (kind !== 'pause' && kind !== 'end') rows.push({ h: h[hi++], stopIndex: shadow.state.stops });
+        if (shadow.state.stops >= target || stop.done) break;
+        stop = shadow.advance();
+      }
+    }
+    for (; hi < h.length; hi++) rows.push({ h: h[hi], stopIndex: null });
+    return rows;
   }
   function rewindTo(stopIndex) {
     if (!S.run) return;
@@ -998,10 +1407,10 @@
   function setTextOnly(on, persist) {
     S.textOnly = on;
     document.body.classList.toggle('text-only', on);
-    btn.text.classList.toggle('on', on); btn.text.setAttribute('aria-pressed', String(on));
     transcriptEl.setAttribute('aria-hidden', String(!on));
     if (persist) { prefs.textOnly = on; savePrefs(); }
-    if (on && S.run) { completeLine(); renderTranscript(); }
+    if (on && S.run && S.mode === 'play') { completeLine(); renderTranscript(); }
+    if (!on && S.run && S.stop && S.mode === 'play') present(S.stop, { instant: true });
   }
   function renderTranscript() {
     if (!S.run) return;
@@ -1015,9 +1424,10 @@
     var h = rows.map(function (r) {
       var e = r.h;
       if (e.kind === 'choice') return '<p class="pick">&gt; ' + esc(e.text) + '</p>';
-      if (e.kind === 'say') return '<p><b>' + esc(displayName(e.who ? e.who.toLowerCase() : '', e.who)) + '</b>' + esc(plainText(VN.interpolate(e.text, S.run.state.vars, S.program.cast))) + fn(e.refs) + '</p>';
-      if (e.kind === 'narrate') return '<p class="narr">' + esc(plainText(VN.interpolate(e.text, S.run.state.vars, S.program.cast))) + fn(e.refs) + '</p>';
+      if (e.kind === 'say') return '<p' + (e.thought ? ' class="thought"' : '') + '><b>' + esc(displayName(e.who ? e.who.toLowerCase() : '', e.who)) + '</b>' + esc(plainText(VN.interpolate(e.text, S.run.state.vars, S.program.cast))) + fn(e.refs) + '</p>';
+      if (e.kind === 'narrate') return '<p class="narr' + (e.thought ? ' thought' : '') + '">' + esc(plainText(VN.interpolate(e.text, S.run.state.vars, S.program.cast))) + fn(e.refs) + '</p>';
       if (e.kind === 'scene') return '<p class="scene">' + esc(e.title || e.text) + '</p>';
+      if (e.kind === 'chapter') return '<p class="scene">Chapter ' + esc(e.n || '') + ' · ' + esc(e.title || '') + '</p>';
       return '<p class="board">' + esc(e.kind) + ': ' + esc(e.title || e.text || '') + fn(e.refs) + '</p>';
     }).join('');
     if (S.stop && S.stop.op.kind === 'end') h += '<p class="scene">The end</p>';
@@ -1026,11 +1436,152 @@
     transcriptEl.scrollTop = transcriptEl.scrollHeight;
   }
 
-  /* ------------------------------------------------------------------ overlays (focus trap) */
+  /* ------------------------------------------------------------------ full-stage screens: save, load, config, log, chapters, issues */
 
   function focusables(root) {
     return $$('a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex="-1"])', root).filter(function (el) { return el.offsetParent !== null; });
   }
+  var SCREEN_TITLES = { save: ['Save', 'セーブ'], load: ['Load', 'ロード'], config: ['Config', '設定'], log: ['Backlog', '履歴'], chapters: ['Chapters', '章'], issues: ['Script issues', 'lint'] };
+
+  function slotButtons(kind) {
+    var all = readSlots(), h = '<ul class="vn-slots">';
+    var keys = ['1', '2', '3', '4', '5', '6'];
+    keys.forEach(function (k) {
+      var d = all[k];
+      h += '<li><button type="button" data-slot="' + k + '"' + (kind === 'load' && !d ? ' disabled' : '') + '><span class="no">Slot ' + k + '</span>' +
+        (d ? '<span class="ch">' + esc(d.chapter || '') + '</span><span class="tx">' + esc(d.text || '') + '</span><span class="dt">' + esc(fmtDate(d.ts)) + '</span>' : '<span class="empty">— empty —</span>') + '</button></li>';
+    });
+    h += '</ul>';
+    var q = all.q, a = autosave();
+    h += '<div class="foot">' +
+      (kind === 'load' ? '<button type="button" data-slot="q"' + (q ? '' : ' disabled') + '>Quick save' + (q ? ' · ' + esc(fmtDate(q.ts)) : ' · none') + '</button>' +
+        '<button type="button" data-slot="auto"' + (a && a.choiceLog ? '' : ' disabled') + '>Autosave' + (a && a.ts ? ' · ' + esc(fmtDate(a.ts)) : ' · none') + '</button>' : '<span>Choose a slot to write. Your place is also kept automatically.</span>') +
+      '</div>';
+    return h;
+  }
+  function configHtml() {
+    function row(id, label, min, max, step, val, out) {
+      return '<label for="cf-' + id + '">' + label + '</label><input id="cf-' + id + '" type="range" min="' + min + '" max="' + max + '" step="' + step + '" value="' + val + '"><output id="cfo-' + id + '">' + out + '</output>';
+    }
+    return '<div class="vn-config">' +
+      row('cps', 'Text speed', 15, 80, 1, prefs.cps, prefs.cps + ' cps') +
+      row('auto', 'Auto speed', 0.5, 2.5, 0.1, prefs.autoSpeed, prefs.autoSpeed.toFixed(1) + '×') +
+      row('opacity', 'Window opacity', 30, 100, 1, Math.round(prefs.opacity * 100), Math.round(prefs.opacity * 100) + '%') +
+      row('size', 'Font size', 85, 135, 5, Math.round(prefs.size * 100), Math.round(prefs.size * 100) + '%') +
+      '<label>Effects</label><div class="row-btns"><button type="button" data-cf="fx-on" class="' + (prefs.effects ? 'on' : '') + '" aria-pressed="' + prefs.effects + '">On</button><button type="button" data-cf="fx-off" class="' + (prefs.effects ? '' : 'on') + '" aria-pressed="' + !prefs.effects + '">Off</button></div>' +
+      '<label>Reading</label><div class="row-btns"><button type="button" data-cf="text" class="' + (S.textOnly ? 'on' : '') + '" aria-pressed="' + S.textOnly + '">Text-only</button><button type="button" data-cf="theme">Theme: ' + currentTheme() + '</button><button type="button" data-cf="full">Fullscreen</button><button type="button" data-cf="help">Keys</button></div>' +
+      (S.mode === 'play' ? '<label>Story</label><div class="row-btns"><button type="button" data-cf="restart">Restart</button><button type="button" data-cf="title">Title screen</button><button type="button" data-cf="stories">Back to stories</button></div>' : '') +
+      '</div><div class="foot"><span>Particles, transitions and shakes follow Effects; your system’s reduced-motion setting always wins.</span></div>';
+  }
+  function logHtml() {
+    if (!S.run) return '<p>Nothing yet.</p>';
+    var rows = stopIndexOfRows();
+    if (!rows.length) return '<p>Nothing yet.</p>';
+    var cur = S.run.state.stops, st = S.run.state;
+    return '<ol class="vn-loglist">' + rows.map(function (r) {
+      var h = r.h, cls, who = '', text;
+      if (h.kind === 'choice') { cls = 'pick'; text = '› ' + esc(h.text); }
+      else if (h.kind === 'say') { cls = 'say' + (h.thought ? ' thought' : ''); who = esc(displayName(h.who ? h.who.toLowerCase() : '', h.who)); text = esc(plainText(VN.interpolate(h.text, st.vars, S.program.cast))); }
+      else if (h.kind === 'narrate') { cls = 'narr' + (h.thought ? ' thought' : ''); text = esc(plainText(VN.interpolate(h.text, st.vars, S.program.cast))); }
+      else if (h.kind === 'chapter') { cls = 'chapter'; who = 'Chapter ' + esc(h.n || ''); text = esc(h.title || ''); }
+      else { cls = 'board'; who = esc(h.kind); text = esc(h.title || h.text || ''); }
+      return '<li class="' + cls + (r.stopIndex === cur ? ' cur' : '') + '"><span class="w">' + who + '</span><span class="t">' + text + chipsHtml(h.refs) + '</span>' +
+        (r.stopIndex ? '<button type="button" data-rewind="' + r.stopIndex + '" title="rewind to this moment">rewind here</button>' : '<span></span>') + '</li>';
+    }).join('') + '</ol>';
+  }
+  function chaptersHtml() {
+    var list = (S.program && S.program.chapters) || [];
+    seenList();
+    if (!list.length) return '<p>This story has no chapters.</p>';
+    return '<ul class="vn-chapters">' + list.map(function (c, i) {
+      var ok = S.seenAll[c.index] || (S.entry && S.entry.src);
+      return '<li><button type="button" data-ch="' + i + '"' + (ok ? '' : ' disabled') + '><span class="num">' + esc(c.n) + '</span><span>' + (ok ? esc(c.title) : '— not reached yet —') + '</span></button></li>';
+    }).join('') + '</ul>';
+  }
+  function issuesHtml() {
+    return '<ol class="vn-issues">' + S.issues.map(function (i) { return '<li class="' + esc(i.level) + '">' + esc(i.level) + ' · ' + (i.file ? esc(i.file) + ' ' : '') + esc(i.msg) + (i.hint ? '<span class="hint">' + esc(i.hint) + '</span>' : '') + '</li>'; }).join('') + '</ol>';
+  }
+
+  function openScreen(kind) {
+    if (!SCREEN_TITLES[kind] || !S.program) return;
+    if (kind === 'save' && S.mode !== 'play') return;
+    if (kind === 'save' && S.noSlots) { toast('This place was reached by a deep link and cannot be saved.'); return; }
+    if (!S.screen) S.lastFocus = document.activeElement;
+    S.screen = kind;
+    clearTimeout(S.autoTimer);
+    completeLine();
+    var t = SCREEN_TITLES[kind];
+    var body = kind === 'save' || kind === 'load' ? slotButtons(kind) : kind === 'config' ? configHtml() : kind === 'log' ? logHtml() : kind === 'chapters' ? chaptersHtml() : issuesHtml();
+    screenEl.innerHTML = '<header><h2 id="vn-screen-title">' + esc(t[0]) + '<small>' + esc(t[1]) + '</small></h2><button type="button" data-close>Close · Esc</button></header><div class="body">' + body + '</div>';
+    screenEl.hidden = false;
+    screenEl.classList.add('show');
+    screenEl.setAttribute('data-screen', kind);
+    wireScreen(kind);
+    var f = focusables(screenEl);
+    if (kind === 'log') { var b = $('.body', screenEl); b.scrollTop = b.scrollHeight; }
+    if (f.length) f[kind === 'log' ? 0 : Math.min(1, f.length - 1)].focus({ preventScroll: true });
+    announce(t[0]);
+  }
+  function closeScreen(silent) {
+    if (!S.screen && !screenEl.classList.contains('show')) return;
+    S.screen = null;
+    screenEl.classList.remove('show'); screenEl.hidden = true; screenEl.innerHTML = '';
+    if (silent) return;
+    var backTo = S.lastFocus && document.contains(S.lastFocus) && S.lastFocus.offsetParent !== null ? S.lastFocus : stage;
+    try { backTo.focus({ preventScroll: true }); } catch (e) { /* ignore */ }
+    if (S.auto && !S.typing) scheduleAuto(40);
+  }
+  function wireScreen(kind) {
+    $('button[data-close]', screenEl).addEventListener('click', function () { closeScreen(); });
+    $$('button[data-slot]', screenEl).forEach(function (b) {
+      b.addEventListener('click', function () {
+        var k = b.getAttribute('data-slot');
+        if (kind === 'save') {
+          if (readSlots()[k] && !window.confirm('Overwrite slot ' + k + '?')) return;
+          if (writeSlot(k)) { openScreen('save'); toast('Saved to slot ' + k + '.', 1600); }
+        } else {
+          closeScreen(true);
+          if (k === 'auto') continueSaved(); else loadSlot(k);
+        }
+      });
+    });
+    $$('button[data-rewind]', screenEl).forEach(function (b) {
+      b.addEventListener('click', function () { var k = parseInt(b.getAttribute('data-rewind'), 10); closeScreen(true); rewindTo(k); });
+    });
+    $$('button[data-ch]', screenEl).forEach(function (b) {
+      b.addEventListener('click', function () { var c = S.program.chapters[parseInt(b.getAttribute('data-ch'), 10)]; closeScreen(true); jumpChapter(c); });
+    });
+    if (kind !== 'config') return;
+    function bind(id, fn) { var el = $('#cf-' + id, screenEl), out = $('#cfo-' + id, screenEl); el.addEventListener('input', function () { out.textContent = fn(parseFloat(el.value)); savePrefs(); applyPrefs(); }); }
+    bind('cps', function (v) { prefs.cps = clamp(v, 15, 80); return prefs.cps + ' cps'; });
+    bind('auto', function (v) { prefs.autoSpeed = clamp(v, 0.5, 2.5); return prefs.autoSpeed.toFixed(1) + '×'; });
+    bind('opacity', function (v) { prefs.opacity = clamp(v / 100, 0.3, 1); return Math.round(prefs.opacity * 100) + '%'; });
+    bind('size', function (v) { prefs.size = clamp(v / 100, 0.85, 1.35); return Math.round(prefs.size * 100) + '%'; });
+    $$('button[data-cf]', screenEl).forEach(function (b) {
+      b.addEventListener('click', function () {
+        var k = b.getAttribute('data-cf');
+        if (k === 'fx-on' || k === 'fx-off') { prefs.effects = k === 'fx-on'; savePrefs(); applyPrefs(); if (S.stop && S.mode === 'play') syncFx(S.stop.state); openScreen('config'); }
+        else if (k === 'text') { setTextOnly(!S.textOnly, true); openScreen('config'); }
+        else if (k === 'theme') { applyTheme(currentTheme() === 'dark' ? 'light' : 'dark', true); openScreen('config'); }
+        else if (k === 'full') toggleFullscreen();
+        else if (k === 'help') { closeScreen(); toggleHelp(); }
+        else if (k === 'restart') { if (window.confirm('Start this story over?')) { closeScreen(true); startFresh(); } }
+        else if (k === 'title') { closeScreen(true); showTitle(); }
+        else if (k === 'stories') { closeScreen(true); renderPicker(); }
+      });
+    });
+  }
+  screenEl.addEventListener('keydown', function (e) {
+    if (e.key !== 'Tab') return;
+    var f = focusables(screenEl); if (!f.length) return;
+    var first = f[0], last = f[f.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  });
+  function toggleScreen(kind) { if (S.screen === kind) closeScreen(); else openScreen(kind); }
+
+  /* ------------------------------------------------------------------ help overlay (page-level dialog) */
+
   function openOverlay(ov) {
     if (!ov) return;
     S.lastFocus = document.activeElement;
@@ -1041,8 +1592,8 @@
   function closeOverlay(ov) {
     if (!ov || !ov.classList.contains('show')) return;
     ov.classList.remove('show'); ov.hidden = true;
-    var back = S.lastFocus && document.contains(S.lastFocus) ? S.lastFocus : stage;
-    try { back.focus({ preventScroll: true }); } catch (e) { /* ignore */ }
+    var backTo = S.lastFocus && document.contains(S.lastFocus) ? S.lastFocus : stage;
+    try { backTo.focus({ preventScroll: true }); } catch (e) { /* ignore */ }
     if (S.auto && !S.typing) scheduleAuto(40);
   }
   function openOverlayEl() { return $$('.vn-overlay.show')[0] || null; }
@@ -1057,24 +1608,32 @@
     });
   });
   $$('.vn-close').forEach(function (b) { b.addEventListener('click', function () { closeOverlay($('#' + b.getAttribute('data-close'))); }); });
-  function toggleLog() { if (logOverlay.classList.contains('show')) closeOverlay(logOverlay); else if (S.run) { renderLog(); openOverlay(logOverlay); } }
   function toggleHelp() { if (helpOverlay.classList.contains('show')) closeOverlay(helpOverlay); else openOverlay(helpOverlay); }
 
-  /* ------------------------------------------------------------------ toolbar */
+  /* ------------------------------------------------------------------ quick menu, top bar, header */
 
-  btn.back.addEventListener('click', back);
-  btn.auto.addEventListener('click', function () { setAuto(!S.auto); });
-  btn.skip.addEventListener('click', function (e) { if (S.skip) setSkip(false); else if (e.shiftKey) { if (window.confirm('Skip text you have not read yet?')) setSkip(true, true); } else setSkip(true, false); });
-  btn.log.addEventListener('click', toggleLog);
-  btn.text.addEventListener('click', function () { setTextOnly(!S.textOnly, true); });
-  btn.help.addEventListener('click', toggleHelp);
-  btn.restart.addEventListener('click', function () { restart(true); });
-  if (cpsEl) {
-    cpsEl.value = String(prefs.cps); cpsVal.textContent = prefs.cps + ' cps';
-    cpsEl.addEventListener('input', function () { prefs.cps = clamp(parseInt(cpsEl.value, 10) || 28, 15, 80); cpsVal.textContent = prefs.cps + ' cps'; savePrefs(); });
-  }
-  if (selectEl) selectEl.addEventListener('change', function () { if (selectEl.value) openStory(selectEl.value); else { clearStage(); renderPicker(); } });
-  nameEl.addEventListener('click', function (e) { e.stopPropagation(); toggleLog(); });
+  quickEl.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('button[data-q]');
+    if (!b) return;
+    e.stopPropagation();
+    var q = b.getAttribute('data-q');
+    if (q === 'back') back();
+    else if (q === 'qsave') { if (writeSlot('q')) toast('Quick saved.', 1400); }
+    else if (q === 'qload') { if (readSlots().q) loadSlot('q'); else toast('No quick save yet.'); }
+    else if (q === 'save') openScreen('save');
+    else if (q === 'load') openScreen('load');
+    else if (q === 'auto') setAuto(!S.auto);
+    else if (q === 'skip') toggleSkip(e.shiftKey);
+    else if (q === 'log') openScreen('log');
+    else if (q === 'config') openScreen('config');
+    else if (q === 'hide') setHidden(true);
+  });
+  if (btnFull) btnFull.addEventListener('click', function (e) { e.stopPropagation(); toggleFullscreen(); });
+  if (btnTitle) btnTitle.addEventListener('click', function (e) { e.stopPropagation(); if (S.program) showTitle(); });
+  if (btnIssues) btnIssues.addEventListener('click', function (e) { e.stopPropagation(); openScreen('issues'); });
+  if (btnHelp) btnHelp.addEventListener('click', toggleHelp);
+  if (selectEl) selectEl.addEventListener('change', function () { if (selectEl.value) openStory(selectEl.value); else renderPicker(); });
+  nameEl.addEventListener('click', function (e) { e.stopPropagation(); openScreen('log'); });
 
   /* ------------------------------------------------------------------ keyboard */
 
@@ -1082,26 +1641,46 @@
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     var t = e.target, tag = t && t.tagName;
     var inField = tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA' || (t && t.isContentEditable);
-    var ov = openOverlayEl();
-    if (e.key === 'Escape') {
+    var ov = openOverlayEl(), k = e.key;
+    if (k === 'Escape') {
       if (ov) { e.preventDefault(); closeOverlay(ov); return; }
+      if (S.screen) { e.preventDefault(); closeScreen(); return; }
+      if (S.hidden) { setHidden(false); return; }
       if (S.auto) { setAuto(false); return; }
       if (S.skip) { setSkip(false); return; }
+      if (S.mode === 'play' && !document.fullscreenElement) { showTitle(); return; }
       return;
     }
     if (ov) return;                    // dialogs own the rest of the keys
+    if (S.screen) return;
     if (inField) {
-      if (tag === 'SELECT' && (e.key === 'Enter' || e.key === ' ')) return;
+      if (tag === 'SELECT' && (k === 'Enter' || k === ' ')) return;
       if (tag === 'INPUT' && t.type === 'range') return;
       if (tag === 'SELECT') return;
     }
-    var k = e.key;
+    if (S.hidden) { e.preventDefault(); setHidden(false); return; }   // any key brings the window back
     if (k === 'D' || k === 'd') { applyTheme(currentTheme() === 'dark' ? 'light' : 'dark', true); return; }
-    if (k === 'H' || k === 'h' || k === '?') { e.preventDefault(); toggleHelp(); return; }
+    if (k === '?') { e.preventDefault(); toggleHelp(); return; }
+    if (S.mode === 'title') {
+      if (k === 'ArrowDown' || k === 'ArrowUp') {
+        var tb = $$('.ts-menu button:not([disabled])', titleEl); if (!tb.length) return;
+        var ti = tb.indexOf(document.activeElement);
+        e.preventDefault(); tb[ti < 0 ? 0 : (ti + (k === 'ArrowDown' ? 1 : tb.length - 1)) % tb.length].focus();
+      } else if ((k === 'Enter' || k === ' ') && tag !== 'BUTTON' && tag !== 'A') { e.preventDefault(); var fb = $('button[data-t="continue"]', titleEl) || $('button[data-t="start"]', titleEl); if (fb) fb.click(); }
+      else if (k === 'F' || k === 'f') toggleFullscreen();
+      else if (k === 'C' || k === 'c') openScreen('config');
+      return;
+    }
+    if (S.mode !== 'play') return;
+    if (k === 'F' || k === 'f') { toggleFullscreen(); return; }
     if (k === 'T' || k === 't') { setTextOnly(!S.textOnly, true); return; }
+    if (k === 'C' || k === 'c') { openScreen('config'); return; }
+    if (k === 'H' || k === 'h') { setHidden(true); return; }
+    if (k === 'F5') { e.preventDefault(); if (writeSlot('q')) toast('Quick saved.', 1400); return; }
+    if (k === 'F9') { e.preventDefault(); if (readSlots().q) loadSlot('q'); else toast('No quick save yet.'); return; }
     if (!S.run) return;
     if (k === ' ' || k === 'Enter' || k === 'ArrowRight') {
-      if (t && (tag === 'BUTTON' || tag === 'A') && k !== 'ArrowRight') return;   // native activation: toolbar, menu, end card
+      if (t && (tag === 'BUTTON' || tag === 'A') && k !== 'ArrowRight') return;   // native activation: quick menu, choices, ending
       e.preventDefault();
       if (S.stop && S.stop.op.kind === 'menu') { var first = $('button', menuEl); if (first && !menuEl.contains(t)) first.focus(); return; }
       if (k === ' ' && e.repeat) {           // hold Space: skip
@@ -1118,16 +1697,11 @@
     }
     if (k === 'ArrowLeft' || k === 'Backspace') { e.preventDefault(); back(); return; }
     if (k === 'A' || k === 'a') { setAuto(!S.auto); return; }
-    if (k === 'S' || k === 's') {
-      if (S.skip) setSkip(false);
-      else if (e.shiftKey) { if (window.confirm('Skip text you have not read yet?')) setSkip(true, true); }
-      else setSkip(true, false);
-      return;
-    }
-    if (k === 'L' || k === 'l') { toggleLog(); return; }
+    if (k === 'S' || k === 's') { toggleSkip(e.shiftKey); return; }
+    if (k === 'L' || k === 'l') { openScreen('log'); return; }
     if (k === 'R' || k === 'r') { restart(true); return; }
     if ((k === 'ArrowDown' || k === 'ArrowUp') && S.stop && S.stop.op.kind === 'menu') {
-      var bs = $('button', menuEl); if (!bs.length) return;
+      var bs = $$('button', menuEl); if (!bs.length) return;
       var at = bs.indexOf(document.activeElement);
       var nx = at < 0 ? 0 : (at + (k === 'ArrowDown' ? 1 : bs.length - 1)) % bs.length;
       e.preventDefault(); bs[nx].focus();
@@ -1144,13 +1718,13 @@
 
   var ptr = null, longTimer = 0;
   function interactive(target) {
-    return !!(target.closest && target.closest('button, a, abbr, input, select, .vn-end, .vn-picker, .vn-panel, .vn-transcript, .vn-board'));
+    return !!(target.closest && target.closest('button, a, abbr, input, select, .vn-end, .vn-picker, .vn-panel, .vn-transcript, .vn-board, .vn-screen, .vn-titlescreen, .vn-quick, .vn-topbar'));
   }
   stage.addEventListener('pointerdown', function (e) {
     if (e.button !== 0) return;
     ptr = { x: e.clientX, y: e.clientY, t: performance.now(), id: e.pointerId, target: e.target, consumed: false };
     clearTimeout(longTimer);
-    if (e.pointerType === 'touch' && S.run && !interactive(e.target)) {
+    if (e.pointerType === 'touch' && S.mode === 'play' && !interactive(e.target)) {
       longTimer = setTimeout(function () { if (ptr) { ptr.consumed = true; setAuto(!S.auto); toast(S.auto ? 'Auto on' : 'Auto off', 1200); } }, 600);
     }
   });
@@ -1163,9 +1737,10 @@
     if (!ptr || ptr.id !== e.pointerId) { ptr = null; return; }
     var p = ptr; ptr = null;
     if (p.consumed) return;
+    if (S.mode !== 'play') return;
+    if (S.hidden) { setHidden(false); return; }
     var dx = e.clientX - p.x, dy = e.clientY - p.y;
     if (e.pointerType === 'touch' && Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.2) {
-      if (!S.run) return;
       if (dx < 0) advance(); else back();
       return;
     }
@@ -1179,9 +1754,14 @@
     if (document.activeElement !== stage && !(document.activeElement && menuEl.contains(document.activeElement))) stage.focus({ preventScroll: true });
   });
   stage.addEventListener('pointercancel', function () { ptr = null; clearTimeout(longTimer); });
-  stage.addEventListener('contextmenu', function (e) { if (ptr && ptr.target && !interactive(ptr.target)) e.preventDefault(); });
+  // right-click: hide the window to look at the picture, as in any visual novel
+  stage.addEventListener('contextmenu', function (e) {
+    if (S.mode !== 'play' || S.screen || interactive(e.target)) return;
+    e.preventDefault();
+    setHidden(!S.hidden);
+  });
 
-  /* ------------------------------------------------------------------ cast grid (?cast=1) */
+  /* ------------------------------------------------------------------ cast sheet (?cast=1) and scenery gallery (?gallery=bg|cg) */
 
   function castGrid(program) {
     var faces = (VN && VN.FACES) || ['neutral', 'smile', 'puzzled', 'worried', 'surprised', 'thinking', 'deadpan', 'laugh'];
@@ -1190,35 +1770,48 @@
     else {
       var base = { glasses: false, hat: false, lattice: null, player: false, page: false, coauthor: false, skin: 3, hair: 'short' };
       [
-        { id: 'Jack', hue: 210, glasses: true, hair: 'short' },
-        { id: 'Long', hue: 28, hair: 'long', skin: 2 },
-        { id: 'Bun', hue: 120, hair: 'bun', skin: 4 },
-        { id: 'Curly', hue: 10, hair: 'curly', skin: 5 },
-        { id: 'None', hue: 250, hair: 'none', skin: 1 },
-        { id: 'Hood', hue: 230, hair: 'hood', hat: false },
-        { id: 'Hat', hue: 40, hair: 'short', hat: true, glasses: true },
+        { id: 'Jack', hue: 210, glasses: true, hair: 'short', clothes: 'coat' },
+        { id: 'Long', hue: 28, hair: 'long', skin: 2, clothes: 'cardigan' },
+        { id: 'Bob', hue: 330, hair: 'bob', skin: 1, clothes: 'uniform' },
+        { id: 'Ponytail', hue: 140, hair: 'ponytail', skin: 3, clothes: 'hoodie' },
+        { id: 'Bun', hue: 120, hair: 'bun', skin: 4, clothes: 'shirt' },
+        { id: 'Curly', hue: 10, hair: 'curly', skin: 5, clothes: 'cardigan' },
+        { id: 'None', hue: 250, hair: 'none', skin: 1, clothes: 'coat' },
+        { id: 'Hood', hue: 230, hair: 'hood', clothes: 'hoodie' },
+        { id: 'Hat', hue: 40, hair: 'short', hat: true, glasses: true, clothes: 'shirt' },
         { id: 'Model', hue: 192, lattice: 'sparse' },
         { id: 'Coder', hue: 300, lattice: 'dense' },
         { id: 'You', hue: 20, player: true },
         { id: 'Page', hue: 40, page: true }
       ].forEach(function (d) { var x = Object.assign({}, base, d); x.key = x.id.toLowerCase(); x.name = x.id; decls.push(x); });
     }
-    var frame = $('.vn-frame'), tb = $('.vn-toolbar');
-    frame.style.display = 'none'; if (tb) tb.style.display = 'none';
-    var grid = document.createElement('div'); grid.className = 'vn-castgrid';
+    var frame = $('.vn-frame');
+    frame.style.display = 'none';
+    var grid = document.createElement('div'); grid.className = 'vn-castgrid' + (params.get('mod') === 'night' ? ' night' : '');
     grid.innerHTML = decls.map(function (d) {
-      return '<h2>' + esc(d.name || d.id) + ' <small>(' + esc([d.hair, d.glasses ? 'glasses' : '', d.hat ? 'hat' : '', d.lattice ? 'lattice=' + d.lattice : '', d.player ? 'player' : '', d.page ? 'page' : '', 'hue=' + d.hue, 'skin=' + d.skin].filter(Boolean).join(' ')) + ')</small></h2><div class="row">' +
+      return '<h2>' + esc(d.name || d.id) + ' <small>(' + esc([d.hair, d.clothes, d.glasses ? 'glasses' : '', d.hat ? 'hat' : '', d.lattice ? 'lattice=' + d.lattice : '', d.player ? 'player' : '', d.page ? 'page' : '', 'hue=' + d.hue, 'skin=' + d.skin].filter(Boolean).join(' ')) + ')</small></h2><div class="row">' +
         faces.map(function (f) { return '<div class="cell">' + artSprite(d, f) + '<small>' + esc(f) + '</small></div>'; }).join('') + '</div>';
     }).join('');
     $('main').insertBefore(grid, frame);
     setStatus('cast sheet');
   }
+  function gallery(kind) {
+    var frame = $('.vn-frame'), mod = params.get('mod') || '', only = (params.get('only') || '').split(',').filter(Boolean);
+    frame.style.display = 'none';
+    var names = kind === 'cg' ? (ART.CGS || []).concat(['(fallback)']) : (ART.BACKGROUNDS || []);
+    if (only.length) names = only;
+    var grid = document.createElement('div'); grid.className = 'vn-gallery';
+    grid.innerHTML = names.map(function (n) { return '<figure>' + (kind === 'cg' ? artCg(n) : artBackground(n, mod)) + '<figcaption>' + esc(n + (mod ? ' ' + mod : '')) + '</figcaption></figure>'; }).join('');
+    $('main').insertBefore(grid, frame);
+    setStatus(kind === 'cg' ? 'event illustrations' : 'backgrounds' + (mod ? ' (' + mod + ')' : ''));
+  }
 
   /* ------------------------------------------------------------------ boot */
 
   function boot() {
-    if (prefs.textOnly && !THUMB && !CASTGRID) setTextOnly(true, false);
+    if (prefs.textOnly && !THUMB && !CASTGRID && !GALLERY) setTextOnly(true, false);
     if (!VN) { showEngineMissing(); return; }
+    if (GALLERY && ART) { gallery(GALLERY); return; }
     if (location.protocol === 'file:') { showFileMessage(); return; }
     var manifestP = fetchJSON('stories/index.json').then(function (j) { allManifest = Array.isArray(j) ? j : []; }).catch(function () { allManifest = []; });
     Promise.all([manifestP, loadPosts()]).then(function () {
@@ -1257,7 +1850,6 @@
         renderPicker('No story called “' + story + '”.'); return;
       }
       renderPicker();
-      if (window.innerWidth < 480 && !('textOnly' in (readJSON('vn:prefs') || {}))) setStatus('Small screen: press T for text-only.');
     });
   }
 

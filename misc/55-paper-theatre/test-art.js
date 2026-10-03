@@ -6,10 +6,11 @@
  *
  * Every builder is called with fixed inputs; the test pins the output length and
  * an fnv1a hash of the string, then checks a few structural invariants (eight
- * swappable faces, no literal colours outside var() fallbacks, a hidden table
- * under every chart, balanced tags). Written as a separate file because test.js
- * did not exist when the art landed; the ART SNAPSHOT TESTS block below can be
- * pasted into test.js verbatim.
+ * swappable faces, shared filters referenced by id and never redefined, a
+ * hidden table under every chart, balanced tags, no NaN). Scenery and sprites
+ * are painted in literal colours on purpose (each scene keeps its own hour
+ * whatever the UI theme), so only the HTML boards are checked for var() colours.
+ * When the art changes deliberately, re-pin with --update and say so in the commit.
  */
 'use strict';
 var path = require('path');
@@ -18,54 +19,87 @@ var A = require(path.join(__dirname, 'art.js'));
 
 // ===================== ART SNAPSHOT TESTS =====================
 var SNAPSHOTS = {
-  'bg:lab': [7241, 'f5ed36b2'],
-  'bg:office': [3430, '56d9df13'],
-  'bg:lecture': [3720, 'bb34b1b0'],
-  'bg:server': [31617, '2671c22a'],
-  'bg:library': [37742, 'b7492a9e'],
-  'bg:night': [18486, '7f5c8801'],
-  'bg:cafe': [3562, '369946f1'],
-  'bg:terminal': [34775, '5ed16fdf'],
-  'bg:paper': [4031, 'ab61ad2d'],
-  'bg:train': [6875, '5f87e89d'],
-  'bg:garden': [6021, '290e6ec7'],
-  'bg:void': [1323, 'ddfc043d'],
-  'bg:lab:night': [7386, '3bdde200'],
-  'bg:lab:dawn': [7443, 'df906335'],
-  'bg:lab:dim': [7358, 'ed1a2fd1'],
-  'bg:library:spines': [41885, '921dab9d'],
-  'bg:unknown': [1323, 'ddfc043d'],
-  'sprite:jack:neutral': [5839, 'ed503304'],
-  'sprite:jack:smile': [5837, '5e1a92e3'],
-  'sprite:jack:puzzled': [5839, '91ddb9db'],
-  'sprite:jack:worried': [5839, '2f83bce3'],
-  'sprite:jack:surprised': [5841, '6b7c7b50'],
-  'sprite:jack:thinking': [5840, '11611afb'],
-  'sprite:jack:deadpan': [5839, '73fbf484'],
-  'sprite:jack:laugh': [5837, '3822bd74'],
-  'sprite:hair:short': [5491, '36697e45'],
-  'sprite:hair:long': [5873, 'a01b45f2'],
-  'sprite:hair:bun': [5601, '7fc6ba77'],
-  'sprite:hair:curly': [6523, '49fab6e3'],
-  'sprite:hair:none': [5324, 'de020da6'],
-  'sprite:hair:hood': [5636, '293e9d04'],
-  'lattice:sparse': [30222, '1f706e48'],
-  'lattice:dense': [72437, '91504599'],
-  'player': [898, '4d3e05d9'],
-  'page': [2311, 'f035cd49'],
+  'bg:lab': [24989, '7b15111c'],
+  'bg:office': [42214, '1eb541f9'],
+  'bg:lecture': [12023, '59f8f336'],
+  'bg:server': [76429, 'fe8a4db3'],
+  'bg:library': [74534, '8a3cfb0e'],
+  'bg:night': [163426, '7139cd68'],
+  'bg:cafe': [74025, 'bb9465cf'],
+  'bg:terminal': [46301, 'b766ca5d'],
+  'bg:paper': [23066, '8c22dc46'],
+  'bg:train': [19038, '02fbed91'],
+  'bg:garden': [37407, '5c706d50'],
+  'bg:void': [3544, '15494a66'],
+  'bg:sakura': [93489, 'ad160922'],
+  'bg:classroom': [31343, 'd1bbd651'],
+  'bg:rooftop': [12800, 'f17bf755'],
+  'bg:corridor': [7789, 'f730481f'],
+  'bg:station': [21924, '07b46ee0'],
+  'bg:sea': [39401, '0a01694c'],
+  'bg:room': [34137, '505d7f9a'],
+  'bg:studio': [29211, '4fa463ea'],
+  'bg:lab:night': [42124, 'fb366871'],
+  'bg:lab:dawn': [25334, '20932d56'],
+  'bg:lab:dim': [25079, '545d421b'],
+  'bg:lab:dusk': [34774, '8096802c'],
+  'bg:lab:noon': [25005, '37ca3d4a'],
+  'bg:library:spines': [77119, '4857b337'],
+  'bg:unknown': [3544, '15494a66'],
+  'sprite:jack:neutral': [25687, 'b14df1b6'],
+  'sprite:jack:smile': [25685, 'adaa8eb5'],
+  'sprite:jack:puzzled': [25687, 'f1a94ae9'],
+  'sprite:jack:worried': [25687, '2c47a9b1'],
+  'sprite:jack:surprised': [25689, '3407157c'],
+  'sprite:jack:thinking': [25688, '66738a2f'],
+  'sprite:jack:deadpan': [25687, '38c22fc0'],
+  'sprite:jack:laugh': [25685, 'efe106bc'],
+  'sprite:hair:short': [24985, '87840492'],
+  'sprite:hair:long': [25606, 'd9c3c42b'],
+  'sprite:hair:bob': [25079, '4824cdff'],
+  'sprite:hair:ponytail': [25260, '5866c394'],
+  'sprite:hair:bun': [25498, '4c017307'],
+  'sprite:hair:curly': [25960, 'f554a173'],
+  'sprite:hair:none': [24150, 'd01feb89'],
+  'sprite:hair:hood': [24242, 'ba7d89f0'],
+  'sprite:clothes:coat': [24944, '77e3d5ce'],
+  'sprite:clothes:hoodie': [24646, '39be7b1e'],
+  'sprite:clothes:cardigan': [24542, '5b4aad5b'],
+  'sprite:clothes:shirt': [24481, 'efdea532'],
+  'sprite:clothes:uniform': [24938, 'bb3604a5'],
+  'cg:tree': [63176, '41551382'],
+  'cg:desk-night': [32993, '77719701'],
+  'cg:screen-code': [17012, '659f1d72'],
+  'cg:hands-keyboard': [21803, 'e7d5fbbb'],
+  'cg:two-chairs': [20919, '0af87607'],
+  'cg:corridor-light': [8754, 'f545efe0'],
+  'cg:sea-of-points': [205921, '0f102e73'],
+  'cg:page': [17658, 'de8435e4'],
+  'cg:window-rain': [48488, 'f8b82f00'],
+  'cg:unknown': [2294, '0874608c'],
+  'fx:petals': [16547, '1b9ed2a3'],
+  'fx:snow': [24001, '564e3b77'],
+  'fx:rain': [66558, 'dfefe0e0'],
+  'fx:dust': [5744, '7e58836d'],
+  'fx:fireflies': [2788, '1c532f67'],
+  'sharedDefs': [4291, '9cbabdd6'],
+  'lattice:sparse': [19315, '07f60fd5'],
+  'lattice:dense': [34526, '81aa5f96'],
+  'player': [1068, '8be5ca6b'],
+  'page': [6110, 'c80485ac'],
   'card': [498, '309f3057'],
   'chart:bar': [4163, '4ce89530'],
   'chart:range': [5570, '6b8e34c3'],
   'code': [498, '6f443bd2'],
   'scene': [1048, 'c0fc2a7c'],
   'endCard': [1338, '236be0b2'],
-  'castGrid': [293593, '8f3c2deb'],
+  'castGrid': [369090, '09138a60'],
   'palette:slate:light': [372, 'a873ef31'],
   'palette:hue:dark': [409, '6e38266c']
 };
 
 var CAST = {
-  jack: { id: 'Jack', name: 'Jack', hue: 210, skin: 2, hair: 'short', glasses: true },
+  jack: { id: 'Jack', name: 'Jack', hue: 210, skin: 2, hair: 'short', clothes: 'coat', glasses: true },
   model: { id: 'Model', name: 'a reasoning-tuned model', lattice: 'sparse', hue: 192 },
   obf: { id: 'Obfuscator', lattice: 'dense', hue: 330 },
   you: { id: 'You', player: true, hue: 20 },
@@ -79,6 +113,11 @@ CASES['bg:library:spines'] = function () { return A.background('library', 'dim',
 CASES['bg:unknown'] = function () { return A.background('attic'); };
 A.FACES.forEach(function (f) { CASES['sprite:jack:' + f] = function () { return A.sprite(CAST.jack, f); }; });
 A.HAIR.forEach(function (h) { CASES['sprite:hair:' + h] = function () { return A.sprite({ id: 'H-' + h, hair: h, hat: true, skin: 3 }, 'smile'); }; });
+A.CLOTHES.forEach(function (k) { CASES['sprite:clothes:' + k] = function () { return A.sprite({ id: 'C-' + k, hair: 'bob', clothes: k, skin: 2, hue: 200 }, 'neutral'); }; });
+A.CGS.forEach(function (n) { CASES['cg:' + n] = function () { return A.cg(n); }; });
+CASES['cg:unknown'] = function () { return A.cg('dragon'); };
+A.FX.forEach(function (n) { CASES['fx:' + n] = function () { return A.fx(n); }; });
+CASES['sharedDefs'] = function () { return A.sharedDefs(); };
 CASES['lattice:sparse'] = function () { return A.lattice(CAST.model, 'puzzled'); };
 CASES['lattice:dense'] = function () { return A.lattice(CAST.obf, 'worried', { dense: true }); };
 CASES['player'] = function () { return A.player(CAST.you); };
@@ -105,7 +144,7 @@ CASES['castGrid'] = function () { return A.castGrid([CAST.jack, CAST.model, CAST
 CASES['palette:slate:light'] = function () { return A.palette('slate').css('light'); };
 CASES['palette:hue:dark'] = function () { return A.palette('hue=33').css('dark'); };
 
-var failures = 0, passes = 0;
+var failures = 0, passes = 0, SHARED = A.sharedDefs();
 function fail(msg) { failures++; console.log('  FAIL ' + msg); }
 function ok(cond, msg) { if (cond) passes++; else fail(msg); }
 
@@ -113,12 +152,16 @@ function hex(s) { return ('00000000' + A.hash(s).toString(16)).slice(-8); }
 
 function checkInvariants(name, s) {
   ok(typeof s === 'string' && s.length > 0, name + ': non-empty string');
-  // literal colours are allowed only as var() fallbacks or hsl(<hue> var(...)) spine fills
-  var m = s.match(/(?:fill|stroke)="(?!var\(|none|url\(|hsl\(var\(|hsl\(\d+ var\(|currentColor)[^"]*"/g);
-  ok(!m, name + ': literal colour ' + (m ? m[0] : ''));
+  // every colour is a #rrggbb literal, a var(), a gradient/pattern reference or none
+  var m = s.match(/(?:fill|stroke|stop-color|flood-color)="(?!#[0-9a-f]{6}"|var\(|none"|url\(#|currentColor")[^"]*"/g);
+  ok(!m, name + ': malformed colour ' + (m ? m[0] : ''));
+  // filters are shared: only sharedDefs may define one, everything else refers to vnf-* by id
+  if (name !== 'sharedDefs') ok(s.indexOf('<filter') < 0, name + ': defines its own <filter>');
+  var refs = s.match(/url\(#vnf-[a-z0-9-]+\)/g) || [];
+  refs.forEach(function (r) { ok(SHARED.indexOf('id="' + r.slice(5, -1) + '"') >= 0, name + ': unknown shared filter ' + r); });
   ok(!/NaN|undefined/.test(s), name + ': contains NaN/undefined');
   // balanced svg/g/div tags
-  ['svg', 'g', 'div', 'figure', 'table'].forEach(function (t) {
+  ['svg', 'g', 'div', 'figure', 'table', 'filter', 'clipPath', 'linearGradient', 'radialGradient', 'text'].forEach(function (t) {
     var open = (s.match(new RegExp('<' + t + '[\\s>]', 'g')) || []).length, close = (s.match(new RegExp('</' + t + '>', 'g')) || []).length;
     ok(open === close, name + ': unbalanced <' + t + '> ' + open + '/' + close);
   });
@@ -143,11 +186,15 @@ Object.keys(CASES).forEach(function (name) {
   ok((sp.match(/<g data-face="/g) || []).length === 8, 'sprite has 8 <g data-face> groups');
   ok(/data-face="smile" class="vn-face vn-face-smile is-on"/.test(sp), 'active face is marked is-on');
   ok(/--vn-h:210/.test(sp), 'sprite root carries --vn-h');
-  ok(/var\(--vn-skin-2/.test(sp), 'skin=2 uses --vn-skin-2');
+  ok(/#f4d5bc/.test(sp), 'skin=2 uses the second skin tone');
+  ok(/viewBox="0 0 600 1000"/.test(sp) && /data-clothes="coat"/.test(sp) && /url\(#vnf-rim\)/.test(sp), 'person sprite: tall box, clothes recorded, rim-light filter');
+  ok((sp.match(/class="vn-face[^"]*is-on/g) || []).length === 1 && (sp.match(/class="vn-face vn-face-[a-z]+" opacity="0"/g) || []).length === 7, 'exactly one face visible without CSS');
+  ok(A.normCast({ id: 'x', hair: 'bob', clothes: 'uniform' }).clothes === 'uniform' && A.HAIR.indexOf('ponytail') >= 0 && A.CLOTHES.length === 5, 'cast options: hair and clothes lists');
+  ok(/data-kind="person"/.test(A.sprite({ id: 'Old', hair: 'short', glasses: true, hat: true }, 'nope')) && /vn-face-neutral is-on/.test(A.sprite({ id: 'Old' }, 'nope')), 'old declarations still draw; unknown face falls back to neutral');
   var la = CASES['lattice:sparse']();
   ok((la.match(/<g data-face="/g) || []).length === 8, 'lattice has 8 face groups');
   ok(/data-lattice="sparse"/.test(la) && /data-lattice="dense"/.test(CASES['lattice:dense']()), 'lattice density attribute');
-  ok((la.match(/id="vn-glow"/g) || []).length === 1 && /url\(#vn-glow\)/.test(la), 'one shared glow filter id');
+  ok(/url\(#vnf-glow\)/.test(la) && la.indexOf('<filter') < 0, 'lattice glows through the shared filter');
   ok(CASES['lattice:dense']().length > la.length, 'dense lattice has more nodes than sparse');
   ok(A.sprite(CAST.model, 'smile').indexOf('data-lattice') > 0, 'sprite() dispatches lattice');
   ok(A.sprite(CAST.you).indexOf('data-kind="player"') > 0, 'sprite() dispatches player');
@@ -163,6 +210,15 @@ Object.keys(CASES).forEach(function (name) {
   ok(/vn-endcard-ribbon/.test(ec) && /data-action="bibtex"/.test(ec) && /Figures used/.test(ec) && /title="quoted from the source, section 3.2"/.test(ec), 'end card parts');
   ok(A.endCard({ title: 'x' }).indexOf('data-action="bibtex"') < 0, 'end card: no BibTeX without @arxiv');
   ok(/unknown|void/.test(A.background('attic').match(/data-bg="([a-z]+)"/)[1]), 'unknown background falls back to void');
+  ok(A.BACKGROUNDS.length === 20 && ['sakura', 'classroom', 'rooftop', 'corridor', 'station', 'sea', 'room', 'studio'].every(function (n) { return A.BACKGROUNDS.indexOf(n) >= 0; }), 'twenty backgrounds');
+  ok(A.background('lab').indexOf('data-tod="day"') > 0 && A.background('lab', 'night').indexOf('data-tod="night"') > 0 && A.background('room').indexOf('data-tod="night"') > 0 && A.background('lab', 'dim').indexOf('data-tod="day"') > 0, 'time of day: default, modifier, dim keeps the hour');
+  ok(A.timeOf('station') === 'dusk' && A.timeOf('station', 'noon') === 'day' && A.timeOf('sea', 'dawn') === 'dawn', 'timeOf');
+  ok(A.background('sakura') !== A.background('sakura', 'dusk') && A.background('sakura') === A.background('sakura'), 'modifiers repaint; same input, same output');
+  ok(A.CGS.join() === 'tree,desk-night,screen-code,hands-keyboard,two-chairs,corridor-light,sea-of-points,page,window-rain', 'the nine named CGs');
+  ok(/data-cg="tree"/.test(A.cg('tree')) && /data-cg="fallback"/.test(A.cg('dragon')) && /_lastNSecs/.test(A.cg('screen-code')), 'cg: known, fallback, the highlighted identifier');
+  ok(A.FX.join() === 'petals,snow,rain,dust,fireflies' && A.fx('nope') === '' && /class="vn-fx vn-fx-petals" data-fx="petals"/.test(A.fx('petals')) && (A.fx('petals').match(/vn-fx-layer/g) || []).length === 3, 'fx layers');
+  ['vnf-b2', 'vnf-b8', 'vnf-b40', 'vnf-glow', 'vnf-paint', 'vnf-cloud', 'vnf-rim', 'vnf-rim-dusk', 'vnf-rim-dawn', 'vnf-rim-night'].forEach(function (id) { ok(SHARED.indexOf('id="' + id + '"') > 0, 'sharedDefs defines ' + id); });
+  ok(A.mix('#000000', '#ffffff', 0.5) === '#808080' && A.mul('#ff8000', '#808080') === '#804000' && A.hslHex(0, 100, 50) === '#ff0000', 'colour maths');
   ok(A.background('library', null, [{ title: 'Only', genreHue: 5 }]).indexOf('<title>Only</title>') > 0, 'library spines carry titles');
   ok(A.background('lab', 'night').indexOf('data-mod="night"') > 0, 'modifier recorded');
   var p = A.palette('slate'), q = A.palette(undefined, 'obfuscation');

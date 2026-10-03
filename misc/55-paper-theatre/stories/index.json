@@ -96,9 +96,9 @@
       "../../assets/documents/publications/2026SPLASH-SRC.pdf"
     ],
     "authors": "Jack V. Le† and Anh Nguyen† (co-first), Tien Nguyen",
-    "blurb": "Obfuscation is almost always measured without people, on two untested assumptions: that difficulty is monotonic, and that what burdens a…",
+    "blurb": "A name is a promise.",
     "verify": true,
-    "chips": 9
+    "chips": 62
   },
   {
     "id": "human-obfuscation",

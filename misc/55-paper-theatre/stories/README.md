@@ -1,7 +1,8 @@
 # Writing a Paper Theatre story
 
 Every file in this folder that ends in `.vn` is a story: a plain-text script the
-engine at `misc/55-paper-theatre/` plays as a two-to-four-minute visual novel.
+engine at `misc/55-paper-theatre/` plays as a visual novel: a title screen, chapters,
+a text window or full NVL pages, sprites, event illustrations, flashbacks, an ending.
 Papers and blog posts share one dramaturgy: a hook, a question, a bet the reader
 makes, the result as the source printed it, a citation card.
 
@@ -97,14 +98,25 @@ Jack: Overall, accuracy fell from {human_l0} at L0 to {human_l3} at L3. ^§4
 |---|---|
 | `Name: text` | Speaker line. `Name` must be a declared `@cast` (case-insensitive); otherwise the line is treated as narration and the panel shouts `line 12: 'Result' is not in @cast; treated as narration`. |
 | `Name (face): text` | Speaker line with a face: `neutral`, `smile`, `puzzled`, `worried`, `surprised`, `thinking`, `deadpan`, `laugh`. |
-| `plain text` | Narration (italic box, no name tag). |
+| `plain text` | Narration (no name plate). A line with a colon whose prefix is not a cast name is still narration; only a single capitalised unknown word (`Result: ...`) is reported as a forgotten `@cast`. |
+| `(text)` or `（text）` | An inner thought: a `Name:` line or narration whose whole text is wrapped in parentheses is set in the thought style (italic, softer colour). No new syntax. |
 | `  continuation` | Indented: joined to the previous line. |
 | `... ^§4` / `^p.2` / `^¶3` / `^para` | Trailing citation chip. `§`/`p.` point at a section or page of the source, `¶` at a paragraph of the post (¶1 is the epigraph when the post has one), `para` means "paraphrase of the source" (the only chip allowed on a coauthor's line besides `^§`). |
 | `*em*`, `` `code` ``, `{key}`, `{Name}` | Inline markup. `{key}` resolves facts first, then variables; `{Name}` is a cast member's display name. |
-| `@bg name [night\|dawn\|dim]` | Background, see *Backgrounds*. Unknown names fall back to `void` with a warning that lists the valid names. |
-| `@show Name [left\|center\|right] [(face)]` | Puts a sprite in a slot (first free slot when omitted). Showing an undeclared name is fatal. |
-| `@hide Name` / `@hide all` | Removes sprites. |
-| `@scene Title` | Full-stage title board (chapter break). Slides in through the frame; cuts under reduced motion. |
+| `@bg name [night\|dawn\|dusk\|noon\|dim]` | Background, see *Backgrounds*. Unknown names fall back to `void` with a warning that lists the valid names. |
+| `@show Name [left\|center\|right] [(face)] [near\|far]` | Puts a sprite in a slot (first free slot when omitted), optionally closer to or further from the camera. Tokens after the name may come in any order. Sprites fade and slide in. Showing an undeclared name is fatal. |
+| `@move Name left\|center\|right` | Slides a sprite that is on stage to another slot (face and distance kept). |
+| `@hide Name` / `@hide all` | Removes sprites (they fade out). |
+| `@chapter <n> <Title>` | Chapter card: fade to black, large numeral, title, thin rule. A stop. Each chapter is listed in the title screen's *Chapters* menu once the reader has reached it. `n` is the first word (`1`, `II`). |
+| `@scene Title` | A lighter title board laid over the picture (a scene break inside a chapter). |
+| `@transition <kind> [ms]` | Sets the transition used by the NEXT `@bg` or `@cg` change: `fade` (through black), `dissolve` (crossfade), `white` (through white), `wipe-left`, `wipe-right`, `iris`, `blinds`, `cut`. Default `dissolve 600`. One `@transition` serves one change; when a `@bg` and a `@cg` both change before the next line, each uses its own (put the `@transition` directly before the change it belongs to) and the picture plays the CG's. |
+| `@flashback on [caption]` / `@flashback off` | Memory mode: warm sepia grade, vignette, film grain, thin letterbox bars and an optional small caption (`@flashback on Spring, the study room`); a white flash on the way in and out. |
+| `@mode nvl` / `@mode adv` | Text presentation. `adv` is the window at the bottom with a name plate; `nvl` is a full-screen page over the dimmed, blurred picture where lines accumulate, for monologue and essay passages. |
+| `@page` | Clears the NVL page (a new page also starts at every `@mode nvl`). A page that overflows drops its oldest lines by itself. |
+| `@fx <name> [on\|off]` | Persistent atmosphere layers: `petals` (sakura), `snow`, `rain`, `dust` (motes in light), `fireflies`; `@fx none` clears them all. One-shot effects fire once on the next line: `@fx shake`, `@fx flash`, `@fx pulse`. |
+| `@cg <name> [\| caption]` / `@cg off` | Full-screen event illustration that replaces background and sprites while shown: `tree`, `desk-night`, `screen-code`, `hands-keyboard`, `two-chairs`, `corridor-light`, `sea-of-points`, `page`, `window-rain`. The optional caption is shown small in a corner. An unknown name warns and draws an abstract fallback. |
+| `@pause <ms>` | A beat with no text (default 800). Continues by itself; a click skips it; instant under Skip, autoplay and reduced motion. |
+| `@tone <name>` | Colour grade for the whole picture until changed: `none`, `dusk`, `night`, `dawn`, `noon`, `memory`, `cold`. |
 | `@card Title \| cell \| cell` | Fact card. Cells may be `label: value` pairs. |
 | `@chart bar\|range Title \| label=value \| label=lo..hi [unit=%]` | SVG chart from numbers in the script. Every value must be a `{fact}` or carry a chip. Renders with a visually hidden text table. |
 | `@code lang \| line \| line` | Monospace code card. Only code the source itself shows. |
@@ -131,22 +143,67 @@ Options, all optional and in any order after the name:
 
 - `name="Display Name"`: what the name tag shows; the bare name is what you type before the colon.
 - `hue=N` (0-359): body colour. `skin=1-5`: a five-step neutral ramp (default hashed from the name).
-- Hair: `short`, `long`, `bun`, `curly`, `none`, `hood`. Accessories: `glasses`, `hat`.
-- `lattice=sparse` or `lattice=dense`: the model character, a head-and-shoulders silhouette of nodes and edges. `sparse` has fewer nodes with some long-range edges (the reasoning-tuned regime), `dense` a regular grid with short edges (coder- and instruction-tuned). Name it after its regime, never after a product.
-- `player`: back-of-head silhouette, the reader ("You").
+- Hair: `short`, `long`, `bob`, `ponytail`, `bun`, `curly`, `none`, `hood`. Accessories: `glasses`, `hat`.
+- Clothes: `coat` (a lab coat over shirt and tie), `hoodie`, `cardigan`, `shirt`, `uniform` (blazer and tie). When
+  omitted, one of shirt / coat / cardigan / hoodie is picked from the name, always the same one. `hue=N` colours the
+  hoodie, cardigan, tie or shirt.
+- `lattice=sparse` or `lattice=dense`: the model character, a figure of light: a luminous body in the cast hue with
+  nodes and filaments inside it and long strands of light for hair. `sparse` has fewer nodes with some long-range arcs
+  (the reasoning-tuned regime), `dense` a regular lattice with short edges (coder- and instruction-tuned). Name it
+  after its regime, never after a product.
+- `player`: the back of a head, close to the camera at the bottom of the picture: the reader ("You").
 - `page`: a floating ruled sheet, for quotations and epigraphs.
 - `coauthor`: opts a real coauthor in as a speaker; every line they say must then end with `^§x` or `^para` (see *Accuracy rules*).
 
-Faces: `neutral`, `smile`, `puzzled`, `worried`, `surprised`, `thinking`, `deadpan`, `laugh`. Write them as `Jack (smile): ...` or `@show Jack left (thinking)`. There are no poses in v1 (a `(point)` flag is reserved but not implemented), no idle animation, no images.
+Faces: `neutral`, `smile`, `puzzled`, `worried`, `surprised`, `thinking`, `deadpan`, `laugh`. Write them as `Jack (smile): ...` or `@show Jack left (thinking)`. The speaker is lit and the others dim. Sprites are
+tall knee-up figures drawn in code; there are no poses and no images.
 
 ## Backgrounds
 
-`lab`, `office`, `lecture`, `server`, `library`, `night`, `cafe`, `terminal`,
-`paper`, `train`, `garden`, `void`. Each takes an optional modifier: `night`,
-`dawn`, `dim`. `paper` is the default for blog and philosophical stories.
-`library` draws real spines from `../../assets/data/library.json` when it loads,
-with a silent fallback. Everything is inline SVG coloured through CSS variables,
-so backgrounds follow the story palette and the light/dark theme.
+`lab`, `office`, `lecture`, `server`, `library`, `night` (a city under the moon), `cafe`, `terminal`, `paper`
+(a manuscript on a desk), `train`, `garden`, `void` (soft lights in the dark), `sakura` (a hill of cherry trees),
+`classroom`, `rooftop`, `corridor`, `station` (a platform), `sea`, `room` (a student's room), `studio` (an atelier
+with a large canvas).
+
+Each scene is painted in its own time of day and takes an optional modifier: `night`, `dawn`, `dusk`, `noon`, or
+`dim` (same hour, lights low). Without a modifier most scenes are daytime; `night`, `room`, `server`, `terminal` and
+`void` are night scenes and `cafe`, `station` and `train` are dusk. Sprites take the light of the scene they stand in.
+Scenery does not follow the light/dark theme (only the text window and the menus do). `library` draws real spines
+from `../../assets/data/library.json` when it loads, with a silent fallback.
+
+## Staging a scene
+
+```text
+@chapter 2 Seventy-Five Minutes
+@transition fade 1200
+@bg classroom dusk
+@flashback on Spring, the study room
+@fx dust on
+@mode nvl
+Dust in a bar of afternoon light. Rows of desks.
+(I remember the dust more than the lesson.)
+@page
+Fifty people sat one supervised session each. ^§3.2
+@mode adv
+@show P23 center (worried) far
+P23: It wasn't about seconds, was it?
+@move P23 left
+@show Jack right (thinking) near
+Jack: I can't tell you that.
+@pause 600
+@flashback off
+@hide all
+@fx none
+@transition white 900
+@cg sea-of-points | The inside of the model
+@tone cold
+No floor. No walls. Points of light out to the horizon.
+@cg off
+@tone none
+```
+
+A script that uses every directive once is `_demo-effects.vn` in this folder
+(`?src=stories/_demo-effects.vn`).
 
 ## Chips and facts
 
@@ -170,15 +227,18 @@ reactions in the branches and the numbers after the reconverging `== label`.
 ## Lint rules
 
 Fatal (playback stops; the in-page panel names the line): unknown jump target,
-choice without a target, `@show` of an undeclared name, malformed `@if`,
-missing `@kind`.
+choice without a target, `@show` or `@move` of an undeclared name, a `@show` token
+that is not a slot, a `(face)` or `near`/`far`, malformed `@if`, missing `@kind`.
 
 Warnings (the story still runs, the panel and `test.js` list them):
 
-- undeclared speaker (demoted to narration),
-- unknown background (falls back to `void`),
+- undeclared speaker (demoted to narration; only a single capitalised word before the colon is reported),
+- unknown background (falls back to `void`) or background modifier,
+- unknown `@transition`, `@fx`, `@cg` or `@tone` name; each warning lists the valid names
+  (the transition becomes `dissolve`, the fx is ignored, the CG becomes an abstract fallback, the tone `none`),
 - **numeric literal without a chip** (paper kind): a `say` or narration line
-  containing `%`, `ρ`/`rho`, `p <`, or an integer of 10 or more and no chip,
+  containing `%`, `ρ`/`rho`, `p <`, or an integer of 10 or more and no chip (digits inside a declared cast
+  name such as `Participant 23` do not count),
 - **chip inside a choice-dependent branch** ("choices change reactions, never reported figures"),
   A hub is exempt: a `(once)` menu whose sections jump back to the menu's own
   label can carry chips in every section, because every option is visitable.
@@ -237,11 +297,15 @@ Then open, from the site root:
 - `?theme=light` / `?theme=dark` — force the theme; `?thumb=1` — the frozen
   thumbnail state at `@thumb`; `?cast=1` — a grid of every cast trait and face.
 - `&autoplay=12` / `&autoplay=end` — test hook: advance that many stops instantly
-  (option 1 at every menu) or run to the end card, without saving progress.
+  (option 1 at every menu, or option K+1 with `&pick=K`) or run to the ending, without autosaving;
+  `&screen=save|load|config|log|chapters|title` then opens that screen, `&trans=iris` freezes a transition half-way.
+- `?gallery=bg` (`&mod=night|dawn|dusk|dim`) and `?gallery=cg` — every background and every event illustration.
 
-The panel at the top of the stage shows every parser and lint issue with line
-numbers; it mirrors to the browser console. Keys while playing: Space/Enter
-advance, Backspace back, `L` log, `T` text-only, `A` auto, `S` skip, `H` help.
+A story opens on its title screen (Start, Continue, Chapters, Load, Log, Config, Back to stories) and then plays
+full-bleed. With `?src=` (or `?drafts=1`) a `⚠ n` button at the top right lists every parser and lint issue with line
+numbers; they are mirrored to the browser console, and a fatal issue replaces the stage with a panel that names the
+line. Keys while playing: Space/Enter advance, Backspace back, `L` backlog, `A` auto, `S` skip, `H` or right-click hide
+the window, `C` config, `F` fullscreen, `F5`/`F9` quick save and load, `T` text-only, `?` help, `Esc` title screen.
 
 ## Testing
 

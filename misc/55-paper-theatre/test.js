@@ -256,12 +256,14 @@ section = 'lint-warn';
   eq(r.p.ops[0].kind, 'narrate', 'demoted op is narration');
   ok(has(r.issues, 'numeric-literal'), 'and the figure without chip warns');
 
-  r = parseLint(HEADER + '@bg attic\n@bg lab dusk');
+  r = parseLint(HEADER + '@bg attic\n@bg lab foggy\n@bg lab dusk\n@bg sakura noon');
   w = find(r.issues, 'bg-unknown');
   ok(w && w.level === 'warn' && w.msg === "line 6: unknown background 'attic'; using void", 'unknown bg wording: ' + (w && w.msg));
   ok(w && w.hint.indexOf('lab, office, lecture') >= 0, 'bg hint lists the names');
   eq(r.p.ops[0].name, 'attic', 'bg op keeps the name');
-  ok(has(r.issues, 'bg-mod-unknown'), 'unknown bg modifier warns');
+  eq(r.issues.filter(function (x) { return x.code === 'bg-mod-unknown'; }).map(function (x) { return x.line; }), [7], 'unknown bg modifier warns; dusk and noon are modifiers');
+  ok(find(r.issues, 'bg-mod-unknown').hint.indexOf('dusk') >= 0, 'bg modifier hint lists the modifiers');
+  eq(r.issues.filter(function (x) { return x.code === 'bg-unknown'; }).length, 1, 'sakura is a known background');
 
   r = parseLint(HEADER + 'Jack: accuracy fell to 40.5% at L3\nJack: Spearman rho 0.3\nJack: p < 0.005\nJack: 600 answers\nJack: 12 output questions and L0 code `n=100`\nJack: Twelve models, nine of them.');
   var nl = r.issues.filter(function (x) { return x.code === 'numeric-literal'; });
@@ -309,6 +311,120 @@ section = 'lint-warn';
   ok(!has(r.issues, 'label-duplicate'), 'sanity');
   r = parseLint(HEADER + '== a\n== a');
   ok(has(r.issues, 'label-duplicate'), 'duplicate label warns');
+})();
+
+/* ------------------------------------------------------------------ walk */
+section = 'vn-directives';
+(function () {
+  var H = '@title X\n@kind blog\n@cast Aoi long cardigan hue=10\n@cast Ren bob uniform\n@cast Tail ponytail hoodie\n@cast P23 name="Participant 23" hood\n';
+  var src = H + [
+    '@chapter 1 The Hill',                         // 7
+    '@transition fade 900',
+    '@bg sakura dusk',
+    '@transition wipe-left',
+    '@cg tree | The tree on the hill',
+    '@show Aoi left (smile) near',
+    '@show Ren far right',
+    'Aoi: first',                                   // 14
+    '@move Aoi center',
+    '@flashback on Spring, the study room',
+    '@mode nvl',
+    '@fx petals on',
+    '@fx shake',
+    '@tone memory',
+    '(A thought.)',                                 // 21
+    'Ren: \uff08another one\uff09',                  // 22
+    '@page',
+    'plain',                                        // 24
+    '@pause 400',                                   // 25
+    '@flashback off',
+    '@mode adv',
+    '@fx petals off',
+    '@fx none',
+    '@cg off',
+    '@pause',
+    '@chapter II',
+    'last'
+  ].join('\n');
+  var r = parseLint(src), p = r.p, ops = p.ops, by = {};
+  ops.forEach(function (o) { (by[o.kind] = by[o.kind] || []).push(o); });
+  eq(codes(r.issues), [], 'directive fixture lints clean');
+  eq([p.cast.aoi.hair, p.cast.aoi.clothes, p.cast.ren.hair, p.cast.ren.clothes, p.cast.tail.hair, p.cast.tail.clothes, p.cast.p23.clothes], ['long', 'cardigan', 'bob', 'uniform', 'ponytail', 'hoodie', null], '@cast hair and clothes options');
+  eq(by.chapter.map(function (o) { return [o.n, o.title]; }), [['1', 'The Hill'], ['II', '']], '@chapter n title');
+  eq(p.chapters.map(function (c) { return [c.n, c.title, ops[c.index].kind]; }), [['1', 'The Hill', 'chapter'], ['II', '', 'chapter']], 'program.chapters registers each chapter');
+  eq(by.transition.map(function (o) { return [o.name, o.ms]; }), [['fade', 900], ['wipe-left', 600]], '@transition kind [ms], default 600');
+  eq([by.bg[0].name, by.bg[0].mod], ['sakura', 'dusk'], 'new background with the dusk modifier');
+  eq(by.cg.map(function (o) { return [o.name, o.caption]; }), [['tree', 'The tree on the hill'], [null, null]], '@cg name | caption and @cg off');
+  eq(by.show.map(function (o) { return [o.who, o.slot, o.face, o.dist]; }), [['Aoi', 'left', 'smile', 'near'], ['Ren', 'right', null, 'far']], '@show with distance, tokens in any order');
+  eq(by.move.map(function (o) { return [o.who, o.key, o.slot]; }), [['Aoi', 'aoi', 'center']], '@move');
+  eq(by.flashback.map(function (o) { return [o.on, o.caption]; }), [[true, 'Spring, the study room'], [false, null]], '@flashback on caption / off');
+  eq(by.mode.map(function (o) { return o.mode; }), ['nvl', 'adv'], '@mode');
+  eq(by.page.length, 1, '@page');
+  eq(by.fx.map(function (o) { return [o.name, o.on, o.oneshot]; }), [['petals', true, false], ['shake', true, true], ['petals', false, false], ['none', true, false]], '@fx persistent, one-shot, off, none');
+  eq(by.tone.map(function (o) { return o.name; }), ['memory'], '@tone');
+  eq(by.pause.map(function (o) { return o.ms; }), [400, 800], '@pause ms, default 800');
+  eq([by.narrate[0].thought, by.say[1].thought, by.say[0].thought, by.narrate[1].thought], [true, true, false, false], 'thought: text wrapped in ASCII or full-width parentheses');
+  ok(VN.isThought('(x y)') && VN.isThought('\uff08x\uff09') && !VN.isThought('(a) and (b') && !VN.isThought('plain'), 'VN.isThought');
+  ok(VN.BLOCKING.chapter && VN.BLOCKING.pause && !VN.BLOCKING.cg && !VN.BLOCKING.fx && !VN.BLOCKING.transition, 'chapter and pause block, the rest do not');
+  var w = VN.walk(p);
+  ok(w.ok && w.paths === 1, 'walk treats the new directives as non-branching');
+
+  // interpreter
+  var run = VN.createRun(p), s = run.advance();
+  eq([s.op.kind, s.state.chapter.n, s.state.stops], ['chapter', '1', 1], 'chapter is a stop and sets state.chapter');
+  s = run.advance();
+  eq(s.op.text, 'first', 'first line');
+  eq(s.state.change, { bg: { name: 'fade', ms: 900 }, cg: { name: 'wipe-left', ms: 600 } }, 'a @bg and a @cg between two stops each keep their own transition');
+  eq(s.state.transition, null, 'the armed transition is consumed');
+  eq([s.state.bg, s.state.cg], [{ name: 'sakura', mod: 'dusk' }, { name: 'tree', caption: 'The tree on the hill' }], 'bg and cg state');
+  eq([s.state.slots, s.state.dist], [{ left: 'aoi', center: null, right: 'ren' }, { aoi: 'near', ren: 'far' }], 'slots and distances');
+  s = run.advance();
+  eq(s.op.text, '(A thought.)', 'thought line');
+  eq(s.state.change, null, 'state.change resets when nothing changed');
+  eq(s.state.slots, { left: null, center: 'aoi', right: 'ren' }, '@move slides the sprite to the new slot');
+  eq([s.state.flashback, s.state.mode, s.state.fx, s.state.oneshot, s.state.tone], [{ caption: 'Spring, the study room' }, 'nvl', { petals: true }, ['shake'], 'memory'], 'flashback, mode, fx, one-shot, tone state');
+  var start = s.state.pageStart;
+  ok(s.state.history[s.state.history.length - 1].thought && s.state.history[s.state.history.length - 1].nvl, 'history rows carry thought and nvl');
+  s = run.advance();
+  eq([s.state.oneshot, s.state.pageStart], [[], start], 'one-shots last one stop; the page keeps accumulating');
+  s = run.advance();
+  eq([s.op.text, s.state.pageStart, s.state.history.length], ['plain', start + 2, start + 3], '@page moves pageStart to the current end of history');
+  var hist = s.state.history.length;
+  s = run.advance();
+  eq([s.op.kind, s.op.ms, s.state.history.length], ['pause', 400, hist], 'pause is a stop that is not recorded in history');
+  s = run.advance();
+  eq([s.op.kind, s.state.flashback, s.state.mode, s.state.fx, s.state.cg], ['pause', null, 'adv', {}, null], 'everything switched off again');
+  s = run.advance();
+  eq([s.op.kind, s.state.chapter.n], ['chapter', 'II'], 'second chapter');
+  var back = run.back();
+  eq(back.op.kind, 'pause', 'back steps onto the previous stop');
+  // deep link dresses the stage with the new ops too
+  var run2 = VN.createRun(p), j = run2.jumpTo(p.chapters[1].index);
+  eq([j.op.kind, j.state.bg.name, j.state.tone, j.state.slots.center, j.state.cg, j.state.oneshot, j.state.change], ['chapter', 'sakura', 'memory', 'aoi', null, [], null], 'jumpTo dresses bg, tone, sprites; no one-shots, no transition');
+  // replay to a stop index reproduces the state (saves depend on it)
+  var run3 = VN.createRun(p), rep = run3.replay([], 3);
+  eq([rep.op.text, rep.state.mode, rep.state.flashback && rep.state.flashback.caption], ['(A thought.)', 'nvl', 'Spring, the study room'], 'replay(log, stopIndex) restores mode and flashback');
+
+  // lint: unknown names warn and list the valid ones
+  r = parseLint(H + '@transition swirl\n@fx confetti\n@cg dragon\n@tone sepia\n@mode vr\n@show Aoi sideways\n@move Aoi up\n@move Nobody left\n@transition fade soon\n@fx rain maybe\n@pause long\n@flashback maybe\n@cg\n@chapter\nAoi: x');
+  var tr = find(r.issues, 'transition-unknown'), fxw = find(r.issues, 'fx-unknown'), cgw = find(r.issues, 'cg-unknown'), tw = find(r.issues, 'tone-unknown');
+  ok(tr && tr.level === 'warn' && tr.msg === "line 7: unknown transition 'swirl'; using dissolve" && tr.hint === 'transitions: fade, dissolve, white, wipe-left, wipe-right, iris, blinds, cut', 'unknown transition warns with the list: ' + JSON.stringify(tr));
+  ok(fxw && fxw.msg === "line 8: unknown fx 'confetti'; ignored" && fxw.hint === 'fx: petals, snow, rain, dust, fireflies, none; one-shot: shake, flash, pulse', 'unknown fx warns with the list: ' + JSON.stringify(fxw));
+  ok(cgw && cgw.msg === "line 9: unknown cg 'dragon'; using an abstract fallback" && cgw.hint.indexOf('tree, desk-night, screen-code, hands-keyboard, two-chairs, corridor-light, sea-of-points, page, window-rain') >= 0, 'unknown cg warns with the list: ' + JSON.stringify(cgw));
+  ok(tw && tw.msg === "line 10: unknown tone 'sepia'; using none" && tw.hint === 'tones: none, dusk, night, dawn, noon, memory, cold', 'unknown tone warns with the list: ' + JSON.stringify(tw));
+  ok(has(r.issues, 'mode-unknown', 'warn') && has(r.issues, 'show-malformed', 'fatal') && has(r.issues, 'slot-unknown', 'warn') && has(r.issues, 'show-undeclared', 'fatal'), 'mode, show token, move slot, move of undeclared name');
+  ok(has(r.issues, 'transition-malformed') && has(r.issues, 'fx-malformed') && has(r.issues, 'pause-malformed') && has(r.issues, 'flashback-malformed') && has(r.issues, 'cg-malformed') && has(r.issues, 'chapter-malformed'), 'malformed arguments warn');
+  eq(r.p.ops.filter(function (o) { return o.kind === 'cg'; }).map(function (o) { return o.name; }), ['dragon'], 'an unknown cg keeps its name for the fallback');
+  eq(r.p.ops.filter(function (o) { return o.kind === 'transition'; }).map(function (o) { return o.name; }), ['dissolve', 'fade'], 'an unknown transition becomes dissolve');
+  ok(!r.p.ops.some(function (o) { return o.kind === 'fx' && o.name === 'confetti'; }), 'an unknown fx is dropped');
+
+  // prose with a colon is narration; only a single capitalised unknown word is a forgotten speaker
+  r = parseLint(H + 'Nearly three: the rain has settled in.\nthe short version: none\nResult: forty\nRen: fine');
+  eq(kinds(r.p.ops.slice(0, 4)), ['narrate', 'narrate', 'narrate', 'say'], 'colon lines without a cast name are narration');
+  eq(r.issues.filter(function (x) { return x.code === 'speaker-undeclared'; }).map(function (x) { return x.line; }), [9], 'only the single capitalised unknown name warns');
+  // a number inside a declared cast name is not a figure
+  r = parseLint('@title X\n@kind paper\n@cast P23 name="Participant 23"\nI still think about Participant 23.\nP23: I am 23 years old.\nThere were 23 of them.');
+  eq(r.issues.filter(function (x) { return x.code === 'numeric-literal'; }).map(function (x) { return x.line; }), [5, 6], 'numeric lint skips numbers that belong to a cast display name');
 })();
 
 /* ------------------------------------------------------------------ walk */
@@ -577,15 +693,26 @@ section = 'obfuscation';
   var file = path.join(STORIES, 'obfuscation.vn');
   if (!fs.existsSync(file)) { ok(false, 'stories/obfuscation.vn missing'); return; }
   var p = VN.parse(fs.readFileSync(file, 'utf8'), { id: 'obfuscation', resolveInclude: readInclude(file) });
-  eq(Object.keys(p.labels), ['bet_monotonic', 'bet_language', 'humans', 'react_monotonic', 'models'], 'labels');
   eq(p.cast.model.name, 'a reasoning-tuned model', 'Model display name');
-  ok(p.thumb != null && p.ops[p.thumb + 1].text === 'Before the numbers, place a bet.', 'thumb precedes the bet');
-  var chipped = p.ops.filter(function (o) { return VN.refs(o).length; }).length;
-  eq(chipped, 9, 'nine chipped ops');
-  var w = VN.walk(p);
-  eq([w.ok, w.paths], [true, 2], 'two complete paths');
+  ok(p.cast.model.lattice === 'sparse', 'the Model is a lattice');
   var issues = VN.lint(p);
   eq(codes(issues), [], 'obfuscation lints clean');
+  eq(codes(VN.publishBlockers(issues)), [], 'obfuscation has no publish blockers');
+  var w = VN.walk(p);
+  ok(w.ok && w.paths >= 2 && w.unreachable.length === 0, 'walk: every branch ends, no unreachable label: ' + JSON.stringify(w.issues.map(function (i) { return i.msg; })));
+  ok(w.endings.end >= 1 && w.endings.withheld === 0, 'walk ends on @end, never @withheld');
+  // every route plays to @end: option k at every menu, for k = 0..3
+  for (var pick = 0; pick < 4; pick++) {
+    var run = VN.createRun(p), s = run.advance(), guard = 0;
+    while (s && !s.done && guard++ < 5000) s = s.op.kind === 'menu' ? run.choose(Math.min(pick, s.options.length - 1)) : run.advance();
+    ok(s && s.op.kind === 'end', 'route ' + pick + ' reaches @end (stopped on ' + (s && s.op.kind) + ')');
+  }
+  ok(p.thumb != null, '@thumb exists');
+  var after = p.ops.slice(p.thumb + 1).filter(function (o) { return VN.BLOCKING[o.kind]; })[0];
+  ok(after && (after.kind === 'say' || after.kind === 'narrate'), '@thumb is followed by a line of text');
+  ok(p.chapters.length >= 2 && p.chapters.every(function (c) { return p.ops[c.index].kind === 'chapter' && c.title; }), 'chapters are registered with titles');
+  ok(p.ops.filter(function (o) { return VN.refs(o).length; }).length >= 9, 'at least nine chipped ops');
+  ok(p.ops.some(function (o) { return o.kind === 'flashback' && o.on; }) && p.ops.some(function (o) { return o.kind === 'cg' && o.name; }) && p.ops.some(function (o) { return o.kind === 'mode' && o.mode === 'nvl'; }), 'uses flashback, cg and nvl');
   var chart = p.ops.filter(function (o) { return o.kind === 'chart'; })[0];
   eq(chart.series.map(function (s) { return [s.loNum, s.hiNum]; }), [[40.5, 31.1], [43, 16], [38, 53]], 'chart numbers from facts');
   eq(chart.unit, '%', 'chart unit');
