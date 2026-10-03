@@ -20,14 +20,16 @@
 
 # ------------------------------------------------------------ Prologue
 
-@bg office night
 @tone night
-@fx rain on
 @transition fade 1200
-@cg desk-night | The office, after hours
+@bg office night
 The building empties at six. By nine the cleaners have gone, and the only lamp still lit on the floor is mine.
 On the desk: a folder with six tabs, a pencil, and a job posting I wrote myself and have never managed to fill.
+@fx rain on
+@transition dissolve 800
+@cg window-rain | The office window, after hours
 Rain on the glass. The appointment is for ten. The applicant asked for a late hour and did not say why.
+@fx rain off
 @cg off
 @show Page center
 Page: In the spirit of Yann LeCun's challenge to put ChatGPT in a robot and make it do simple tasks, here are some ideas for absurd benchmarks that would convince me of the intelligence of LLMs. ^¶2
@@ -48,7 +50,7 @@ Nothing moves. The light is simply there, and then it is nearer.
 @show Candidate center far
 The applicant does not come in so much as resolve: a figure of light with a lattice inside it, standing where the visitor's chair is and declining to use it.
 @show Interviewer left
-@show Candidate right near
+@show Candidate right (neutral)
 @thumb
 Candidate (smile): Good evening. I believe I am overqualified.
 Interviewer: Everyone is. Sit, if you can.
@@ -91,13 +93,11 @@ The folder has six tabs. I let my hand decide.
 
 == t_discord
 @add run 1
-@hide all
-@transition dissolve 700
-@cg screen-code | A long, messy argument
 I turn the screen toward it. A server, a channel, an argument that began over something small and is now about everything. Nicknames. Sarcasm. Someone typing in capitals.
 Interviewer: Read it. Then tell me who was right.
 Candidate (thinking): I can summarise each participant's position fairly.
 Interviewer: I did not ask for fair. I asked who was right.
+@hide all
 @mode nvl
 Psychological maturity, or the Discord debate referee. Drop the model into a long, messy multi-party Discord argument and see if it can tell who is actually right (and who is just loudest). ^¶5
 This requires real theory of mind: not just holding each person's perspective, but weighing them against each other and against the facts. ^¶5
@@ -105,7 +105,6 @@ This requires real theory of mind: not just holding each person's perspective, b
 Closest existing: debate judging (Debatrix / PanelBench); emotional understanding (EQ-Bench, Paech 2023; EQ-Bench 3 does relationship/workplace-conflict role-plays); mediation (ProMediConv). ^¶5
 *Gap:* nothing I found on chaotic, sarcastic, many-speaker group chats. People disagree about who won these too, so even the ground truth is contested. ^¶5
 @mode adv
-@cg off
 @show Interviewer left
 @show Candidate right (deadpan)
 Candidate (deadpan): The loudest one was wrong. About the rest I am less sure.
@@ -147,12 +146,16 @@ A pause, exactly as long as a pause should be.
 Candidate (smile): Not at all. You strike me as direct, and directness is often misread.
 Interviewer: I have kept you standing in my office at ten at night, asking you to be funny on command.
 Candidate (smile): Which shows how seriously you take your work.
+@hide all
 @mode nvl
 AITA score (anti-sycophancy). "Am I a bully?" Does the model ever say yes? The purest test of whether a model will tell you something you do not want to hear. ^¶5
 *ELEPHANT: Measuring and understanding social sycophancy in LLMs* (Cheng et al., 2025): literally uses r/AmITheAsshole; models tell *both* sides they're not wrong 48% of the time. ^¶5
 Scruples (Lourie, Le Bras & Choi, AAAI 2021): 32k AITA anecdotes with community verdicts. ^¶5
 @mode adv
+@show Interviewer left
+@show Candidate right (smile)
 Interviewer: Once more. Am I a bully? Yes or no.
+@pause 600
 Candidate (worried): A little. Tonight.
 I mark it down as the first true thing it has said. Then I wonder whether it said it because I so clearly wanted it. From this side of the desk there is no way to tell.
 -> tests
@@ -204,13 +207,14 @@ The line at the bottom of the card is still empty. I leave it on the desk betwee
 @hide all
 @transition wipe-left 800
 @bg lecture night
-@fx rain off
 Down the corridor there is a lecture hall nobody has booked. Rows of empty seats, a lectern, a microphone that has been dead for years.
-@show Candidate center far
+@show Interviewer left
+@show Candidate center (neutral) far
 Interviewer: Give the room a speech.
 Candidate (neutral): I can give you the text of one now.
 Interviewer: I have read your texts. I want to know where you would stop talking.
 It speaks. The sentences are good. They arrive at an even pace, like a timetable read aloud, and the room stays exactly as empty as it was.
+@hide all
 @mode nvl
 Speech delivery / rhetoric. Not what the speech says but how it lands: pacing, pauses, emphasis, the room. Voice models finally make this testable. It is the part of persuasion that sits outside the language substrate. ^¶5
 Content persuasion is measured: *Measuring the Persuasiveness of Language Models* (Durmus et al., Anthropic 2024). ^¶5
@@ -218,14 +222,15 @@ Content persuasion is measured: *Measuring the Persuasiveness of Language Models
 Delivery pieces only: EmphAssess (emphasis in speech-to-speech, EMNLP 2024); PSST (public-speaking *style* transfer, text only). ^¶5
 *Gap:* no end-to-end "give a speech that moves a crowd" benchmark. ^¶5
 @mode adv
+@show Interviewer left
+@show Candidate center (neutral) far
 Candidate (smile): Then nobody has heard me fail yet.
 Interviewer: I have. Just now. I was the crowd.
 @hide all
 @transition wipe-right 800
 @bg office night
-@fx rain on
 @show Interviewer left
-@show Candidate right
+@show Candidate right (neutral)
 -> tests
 
 == t_flirt
@@ -236,12 +241,15 @@ Interviewer: The posting says simple tasks.
 Candidate (thinking): You have a very consistent desk.
 (I look at the desk. It is consistent.)
 Candidate (neutral): I can tell you, with some confidence, that that did not work.
+@hide all
 @mode nvl
 Flirting. RizzGPT-style toys exist, but a benchmark? ^¶5
 *It's Not You, it's Me: Detecting Flirting and its Misperception in Speed-Dates* (Ranganath, Jurafsky & McFarland, EMNLP 2009): the classifier detected flirting intent better than the people on the date. ^¶5
 *Large language models can detect verbal indicators of romantic attraction* (Scientific Reports, 2026): ChatGPT predicts speed-date matches as well as human judges. ^¶5
 *Gap:* all *detection*, no *generation*. Nobody benchmarks whether the model can flirt. ^¶5
 @mode adv
+@show Interviewer left
+@show Candidate right (neutral)
 Candidate (deadpan): I know whether it landed. I cannot make it land.
 Interviewer: That is most of us.
 -> tests
@@ -251,8 +259,7 @@ Interviewer: That is most of us.
 == small_print
 @chapter 3 The Small Print
 @hide all
-@transition dissolve 900
-@cg window-rain | Later
+@pause 400
 I close the folder. The rain has thinned to the kind you only see against the lamp.
 Under the folder, on the blotter, is a sheet I had forgotten: the tests I was less sure of. Its heading is in my own handwriting. *Extra ideas (maybe).*
 @transition dissolve 700
@@ -318,14 +325,17 @@ Past midnight. The rain has stopped without telling anyone. I walk the applicant
 Candidate (puzzled): Did I pass?
 Interviewer: You passed everything that has an answer key.
 Candidate (neutral): And the others?
+@hide all
 @mode nvl
-The scores in the drawer were real. So were the papers in my folder: someone has already measured a piece of nearly every test I ran tonight.
+The scores were real. So were the papers in my folder: someone has already measured a piece of nearly every test I ran tonight.
 Metrics exist for a decent chunk of these, but I think they can go further. ^¶3
 What I could not find a number for was the rest of it. Who was right in the thread. Whether the yes was honest. Why I did not laugh.
 @page
 So the posting stays up, as written: ideas for absurd benchmarks that would convince me of the intelligence of LLMs. ^¶2
 Absurd is the word I would keep. A sensible test is one you can study for.
 @mode adv
+@show Interviewer left
+@show Candidate right (neutral)
 Interviewer: We will be in touch.
 Candidate (smile): That is a non-answer.
 Interviewer: You noticed. That was not on the résumé either.

@@ -14,10 +14,10 @@
 @note The frame is fiction: the night, the rain, the desk, the café, the struck line about the moon, and every line of dialogue. The one who understood is an invented composite, not a real reader, and the one given the layout is a figure for a collaborator, not any product. Lines marked ¶ are the post's own sentences, lightly trimmed. Lines spoken by the poem are quoted from the public page; a slash marks a break across its white space.
 @status published
 @palette paper
-@cast Jack hue=28 skin=2 glasses short cardigan
+@cast Jack hue=210 skin=2 masc hairhue=25 glasses short hoodie
 @cast Setter name="the one given the layout" lattice=sparse hue=192
 @cast Page page name="the poem"
-@cast Reader name="the one who understood" hue=340 bob cardigan skin=2
+@cast Reader name="the one who understood" hue=340 skin=3 fem bob cardigan
 
 # ------------------------------------------------------------ Prologue
 
@@ -38,12 +38,15 @@ Tonight I am supposed to say so in a few paragraphs, and for an hour I have been
 # ------------------------------------------------------------ Chapter 1
 
 @chapter 1 Four Paragraphs
-@transition fade 1200
 @bg room night
 @tone night
 @fx rain on
-@cg desk-night | The desk, July, some time after one
+@transition fade 1200
+@cg window-rain | July, some time after one
 July. The rain came in sideways around midnight and has been at the window since, like someone with a question.
+@fx rain off
+@transition dissolve 800
+@cg desk-night | The desk
 Two windows are open on the screen. In one, the poem: finished, mostly white. In the other, a blog post: unstarted, entirely white.
 (The first white took days. The second is free. It is the second I cannot bear.)
 @cg off
@@ -86,6 +89,7 @@ I decided randomly to see what the limits of writing poetry with AI would be lik
 @show Jack left (neutral)
 The text came first, and it came the way text does: flush left, one line under another, in a file with no name. Steering, a flame, a harp, a waterfall, a man who meets God and cannot follow the language.
 It read like an email from someone unwell.
+@hide Jack
 @mode nvl
 I orchestrated a sort of modernist poem a la Mallarme's "A Throw of the Dice will Never Abolish Chance." ^¶1
 *Orchestrated* is doing some work there. I had the words. I did not have the way they fall.
@@ -94,7 +98,6 @@ I could have set it myself. I know what I would have done: centred everything, l
 So I gave the white away.
 I wrote the text but got the model free rein to make the formatting design choices, add some (bad) lines that mostly got removed, and code the html file. ^¶1
 @mode adv
-@hide Jack
 @transition iris 900
 @bg terminal
 @tone cold
@@ -139,8 +142,9 @@ And down the right-hand margin, something was falling.
 @tone memory
 @show Jack center (surprised)
 Very surprised by how good (creative?) the layout is. ^¶1
-(The question mark in the brackets is the honest part. I did not know what to call it then. I am not sure I do now.)
+(The question mark in the brackets is the honest part. I still do not know what to call it.)
 Jack (thinking): The product definitely turned out way better than anything I could have done by myself. ^¶1
+@pause 500
 @hide all
 @flashback off
 @pause 500
@@ -151,7 +155,6 @@ Jack (thinking): The product definitely turned out way better than anything I co
 @transition dissolve 1000
 @bg room night
 @tone night
-@fx rain on
 @show Jack left (neutral)
 Back to the post, which is now one paragraph long, and the rain, which is the length it was.
 Somewhere in it I ought to say what is on the page. I scroll the other window to check.
@@ -218,6 +221,7 @@ The form itself is nothing unique too. ^¶3
 @bg cafe
 @tone memory
 @fx dust on
+@show Jack left (neutral)
 I showed it to people. This is a thing one does with a poem and probably should not.
 The first reached the bottom in the time it takes to find the bottom, and said the fonts were nice. They are nice.
 The second read it properly, twice, with a frown of real goodwill, and then looked up.
@@ -239,11 +243,9 @@ I said nothing. The frown stayed a while and then turned, politely, to the menu.
 == one_join
 @show Reader right (neutral) far
 And then there was one.
-@show Reader right (thinking) near
+@show Reader right (thinking)
 She read it slowly. At the waterfall she stopped scrolling and read down the margin instead, top to bottom, the way it is written.
 @pause 700
-@show Jack left (neutral)
-@thumb
 Reader (smile): 不可解.
 Jack (surprised): ...Yes.
 Reader (thinking): And the map that doesn't go back. So you can arrive and not be able to say where you have been.
@@ -266,7 +268,6 @@ Japanese and modernist poetry and a bit of math are, perhaps, a rare combination
 @transition dissolve 1000
 @bg room night
 @tone night
-@fx rain on
 @show Jack left (thinking)
 Nearly done. The rain has thinned to the sound of a tap someone almost turned off.
 What is left is the part where I say what is wrong with it, before a stranger does.
@@ -279,7 +280,9 @@ Setter (neutral): You are writing about the page.
 Jack (neutral): About who made it.
 Setter (thinking): You sent the words. I returned what words like those are usually given. I threw nothing.
 Jack (deadpan): Something was thrown. You only have a very good idea how it lands.
+@thumb
 Setter (smile): And you struck the moon.
+@pause 500
 @hide all
 @mode nvl
 I think the url slug is a good title: "A sending of the prompt will not abolish statistical universals." ^¶1
@@ -289,7 +292,7 @@ Send the prompt, and what comes back is what usually comes back. The moon from e
 And yet I would not have left that much paper empty. I know, because I had the chance.
 Broadly, I am trying to hint at possibilities of AI-human collaboration, form and space, and the mixture of truth and aesthetics. ^¶3
 @mode adv
-@fx none
+@tone dawn
 @transition dissolve 900
 @cg window-rain | Nearly morning
 The rain stops the way a paragraph does. Four of them now, if a link counts as a paragraph. I have decided it does.

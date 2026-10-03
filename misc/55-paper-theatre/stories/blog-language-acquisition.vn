@@ -5,8 +5,8 @@
 @note The frame is fiction: the night, the corkboard, the rooms the memories are staged in, the train (which is only imagined) and every unmarked line. The Theory personifies the post's reading of comprehensible input; it is not a person and quotes nobody. Which languages were studied, and which classes failed, come from the post. Lines marked ¶ are the post's own sentences, lightly trimmed.
 @status published
 @palette ink
-@cast Jack hue=250 skin=2 glasses short hoodie
-@cast Theory name="the Theory" hood cardigan hue=40
+@cast Jack hue=210 skin=2 masc hairhue=25 glasses short hoodie
+@cast Theory name="the Theory" hue=40 skin=3 hood cardigan
 @cast Page page name="Open Questions"
 
 # Source: blog/posts/2026-08-01-open-questions-in-language-acquisition.md (2026-08-01).
@@ -38,6 +38,7 @@ Page: My version of Erdős problems. Many of these seem intractable. ^¶2
 @chapter 1 Inventory
 @show Jack left (thinking)
 Jack: Before the questions, the inventory. What I have actually done.
+@hide Jack
 @mode nvl
 I learned Japanese and German through immersion, one reasonably well and the other in progress. ^¶3
 I put hundreds of hours into Duolingo and finished the French and Vietnamese trees. ^¶3
@@ -50,6 +51,7 @@ Read down the column and it is not a record of triumph. It is a lab notebook kep
 To arrive at a winning "formula," I needed time, instruction, software, and a mind to discern bullshit. ^¶4
 These experiences lay somewhat unverbalized in my mind. ^¶5
 @mode adv
+@show Jack left (thinking)
 Jack (neutral): Somebody must have put it into words already.
 
 # ------------------------------------------------------------ Chapter 2
@@ -64,11 +66,11 @@ To the best of my knowledge, the best verbalization of this sort of knowledge is
 It is a good theory. It has the calm of something that has been right about a great deal.
 @show Theory right far
 When I look up it is sitting across from me: hood up, hands folded, with the patience of a book.
-@show Jack left (neutral)
+@show Jack left (surprised)
 @show Theory right (smile)
 @thumb
 Theory (smile): You have been reading. Good. Keep going.
-Jack: But the theory leads Krashen to some absurd claims. ^¶6
+Jack (neutral): But the theory leads Krashen to some absurd claims. ^¶6
 Theory (smile): To be a good writer, you just need to read. ^¶6
 Theory (neutral): To become articulate, you just need to read. ^¶6
 Jack (deadpan): Tell that to an author! ^¶6
@@ -93,11 +95,14 @@ Theory (neutral): Then you have not read enough.
 -> ch2_out
 
 == ch2_out
+@hide all
 @mode nvl
 A better second-language pedagogy, in my view, must start from an experimental base plus the minimum logical framework needed to explain the results. ^¶7
 Nothing like Chomsky or any philosophical account of language built bottom-up. In other words, avoid philosophy (even experimental philosophy) where we can, and start with the facts. ^¶7
 The problem is that those facts have not been measured. ^¶8
 @mode adv
+@show Jack left (neutral)
+@show Theory right (neutral)
 Theory (neutral): Then what do you propose to do about it, at one in the morning?
 Jack: Write down what nobody has measured. One card each.
 (It follows me back to the desk. Theories do.)
@@ -129,11 +134,13 @@ I had meant to write them in order. It does not work that way. Pick up a blank c
 @hide all
 @bg room dim
 @flashback on The app
+@tone memory
 A lesson before sleep. Then another, because the first did not feel like anything.
 Match the word to the picture. Match the word to the picture. A small bright sound for every right answer.
 Hundreds of hours went this way. Two whole trees, French and Vietnamese, down to the last leaf.
 (Some nights I was there for all of it. Some nights my thumb did the lesson and I watched.)
 @flashback off
+@tone night
 @mode nvl
 Concentration. How does attention affect learning? We know learning in your sleep doesn't work, but what's the minimum? Sometimes I glaze through a text. How much do I actually retain in that regime? ^¶10
 Cognitive load, actually measured. Cognitive load by medium and by language, using physical measures (pupillometry, dual-task) instead of self-report scales. ^¶10
@@ -154,14 +161,18 @@ Three pins.
 @hide all
 @bg classroom
 @flashback on IB Latin
+@tone memory
 @fx dust on
+@show Jack right (thinking) far
 Afternoon. A poem on the desk, and the same poem again inside my head, carried a line at a time, the way you carry water in your hands.
 I was not reading Latin. I was holding it. That was the method: to have the poem already, so that the exam would find me with it.
 There were other classrooms. French. Vietnamese. Those classes I failed.
 And there was what no classroom gave me, which was immersion, and which is how the other two languages came.
 (Same student. Same head. The only thing that changed from room to room was how it was done.)
+@hide all
 @fx dust off
 @flashback off
+@tone night
 @mode nvl
 Experience vs. method. The theory that experience doesn't help, and that what helps is improved methods. ^¶10
 There are people who speak five languages at home but then can't learn Spanish because they suck at classes. If experience mattered on its own, they shouldn't fail. ^¶10
@@ -177,6 +188,7 @@ Jack: They had every language. That may not be the same thing.
 @add pinned 1
 @hide all
 @flashback on The family table
+@tone memory
 @transition dissolve 700
 @cg two-chairs | The family table
 Dinner. The talk goes round the table in Vietnamese, quickly, the way water goes round stones.
@@ -197,6 +209,7 @@ I answer in English. The table takes it without comment and flows on, and I am b
 I have finished the whole Vietnamese tree. Every lesson. The table does not know this, and it does not help.
 @cg off
 @flashback off
+@tone night
 @mode nvl
 What it takes to get good at talking. Separate the fact that you're getting input (Krashen) from what I actually believe, which is that you have to talk. ^¶10
 The design is simple. Take input-matched cohorts, force one to speak, and give the other pure input. Make them play VNs lol. That's your experiment. ^¶10
@@ -226,11 +239,12 @@ Hearing foreign sounds. Empirical evidence on the process of learning to *hear* 
 Pronunciation. Empirically it seems to be what Matt vs Japan said. Those who care get good and those who don't suck. ^¶10
 My model is a small endowment at the start plus a self-improvement feedback mechanism. Is that testable? (I think yes.) ^¶10
 @mode adv
-The learner hears the name of the next station twice and is sure it was the same both times.
+@show Jack left (neutral)
 @show Theory right (neutral)
+The learner hears the name of the next station twice and is sure it was the same both times.
 Theory (neutral): Read the sign.
-@show Jack left (smile)
 Jack (smile): The sign does not have a pitch.
+@pause 500
 @hide all
 @transition wipe-right 800
 @bg room night
@@ -306,10 +320,13 @@ Jack (smile): You are the pure-input cohort. Before you go, say something out lo
 
 == last_card
 One card left in the box. No room comes with it. It goes in the middle.
+@hide all
 @mode nvl
 A mixed model of language learning. Is a single formal model possible, one that predicts acquisition order, error patterns, and attrition across input-heavy and output-heavy regimes? ^¶10
 Right now we have competing verbal theories that don't make joint quantitative predictions. ^¶10
 @mode adv
+@show Jack left (neutral)
+@show Theory right (neutral)
 Theory (neutral): I am one of those.
 Jack: You are the best of them. That is why you were on the shelf.
 Theory (smile): Then read me again when you have the numbers.
@@ -317,7 +334,7 @@ Theory (smile): Then read me again when you have the numbers.
 @pause 600
 When I look again the chair is empty, and the book is where books go.
 @hide all
-@transition dissolve 1200
+@transition fade 1200
 @cg tree | Morning
 @mode nvl
 None of the cards is an answer. A card is only a place where an answer would go.

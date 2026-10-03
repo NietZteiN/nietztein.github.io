@@ -6,8 +6,8 @@
 @status published
 @palette ochre
 @cast Fitter player name="the Fitter" hue=28
-@cast Brain name="the Brain" none coat hue=340
-@cast Horatio short glasses uniform hue=250
+@cast Brain name="the Brain" hue=340 skin=3 none coat
+@cast Horatio hue=250 skin=1 masc hairhue=42 short glasses uniform
 @cast Model name="a model" lattice=sparse hue=192
 @cast Page page name="Pinned above the mirror"
 
@@ -47,12 +47,12 @@ Nowhere is this more apparent than the brain. We don't yet understand its struct
 In fact, throughout history, our view of technology has limited our understanding of the brain — when we usually think of it the other way around, the brain creating technology. ^¶6
 @mode adv
 @card Exempli gratia | LOVE IS WAR: we attack, lose, battle. | TIME IS MONEY: so we save it, spend it, waste it. ^¶5
-The bell on the stair. My oldest client, and my most regular.
-@show Brain center
-The Brain has been coming here for as long as there has been a here. I have never seen it without a costume. I am not certain anyone has.
-@show Horatio right
-It never comes alone. Horatio takes the second chair, as always, and folds his hands. He likes whatever is newest.
 @show Fitter left
+The bell on the stair. My oldest client, and my most regular.
+@show Brain center (neutral)
+The Brain has been coming here for as long as there has been a here. I have never seen it without a costume. I am not certain anyone has.
+@show Horatio right (smile)
+It never comes alone. Horatio takes the second chair, as always, and folds his hands. He likes whatever is newest.
 @thumb
 Horatio (smile): Something modern, I think. Something that explains it.
 Brain (neutral): Something that fits.
@@ -85,6 +85,7 @@ A damp patch is spreading under the left arm. I see it. I say nothing; he is enj
 Brain (worried): It is heavy. And I keep wanting to let something off.
 (That is the costume wanting. They do that.)
 @pause 400
+@show Brain center (neutral)
 The second sheet.
 Then, electric wires: we saw the brain as a series of telephone poles carrying information. ^¶8
 Copper braid, a switchboard for a waistcoat, porcelain insulators down the sleeves. Lighter. The Brain turns in the mirror, and I can hear it clicking through connections.
@@ -107,6 +108,8 @@ Brain (puzzled): Who picks up?
 Horatio (deadpan): The exchange, presumably.
 Brain (puzzled): And in the exchange?
 @pause 400
+@show Brain center (neutral)
+@show Horatio right (smile)
 The third sheet is the newest, and has hardly any dust on it.
 The most recent is the brain as a computer. Memory, processing, hardware, software, things being "hardwired." ^¶9
 Grey, exact, no ornament. It fits so well that for a moment none of us speaks. The Brain looks like its own diagram.
@@ -129,6 +132,8 @@ Up close, the pockets are sewn shut: *memory* on one, *processing* on the other.
 
 == c3_out
 Brain (thinking): Could I be measured for my own cloth? Not borrowed. Cut from me.
+@pause 500
+@hide all
 @mode nvl
 (The alternative, scientific way of going is up, from the bottom. This is why I'm a fan of things like integrated information theory — things that actually try to build off of math or their own axioms instead of borrowed metaphors. This does not prevent them from being, likely, wrong.) ^¶10
 I keep a bolt of that at the back. It is woven from axioms, and it may not hold. But it was not made for a locomotive first.
@@ -143,32 +148,32 @@ The bell on the stair again. I am not expecting anyone.
 @chapter 3 The Borrowed Word
 @hide all
 @fx none
-@fx rain on
 @tone night
+@bg studio night
 @transition dissolve 900
 @cg corridor-light | Someone on the stair
 It has begun to rain. There is light on the stair, and nobody carrying it.
 @cg off
-@bg studio night
 @show Model center far
 A figure of light with a lattice inside it. It is already dressed, and it is wearing ours.
 I know the cut. *Learning*, *memory*, *attention*: the Brain's old wardrobe, taken in at the shoulders. Over it, tonight, a new coat with the tacking stitches still showing.
 The label in the coat says *machine unlearning*.
 @show Fitter left
-@show Model center near
-@show Horatio right
+@show Model center (neutral)
+@show Horatio right (smile)
 Model (neutral): I was told this would let me forget.
 Horatio (smile): Naturally. People forget all the time.
+@hide all
 @mode nvl
 The idea of getting models to unlearn something rests on a vague metaphor of human cognition. ^¶13
 The field is ill-defined and underdefined, and this limits what we can do in it. Making the term precise is itself a problem. ^¶13
 First off, do humans actually forget anything? ^¶14
 @mode adv
-@hide all
-@fx none
 @fx flash
-@bg classroom
 @flashback on Middle school, Spanish
+@transition white 900
+@bg classroom
+@tone memory
 @fx dust on
 A classroom you have not thought about in years. A verb chart on the wall. Someone conjugating aloud, badly. Possibly you.
 We forget what we had for breakfast or the names of acquaintances, but we can be reminded of these rather completely. ^¶14
@@ -176,13 +181,17 @@ Even those Spanish lessons you took in middle school — you remember more of th
 (You could finish the chart. The endings are still there, like furniture under a sheet.)
 @fx dust off
 @flashback off
+@tone night
+@transition dissolve 800
 @bg studio night
-@fx rain on
 @show Fitter left
-@show Brain center
-@show Model right
+@show Brain center (deadpan)
+@show Model right (puzzled)
 Brain (deadpan): To forget something completely, one must die or be lobotomized. ^¶14
 Model (puzzled): But what about a model? ^¶15
+@hide all
+@transition dissolve 700
+@cg page | The pattern, pinned inside the lapel
 I turn back the lapel. There is a pattern pinned inside, in a tidy hand.
 @mode nvl
 The canonical target is that unlearning should leave you where you'd be if you had never trained on the forget set in the first place. ^¶15
@@ -194,6 +203,9 @@ I read it twice. It does not describe a garment. It describes a way of sewing on
 This defines forgetting as a process done a certain way, not as a quality of a system. We can't define forgetting by a way of forgetting. ^¶17
 And why is "never having seen it" even the right counterfactual? You might instead want "cannot be reproduced," or "no downstream test can distinguish it." ^¶17
 @mode adv
+@cg off
+@show Fitter left
+@show Model center (worried)
 Model (worried): Which of those am I wearing?
 (I do not know. Nor, I think, does the label.)
 
@@ -218,6 +230,7 @@ Push loss (perplexity) up on D_f, hold it down on the retain set — some versio
 I do what the pattern says. Push here, hold there. In the mirror the coat looks right.
 Horatio (smile): There. Forgotten.
 Model (worried): When I move, it comes back.
+@hide all
 @mode nvl
 Not a good definition. It overfits to specific probes, and it doesn't deal with the entanglement of facts or with how shallow and brittle our unlearning methods are (even quantization + distilliation can make models relearn!). ^¶19
 I pull one thread and three others move. What I was asked to take out is sewn through what I was asked to keep.
@@ -225,12 +238,15 @@ I pull one thread and three others move. What I was asked to take out is sewn th
 What this field would need to advance in an organized manner is: (1) a clear, formal definition of what we mean by unlearning; and (2) more precise metrics that can measure this via model internals. ^¶20
 In my terms: a pattern, and a tape measure that goes inside.
 @mode adv
+@show Fitter left
+@show Model center (worried)
 I have neither tonight. I tell it so.
 
 # ------------------------------------------------------------ Chapter 5
 
 @chapter 5 The Rack
 @hide all
+@fx rain on
 @transition dissolve 900
 @cg window-rain | The rail by the window
 The Model's other clothes hang on the rail by the window. Three hangers, each with one of the Brain's old name tapes in the collar.
@@ -254,10 +270,11 @@ This one has been let out so far that I can no longer tell what it was cut to co
 -> rack_out
 
 == rack_out
+@fx rain off
 @cg off
 @show Fitter left
-@show Model center
-@show Horatio right
+@show Model center (neutral)
+@show Horatio right (neutral)
 This argument can be computed for endless aspects of LLMs: self-attention, hallucination, reasoning. ^¶21
 Horatio (puzzled): But they look so natural on it.
 How often have these words made us anthropomorphize models? ^¶21
@@ -269,7 +286,7 @@ The Model goes down the stair in the unfinished coat. I could not in conscience 
 
 == own_coat
 @hide Horatio
-@show Brain center
+@show Brain center (neutral)
 The Brain has been quiet since the grey suit. Now it takes the suit off by itself, which I have never seen it do, and hangs it on the rail beside the brass and the copper.
 What is underneath I cannot tell you. The mirror is behind it, and I am behind the mirror.
 Brain (smile): Next time, measure me. From the bottom, up.
@@ -281,9 +298,11 @@ Brain (neutral): Then it will be wrong about me.
 @hide all
 @fx none
 @transition dissolve 1200
-@bg studio night
-@fx dust on
+@cg two-chairs | The atelier, emptied
 The atelier, emptied. Three costumes on the rail. They opened a great many doors, each of them, and each of them leaked.
+@transition dissolve 900
+@cg off
+@fx dust on
 @show Page center
 Page: "There are more things in brains and networks, Horatio, than are dreamt of in your metaphors." ^¶2
 I leave it pinned where it is, and turn off the lamp.

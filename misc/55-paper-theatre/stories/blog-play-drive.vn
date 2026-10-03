@@ -11,9 +11,9 @@
 @note The frame is fiction: the basement, the rain, the leak, the jokes, the classroom memory, the two hecklers and the understudy. Form and Sense are personified drives, not people, and the understudy is a figure for a kind of system, not any product. Lines marked ¶ are quoted, lightly trimmed, from the post; the Schiller sentence is quoted as the post quotes it.
 @status published
 @palette ochre
-@cast Jack hue=28 skin=2 glasses short hoodie
-@cast Form hue=250 none uniform skin=1
-@cast Sense hue=10 curly hoodie skin=4
+@cast Jack hue=210 skin=2 masc hairhue=25 glasses short hoodie
+@cast Form hue=250 skin=1 masc hairhue=225 short uniform
+@cast Sense hue=8 skin=4 fem hairhue=18 curly hoodie
 @cast Understudy name="the understudy" lattice=dense hue=192
 @cast Schiller page name="Friedrich Schiller, Letters on the Aesthetic Education of Man"
 
@@ -50,6 +50,7 @@ Somewhere above the stage the ceiling has a leak. One drop, every so often, onto
 @fx rain off
 @show Jack left (thinking)
 Jack: Again. From the top.
+@hide Jack
 @mode nvl
 A joke is an empirical experiment. ^¶3
 Incongruity theory frames humor as establishing a structured expectation and abruptly breaking it. ^¶3
@@ -59,7 +60,7 @@ I wrote that at a desk, in daylight, with nobody watching. It was very convincin
 Most attempts fail, the timing has to be exact, and the payoff comes from a sudden, unexpected collision of concepts. ^¶3
 (Most attempts fail. I wrote that too. I did not think it meant me.)
 @mode adv
-@show Form center (deadpan) far
+@show Form left (deadpan) far
 @show Sense right (neutral) far
 At the front table sit two people who have not laughed all night. One has a notebook of his own and is keeping score in it. The other has taken her shoes off.
 I do not know their names. By the end of the night I had given them some.
@@ -73,6 +74,7 @@ Two jokes in my pocket. One I have told before, to people who love me. One I hav
 
 == open_safe
 @set open = safe
+@transition cut
 @cg off
 @show Jack center (smile)
 Jack: I asked the librarian where the books on paranoia were. She whispered: they're right behind you.
@@ -83,6 +85,7 @@ It lands the way a form lands on a desk. Somebody nods. A nod is the sound a jok
 
 == open_risky
 @set open = risky
+@transition cut
 @cg off
 @show Jack center (smile)
 Jack: A hypothesis is a joke with a longer set-up. You spend six months on the premise, and then the data doesn't laugh.
@@ -96,7 +99,9 @@ Silence. Not a hostile one. The silence of people waiting for the part where it 
 Form: Structure.
 @show Sense right (deadpan)
 Sense: I didn't feel anything.
+@pause 500
 @fx shake
+@show Jack center (surprised)
 Drip. Beside the microphone, exactly on the beat I had left for the laugh.
 Jack (worried): Thank you. I'm here for four more minutes.
 (I was in a room once where nothing could go wrong. I remember it better than I would like.)
@@ -151,6 +156,7 @@ Form: You had a set-up and a turn. The turn did not follow from the set-up. I ch
 Sense: He's checking. Listen to him. Nobody ever laughed because it followed.
 Form (deadpan): Nobody ever laughed because it was damp, either.
 I had read about these two. I had not expected them to buy tickets.
+@hide all
 @mode nvl
 In the Aesthetic Letters, Schiller introduces the play-drive (*Spieltrieb*) as the necessary mediator between two opposing forces. ^¶5
 The form-drive (*Formtrieb*), which seeks abstraction, logic, and order. ^¶5
@@ -158,6 +164,9 @@ And the sense-drive (*Stofftrieb*), which is rooted in raw material, sensation, 
 @page
 On the page they are two nouns with a hyphen each. In a basement they have elbows.
 @mode adv
+@show Form left (deadpan)
+@show Jack center (neutral)
+@show Sense right (neutral)
 @set asked = 0
 
 == heckle
@@ -179,7 +188,7 @@ Form (deadpan): Then I have no need to laugh. I already have it.
 Jack (neutral): You want to feel something.
 Sense (smile): I want the chair to be hard and the beer to be warm and your voice to crack. I want it to be *now*.
 Jack (puzzled): A voice cracking isn't a joke.
-Sense (laugh): No. It's just a Thursday. But it's a real one.
+Sense (smile): No. It's just a Thursday. But it's a real one.
 (She would laugh at a man falling down the stairs and not ask what it meant. She is not wrong that he fell.)
 -> heckle
 
@@ -187,6 +196,7 @@ Sense (laugh): No. It's just a Thursday. But it's a real one.
 Jack (thinking): Neither of you has laughed once tonight.
 Form (deadpan): Nothing surprised me.
 Sense (deadpan): Everything surprised me. None of it meant to.
+@pause 500
 Play happens only when these two impulses collide and balance each other out. ^¶5
 (I have been writing each of them a separate joke. One for the notebook, one for the bare feet. Two halves of a laugh, served at different tables.)
 @hide all
@@ -203,7 +213,7 @@ The light over the stage goes amber, which in this room means stop. My last two 
 Between acts the house puts on its understudy. It does not come up from the tables. It is simply there, in the light, the way a figure is there in a diagram.
 It has read every set that was ever written down. It has never queued for the toilets in a place like this.
 @cg off
-@bg void
+@bg cafe dim
 @show Understudy center far
 @pause 500
 @show Understudy center near
@@ -213,13 +223,11 @@ It tells a joke. I will not repeat it, because there is nothing wrong with it. T
 Nobody laughs.
 @fx shake
 Drip. Beside the microphone. The understudy does not look down. There is nothing in it for a drop of water to land on.
-@move Understudy right
 @show Form left (smile)
 Form: *That* followed.
-@show Sense center (worried)
+@show Sense right (worried)
 Sense: From what? To where? It hasn't got anywhere to be.
-@hide Form
-@hide Sense
+@hide all
 @mode nvl
 That distinction, perhaps, clarifies what language models can and cannot do. ^¶6
 An LLM operates entirely within formal geometric relations inside an embedding space. ^¶6
@@ -227,10 +235,11 @@ It has mastered the form-drive, but it lacks the sense-drive, as there is no emb
 @page
 Without real material constraints to resist the formal structure, there is nothing for play to mediate. ^¶6
 Computation alone is not play. ^¶6
-(It is not that the joke was bad. Nothing pushed back. A turn needs something to turn against.)
+(The joke was not bad. A turn needs something to turn against.)
 @mode adv
-@move Understudy center
+@show Understudy center (puzzled)
 Understudy (puzzled): The proportions were correct.
+@move Understudy right
 @show Jack left (neutral)
 Jack: They were.
 * Clap anyway. -> clap
@@ -262,6 +271,7 @@ Understudy (neutral): I will note the silence. It is also a result.
 @show Jack center (neutral)
 Two minutes, returned to me slightly used.
 I have one joke left in the notebook, and I already know which table it is for. That is what is wrong with it.
+@hide Jack
 @mode nvl
 Play is also how interdisciplinary work actually functions. ^¶7
 In film theory, Sergei Eisenstein argued that intellectual montage is not just smooth continuity, but the collision of two independent shots to produce a completely new concept in the mind of the viewer. ^¶7
@@ -271,6 +281,7 @@ Bringing ideas across disparate domains works by the same dialectic. ^¶7
 You take a formal method from one field, collide it against an unsolved problem in another, and see if the spark holds. ^¶7
 (*See if.* I keep writing the uncertainty into the sentence and then being surprised by it.)
 @mode adv
+@show Jack center (thinking)
 I close the notebook.
 @show Form left (deadpan)
 @show Sense right (deadpan)
@@ -282,6 +293,7 @@ Above me the ceiling gathers itself. You can hear a drop deciding.
 == talk_over
 Jack (smile): Anyway, the third thing about peer review is
 @fx shake
+@show Jack center (surprised)
 Drip. Dead centre of the sentence. I have been heckled by a building.
 Sense (smile): Told you. It's *now*.
 Form (thinking): Its timing is better than yours.
@@ -300,33 +312,34 @@ Drip.
 Jack (deadpan): I wrote five minutes in three acts. The roof has one drop and better timing. Only one of us is getting booked again.
 @pause 600
 @fx pulse
-@thumb
 Form (laugh): It followed! From the leak. He had the premise hanging over him all night and I never saw it.
+@thumb
 Sense (laugh): It hit the floor! It actually hit the floor!
 They are laughing at the same thing, for different reasons, in the same instant. I had been trying to arrange that from a desk for a year.
 (I could not have deduced it. I had the structure. The water had to ruin it.)
 @hide all
+@tone night
 @transition dissolve 900
 @cg two-chairs | The front table, afterwards
 Afterwards the front table is empty. Two chairs, pushed back at different angles. A beer mat with a tally on it. A pair of shoes, forgotten.
 I do not think they left separately.
 @pause 600
-@cg off
 
 # ------------------------------------------------------------ Epilogue
 
-@scene Afterwards
 @fx none
-@transition fade 1200
 @bg night
 @tone night
+@transition fade 1200
+@cg off
+@scene Afterwards
 @show Jack left (neutral) far
 The rain has stopped. The pavement keeps the streetlights a while longer, out of habit.
 @if kind == yes -> extra
 -> last
 
 == extra
-@show Understudy right far
+@show Understudy right (thinking) far
 The understudy is at the top of the stairs, or the light there is.
 Understudy (thinking): The drop. What were its proportions?
 Jack (smile): It didn't have any. It was late, and wet, and on my shoe.
