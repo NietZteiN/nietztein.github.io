@@ -1,0 +1,22 @@
+/* "Living portrait" (assets/js/gadgets/avatar.js): a WebGL canvas laid over the
+   profile photo. It never takes pointer events, so hover, tilt and click all
+   still reach the image underneath. */
+
+.gavatar-canvas {
+	position: absolute;
+	display: block;
+	pointer-events: none;
+	opacity: 0;
+	transition: opacity 900ms ease;
+	z-index: 1;
+}
+
+.gavatar-canvas.is-on {
+	opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.gavatar-canvas {
+		transition: none;
+	}
+}
