@@ -1,0 +1,94 @@
+@title Metaphors We Hallucinate By
+@kind blog
+@source blog:metaphors-we-hallucinate-by
+@link ../../#/post/metaphors-we-hallucinate-by Read the post
+@note Dialogue is dramatized. Lines marked ¶ are the post's own sentences, lightly trimmed. The Brain and Horatio are the post's figures, not people.
+@status draft
+@palette paper
+@cast Jack hue=28 glasses
+@cast Brain name="the Brain" none hue=340
+@cast Horatio long hat hue=250
+
+# Source: blog/posts/2026-07-15-metaphors-we-hallucinate-by.md (2026-07-15).
+# ¶ numbers count the post's blocks the way @read does: ¶1 title, ¶2 the Horatio
+# line, ¶3 the book, ¶4 "Exempli gratia", ¶5 the two-item list, ¶6-¶11 the
+# history of metaphors, ¶12 the case-study heading, ¶13-¶21 machine unlearning
+# (¶16 is the indented formula). The Brain tries on three costumes from a (once)
+# hub; each branch plays the post's scene and then the leak, in the post's words.
+
+@bg paper
+@show Jack left
+Jack: "There are more things in brains and networks, Horatio, than are dreamt of in your metaphors." ^¶2
+@show Horatio right (puzzled)
+Horatio: My lord?
+Jack: The book *Metaphors We Live By* argues that metaphors aren't just linguistic sugar but ways of concretely shaping thought. ^¶3
+@card Exempli gratia | LOVE IS WAR: we attack, lose, battle. | TIME IS MONEY: so we save it, spend it, waste it. ^¶5
+Jack: Nowhere is this more apparent than the brain. We don't yet understand its structure, so we use metaphors to simplify it. ^¶6
+Jack: In fact, throughout history, our view of technology has limited our understanding of the brain — when we usually think of it the other way around, the brain creating technology. ^¶6
+@scene The costume rack
+@show Brain center (smile)
+@thumb
+Brain: Horatio. Three costumes. Which shall I wear?
+Horatio (thinking): Whichever one fits, my lord. That is usually the problem.
+
+== rack
+* (once) The engine -> engine
+* (once) The exchange -> exchange
+* (once) The computer -> computer
+* Hang them all up -> study
+
+== engine
+@bg train
+Brain (laugh): Stoke me. I carry stuff around.
+Jack: First, trains: we saw brains as trains carrying stuff around. ^¶7
+Horatio: And when the pressure builds, my lord?
+Brain (deadpan): I let off steam.
+Jack: With ideas of channeling energy (building pressure, letting off steam) came a psychology à la Freud, of humans as hydraulic systems with moving drives. ^¶7
+Horatio (worried): The costume did not stay on the stage. It walked into the clinic.
+-> rack
+
+== exchange
+@bg night
+Brain (smile): Operator. Connecting you now.
+Jack: Then, electric wires: we saw the brain as a series of telephone poles carrying information. ^¶8
+Horatio: Carrying it where, my lord?
+Brain (puzzled): Along the line. That is all this costume says.
+Jack: Throughout history, our view of technology has limited our understanding of the brain. ^¶6
+Horatio (thinking): The poles came first. Then the thought that fit between them.
+-> rack
+
+== computer
+@bg terminal
+Brain (smile): Booting. Memory, processing, hardware, software. Some of me is hardwired.
+Jack: The most recent is the brain as a computer. Memory, processing, hardware, software, things being "hardwired." ^¶9
+Horatio: This one fits you best, my lord.
+Brain (worried): It fits. That is the problem.
+Jack: Cognitive science is built on this reductionist view of the brain as a computational machine — and this is why it's inherently limited. ^¶9
+Jack: (The alternative, scientific way of going is up, from the bottom. This is why I'm a fan of things like integrated information theory — things that actually try to build off of math or their own axioms instead of borrowed metaphors. This does not prevent them from being, likely, wrong.) ^¶10
+-> rack
+
+== study
+@bg paper
+@show Brain center (neutral)
+Jack: These metaphors have opened vistas of research, but they have also limited our understanding, because we end up relying on vague metaphors borrowed from human cognition. Let's look at a case study. ^¶11
+@scene A case study: Machine Unlearning
+@bg lab
+Jack: The idea of getting models to unlearn something rests on a vague metaphor of human cognition. The field is ill-defined and underdefined, and this limits what we can do in it. Making the term precise is itself a problem. ^¶13
+Horatio (puzzled): Do we forget, my lord?
+Jack: First off, do humans actually forget anything? We forget what we had for breakfast or the names of acquaintances, but we can be reminded of these rather completely. To forget something completely, one must die or be lobotomized. ^¶14
+Jack: Even those Spanish lessons you took in middle school — you remember more of them than you would think. ^¶14
+Brain (deadpan): Hola.
+Jack: But what about a model? The canonical target is that unlearning should leave you where you'd be if you had never trained on the forget set in the first place. Write the training algorithm as A, the data as D, the forget set as D_f. An unlearning procedure U is exact if ^¶15
+@code text | distribution of  U(A(D), D_f)   ==   distribution of  A(D \ D_f)
+Jack: This defines forgetting as a process done a certain way, not as a quality of a system. We can't define forgetting by a way of forgetting. ^¶17
+Jack: And why is "never having seen it" even the right counterfactual? You might instead want "cannot be reproduced," or "no downstream test can distinguish it." ^¶17
+Horatio: Is there nothing more rigorous?
+Jack: Which brings us to a more rigorous patch: certified removal, which ports the epsilon-delta machinery of differential privacy over to models — the scrubbed model should be provably indistinguishable, up to (ε, δ), from one that never saw the data. Clean. ^¶18
+Jack: But those proofs only hold where the math stays tame: convex losses, strongly regularized ERM. An LLM is none of those, so on real models nobody certifies anything, and the target degrades into a surrogate you can descend. ^¶18
+Jack: Not a good definition. It overfits to specific probes, and it doesn't deal with the entanglement of facts or with how shallow and brittle our unlearning methods are (even quantization + distillation can make models relearn!). ^¶19
+Brain (worried): I remember the Spanish lessons. I remember the forget set too.
+Horatio: Then what would the field need, my lord?
+Jack: What this field would need to advance in an organized manner is: (1) a clear, formal definition of what we mean by unlearning; and (2) more precise metrics that can measure this via model internals. ^¶20
+Jack: This argument can be computed for endless aspects of LLMs: self-attention, hallucination, reasoning. How often have these words made us anthropomorphize models? ^¶21
+Brain (smile): Horatio. Which shall I wear?
+@end

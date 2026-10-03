@@ -1,8 +1,10 @@
-name: Build blog index
+name: Build blog and story indexes
 
-# Regenerates blog/index.json whenever you add or edit a post, then commits the
-# updated index back to the branch. Your publishing workflow is simply:
-#   1. add a Markdown file under blog/posts/
+# Regenerates blog/index.json whenever you add or edit a post, and
+# misc/55-paper-theatre/stories/index.json whenever you add or edit a .vn
+# story, then commits the updated index files back to the branch in one
+# commit. Your publishing workflow is simply:
+#   1. add a Markdown file under blog/posts/ (or a .vn under stories/)
 #   2. git commit && git push
 # This Action takes care of the rest.
 
@@ -11,13 +13,14 @@ on:
     branches: [main]
     paths:
       - 'blog/posts/**'
+      - 'misc/55-paper-theatre/stories/**'
   workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
-  build-index:
+  build-indexes:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -31,14 +34,18 @@ jobs:
       - name: Rebuild blog index
         run: node scripts/build-blog-index.mjs
 
-      - name: Commit updated index
+      - name: Rebuild story index
+        run: node scripts/build-vn-index.mjs
+
+      - name: Commit updated indexes
         run: |
-          if [ -n "$(git status --porcelain blog/index.json)" ]; then
+          FILES="blog/index.json misc/55-paper-theatre/stories/index.json"
+          if [ -n "$(git status --porcelain -- $FILES)" ]; then
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add blog/index.json
-            git commit -m "chore(blog): rebuild index [skip ci]"
+            git add -- $FILES
+            git commit -m "chore(index): rebuild blog and story indexes [skip ci]"
             git push
           else
-            echo "blog/index.json already up to date"
+            echo "blog/index.json and stories/index.json already up to date"
           fi

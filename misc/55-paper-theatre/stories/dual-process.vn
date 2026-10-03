@@ -1,0 +1,48 @@
+@title Fast Errors or Slow Effort?
+@kind paper
+@source paper:Divergent Dual-Process Signatures of Code Obfuscation in Humans and Language Models
+@cite J. V. Le, I. Lahnstein Coronado, A. Nguyen, T. Nguyen. Fast Errors or Slow Effort? Divergent Dual-Process Signatures of Code Obfuscation in Humans and Language Models. Submitted to ACM International Conference on the Foundations of Software Engineering (FSE).
+@link ../../assets/documents/publications/2026SPLASH-SRC.pdf Two-page SRC abstract
+@authors Jack V. Le, Ilse Lahnstein Coronado, Anh Nguyen, Tien Nguyen
+@note Dialogue is dramatized; coauthors did not say these lines. The manuscript is not public: the hook and the question are drawn from the two-page SPLASH SRC abstract (figures marked §), and the results are withheld.
+@status embargo
+@verify
+@palette ink
+@cast Jack hue=210 glasses
+@cast Fast name="the Reader" hue=330 short
+@cast Slow name="the Reader" hue=330 short glasses
+
+@bg terminal dim
+@show Jack center
+Jack: Dual-process theory models comprehension as fast System 1 and deliberate System 2. ^§2.2
+Jack: Obfuscation acts as a cognitive tax, stripping System-1 cues and forcing System-2 tracing. ^§2.2
+@hide Jack
+@show Fast left (smile)
+@show Slow right (thinking)
+One function. One name plate. Two readers behind it.
+Fast: A variable named `_lastNSecs`. Seconds, obviously. Some kind of timer.
+Slow: Read what it does, not what it is called.
+Jack: Adversarial renaming is the sharpest probe: like a Stroop task, a variable named `_lastNSecs` that tracks recursion depth baits a fast, confident, wrong answer. ^§2.2
+@thumb
+Fast (surprised): The input is on the screen. I have the output.
+Slow (deadpan): You have an answer.
+Which reader gets the pen?
+* Answer now. -> now
+* Trace first. -> trace
+
+== now
+Fast (smile): Written. Next.
+Slow (worried): We will see.
+-> question
+
+== trace
+Slow (thinking): Line by line, through the dispatcher, whatever the names say.
+Fast (deadpan): The clock is also a cost.
+-> question
+
+== question
+@show Jack center
+Jack: I test this via response time and chain-of-thought length. ^§2.2
+Jack: The question is in the title. When obfuscation breaks comprehension, is it fast errors or slow effort, and do people and language models leave the same signature?
+@withheld Results withheld until the manuscript is public
+@end

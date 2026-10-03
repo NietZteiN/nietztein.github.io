@@ -1,0 +1,223 @@
+/* CV at a glance (assets/js/glance.js): four quiet tiles and one thin year line,
+   inserted after the About bio. Uses only main.css tokens; light/dark follow them. */
+
+.glance {
+	margin: 18px 0 10px;
+	padding: 0;
+	outline: none;
+}
+
+.glance:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 6px;
+	border-radius: 4px;
+}
+
+/* ---- tiles ---- */
+
+.glance-tiles {
+	display: grid;
+	grid-template-columns: repeat(4, minmax(0, 1fr));
+	gap: 10px;
+}
+
+.glance-tile {
+	display: flex;
+	flex-direction: column;
+	padding: 10px 12px 9px;
+	border: 1px solid var(--border);
+	border-radius: 10px;
+	background: var(--surface);
+	min-width: 0;
+}
+
+.glance-k {
+	font-family: var(--font-mono);
+	font-size: 10.5px;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: var(--text-2);
+	margin-bottom: 4px;
+}
+
+.glance-v {
+	font-size: 1.55rem;
+	font-weight: 600;
+	letter-spacing: -0.02em;
+	line-height: 1.1;
+	color: var(--text);
+}
+
+.glance-n {
+	font-family: var(--font-mono);
+	font-size: 11px;
+	color: var(--text-2);
+	margin-top: 4px;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+/* ---- year line ---- */
+
+.glance-line {
+	position: relative;
+	display: grid;
+	grid-template-columns: 56px minmax(0, 1fr);
+	gap: 8px;
+	margin-top: 14px;
+	padding-top: 10px;
+	border-top: 1px solid var(--border);
+}
+
+.glance-lanes {
+	position: relative;
+}
+
+.glance-lane {
+	position: absolute;
+	left: 0;
+	right: 0;
+	display: flex;
+	align-items: center;
+	font-family: var(--font-mono);
+	font-size: 10.5px;
+	letter-spacing: 0.04em;
+	color: var(--text-2);
+	white-space: nowrap;
+}
+
+.glance-svg {
+	display: block;
+	overflow: visible;
+	font-family: var(--font-mono);
+}
+
+.glance-tick {
+	stroke: var(--border);
+	stroke-width: 1;
+	shape-rendering: crispEdges;
+}
+
+.glance-axis {
+	stroke: var(--text-2);
+	stroke-width: 1;
+	shape-rendering: crispEdges;
+}
+
+.glance-year {
+	font-size: 10.5px;
+	fill: var(--text-2);
+}
+
+/* marks: identity is carried by shape as well as colour */
+.glance-mark {
+	cursor: default;
+	outline: none;
+	transition: opacity var(--dur) var(--ease-out);
+}
+
+.glance-paper {
+	fill: var(--accent);
+}
+
+.glance-award {
+	fill: none;
+	stroke: var(--accent);
+	stroke-width: 1.5;
+}
+
+.glance-talk {
+	fill: none;
+	stroke: var(--text-2);
+	stroke-width: 1.25;
+}
+
+.glance-role,
+.glance-teach {
+	fill: var(--text-2);
+}
+
+.glance-mark:hover {
+	opacity: 0.7;
+}
+
+.glance-mark:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 3px;
+	border-radius: 50%;
+}
+
+.glance-caption {
+	margin: 6px 0 0 64px;
+	font-family: var(--font-mono);
+	font-size: 11.5px;
+	line-height: 1.4;
+	color: var(--text-2);
+	min-height: 1.4em;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.glance-caption.is-live {
+	color: var(--text);
+}
+
+/* ---- grow-in, replayed with main.js's .rise stagger ---- */
+
+.glance.rise .glance-axis {
+	transform-box: fill-box;
+	transform-origin: 0 50%;
+	animation: glance-grow var(--dur) var(--ease-out) both;
+}
+
+.glance.rise .glance-mark {
+	animation: glance-in var(--dur) var(--ease-out) both;
+	animation-delay: calc(var(--d, 0) * 1ms);
+}
+
+@keyframes glance-grow {
+	from { transform: scaleX(0); }
+	to { transform: none; }
+}
+
+@keyframes glance-in {
+	from { opacity: 0; }
+	to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.glance.rise .glance-axis,
+	.glance.rise .glance-mark {
+		animation: none;
+	}
+	.glance-mark {
+		transition: none;
+	}
+}
+
+/* ---- phones ---- */
+
+@media (max-width: 575.98px) {
+	.glance-tiles {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 8px;
+	}
+	.glance-line {
+		grid-template-columns: 48px minmax(0, 1fr);
+		gap: 6px;
+	}
+	.glance-lane {
+		font-size: 10px;
+		letter-spacing: 0.02em;
+	}
+	.glance-paper,
+	.glance-award {
+		r: 3;
+	}
+	.glance-caption {
+		margin-left: 0;
+		white-space: normal;
+	}
+}

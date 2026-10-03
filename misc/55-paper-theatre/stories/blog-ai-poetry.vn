@@ -1,0 +1,75 @@
+# Towards a Sort of AI Poetry: a page with too much white space.
+# Source: blog/posts/2026-07-14-what-language-models-represent.md (^¶n = paragraph).
+@title Towards a Sort of AI Poetry
+@kind blog
+@source blog:what-language-models-represent
+@link https://nietztein.github.io/A-sending-of-the-prompt-will-not-abolish-statistical-universals/ Read the poem
+@link ../../#/post/what-language-models-represent Read the post
+@note Dialogue is dramatized. Lines marked ¶ are the post's own sentences, lightly trimmed. The Model is the post's figure, not any one system.
+@status draft
+@palette paper
+@cast Jack hue=28 glasses
+@cast Model name="the model" lattice=sparse hue=192
+@cast Page page name="the page"
+@cast You player hue=120
+
+@bg paper
+@show Page center
+@show Jack left
+Jack: I decided randomly to see what the limits of writing poetry with AI would be like. ^¶1
+Jack: I orchestrated a sort of modernist poem a la Mallarme's "A Throw of the Dice will Never Abolish Chance." ^¶1
+Jack (smile): I think the url slug is a good title: "A sending of the prompt will not abolish statistical universals." ^¶1
+Page: Empty spaces (間), a sort of flowing river on the right in reference to Misao Fujimura. ^¶3
+@show You right
+You: The page is mostly white.
+Jack (thinking): The text is written. The white is not. Who decides where the words fall?
+* Keep the formatting. The spaces are yours. -> keep
+* Hand the layout to the model. -> hand
+
+== keep
+You: The spaces are the poem. Nobody else should place them.
+Jack (deadpan): That is the classroom answer. Hold it a moment.
+@set pick = keep
+-> verdict
+
+== hand
+You: Let it try. Keep the veto.
+Jack (smile): Free rein, and a veto.
+@set pick = hand
+-> verdict
+
+== verdict
+@scene What happened
+@hide Page
+@show Model center (neutral)
+Jack: I wrote the text but got the model free rein to make the formatting design choices, add some (bad) lines that mostly got removed, and code the html file. ^¶1
+Model (deadpan): Some (bad) lines. Mostly removed. ^¶1
+@thumb
+Jack (surprised): Very surprised by how good (creative?) the layout is. ^¶1
+Jack: The product definitely turned out way better than anything I could have done by myself. ^¶1
+@if pick == keep -> react_keep
+You (smile): So the veto went unused.
+Jack: Mostly. The lines went; the layout stayed.
+-> readers
+
+== react_keep
+You (puzzled): So the spaces were never yours.
+Jack: The text was. The page was not. Hold that distinction; it is the point.
+-> readers
+
+== readers
+@scene Readers
+@bg cafe dim
+@hide Model
+@show Page center
+Jack: Upon showing it to several people, only one, I think, really understood it. ^¶2
+Jack (smile): Japanese and modernist poetry and a bit of math are, perhaps, a rare combination. ^¶2
+Page: The flaw is: one could say it is too cerebral. ^¶3
+Jack (laugh): One could also say the same to T.S. Eliot. ^¶3
+Page: The form itself is nothing unique too. ^¶3
+Jack: And, as I am always wont to do, references to Wittgenstein, Buddhism, some random arxiv paper, montage theory, Walter Benjamin, and German. These things have been on my mind recently. ^¶3
+@show Model right (thinking)
+Model: A sending of the prompt will not abolish statistical universals. ^¶1
+Jack: Broadly, I am trying to hint at possibilities of AI-human collaboration, form and space, and the mixture of truth and aesthetics. ^¶3
+The link is here. ^¶4
+@end

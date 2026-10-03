@@ -1,0 +1,66 @@
+@title Extreme Summarization of Worldwide Scientific and Patent Document Clusters for Landscape Analysis
+@kind paper
+@source paper:Extreme Summarization of Worldwide Scientific and Patent Document Clusters for Landscape Analysis
+@cite J. V. Le, Rebecca Gelles, Catherine Aiken, Katherine Quinn (2026). Extreme Summarization of Worldwide Scientific and Patent Document Clusters for Landscape Analysis. Submitted to Scientometrics.
+@link https://eto.tech/blog/hot-topics-cybersecurity-ai-map-of-science/ Hot research topics in AI and cybersecurity (ETO)
+@link https://etoblog.substack.com/p/new-update-to-the-map-of-science Map of Science update: cluster titles and summaries (ETO)
+@authors Jack V. Le, Rebecca Gelles, Catherine Aiken, Katherine Quinn
+@note Dialogue is dramatized; coauthors did not say these lines. The sample cluster is three papers from this site's own publication list, chosen so that no real cluster or title from the paper is quoted; none of the three offered titles is claimed to be the right one. Figures marked § are quoted from the source.
+@status embargo
+@verify
+@palette ochre
+@cast Jack hue=28 glasses
+@cast Cartographer name="the Cartographer" hue=200 long hat
+@cast You player hue=20
+
+# Scaffolded by scripts/build-vn-index.mjs --scaffold-paper extreme-summarization on 2026-10-02, then hand-written.
+# Embargo skeleton: no paper text is in the repo. ^para chips mark lines that paraphrase
+# the title as index.html prints it. The sample cluster is built from titles in index.html
+# (the obfuscation papers), not from the paper's data. The two @link lines are the ETO
+# Map of Science posts under Writing & press. Replace @withheld when the paper is public.
+
+@bg night
+@show Cartographer center (thinking)
+Cartographer: Every light up there is a cluster of documents: scientific papers and patents, drawn from the whole world. ^para
+Cartographer: My job is to name them. Not describe. Name. One line each, short enough to sit on a map, and there are far more of them than anyone will read.
+@show Jack left
+Jack: Extreme summarization: a whole cluster pressed into a single line, done at the scale of a landscape rather than a shelf. ^para
+Jack: One good title is easy. The job is every title, in the same voice, so that a reader skimming the landscape can trust that two neighbours were named by the same hand.
+Cartographer (deadpan): And the reader will never check. That is what makes it a map and not a bibliography.
+@thumb
+Cartographer (smile): Try one. Here is a small cluster; you can find all three documents on this very site. Three titles are on the table and every one of them is defensible.
+@card A sample cluster | Do Machines Struggle Where Humans Do? LLM and Human Comprehension of Obfuscated Code | The Effect of Code Obfuscation on Human Program Comprehension | Fast Errors or Slow Effort? Divergent Dual-Process Signatures of Code Obfuscation in Humans and Language Models
+* "Code obfuscation" -> pick_short
+* "Program comprehension under code obfuscation" -> pick_mid
+* "Human and language-model comprehension of obfuscated code" -> pick_long
+
+== pick_short
+@show You right
+You: Two words. It fits anywhere.
+Cartographer (thinking): It does. A reader who wants to know whether people or models were studied will have to click.
+Jack (deadpan): At this scale, nobody clicks.
+@set pick = short
+-> sealed
+
+== pick_mid
+@show You right
+You: Say what is done to whom. Comprehension, under obfuscation.
+Cartographer (smile): Clean. It loses the machines, which half the cluster is about.
+Jack (thinking): Half by count. Who knows by weight.
+@set pick = mid
+-> sealed
+
+== pick_long
+@show You right (thinking)
+You: Everything in it. Humans, models, obfuscated code.
+Cartographer (worried): Everything in it. Now fit it between its two neighbours without touching either.
+Jack (smile): Welcome to the job.
+@set pick = long
+-> sealed
+
+== sealed
+@hide You
+Cartographer (deadpan): None of the three is wrong, and I am not going to tell you which one I would have written. That part is not mine to show yet.
+Jack: How titles like these are produced at the scale of a world map, and how you would check them, is withheld until the paper is public. The two buttons on the end card go to the Map of Science posts listed under Writing and press.
+@withheld Results withheld until the paper is public.
+@end

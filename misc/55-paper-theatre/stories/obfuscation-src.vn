@@ -1,0 +1,129 @@
+@title Two Minutes at the Poster
+@kind paper
+@source paper:Obfuscation as a Probe of Human and Machine Code Comprehension
+@cite Jack Le (2026). Do Machines Struggle Where Humans Do? Obfuscation as a Probe of Human and Machine Code Comprehension. In Companion Proceedings of the 2026 ACM SIGPLAN International Conference on Systems, Programming, Languages, and Applications: Software for Humanity (SPLASH Companion '26), Oakland, CA, USA. ACM, 2 pages. doi:10.1145/3837729.3839573. ACM Student Research Competition, SPLASH/ISSTA.
+@link ../../assets/documents/publications/2026SPLASH-SRC.pdf Two-page SRC abstract
+@link https://doi.org/10.1145/3837729.3839573 DOI
+@authors Jack V. Le
+@note Dialogue is dramatized. The Judge is an abstract role, not a real competition judge, and the two-minute clock is the story's device. Figures marked § are quoted from the two-page SRC abstract; the human and model studies it summarizes are joint work, credited in their own stories.
+@status draft
+@verify
+@palette moss
+@include _facts/obfuscation.vn
+@fact n_questions = 12 ^§3.2
+@fact snips_per_lang = 10 ^§3.1
+@fact models_a = seven ^§3.3
+@fact models_b = nine ^§3.3
+@fact rho_bands = mean ρ ≈ 0.24 to 0.30 ^§4
+@cast Jack hue=210 glasses
+@cast Judge name="the Judge" hue=350 bun
+@cast You player hue=120
+
+@bg lecture
+@show Jack left
+One easel, one printout, a hall full of both. The poster session.
+@show You right
+You: Poster is up. Who is the one with the clipboard?
+Jack: A judge. They walk the row, stop, and you get two minutes before they move on.
+@show Judge center
+Judge: Two minutes. Title first.
+Jack: Do Machines Struggle Where Humans Do? Obfuscation as a probe of human and machine code comprehension. ^p.1
+Jack: Code obfuscation targets human comprehension, but current evaluations primarily measure language model performance degradation
+  instead of whether models fail in the same way as humans. ^§abs
+Judge (puzzled): So the field has been measuring the wrong thing.
+Jack: Obfuscation is almost always measured without people, on two untested assumptions: that difficulty is monotonic,
+  and that what burdens a person burdens an automated analyst, now usually an LLM. ^§1
+Jack: If models fail where humans do, obfuscated code benchmarks human-like reasoning; if not, strong scores mask brittle competence. ^§1
+@card Five tiers, each verified execution-equivalent on the study's inputs | L0: the original function with its name masked | L1: uninformative renaming; short, disjoint identifiers force structural reasoning | L1b: adversarial renaming; misleading names drawn from one semantic domain, a Stroop-like trap | L2: control-flow flattening; dispatchers and indirect jumps obscure execution order | L3: both, an upper bound on difficulty ^§2.1
+Judge: And the people?
+Jack: {n_humans} undergraduate CS majors, a supervised {session_min}-minute session of {n_questions} questions, output prediction scored by exact match against execution:
+  {n_answers} responses with paired correctness and response time. ^§3.2
+Jack: {n_models} LLMs on the same tiers, {n_runs} runs in all. {models_a} enter the human comparison on the human-study set, {models_b} on a disjoint, model-only set. ^§3.3
+Judge (deadpan): One minute.
+@thumb
+Judge: You have one result's worth of my attention left. Where do you start?
+== hub
+* (once) The correlation. Whether a model's difficulty tracks a person's. -> lead_corr
+* (once) Python. The surprise. -> lead_python
+* (once) The Block Model. Where exactly it breaks. -> lead_block
+* Thank the judge and read the four contributions as printed. -> pitch
+
+== lead_corr
+@if lead -> corr_say
+@set lead = corr
+== corr_say
+Jack: Then I open with the comparison itself. Not whether obfuscation hurts a model, but whether a model's difficulty tracks a person's, task by task.
+Judge (thinking): Task by task. Most people show me an average.
+You: Keep going, or pick another lead?
+-> hub
+
+== lead_python
+@if lead -> python_say
+@set lead = python
+== python_say
+Jack: Then I open with Python, because it is the tier that refuses to do what the field assumes.
+Judge (surprised): Which assumption?
+Jack (smile): Monotonic difficulty. It is on the board.
+-> hub
+
+== lead_block
+@if lead -> block_say
+@set lead = block
+== block_say
+Jack: Then I open with where it breaks. Not that a model fails, but at which level: atoms, blocks, relations, or macro structure.
+Judge: Name the level when we get there.
+-> hub
+
+== pitch
+@hide You
+@show Jack left (neutral)
+@show Judge right (neutral)
+Judge: Time. Read me the contributions as printed, then I will ask about your lead.
+@card Contributions | 1: The first per-task human–model difficulty correlation, localized via the Block Model. | 2: Evidence against monotonic difficulty: a reproducible Python renaming effect. | 3: Only reasoning-tuned models track human difficulty. | 4: Language-specific behavioral reporting of obfuscation strength. ^§4
+Jack: Difficulty is non-monotonic and language-specific. Human accuracy falls from L0 at {human_l0} to L3 at {human_l3}:
+  JavaScript declines steadily, {js_l0} to {js_l3}, flattening hurting less than renaming,
+  whereas Python rises under renaming, {py_l0} to {py_rename}, L3 exceeding L2. ^§4
+@if lead == python -> react_python
+-> effort
+
+== react_python
+Judge (surprised): There is your lead. A language that gets easier.
+Jack: Under renaming. And measured with people, which is the part that was missing.
+-> effort
+
+== effort
+Jack: Effort matches the dual-process account: response time jumps by {rt_jump} once code is obfuscated, then plateaus;
+  errors cluster at time extremes, and correct L1b answers are slower than incorrect ones. ^§4
+Jack: Reasoning-tuned models align with humans on difficulty, not language. They correlate with human task-level difficulty, Spearman {rho_reason};
+  coder- and instruction-tuned models do not, {rho_other}, regardless of size, so the most accurate model is not the most human-like. ^§4
+@if lead == corr -> react_corr
+-> bands
+
+== react_corr
+Judge (thinking): Your lead. Per task, not on average. Does it survive experience?
+Jack: It does. Next line.
+-> bands
+
+== bands
+Jack: Alignment holds across all three experience bands, {rho_bands}, with no experience-by-alignment interaction in a mixed model.
+  But no model reproduces the experts' gain under adversarial renaming or the Python renaming gain: alignment reflects shared difficulty, not identical mechanism. ^§4
+Jack: Failures localize by Block Model level. Chain-of-thought length correlates negatively with accuracy, {rho_cot};
+  control-flow failure tracks dispatcher-state complexity, the relational level;
+  adversarial renaming acts non-additively at the atom level: displacement or perplexity spikes alone barely move accuracy, but together collapse it to {adv_collapse}. ^§4
+Jack: The sharpest probe is a Stroop-like trap: a variable named `_lastNSecs` that tracks recursion depth baits a fast, confident, wrong answer. ^§2.2
+@if lead == block -> react_block
+-> close
+
+== react_block
+Judge: There is your level. Atoms.
+Jack (smile): Atoms.
+-> close
+
+== close
+Jack: This alignment, rather than raw accuracy, distinguishes robust comprehension from brittle pattern matching. ^§abs
+Judge (deadpan): That was two minutes. Thank you.
+@hide Judge
+@show You right
+You: Well?
+Jack (smile): Received in June, accepted in July. ^p.2
+@end

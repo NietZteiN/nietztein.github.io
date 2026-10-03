@@ -1,0 +1,66 @@
+@title Do Machines Struggle Where Humans Do?
+@kind paper
+@source paper:LLM and Human Comprehension of Obfuscated Code
+@cite J. V. Le†, A. Nguyen†, T. Nguyen (2026). Do Machines Struggle Where Humans Do? LLM and Human Comprehension of Obfuscated Code. arXiv:2606.31725 [cs.SE]. Submitted to FSE.
+@arxiv 2606.31725
+@link https://arxiv.org/abs/2606.31725 Read the paper
+@link ../../assets/documents/publications/2026SPLASH-SRC.pdf Two-page SRC abstract
+@authors Jack V. Le† and Anh Nguyen† (co-first), Tien Nguyen
+@note Dialogue is dramatized. Figures marked § are quoted from the source. The Model is a composite of the reasoning-tuned regime, not any one system.
+@status published
+@verify
+@palette slate
+@include _facts/obfuscation.vn
+@cast Jack hue=210 glasses
+@cast Model name="a reasoning-tuned model" lattice=sparse hue=192
+@cast You player hue=20
+
+@bg lab
+@show Jack left
+Jack: Obfuscation is almost always measured without people, on two untested assumptions: that difficulty is monotonic, and that what burdens a person burdens a model. ^§1
+@card Five tiers | L0: original, name masked | L1: uninformative renaming | L1b: adversarial renaming | L2: control-flow flattening | L3: both
+Jack: {n_humans} CS undergraduates, a {session_min}-minute supervised session, twelve output-prediction questions each: {n_answers} answers with paired response times. {n_models} language models on the same tiers.
+@thumb
+Jack (smile): Before the numbers, place a bet.
+* Harder tier, lower accuracy. Always. -> bet_monotonic
+* It depends on the language. -> bet_language
+
+== bet_monotonic
+@show You right
+You: More obfuscation, more pain. A straight line down.
+Jack (deadpan): That is the assumption the field runs on. Let us see.
+@set bet = monotonic
+-> humans
+
+== bet_language
+@show You right (thinking)
+You: JavaScript and Python will not break the same way.
+Jack (smile): A hedge. Fair.
+@set bet = language
+-> humans
+
+== humans
+@chart range Human accuracy by tier | all languages={human_l0}..{human_l3} | JavaScript={js_l0}..{js_l3} | Python under renaming={py_l0}..{py_rename} unit=%
+Jack: Overall, accuracy fell from {human_l0} at L0 to {human_l3} at L3. JavaScript declined steadily, {js_l0} to {js_l3}.
+Jack: Python went the other way under renaming: {py_l0} to {py_rename}, with L3 easier than L2. Difficulty is non-monotonic and language-specific. ^§4
+@if bet == monotonic -> react_monotonic
+You: So the language mattered after all.
+-> models
+
+== react_monotonic
+You: Python got *easier*?
+Jack: Under renaming, yes. No one had measured it with people.
+-> models
+
+== models
+@bg server
+@hide You
+@show Model right (puzzled)
+Model: And where did we struggle?
+Jack: Take a variable named `_lastNSecs` that actually tracks recursion depth. It baits a fast, confident, wrong answer: a Stroop trap. ^§2.2
+Jack: Reasoning-tuned models tracked human task-level difficulty, Spearman {rho_reason}. Coder- and instruction-tuned models did not, {rho_other}, whatever their size.
+Model (thinking): So the most accurate model was not the most human-like.
+Jack: That is the paper in one sentence. And alignment means shared difficulty, not shared mechanism: no model reproduced the Python renaming gain. ^§4
+Model (deadpan): The longer I think, the worse I do. {rho_cot}.
+Jack (smile): Which is why the question was never whether you fail, but whether you fail where we do.
+@end

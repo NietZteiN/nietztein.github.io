@@ -1,0 +1,56 @@
+@title Code as Embedding as AI
+@kind paper
+@source paper:Code as Embedding as AI
+@cite K. Tanaka Ishii, J. V. Le (2024). Code as Embedding as AI. Submitted to Minds and Machines.
+@authors K. Tanaka Ishii, Jack V. Le
+@note Dialogue is dramatized; coauthors did not say these lines. Code and the Embedding are the two nouns of the title made into characters; which of them the paper sides with, if either, is not stated here. Figures marked § are quoted from the source.
+@status embargo
+@verify
+@palette slate
+@cast Jack hue=210 glasses
+@cast Code hue=30 short
+@cast Embedding name="the Embedding" lattice=dense hue=200
+@cast You player hue=20
+
+# Scaffolded by scripts/build-vn-index.mjs --scaffold-paper code-as-embedding on 2026-10-02, then hand-written.
+# Embargo skeleton: no paper text is in the repo. The one ^para chip marks the line that
+# restates the title as index.html prints it. The coauthor is credited in @authors and on
+# the end card only. Replace @withheld with the argument when the paper is public.
+
+@bg terminal
+@show Jack left
+Jack: Three nouns and two "as"es. The title is a chain, and tonight two of its links are arguing about the third. ^para
+@show Code center (deadpan)
+Code: I am Code. I am written, read, run. Every line of me can be pointed at. When something goes wrong, you open me and look.
+@show Embedding right
+Embedding: I am the Embedding. I am not written; I am learned. Nobody opens me. I am what the code turned into when it stopped being read and started being weighed.
+Code: You are a number I produce.
+Embedding: You are a habit I replaced.
+Jack: The title says code can be read as an embedding, and an embedding as AI. What it does not say out loud is which of the two gets to be called the AI, and that is the whole quarrel. ^para
+Code (worried): If the behaviour lives in it, what am I? Scaffolding?
+Embedding (deadpan): If the behaviour lives in you, what am I? A cache?
+@thumb
+Jack (smile): They have asked for a third opinion. You are the nearest.
+* Code is the AI. The rest is its shadow. -> side_code
+* The Embedding is the AI. The code is scaffolding. -> side_embedding
+
+== side_code
+You: Code. It is the only one of you I can read.
+Code (smile): Readable, revisable, responsible.
+Embedding (deadpan): Readable by you. I was never for you.
+@set side = code
+-> sealed
+
+== side_embedding
+You: The Embedding. It is where the behaviour actually lives.
+Embedding (smile): Someone finally looked past the syntax.
+Code (worried): And when it misbehaves, which of us do you open?
+@set side = embedding
+-> sealed
+
+== sealed
+@hide all
+@show Jack center
+Jack: What the paper says about the chain is withheld until it is public. My coauthor is credited on the end card and does not speak here; neither, for now, do I.
+@withheld Results withheld until the paper is public.
+@end

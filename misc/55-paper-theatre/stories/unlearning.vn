@@ -1,0 +1,57 @@
+@title Router-Free Modular Storage for Knowledge Unlearning in Large Language Models
+@kind paper
+@source paper:Router-Free Modular Storage for Knowledge Unlearning in Large Language Models
+@cite Vincent Hanke, J. V. Le, Adam Dziedzic, Franziska Boenisch (2026). Router-Free Modular Storage for Knowledge Unlearning in Large Language Models. Submitted to ICLR.
+@link ../../#/post/metaphors-we-hallucinate-by The post the opening quotes
+@authors Vincent Hanke, Jack V. Le, Adam Dziedzic, Franziska Boenisch
+@note Dialogue is dramatized; coauthors did not say these lines. Lines marked ¶ quote Jack's own post "Metaphors We Hallucinate By"; the Empty Desk is a personification of the words "router-free", not a description of the method. Figures marked § are quoted from the source.
+@status embargo
+@verify
+@palette moss
+@cast Jack hue=120 glasses
+@cast Desk name="the Empty Desk" hue=35 none
+@cast You player hue=20
+
+# Scaffolded by scripts/build-vn-index.mjs --scaffold-paper unlearning on 2026-10-02, then hand-written.
+# Embargo skeleton: no paper text is in the repo. The opening quotes the owner's blog post
+# (blog/posts/2026-07-15-metaphors-we-hallucinate-by.md, paragraph 14 as @read numbers it);
+# ^para chips mark lines that paraphrase the title as index.html prints it. The choice is
+# a reaction beat only. Replace @withheld with @fact lines when the paper is public.
+
+@bg library dim
+@show Jack left
+Jack: First off, do humans actually forget anything? ^¶14
+Jack: We forget what we had for breakfast or the names of acquaintances, but we can be reminded of these rather completely. To forget something completely, one must die or be lobotomized. ^¶14
+Jack: I wrote that about brains. This paper is about the other kind of library, the kind that is asked to forget on request.
+@show Desk right
+Desk: Welcome. There is no one at this desk. There never was.
+Jack: In most libraries someone sits here and routes you: ask for a fact, get pointed at a shelf. The title promises a library without that someone. Router-free. ^para
+Desk (deadpan): The facts are not loose on the shelves, either. The title puts them in modular storage. ^para
+Jack (thinking): So here is the question the title leaves hanging. If knowledge lives in modules, does forgetting become a matter of detaching one? Or is that just the brain metaphor again, wearing a server rack?
+@thumb
+Desk (puzzled): A reader has asked the library to forget something. There is no librarian to ask how. You are standing nearest the desk.
+* Unplug the module. -> unplug
+* Retrain the library. -> retrain
+
+== unplug
+@show You center
+You: Find the module that holds it and pull it.
+Desk (smile): Quick. Clean, if the fact really lives in one place.
+Jack (thinking): And if it does not, you have pulled a shelf and left the rumor.
+@set plan = unplug
+-> sealed
+
+== retrain
+@show You center (thinking)
+You: Start over without it. Rebuild every shelf.
+Desk (worried): Every shelf. Every night. For every request.
+Jack (deadpan): Thorough. Now do it again tomorrow, for the next reader.
+@set plan = retrain
+-> sealed
+
+== sealed
+@hide You
+Jack: Whether a module comes out cleanly, and what the rest of the library pays for it, is the part this story has to leave open. Those pages are sealed until the paper is public.
+Desk (neutral): The desk will still be empty when they open.
+@withheld Results withheld until the paper is public.
+@end

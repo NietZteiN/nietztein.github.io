@@ -432,6 +432,42 @@ a {
 	color: var(--text-2);
 }
 
+/* "Play the visual novel" link inside a .pub-congress (misc/55-paper-theatre). */
+.pub-play {
+	font-family: var(--font-mono);
+	font-size: .8rem;
+	font-weight: 400;
+	color: var(--accent);
+	margin-left: .5rem;
+	white-space: nowrap;
+	text-decoration: none;
+	border-radius: 3px;
+}
+
+.pub-play::before {
+	content: '';
+	display: inline-block;
+	width: 0;
+	height: 0;
+	margin-right: .35em;
+	border-left: .45em solid currentColor;
+	border-top: .3em solid transparent;
+	border-bottom: .3em solid transparent;
+	vertical-align: .05em;
+}
+
+.pub-play:hover,
+.pub-play:focus-visible {
+	color: var(--accent);
+	text-decoration: underline;
+	text-underline-offset: .2em;
+}
+
+.pub-play:focus-visible {
+	outline: none;
+	box-shadow: 0 0 0 3px var(--accent-ring);
+}
+
 .academic-name {
 	color: var(--accent);
 }

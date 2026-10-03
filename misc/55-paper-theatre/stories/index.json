@@ -1,0 +1,258 @@
+[
+  {
+    "id": "obfuscation-src",
+    "file": "obfuscation-src.vn",
+    "title": "Two Minutes at the Poster",
+    "kind": "paper",
+    "status": "draft",
+    "source": "paper:Obfuscation as a Probe of Human and Machine Code Comprehension",
+    "pub": "Obfuscation as a Probe of Human and Machine Code Comprehension",
+    "links": [
+      "../../assets/documents/publications/2026SPLASH-SRC.pdf",
+      "https://doi.org/10.1145/3837729.3839573"
+    ],
+    "authors": "Jack V. Le",
+    "blurb": "One easel, one printout, a hall full of both. The poster session.",
+    "verify": true,
+    "chips": 16
+  },
+  {
+    "id": "paired-training",
+    "file": "paired-training.vn",
+    "title": "Attributing Gains in Paired Training: Objective or Data Direction?",
+    "kind": "paper",
+    "status": "embargo",
+    "source": "paper:Attributing Gains in Paired Training: Objective or Data Direction?",
+    "pub": "Attributing Gains in Paired Training: Objective or Data Direction?",
+    "authors": "Jack V. Le, Tien Nguyen",
+    "blurb": "Court is in session. The defendant is not a person. It is a training run, and nobody disputes that it got better.",
+    "verify": true,
+    "withheld": true,
+    "chips": 2
+  },
+  {
+    "id": "unlearning",
+    "file": "unlearning.vn",
+    "title": "Router-Free Modular Storage for Knowledge Unlearning in Large Language Models",
+    "kind": "paper",
+    "status": "embargo",
+    "source": "paper:Router-Free Modular Storage for Knowledge Unlearning in Large Language Models",
+    "pub": "Router-Free Modular Storage for Knowledge Unlearning in Large Language Models",
+    "links": [
+      "../../#/post/metaphors-we-hallucinate-by"
+    ],
+    "authors": "Vincent Hanke, Jack V. Le, Adam Dziedzic, Franziska Boenisch",
+    "blurb": "First off, do humans actually forget anything?",
+    "verify": true,
+    "withheld": true,
+    "chips": 4
+  },
+  {
+    "id": "dual-process",
+    "file": "dual-process.vn",
+    "title": "Fast Errors or Slow Effort?",
+    "kind": "paper",
+    "status": "embargo",
+    "source": "paper:Divergent Dual-Process Signatures of Code Obfuscation in Humans and Language Models",
+    "pub": "Divergent Dual-Process Signatures of Code Obfuscation in Humans and Language Models",
+    "links": [
+      "../../assets/documents/publications/2026SPLASH-SRC.pdf"
+    ],
+    "authors": "Jack V. Le, Ilse Lahnstein Coronado, Anh Nguyen, Tien Nguyen",
+    "blurb": "Dual-process theory models comprehension as fast System 1 and deliberate System 2.",
+    "verify": true,
+    "withheld": true,
+    "chips": 4
+  },
+  {
+    "id": "extreme-summarization",
+    "file": "extreme-summarization.vn",
+    "title": "Extreme Summarization of Worldwide Scientific and Patent Document Clusters for Landscape Analysis",
+    "kind": "paper",
+    "status": "embargo",
+    "source": "paper:Extreme Summarization of Worldwide Scientific and Patent Document Clusters for Landscape Analysis",
+    "pub": "Extreme Summarization of Worldwide Scientific and Patent Document Clusters for Landscape Analysis",
+    "links": [
+      "https://eto.tech/blog/hot-topics-cybersecurity-ai-map-of-science/",
+      "https://etoblog.substack.com/p/new-update-to-the-map-of-science"
+    ],
+    "authors": "Jack V. Le, Rebecca Gelles, Catherine Aiken, Katherine Quinn",
+    "blurb": "Every light up there is a cluster of documents: scientific papers and patents, drawn from the whole world.",
+    "verify": true,
+    "withheld": true,
+    "chips": 2
+  },
+  {
+    "id": "obfuscation",
+    "file": "obfuscation.vn",
+    "title": "Do Machines Struggle Where Humans Do?",
+    "kind": "paper",
+    "status": "published",
+    "source": "paper:LLM and Human Comprehension of Obfuscated Code",
+    "pub": "LLM and Human Comprehension of Obfuscated Code",
+    "arxiv": "2606.31725",
+    "links": [
+      "https://arxiv.org/abs/2606.31725",
+      "../../assets/documents/publications/2026SPLASH-SRC.pdf"
+    ],
+    "authors": "Jack V. Le† and Anh Nguyen† (co-first), Tien Nguyen",
+    "blurb": "Obfuscation is almost always measured without people, on two untested assumptions: that difficulty is monotonic, and that what burdens a…",
+    "verify": true,
+    "chips": 9
+  },
+  {
+    "id": "human-obfuscation",
+    "file": "human-obfuscation.vn",
+    "title": "Seventy-Five Minutes",
+    "kind": "paper",
+    "status": "draft",
+    "source": "paper:The Effect of Code Obfuscation on Human Program Comprehension",
+    "pub": "The Effect of Code Obfuscation on Human Program Comprehension",
+    "arxiv": "2603.07668",
+    "links": [
+      "https://arxiv.org/abs/2603.07668",
+      "../../assets/documents/publications/2026SPLASH-SRC.pdf"
+    ],
+    "authors": "Anh H. N. Nguyen† and Jack V. Le† (co-first), Ilse Lahnstein Coronado, Tien N. Nguyen",
+    "blurb": "Welcome. Fifty undergraduate CS majors sit this study; you are one of them. The session is supervised and lasts 75 minutes.",
+    "verify": true,
+    "chips": 17
+  },
+  {
+    "id": "embedding-semiotics",
+    "file": "embedding-semiotics.vn",
+    "title": "What Does an Embedding Mean? A Semiotic Account of Learned Representation",
+    "kind": "paper",
+    "status": "embargo",
+    "source": "paper:What Does an Embedding Mean? A Semiotic Account of Learned Representation",
+    "pub": "What Does an Embedding Mean? A Semiotic Account of Learned Representation",
+    "authors": "Jack V. Le",
+    "blurb": "I am a column of numbers. I live in a room with more directions than you have names for, and until tonight nobody had asked me a question.",
+    "verify": true,
+    "withheld": true,
+    "chips": 1
+  },
+  {
+    "id": "code-as-embedding",
+    "file": "code-as-embedding.vn",
+    "title": "Code as Embedding as AI",
+    "kind": "paper",
+    "status": "embargo",
+    "source": "paper:Code as Embedding as AI",
+    "pub": "Code as Embedding as AI",
+    "authors": "K. Tanaka Ishii, Jack V. Le",
+    "blurb": "Three nouns and two \"as\"es. The title is a chain, and tonight two of its links are arguing about the third.",
+    "verify": true,
+    "withheld": true,
+    "chips": 2
+  },
+  {
+    "id": "eto-map-of-science",
+    "file": "eto-map-of-science.vn",
+    "title": "Hot research topics in AI and cybersecurity: insights from the Map of Science",
+    "kind": "paper",
+    "status": "embargo",
+    "source": "paper:insights from the Map of Science",
+    "pub": "insights from the Map of Science",
+    "links": [
+      "https://eto.tech/blog/hot-topics-cybersecurity-ai-map-of-science/"
+    ],
+    "authors": "Emerging Technology Observatory (ETO). Jack V. Le contributed to the Map of Science the post draws on, not to the post.",
+    "blurb": "A brief is due by noon on the high-growth clusters in AI and cybersecurity research. I have a map and a cup of coffee.",
+    "verify": true,
+    "withheld": true,
+    "chips": 3
+  },
+  {
+    "id": "blog-benchmarks",
+    "file": "blog-benchmarks.vn",
+    "title": "Benchmarks We Actually Need",
+    "kind": "blog",
+    "status": "draft",
+    "source": "blog:benchmarks-we-actually-need",
+    "slug": "benchmarks-we-actually-need",
+    "date": "2026-09-23",
+    "links": [
+      "../../#/post/benchmarks-we-actually-need"
+    ],
+    "blurb": "In the spirit of Yann LeCun's challenge to put ChatGPT in a robot and make it do simple tasks, here are some ideas for absurd benchmarks…",
+    "chips": 33
+  },
+  {
+    "id": "blog-latentland",
+    "file": "blog-latentland.vn",
+    "title": "Latentland",
+    "kind": "blog",
+    "status": "draft",
+    "source": "blog:latentland",
+    "slug": "latentland",
+    "date": "2026-09-21",
+    "links": [
+      "../../#/post/latentland",
+      "../32-latentland-map/"
+    ],
+    "blurb": "a dumb idea i had: what would it be like to be a single neuron inside a language model? this is what an hour of prompting turned it into.",
+    "chips": 34
+  },
+  {
+    "id": "blog-play-drive",
+    "file": "blog-play-drive.vn",
+    "title": "Research, Humor, and the Play Drive",
+    "kind": "blog",
+    "status": "draft",
+    "source": "blog:untitled",
+    "slug": "untitled",
+    "date": "2026-08-27",
+    "links": [
+      "../../#/post/untitled"
+    ],
+    "blurb": "\"Man only plays when in the full meaning of the word he is a man, and he is only completely a man when he plays.\"",
+    "chips": 13
+  },
+  {
+    "id": "blog-language-acquisition",
+    "file": "blog-language-acquisition.vn",
+    "title": "Open Questions in Language Acquisition",
+    "kind": "blog",
+    "status": "draft",
+    "source": "blog:open-questions-in-language-acquisition",
+    "slug": "open-questions-in-language-acquisition",
+    "date": "2026-08-01",
+    "links": [
+      "../../#/post/open-questions-in-language-acquisition"
+    ],
+    "blurb": "My version of Erdős problems. Many of these seem intractable.",
+    "chips": 34
+  },
+  {
+    "id": "blog-metaphors",
+    "file": "blog-metaphors.vn",
+    "title": "Metaphors We Hallucinate By",
+    "kind": "blog",
+    "status": "draft",
+    "source": "blog:metaphors-we-hallucinate-by",
+    "slug": "metaphors-we-hallucinate-by",
+    "date": "2026-07-15",
+    "links": [
+      "../../#/post/metaphors-we-hallucinate-by"
+    ],
+    "blurb": "\"There are more things in brains and networks, Horatio, than are dreamt of in your metaphors.\"",
+    "chips": 24
+  },
+  {
+    "id": "blog-ai-poetry",
+    "file": "blog-ai-poetry.vn",
+    "title": "Towards a Sort of AI Poetry",
+    "kind": "blog",
+    "status": "draft",
+    "source": "blog:what-language-models-represent",
+    "slug": "what-language-models-represent",
+    "date": "2026-07-14",
+    "links": [
+      "https://nietztein.github.io/A-sending-of-the-prompt-will-not-abolish-statistical-universals/",
+      "../../#/post/what-language-models-represent"
+    ],
+    "blurb": "I decided randomly to see what the limits of writing poetry with AI would be like.",
+    "chips": 17
+  }
+]

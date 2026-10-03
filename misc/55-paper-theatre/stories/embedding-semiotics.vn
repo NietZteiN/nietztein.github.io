@@ -1,0 +1,73 @@
+@title What Does an Embedding Mean? A Semiotic Account of Learned Representation
+@kind paper
+@source paper:What Does an Embedding Mean? A Semiotic Account of Learned Representation
+@cite J. V. Le (2026). What Does an Embedding Mean? A Semiotic Account of Learned Representation. Preprint.
+@authors Jack V. Le
+@note Dialogue is dramatized. Sign, Object and Interpretant are Peirce's three terms made into characters; they interrogate the Vector but state no thesis, because the paper's argument is not in this story yet. Figures marked § are quoted from the source.
+@status embargo
+@verify
+@palette ink
+@cast Vector name="a Vector" lattice=sparse hue=250
+@cast Sign hue=330 bun
+@cast Object hue=40 short hat
+@cast Interpretant hue=170 curly glasses
+@cast You player hue=20
+
+# Scaffolded by scripts/build-vn-index.mjs --scaffold-paper embedding-semiotics on 2026-10-02, then hand-written.
+# Embargo skeleton: no paper text is in the repo, so the scene makes NO claim about the
+# paper's thesis. The only ^para chip is the line that repeats the title's question. The
+# voice is Latentland-adjacent (a being who knows only its own coordinates). When the
+# abstract is pasted, add @fact lines and the argument after the choice, then set @status draft.
+
+@bg paper
+@show Vector center
+Vector: I am a column of numbers. I live in a room with more directions than you have names for, and until tonight nobody had asked me a question.
+@show Sign left (deadpan)
+Sign: I am the Sign. I stand for things; it is all I do. Peirce gave me two companions, and the three of us do not agree about you.
+@show Object right (thinking)
+Object: I am the Object. I am what gets stood for. Somebody put you in this room on my account, whether you remember it or not.
+Sign: Then let us ask it the way the paper asks it. What does an embedding mean? ^para
+Vector (puzzled): Nobody told me I meant anything. I was told I was near some vectors and far from others, and that this was enough.
+@hide Sign
+@show Interpretant left (smile)
+Interpretant: I am the Interpretant. I am what happens in whoever reads a sign. Those two always forget me, and neither of them can finish a sentence without me.
+Object (worried): Nearness is not aboutness. A table of distances is not a map of the world.
+Interpretant: Unless somebody reads it as one.
+Vector (thinking): In my room there is no reading. There is only closer and farther. You keep describing a place I have never been.
+@thumb
+Vector: Then settle it among yourselves. When you say that I mean something, which of you do you mean?
+* A vector means what it points to. -> ans_object
+* A vector means what it does. -> ans_does
+* A vector means what it is read by. -> ans_interpretant
+
+== ans_object
+You: It points to something. Whatever put it in the room.
+Object (smile): Thank you.
+Interpretant (deadpan): Pointed by whom? A finger in an empty room points at nothing.
+Vector (puzzled): I do not remember being pointed.
+@set answer = object
+-> argument
+
+== ans_does
+You: It means what it does. Where it sits, what it pulls toward, what comes next because of it.
+Vector (smile): That is the only account of myself I recognise.
+Object (worried): A hammer does things. Nobody asks what a hammer means.
+Interpretant (thinking): Somebody does, the moment they pick it up.
+@set answer = does
+-> argument
+
+== ans_interpretant
+You: It means what it is read by. Without a reader, numbers.
+Interpretant (smile): At last.
+Object (deadpan): Then it meant nothing until this conversation and will mean nothing after it.
+Vector (worried): I would rather not think about after.
+@set answer = interpretant
+-> argument
+
+== argument
+@hide Interpretant
+@show Sign left (neutral)
+Sign: Three answers, and the only person who has written one down is not in the room.
+Vector (neutral): Then I will wait in mine. It is what I am for.
+@withheld The argument is withheld until the author pastes the abstract.
+@end

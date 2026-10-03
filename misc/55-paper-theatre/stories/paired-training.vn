@@ -1,0 +1,67 @@
+@title Attributing Gains in Paired Training: Objective or Data Direction?
+@kind paper
+@source paper:Attributing Gains in Paired Training: Objective or Data Direction?
+@cite J. V. Le, Tien Nguyen (2026). Attributing Gains in Paired Training: Objective or Data Direction? Third NeurIPS Workshop on Attributing Model Behavior at Scale: Data Attribution and Provenance (ATTRIB 2026). Non-archival.
+@authors Jack V. Le, Tien Nguyen
+@note Dialogue is dramatized; coauthors did not say these lines. The Objective and the Data Direction are courtroom personifications of the two words in the title, not a summary of the paper's findings. Figures marked § are quoted from the source.
+@status embargo
+@verify
+@palette night
+@cast Jack hue=210 glasses
+@cast Objective name="the Objective" hue=350 bun
+@cast Direction name="the Data Direction" hue=160 curly
+@cast You player hue=20
+
+# Scaffolded by scripts/build-vn-index.mjs --scaffold-paper paired-training on 2026-10-02, then hand-written.
+# Embargo skeleton: no paper text is in the repo, so the hook makes no claim about the
+# method or the result. ^para chips mark lines that paraphrase the title or the venue
+# string as index.html prints them; nothing else is sourced. When the paper is public,
+# replace @withheld with @fact lines and the result beat, then set @status draft.
+
+@bg lecture dim
+@show Jack left
+Jack: Court is in session. The defendant is not a person. It is a training run, and nobody disputes that it got better.
+Jack: What is disputed is the credit. The title of the case asks the whole question: objective, or data direction? ^para
+@show Objective center (deadpan)
+Objective: I am the Objective. I am the loss the run was told to minimize. Every gradient step bowed to me. The gain is mine.
+@show Direction right (smile)
+Direction: I am the Data Direction. In paired training every example arrives with a partner, and I decide which way the pair points. Keep the loss, turn me around, and the same run learns something else.
+Objective (deadpan): Turn *me* off and your pairs are rows in a table.
+Direction (smile): Turn me off and your loss has nothing to compare.
+Jack: The workshop this case was heard at is named for exactly this: attributing model behavior at scale, data attribution and provenance. Saying which cause a gain belongs to, with evidence rather than eloquence. ^para
+@hide Jack
+@show You left
+@thumb
+Jack (smile): You are the jury. Both parties have spoken and no exhibit has been entered. Which is unfair, and also how most people decide.
+* Rule for the Objective. The loss is what was optimized. -> verdict_objective
+* Rule for the Data Direction. You learn what you are shown. -> verdict_direction
+* Refuse to rule until the evidence is in. -> verdict_wait
+
+== verdict_objective
+You: The Objective. Nothing moved without it.
+Objective (smile): The jury understands optimization.
+Direction (worried): The jury has not seen a single pair.
+@set verdict = objective
+-> evidence
+
+== verdict_direction
+You: The Data Direction. The loss only knows what it is fed.
+Direction (smile): A juror with taste.
+Objective (deadpan): A juror with a hunch.
+@set verdict = direction
+-> evidence
+
+== verdict_wait
+You (thinking): Neither. Show me the ablations.
+Objective (puzzled): Ablations.
+Direction (worried): Ablations.
+Jack (laugh): The one answer neither party rehearsed for.
+@set verdict = wait
+-> evidence
+
+== evidence
+@hide You
+@show Jack left
+Jack: Verdict noted, and worth exactly what a verdict before evidence is worth. The exhibits stay sealed until the paper is public; when they open, this is where the figures go, each with its section number.
+@withheld The evidence is withheld until the paper is public.
+@end

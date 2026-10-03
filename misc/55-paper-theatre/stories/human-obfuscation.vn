@@ -1,0 +1,98 @@
+@title Seventy-Five Minutes
+@kind paper
+@source paper:The Effect of Code Obfuscation on Human Program Comprehension
+@cite A. H. N. Nguyen†, J. V. Le†, I. Lahnstein Coronado, T. N. Nguyen (2026). The Effect of Code Obfuscation on Human Program Comprehension. arXiv:2603.07668 [cs.SE].
+@arxiv 2603.07668
+@link https://arxiv.org/abs/2603.07668 Read the paper
+@link ../../assets/documents/publications/2026SPLASH-SRC.pdf Two-page SRC abstract
+@authors Anh H. N. Nguyen† and Jack V. Le† (co-first), Ilse Lahnstein Coronado, Tien N. Nguyen
+@note Dialogue is dramatized; coauthors did not say these lines. The Proctor and the Obfuscator are abstract roles, not people from the study. Figures marked § are quoted from the two-page SPLASH SRC abstract that summarizes this study; lines marked abs quote the arXiv abstract.
+@status draft
+@verify
+@palette night
+@include _facts/obfuscation.vn
+@fact n_questions = 12 ^§3.2
+@fact snips_per_lang = 10 ^§3.1
+@cast Proctor name="the Proctor" hue=200 bun
+@cast Obfuscator name="the Obfuscator" lattice=dense hue=300
+@cast You player hue=40
+
+@bg lab dim
+@show Proctor left
+@show You right
+Proctor: Welcome. {n_humans} undergraduate CS majors sit this study; you are one of them. The session is supervised and lasts {session_min} minutes. ^§3.2
+Proctor: {n_questions} questions. Each gives you a function and an input; you state the exact output. ^§3.1
+Proctor: We record correctness, response time, and the programming experience you reported for yourself. ^§abs
+Proctor: You see every base snippet exactly once, at one tier, balanced across participants, with the input held constant. ^§3.2
+You: One tier of what?
+@show Obfuscator center
+Obfuscator: Of me. You will not be told which of my faces you are reading. You may be told what they are.
+@card What was done to the code | L0: nothing but the function's name masked | L1: uninformative renaming; short, disjoint identifiers | L1b: adversarial renaming; misleading names from one semantic domain, a Stroop-like trap | L2: control-flow flattening; dispatchers and indirect jumps | L3: both ^§2.1
+Obfuscator: Deterministic base programs, at most fifteen lines, {snips_per_lang} HumanEval-X snippets per language, Python and JavaScript. ^§3.1
+@thumb
+Obfuscator (smile): The clock is running. Which of me do you open first?
+* The untouched one. L0, name masked. -> open_l0
+* The trap. L1b, adversarial names. -> open_l1b
+* The worst case. L3, renamed and flattened. -> open_l3
+
+== open_l0
+@set first = l0
+You: The one that still looks like code.
+Obfuscator (deadpan): Start gentle, then. The trap can wait for you.
+-> session
+
+== open_l1b
+@set first = l1b
+You: The names will lie. I know that going in.
+Obfuscator (smile): Knowing is not the same as not reading them.
+-> session
+
+== open_l3
+@set first = l3
+You: If I can do the worst one, the rest are easy.
+Obfuscator (laugh): Flattened and renamed. Bring a pencil.
+-> session
+
+== session
+@hide Obfuscator
+@scene Seventy-five minutes later
+@bg lab
+@show Proctor left
+@show You right
+Proctor: Time. Pencils down.
+@if first == l1b -> after_l1b
+@if first == l3 -> after_l3
+Proctor: You started with the untouched one.
+You: And ended on the trap.
+-> results
+
+== after_l1b
+Proctor: You opened the trap first.
+You: I read the names anyway.
+-> results
+
+== after_l3
+Proctor: You opened the worst case first.
+You: I ran out of pencil.
+-> results
+
+== results
+@show Obfuscator center
+Proctor: Here is what {n_answers} answers like yours showed. ^§3.2
+@chart bar Human accuracy by tier | All languages, L0={human_l0} | All languages, L3={human_l3} | JavaScript, L0={js_l0} | JavaScript, L3={js_l3} | Python, L0={py_l0} | Python, renamed={py_rename} unit=%
+Proctor: Obfuscation generally increases the time required to reason about code and tends to reduce prediction accuracy. ^§abs
+Proctor: However, the relationship between obfuscation strength and performance is not strictly monotonic and varies across programming languages. ^§abs
+Obfuscator (smile): JavaScript exhibits the expected pattern of increasing difficulty with stronger obfuscation. ^§abs
+Obfuscator (puzzled): Python displays a more complex trend, in which certain renaming transformations can perform comparably to,
+  or occasionally better than, the unobfuscated baseline. ^§abs
+Proctor: Human accuracy fell from {human_l0} at L0 to {human_l3} at L3: JavaScript declined steadily, {js_l0} to {js_l3}; Python rose under renaming, {py_l0} to {py_rename}. ^§4
+@card Your clock | Response time jumps by {rt_jump} once code is obfuscated, then plateaus | Errors cluster at time extremes | Correct L1b answers are slower than incorrect ones ^§4
+Proctor: Response-time analyses suggest that obfuscation shifts participants away from rapid, heuristic reasoning toward slower and more deliberate reasoning processes. ^§abs
+Proctor: Performance appears highest within a moderate range of response times: careful deliberation can improve accuracy,
+  while extremely long response times often correspond to confusion. ^§abs
+Obfuscator (deadpan): And all those years of programming?
+Proctor: Programming experience predicts performance primarily within a given language, with limited transfer across languages.
+  Obfuscation challenges language-specific familiarity more than general programming ability. ^§abs
+You: So the trap was never the code.
+Obfuscator (smile): It was the time you took, and the language you took it in.
+@end

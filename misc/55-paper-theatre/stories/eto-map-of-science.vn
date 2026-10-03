@@ -1,0 +1,64 @@
+@title Hot research topics in AI and cybersecurity: insights from the Map of Science
+@kind paper
+@source paper:insights from the Map of Science
+@cite Emerging Technology Observatory (Substack), May 19, 2026. Hot research topics in AI and cybersecurity: insights from the Map of Science. Policy post on high-growth AI and cybersecurity clusters in the Map of Science.
+@link https://eto.tech/blog/hot-topics-cybersecurity-ai-map-of-science/ Read the post
+@authors Emerging Technology Observatory (ETO). Jack V. Le contributed to the Map of Science the post draws on, not to the post.
+@note Dialogue is dramatized. The Analyst is a fictional reader; no sentence of the post is quoted until its text is supplied, and no cluster is named. Lines marked para paraphrase the site's own listing of the post.
+@status embargo
+@verify
+@palette moss
+@cast Jack hue=120 glasses
+@cast Analyst name="the Analyst" hue=10 long glasses
+@cast You player hue=20
+
+# Scaffolded by scripts/build-vn-index.mjs --scaffold-paper eto-map-of-science on 2026-10-02, then hand-written.
+# Embargo skeleton: the post's text is not in the repo. ^para chips mark lines that
+# paraphrase the Writing & press entries in index.html (the only text available). The
+# choice is a reading-order beat with no cluster named. When the post text is pasted in,
+# narrate from its sentences with ^¶n chips and replace @withheld.
+
+@bg office dawn
+@show Analyst center (thinking)
+Analyst: A brief is due by noon on the high-growth clusters in AI and cybersecurity research. I have a map and a cup of coffee. ^para
+Analyst: The map is the Map of Science: research sorted into clusters, each with a title and a summary, so that someone who has read none of it can still see its shape. ^para
+@show Jack left
+Jack: I worked on the map, not on the brief. I am here as the person who knows where the titles came from. ^para
+Analyst (deadpan): Then tell me where to start. There are more clusters on this map than the brief has pages.
+Analyst: Two keywords lit the map up. Everything after that is a matter of which light to walk toward first.
+@thumb
+Jack (smile): Your call. There is no wrong first step, only a different brief.
+* The fastest-growing cluster first. -> pick_growth
+* The largest cluster first. -> pick_size
+* The cluster whose title you do not understand. -> pick_odd
+
+== pick_growth
+@show You right
+You: Growth is the story. Start where the slope is steepest.
+Analyst (smile): And hope it is not one lab publishing fast.
+Jack (thinking): A fair worry with any map.
+@set first = growth
+-> folded
+
+== pick_size
+@show You right
+You: Size. Start where most of the work is.
+Analyst (deadpan): Where most of the work has been. The brief is about where it is going.
+Jack (smile): Both are on the map. Only one is in the headline.
+@set first = size
+-> folded
+
+== pick_odd
+@show You right (thinking)
+You: The one you cannot parse. That is where a summary earns its keep.
+Analyst (laugh): The data team will be pleased.
+Jack (smile): The data team is.
+@set first = odd
+-> folded
+
+== folded
+@hide You
+Analyst: Whichever we open first, what the post found inside is the post's to say, not mine.
+Jack: Its own sentences are not in this story yet. Until they are pasted in, the map stays folded; the button on the end card goes to the real thing.
+@withheld Withheld until the post text is supplied. The end card links to the ETO post.
+@end

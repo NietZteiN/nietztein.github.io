@@ -1,0 +1,119 @@
+@title Open Questions in Language Acquisition
+@kind blog
+@source blog:open-questions-in-language-acquisition
+@link ../../#/post/open-questions-in-language-acquisition Read the post
+@note Dialogue is dramatized. Lines marked ¶ are the post's own sentences, lightly trimmed. The Theory is the post's reading of comprehensible input, not a person.
+@status draft
+@palette ink
+@cast Jack hue=250 glasses
+@cast Theory name="the Theory" hood hue=40
+@cast You player hue=120
+
+# Source: blog/posts/2026-08-01-open-questions-in-language-acquisition.md (2026-08-01).
+# ¶ numbers count the post's blocks the way @read does: ¶1 title, ¶2 the italic
+# epigraph, ¶3-¶9 the prose, ¶10 the fourteen-item list, ¶11 the last line.
+# The board is the post's list; every question is stated as the post words it.
+# The Theory only ever says "just read"; its lines in the branches are reactions.
+
+@bg lecture
+@show Jack left
+Jack: *My version of Erdős problems. Many of these seem intractable.* ^¶2
+Jack: I learned Japanese and German through immersion, one reasonably well and the other in progress. I put hundreds of hours into Duolingo and finished the French and Vietnamese trees. I failed Vietnamese and French classes. ^¶3
+Jack: I memorized Latin poems to do well in IB Latin. I speak very stilted Vietnamese with family members. So I think I know a little bit about learning languages. ^¶3
+Jack: To arrive at a winning "formula," I needed time, instruction, software, and a mind to discern bullshit. ^¶4
+Jack: These experiences lay somewhat unverbalized in my mind. To the best of my knowledge, the best verbalization of this sort of knowledge is Stephen Krashen's classic principles of second language acquisition and the theory of comprehensible input. ^¶5
+@show Theory right
+Theory: To be a good writer, you just need to read. ^¶6
+Theory: To become articulate, you just need to read. ^¶6
+Jack (deadpan): Tell that to an author! ^¶6
+Theory: To speak fluently in a second language, you just need to read. ^¶6
+Jack: But the theory leads Krashen to some absurd claims. I've seen people genuinely speak like Shakespeare because that's all they've read, though this can be fixed with an "adjustment period." The same goes for people who "speak like anime." A bit of exposure and practice is essentially like finetuning a base model. ^¶6
+Jack: A better second-language pedagogy, in my view, must start from an experimental base plus the minimum logical framework needed to explain the results. Nothing like Chomsky or any philosophical account of language built bottom-up. In other words, avoid philosophy (even experimental philosophy) where we can, and start with the facts. ^¶7
+Theory (smile): Just read.
+Jack: The problem is that those facts have not been measured. ^¶8
+@scene The board
+@show You center
+Jack: To move in this direction, we would need empirical evidence on the following questions. ^¶9
+@thumb
+Jack (smile): Fourteen are on the board. Which do you pin first? ^¶10
+
+== board
+* (once) 1. Medium -> q1
+* (once) 2. Multiple languages at once -> q2
+* (once) 4. Hearing foreign sounds -> q4
+* (once) 7. What it takes to get good at talking -> q7
+* (once) 11. The magical hyperpolyglot -> q11
+* (once) 14. Forgetting over time -> q14
+* (once) 6, 9, 10, 13. The ones in smaller handwriting -> rest
+* Step back from the board -> close
+
+== q1
+You: Medium.
+Jack: How does acquisition change by medium, listening vs. reading, for the same content and the same time investment? ^¶10
+Theory (deadpan): Just read.
+You: Same content, same hours. Would listening have done the same?
+Theory (puzzled): ...
+-> board
+
+== q2
+You: Multiple languages at once.
+Jack: Simultaneous acquisition seems to only be measured in kids learning from scratch, not adult L2. What about an Englishman in the Congo learning French and Lingala at the same time? ^¶10
+Theory: Just read. In both.
+Jack: Following from that, does taking a break from one language and learning from another actually help? (Kaufmann talks about this a lot.) ^¶10
+Theory (worried): Just... read.
+-> board
+
+== q4
+You: Hearing foreign sounds.
+Jack: Empirical evidence on the process of learning to *hear* foreign contrasts you initially can't. Pitch accent, for instance. What's the mechanism, and does perception have to come before production? ^¶10
+Theory (thinking): Just read. Aloud, if you must.
+Jack: Pronunciation. Empirically it seems to be what Matt vs Japan said. Those who care get good and those who don't suck. My model is a small endowment at the start plus a self-improvement feedback mechanism. Is that testable? (I think yes.) ^¶10
+You: So the ones who care are running an experiment on themselves.
+-> board
+
+== q7
+You: What it takes to get good at talking.
+Jack: Separate the fact that you're getting input (Krashen) from what I actually believe, which is that you have to talk. ^¶10
+Theory (worried): You just need to read.
+Jack: The design is simple. Take input-matched cohorts, force one to speak, and give the other pure input. Make them play VNs lol. That's your experiment. ^¶10
+You: We are in one.
+Jack (laugh): Then you are the pure-input cohort. Say something.
+Jack: Same for writing. Does reading volume alone produce writing competence, or is composition practice load-bearing? (My guess is the input-only ceiling is higher here, since writing lets you monitor offline.) ^¶10
+Theory (smile): Reading volume alone. You see.
+-> board
+
+== q11
+You: The magical hyperpolyglot.
+Jack: Is there a verified individual who can genuinely switch between many languages at a high level? There are famous claimed cases, but they're all apocryphal to some degree. ^¶10
+Jack: Cardinal Giuseppe Mezzofanti (1774–1849) is the canonical one. His biographer Russell credited him with 72 languages, but only nine of those were "frequently tested, and spoken with rare excellence," and even contemporaries like Thomas Watts accused Russell of over-counting. ^¶10
+Jack: Estimates range from 30 to 72 depending on who's counting and what counts. Note that this also depends on how we define "good at a language" in the first place, which is its own open question. It seems to me the magical version doesn't exist... ^¶10
+Theory (deadpan): Just read. In every one of them.
+Jack: ...except, maybe, for high-IQ individuals. My theory is that IQ only helps at something like 160+. Below that, everyone's the same. The genius theory, essentially. ^¶10
+Jack: The claimed example here is William James Sidis, the American prodigy who supposedly had "the highest IQ ever obtained" and spoke 40+ languages. But the IQ claim comes from his sister after his death, the test records are lost, and one researcher called the Sidis literature the most myth-saturated topic he'd ever investigated. ^¶10
+Jack: So the poster child is apocryphal too. Still, the question stands. Is the relationship between IQ and language attainment flat below a threshold and steep above it? ^¶10
+You: Two legends, zero test records.
+-> board
+
+== q14
+You: Forgetting over time.
+Jack: Language attrition seems to have a long tail where something is always remembered. What's the functional form, and what determines which items survive? Frequency, emotional salience, or depth of original learning? ^¶10
+Theory: Just read it again.
+You: That is a remedy. The question was the curve.
+-> board
+
+== rest
+You: The ones in smaller handwriting.
+Jack: A mixed model of language learning. Is a single formal model possible, one that predicts acquisition order, error patterns, and attrition across input-heavy and output-heavy regimes? Right now we have competing verbal theories that don't make joint quantitative predictions. ^¶10
+Theory (puzzled): Just read.
+Jack: Experience vs. method. The theory that experience doesn't help, and that what helps is improved methods. There are people who speak five languages at home but then can't learn Spanish because they suck at classes. If experience mattered on its own, they shouldn't fail. ^¶10
+Jack: Cognitive load, actually measured. Cognitive load by medium and by language, using physical measures (pupillometry, dual-task) instead of self-report scales. ^¶10
+Jack: Concentration. How does attention affect learning? We know learning in your sleep doesn't work, but what's the minimum? Sometimes I glaze through a text. How much do I actually retain in that regime? ^¶10
+Theory (deadpan): Just read. Awake, preferably.
+-> board
+
+== close
+@hide You
+@show Jack center
+Theory: Just read.
+Jack (smile): Some of these are more tractable than they look. Others have probably been open for fifty years. ^¶11
+@end

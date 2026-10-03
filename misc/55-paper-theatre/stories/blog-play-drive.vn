@@ -1,0 +1,54 @@
+@title Research, Humor, and the Play Drive
+@kind blog
+@source blog:untitled
+@link ../../#/post/untitled Read the post
+@status draft
+@palette ochre
+@cast Jack hue=28 glasses
+@cast Schiller page name="Schiller"
+@cast Form hue=250 none
+@cast Sense hue=10 curly
+@cast You player hue=120
+
+@bg cafe dim
+@show Schiller center
+Schiller: "Man only plays when in the full meaning of the word he is a man, and he is only completely a man when he plays." ^¶1
+@hide Schiller
+@show Jack left
+Jack: When I think about research from a meta perspective, I keep returning to play. ^¶2
+Jack: A joke is an empirical experiment. You set up a structured expectation and break it. You cannot deduce in isolation whether a punchline works; you need a live audience, and most attempts fail. ^¶3
+@scene Open mic
+@bg night
+@show You right
+Jack (smile): Your turn at the mic. Two jokes in your pocket.
+* The safe one. The proof from the textbook. -> safe
+* The risky one. A hypothesis. -> risky
+
+== safe
+You: Something that has landed before.
+Jack (deadpan): It lands. Politely. In a classroom you follow established proofs and predictable steps; nobody laughs at a proof. ^¶3
+-> drives
+
+== risky
+You: Two ideas that have no business meeting.
+Jack (laugh): Silence, then one laugh, then the room. Or nothing. With research you generate hypotheses, test the absurd ones, and tolerate a high failure rate to find what lands. ^¶3
+-> drives
+
+== drives
+The common fear starting out is that you simply do not know enough. The real requirement is taste, curiosity, and a willingness to tinker. ^¶4
+@scene Two hecklers
+@bg lecture
+@hide You
+@show Form left (deadpan)
+@show Sense right (surprised)
+Form: Abstraction. Logic. Order. ^¶5
+Sense: Raw material. Sensation. Time. ^¶5
+Jack: Schiller's play-drive is the mediator between those two. Play happens only when they collide and balance each other out. ^¶5
+@show Form left (thinking)
+Form: An LLM has mastered me entirely: formal geometric relations inside an embedding space. ^¶6
+Sense (worried): And has none of me. No embodiment, no physical friction, no phenomenal experience. ^¶6
+Jack: Without real material constraints to resist the formal structure, there is nothing for play to mediate. Computation alone is not play. ^¶6
+@hide all
+@show Jack center
+Jack: Eisenstein called it intellectual montage: two independent shots collide and make a third thing in the viewer's mind. Interdisciplinary work is the same dialectic. Take a formal method from one field, collide it against an unsolved problem in another, and see if the spark holds. ^¶7
+@end

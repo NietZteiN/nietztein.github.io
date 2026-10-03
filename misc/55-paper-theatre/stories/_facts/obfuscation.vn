@@ -1,0 +1,17 @@
+# Figures from the SPLASH SRC abstract. Re-verify each against arXiv 2606.31725 / 2603.07668 before publishing.
+@fact n_humans = Fifty ^§3.2
+@fact session_min = 75 ^§3.2
+@fact n_answers = 600 ^§3.2
+@fact n_models = Twelve ^§3.3
+@fact n_runs = 28,750 ^§3.3
+@fact human_l0 = 40.5% ^§4
+@fact human_l3 = 31.1% ^§4
+@fact js_l0 = 43% ^§4
+@fact js_l3 = 16% ^§4
+@fact py_l0 = 38% ^§4
+@fact py_rename = 53% ^§4
+@fact rho_reason = ρ = 0.30 to 0.47, p < 0.005 ^§4
+@fact rho_other = ρ = 0.02 to 0.10 ^§4
+@fact rho_cot = ρ = −0.52 ^§4
+@fact adv_collapse = 21% ^§4
+@fact rt_jump = about a minute ^§4

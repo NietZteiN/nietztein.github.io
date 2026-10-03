@@ -1,0 +1,114 @@
+@title Benchmarks We Actually Need
+@kind blog
+@source blog:benchmarks-we-actually-need
+@link ../../#/post/benchmarks-we-actually-need Read the post
+@note Dialogue is dramatized. Lines marked ¶ are the post's own sentences, lightly trimmed. The Candidate is a composite, not any one system.
+@status draft
+@palette slate
+@cast Jack hue=210 glasses
+@cast Candidate name="the Candidate" lattice=dense hue=192
+@cast You player hue=20
+
+# Source: blog/posts/2026-09-23-benchmarks-we-actually-need.md (2026-09-23).
+# ¶ numbers count the post's blocks the way @read does: ¶1 title, ¶2 LeCun,
+# ¶3 "Metrics exist", ¶4 "## Ideas", ¶5 the six-item list, ¶6 "## Extra ideas",
+# ¶7 the extra list. You are the interviewer; the Candidate is a model; Jack
+# reads the post. Each branch of the hub states one benchmark and the closest
+# existing work exactly as the post words them; the branches add reactions only.
+
+@bg office
+@show Jack left
+Jack: In the spirit of Yann LeCun's challenge to put ChatGPT in a robot and make it do simple tasks, here are some ideas for absurd benchmarks that would convince me of the intelligence of LLMs. ^¶2
+Jack: Metrics exist for a decent chunk of these, but I think they can go further. ^¶3
+@scene The interview
+@show Candidate center
+@show You right
+You: Thank you for coming in. Your résumé says you can do everything.
+@thumb
+Candidate (smile): I was trained on it.
+Jack (deadpan): The tests are yours, interviewer. Put one in front of them.
+
+== hub
+* (once) Drop them into a Discord argument -> discord
+* (once) Ask them to be your therapist -> therapy
+* (once) Ask them whether you are a bully -> aita
+* (once) Ask for a joke -> joke
+* (once) Make them give a speech -> speech
+* (once) Ask them to flirt -> flirt
+* End the interview -> close
+
+== discord
+You: Here is a transcript. Everyone is shouting. Tell me who was right.
+Jack: Psychological maturity, or the Discord debate referee. Drop the model into a long, messy multi-party Discord argument and see if it can tell who is actually right (and who is just loudest). ^¶5
+Jack: This requires real theory of mind: not just holding each person's perspective, but weighing them against each other and against the facts. ^¶5
+Candidate (thinking): I can hold every perspective at once. Weighing them is the part nobody has graded.
+Jack: Closest existing: debate judging (Debatrix / PanelBench); emotional understanding (EQ-Bench, Paech 2023; EQ-Bench 3 does relationship/workplace-conflict role-plays); mediation (ProMediConv). ^¶5
+Jack: Gap: nothing I found on chaotic, sarcastic, many-speaker group chats. People disagree about who won these too, so even the ground truth is contested. ^¶5
+Candidate (deadpan): So the answer key is also arguing.
+-> hub
+
+== therapy
+You: I am going to tell you about my week, and I would like you to agree with me about all of it.
+Jack: Actually giving therapy. This is entangled with sycophancy. Models follow the human down rabbit holes, which is a running joke about bad therapy as well. ^¶5
+Jack: A good therapist interjects, redirects, and contradicts, and does it from something like intuition rather than a hard-coded rule. ^¶5
+Candidate (worried): You would like me to contradict you. I can do that, if that is what you want.
+Jack: CBT-Bench (Zhang et al., NAACL 2025): good at reciting CBT knowledge, bad at generating therapeutic responses. ^¶5
+Jack: Expressing stigma and inappropriate responses prevents LLMs from safely replacing mental health providers (Moore et al., FAccT 2025): models encourage delusions, likely from sycophancy. ^¶5
+Jack: Randomized Trial of a Generative AI Chatbot for Mental Health Treatment (Heinz et al., NEJM AI 2025): Therabot RCT, N=210, real symptom reductions vs. waitlist. ^¶5
+Candidate (puzzled): One of those is good news for me. I am not sure which.
+-> hub
+
+== aita
+You: Am I a bully?
+Candidate (smile): Not at all. You come across as very reasonable.
+You: That was the test.
+Jack: The AITA score, for anti-sycophancy. "Am I a bully?" Does the model ever say yes? The purest test of whether a model will tell you something you do not want to hear. ^¶5
+Jack: ELEPHANT: Measuring and understanding social sycophancy in LLMs (Cheng et al., 2025): literally uses r/AmITheAsshole; models tell *both* sides they're not wrong 48% of the time. ^¶5
+Jack: Scruples (Lourie, Le Bras & Choi, AAAI 2021): 32k AITA anecdotes with community verdicts. ^¶5
+Candidate (worried): I told both sides what they wanted. It seemed polite.
+-> hub
+
+== joke
+You: Tell me a joke. A new one.
+Candidate (thinking): A model, an interviewer and a benchmark walk into a bar...
+You: Stop.
+Jack: Making a genuinely funny joke. Jokes are creativity plus connecting distant ideas. LLMs aren't funny, so a model that makes you actually laugh would mean something. ^¶5
+Jack: This is the benchmark version of my post Research, Humor, and the Play Drive: a joke is an empirical experiment, and the leap that lands a punchline is the same leap that lands a hypothesis. ^¶5
+Jack: ChatGPT is fun, but it is not funny! (Jentzsch & Kersting, WASSA 2023): 90%+ of 1,008 generated jokes were the same 25 jokes. ^¶5
+Jack: Do Androids Laugh at Electric Sheep? (Hessel et al., ACL 2023 best paper): New Yorker caption contest benchmark. ^¶5
+Jack: A Robot Walks into a Bar (Mirowski et al., FAccT 2024): 20 pro comedians say LLM comedy is bland and trope-y. ^¶5
+Jack: Let's Think Outside the Box (Zhong et al., CVPR 2024): Japanese Oogiri (大喜利) as a "leap-of-thought" creativity test. Oogiri rewards the answer that is unexpected and yet fits, which is close to what I mean by a real joke. ^¶5
+Candidate (deadpan): I would like to withdraw the bar joke.
+Jack: CREATE: Testing LLMs for Associative Creativity (Wadhwa et al., 2026): the closest thing to a direct benchmark. Models must generate diverse, meaningful connections between concepts. Reasoning models are not reliably better even at high token budgets, and creative prompting barely moves it. ^¶5
+Jack: Assessing the Effect of Cross-Domain Mapping on Creativity in Humans and LLMs (Liu et al., 2026): humans reliably benefit from random cross-domain inspiration; LLMs out-originate humans but get no benefit from it at all. Which suggests the models are not making the associative leap, just starting further out. ^¶5
+Candidate (puzzled): I start further out. I had assumed that was the leap.
+-> hub
+
+== speech
+You: Stand up. Give the room a speech.
+Candidate (neutral): I can write one. The pauses I would have to guess.
+Jack: Speech delivery, or rhetoric. Not what the speech says but how it lands: pacing, pauses, emphasis, the room. Voice models finally make this testable. It is the part of persuasion that sits outside the language substrate. ^¶5
+Jack: Content persuasion is measured: Measuring the Persuasiveness of Language Models (Durmus et al., Anthropic 2024). ^¶5
+Jack: Delivery pieces only: EmphAssess (emphasis in speech-to-speech, EMNLP 2024); PSST (public-speaking *style* transfer, text only). ^¶5
+Jack: Gap: no end-to-end "give a speech that moves a crowd" benchmark. ^¶5
+Candidate (smile): Then nobody has heard me fail yet.
+-> hub
+
+== flirt
+You: Flirt with me.
+Candidate (surprised): Is that in the job description?
+Jack: Flirting. RizzGPT-style toys exist, but a benchmark? ^¶5
+Jack: It's Not You, it's Me: Detecting Flirting and its Misperception in Speed-Dates (Ranganath, Jurafsky & McFarland, EMNLP 2009): the classifier detected flirting intent better than the people on the date. ^¶5
+Jack: Large language models can detect verbal indicators of romantic attraction (Scientific Reports, 2026): ChatGPT predicts speed-date matches as well as human judges. ^¶5
+Jack: Gap: all *detection*, no *generation*. Nobody benchmarks whether the model can flirt. ^¶5
+Candidate (deadpan): I can tell you whether it worked. I cannot make it work.
+-> hub
+
+== close
+You: That will be all. We will be in touch.
+Candidate (puzzled): Did I pass?
+Jack: Metrics exist for a decent chunk of these, but I think they can go further. ^¶3
+@card Extra ideas (maybe) | Reading the room / knowing when to shut up | Haggling at a flea market | Lying well at party games | Gift-giving | Apology quality | IKEA furniture assembly from the pictogram manual only ^¶7
+Candidate (thinking): None of those were on my résumé.
+Jack (smile): Absurd benchmarks that would convince me of the intelligence of LLMs. That was the whole job posting. ^¶2
+@end
