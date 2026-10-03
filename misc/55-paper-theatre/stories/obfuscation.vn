@@ -11,7 +11,7 @@
 @verify
 @palette slate
 @include _facts/obfuscation.vn
-@cast Jack hue=210 skin=2 glasses short masc hoodie
+@cast Jack hue=210 skin=2 masc hairhue=25 hairtone=dark glasses short hoodie
 @cast P23 name="Participant 23" hue=28 skin=3 hood hoodie
 @cast Model name="a reasoning-tuned model" lattice=sparse hue=192
 @cast Page page name="Wittgenstein, Philosophical Investigations"

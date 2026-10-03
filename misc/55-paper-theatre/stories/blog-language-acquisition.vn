@@ -5,7 +5,7 @@
 @note The frame is fiction: the night, the corkboard, the rooms the memories are staged in, the train (which is only imagined) and every unmarked line. The Theory personifies the post's reading of comprehensible input; it is not a person and quotes nobody. Which languages were studied, and which classes failed, come from the post. Lines marked ¶ are the post's own sentences, lightly trimmed.
 @status published
 @palette ink
-@cast Jack hue=210 skin=2 masc hairhue=25 glasses short hoodie
+@cast Jack hue=210 skin=2 masc hairhue=25 hairtone=dark glasses short hoodie
 @cast Theory name="the Theory" hue=40 skin=3 hood cardigan
 @cast Page page name="Open Questions"
 

@@ -11,7 +11,7 @@
 @note The frame is fiction: the basement, the rain, the leak, the jokes, the classroom memory, the two hecklers and the understudy. Form and Sense are personified drives, not people, and the understudy is a figure for a kind of system, not any product. Lines marked ¶ are quoted, lightly trimmed, from the post; the Schiller sentence is quoted as the post quotes it.
 @status published
 @palette ochre
-@cast Jack hue=210 skin=2 masc hairhue=25 glasses short hoodie
+@cast Jack hue=210 skin=2 masc hairhue=25 hairtone=dark glasses short hoodie
 @cast Form hue=250 skin=1 masc hairhue=225 short uniform
 @cast Sense hue=8 skin=4 fem hairhue=18 curly hoodie
 @cast Understudy name="the understudy" lattice=dense hue=192
@@ -40,7 +40,7 @@ Schiller: Man only plays when in the full meaning of the word he is a man, and h
 
 @chapter 1 Fourth on the List
 @transition fade 1200
-@bg cafe dim
+@bg basement dim
 @tone dusk
 @fx rain on
 @cg window-rain | The basement window, at street level
@@ -146,7 +146,7 @@ With research, you have to generate hypotheses, test the absurd ones, and tolera
 
 @chapter 3 Two Hecklers
 @transition dissolve 900
-@bg cafe dim
+@bg basement dim
 @tone dusk
 @show Jack center (worried)
 Three and a half minutes. The front table has decided to help.
@@ -213,7 +213,7 @@ The light over the stage goes amber, which in this room means stop. My last two 
 Between acts the house puts on its understudy. It does not come up from the tables. It is simply there, in the light, the way a figure is there in a diagram.
 It has read every set that was ever written down. It has never queued for the toilets in a place like this.
 @cg off
-@bg cafe dim
+@bg basement dim
 @show Understudy center far
 @pause 500
 @show Understudy center near
@@ -266,7 +266,7 @@ Understudy (neutral): I will note the silence. It is also a result.
 
 @chapter 5 What Lands
 @transition fade 1000
-@bg cafe dim
+@bg basement dim
 @tone dusk
 @show Jack center (neutral)
 Two minutes, returned to me slightly used.

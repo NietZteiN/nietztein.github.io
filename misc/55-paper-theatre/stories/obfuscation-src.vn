@@ -10,7 +10,7 @@
 @verify
 @palette ochre
 @include _facts/obfuscation.vn
-@cast Jack hue=210 skin=2 glasses short masc shirt
+@cast Jack hue=210 skin=2 masc hairhue=25 hairtone=dark glasses short shirt
 @cast Judge name="the Judge" hue=350 skin=3 glasses bun fem uniform
 @cast Page page name="the Two Pages"
 

@@ -14,7 +14,7 @@
 @note The frame is fiction: the night, the rain, the desk, the café, the struck line about the moon, and every line of dialogue. The one who understood is an invented composite, not a real reader, and the one given the layout is a figure for a collaborator, not any product. Lines marked ¶ are the post's own sentences, lightly trimmed. Lines spoken by the poem are quoted from the public page; a slash marks a break across its white space.
 @status published
 @palette paper
-@cast Jack hue=210 skin=2 masc hairhue=25 glasses short hoodie
+@cast Jack hue=210 skin=2 masc hairhue=25 hairtone=dark glasses short hoodie
 @cast Setter name="the one given the layout" lattice=sparse hue=192
 @cast Page page name="the poem"
 @cast Reader name="the one who understood" hue=340 skin=3 fem bob cardigan
