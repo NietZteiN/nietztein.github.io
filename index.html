@@ -17,10 +17,53 @@
 
 	<!-- Title + Icon -->
 	<title>Jack V. Le</title>
-	<link rel="icon" type="image/png" href="https://github.com/nietztein.png">
+	<link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg">
+	<link rel="icon" type="image/png" sizes="32x32" href="assets/img/favicon-32.png">
+	<link rel="apple-touch-icon" sizes="180x180" href="assets/img/favicon-180.png">
 
 	<!-- Improve SEO -->
 	<meta name="robots" content="index,follow" />
+	<link rel="canonical" href="https://nietztein.github.io/">
+	<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+	<meta name="theme-color" content="#0f1115" media="(prefers-color-scheme: dark)">
+
+	<!-- Social cards -->
+	<meta property="og:type" content="website">
+	<meta property="og:site_name" content="Jack V. Le">
+	<meta property="og:title" content="Jack V. Le">
+	<meta property="og:description" content="Jack V. Le — UT Dallas computer science, research, teaching, and publications.">
+	<meta property="og:url" content="https://nietztein.github.io/">
+	<meta property="og:image" content="https://nietztein.github.io/assets/img/og/card.png">
+	<meta property="og:image:type" content="image/png">
+	<meta property="og:image:width" content="1200">
+	<meta property="og:image:height" content="630">
+	<meta property="og:image:alt" content="Jack V. Le — Language models, cognition, and code. nietztein.github.io">
+	<meta name="twitter:card" content="summary_large_image">
+	<meta name="twitter:title" content="Jack V. Le">
+	<meta name="twitter:description" content="Jack V. Le — UT Dallas computer science, research, teaching, and publications.">
+	<meta name="twitter:image" content="https://nietztein.github.io/assets/img/og/card.png">
+	<meta name="twitter:image:alt" content="Jack V. Le — Language models, cognition, and code. nietztein.github.io">
+
+	<!-- Structured data -->
+	<script type="application/ld+json">
+		{
+			"@context": "https://schema.org",
+			"@type": "Person",
+			"name": "Jack V. Le",
+			"url": "https://nietztein.github.io/",
+			"jobTitle": "Undergraduate researcher",
+			"affiliation": {
+				"@type": "CollegeOrUniversity",
+				"name": "University of Texas at Dallas",
+				"url": "https://www.utdallas.edu/"
+			},
+			"knowsLanguage": ["Japanese", "English"],
+			"sameAs": [
+				"https://github.com/nietztein",
+				"https://www.linkedin.com/in/jack-le-utd/"
+			]
+		}
+	</script>
 
 	<!-- Theme: set before first paint so there is no light-to-dark flash. -->
 	<script>
@@ -50,6 +93,8 @@
 	<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
 	<link rel="stylesheet" href="assets/css/main.css">
 	<link rel="stylesheet" href="assets/css/glance.css">
+	<link rel="stylesheet" href="assets/css/cite.css">
+	<link rel="stylesheet" href="assets/css/i18n.css">
 	<!-- Gadgets: small shell-level effects, each switchable from the sparkle menu / Ctrl+K (assets/js/gadgets/core.js) -->
 	<link rel="stylesheet" href="assets/css/gadgets/ambient.css">
 	<link rel="stylesheet" href="assets/css/gadgets/tilt.css">
@@ -65,15 +110,25 @@
 		href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github.min.css">
 	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 
+	<!-- Print: the page itself prints as a CV (window.Site.printCV()) -->
+	<link rel="stylesheet" href="assets/css/print.css" media="print">
+
 </head>
 
 <body>
+
+	<!-- First focusable element; main.js moves focus to the visible section. -->
+	<a class="skip-link" href="#main-content">Skip to content</a>
+
+	<!-- Route changes are announced here for screen readers (main.js). -->
+	<div id="route-announcer" class="visually-hidden" aria-live="polite" aria-atomic="true"></div>
 
 	<!-- Reading progress (shown on blog posts) -->
 	<div id="reading-progress" aria-hidden="true"></div>
 
 	<!-- Navbar  -->
-	<nav id="top-nav" class="navbar navbar-expand-md sticky-top">
+	<header class="site-header sticky-top">
+	<nav id="top-nav" class="navbar navbar-expand-md" aria-label="Primary">
 		<div class="container">
 			<a class="navbar-brand d-md-none" href="#/about">Jack V. Le</a>
 			<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav"
@@ -121,20 +176,21 @@
 			</div>
 		</div>
 	</nav>
+	</header>
 
-	<div class="container" id="main-content">
+	<main class="container" id="main-content" tabindex="-1">
 		<div class="row content" id="section-content">
 
 			<!-- Jack V. Le profile and contact info -->
-			<div id="leftPanel" class="col-md-3">
+			<aside id="leftPanel" class="col-md-3" aria-label="Profile">
 				<div class="row mb-3">
 					<div class="col">
 						<img src="https://github.com/nietztein.png"
-							class="rounded me-auto d-block img-fluid profilepicture" alt="Jack V. Le profile picture">
+							class="rounded me-auto d-block img-fluid profilepicture" alt="Portrait of Jack V. Le">
 					</div>
 				</div>
 
-				<h3 class="mb-2">Jack V. Le</h3>
+				<h3 class="mb-2" role="heading" aria-level="1">Jack V. Le</h3>
 
 				<p class="mb-4">
 					<span class="t-secondary">Bachelor of Science in Computer Science with Honours student at the
@@ -158,7 +214,7 @@
 					</div>
 
 					<div class="col-10">
-						<a href="https://nietztein.github.io/" class="link-dark" target="_blank">nietztein.github.io</a>
+						<a href="https://nietztein.github.io/" class="link-dark" target="_blank" rel="noopener">nietztein.github.io</a>
 					</div>
 				</div>
 
@@ -168,7 +224,7 @@
 					</div>
 
 					<div class="col-10">
-						<a href="assets/documents/JackLeCV.pdf" class="link-dark" target="_blank">Academic CV
+						<a href="assets/documents/JackLeCV.pdf" class="link-dark" target="_blank" rel="noopener">Academic CV
 							[Updated 10/3/26]</a>
 					</div>
 				</div>
@@ -200,13 +256,13 @@
 					</div>
 
 					<div class="col-10">
-						<a href="https://github.com/nietztein" class="link-dark" target="_blank">GitHub</a>
+						<a href="https://github.com/nietztein" class="link-dark" target="_blank" rel="noopener">GitHub</a>
 					</div>
 				</div>
-			</div>
+			</aside>
 
 			<!-- About Me -->
-			<div class="section col-md-8 offset-md-1 mb-5" id="aboutmeContent">
+			<section class="section col-md-8 offset-md-1 mb-5" id="aboutmeContent" aria-label="About" tabindex="-1">
 				<div class="container">
 					<div class="row">
 						<p class="mt-2 justify">Undergraduate researcher at the University of Texas at Dallas since
@@ -289,11 +345,11 @@
 						</div>
 					</div>
 				</div>
-			</div>
+			</section>
 
 
 			<!-- Education -->
-			<div class="section col-md-8 offset-md-1 mb-5" id="educationContent">
+			<section class="section col-md-8 offset-md-1 mb-5" id="educationContent" aria-label="Education" tabindex="-1">
 				<div class="container">
 					<div class="row mt-2">
 						<h2 class="academic-year-h2">University of Texas at Dallas</h2>
@@ -341,11 +397,11 @@
 						</ul>
 					</div>
 				</div>
-			</div>
+			</section>
 
 
 			<!-- Publications -->
-			<div class="section col-md-8 offset-md-1 mb-5" id="publicationsContent">
+			<section class="section col-md-8 offset-md-1 mb-5" id="publicationsContent" aria-label="Publications" tabindex="-1">
 				<div class="container">
 
 					<h3 class="h4 mt-2">Refereed abstracts</h3>
@@ -460,10 +516,10 @@
 						</div>
 					</div>
 				</div>
-			</div>
+			</section>
 
 			<!-- Writing & press -->
-			<div class="section col-md-8 offset-md-1 mb-5" id="blogContent">
+			<section class="section col-md-8 offset-md-1 mb-5" id="blogContent" aria-label="Writing and press" tabindex="-1">
 				<div class="container">
 
 					<h3 class="h4 mt-2">Press and mentions</h3>
@@ -543,18 +599,48 @@
 						</div>
 					</div>
 				</div>
-			</div>
+			</section>
 
 			<!-- Blog (Markdown posts) -->
-			<div class="section col-md-8 offset-md-1 mb-5" id="postsContent">
+			<section class="section col-md-8 offset-md-1 mb-5" id="postsContent" aria-label="Blog" tabindex="-1">
 				<div class="container">
 					<div id="blogListView"></div>
 					<div id="blogPostView" style="display:none;"></div>
 				</div>
-			</div>
+			</section>
+
+			<!-- Presentations (before Teaching in the source so the printed CV reads in that order) -->
+			<section class="section col-md-8 offset-md-1 mb-5" id="presentationsContent" aria-label="Presentations" tabindex="-1">
+				<div class="container">
+					<div class="row mt-2">
+						<h2 class="pub-year-h2">2026</h2>
+						<div class="lucida-console h5">Towards Verifiable LLM Outputs for Software Development</div>
+						<div class="mt-1">Gulf Coast Undergraduate Research Symposium, Rice University, Oct 2026.</div>
+						<div class="lucida-console h5 mt-3">Exact Unlearning for Large Language Models</div>
+						<div class="mt-1">DAAD RISE Research Symposium.</div>
+					</div>
+					<div class="row mt-4">
+						<h2 class="pub-year-h2">2025</h2>
+						<div class="lucida-console h5">Head Shape Analysis Using Custom Feature Extraction</div>
+						<div class="mt-1">UT Dallas Undergraduate Research Scholars Awards Symposium.</div>
+					</div>
+					<div class="row mt-4">
+						<h2 class="pub-year-h2">2024</h2>
+						<div class="lucida-console h5">Evaluating Large Language Models in Scientific Research:
+							Practical Applications and Challenges</div>
+						<div class="mt-1">UT Dallas Summer Platform for Undergraduate Students.</div>
+					</div>
+					<div class="row mt-4">
+						<h2 class="pub-year-h2">2023</h2>
+						<div class="lucida-console h5">Coding Semantics: Sentiment Analysis for Movie Reviews</div>
+						<div class="mt-1">[Co-presented.] Association for Computing Machinery UT Dallas Research
+							Conference.</div>
+					</div>
+				</div>
+			</section>
 
 			<!-- Teaching -->
-			<div class="section col-md-8 offset-md-1 mb-5" id="academicContent">
+			<section class="section col-md-8 offset-md-1 mb-5" id="academicContent" aria-label="Teaching" tabindex="-1">
 				<div class="container">
 					<div class="row mt-2">
 						<h2 class="academic-year-h2">2026</h2>
@@ -611,40 +697,10 @@
 						</div>
 					</div>
 				</div>
-			</div>
-
-			<!-- Presentations -->
-			<div class="section col-md-8 offset-md-1 mb-5" id="presentationsContent">
-				<div class="container">
-					<div class="row mt-2">
-						<h2 class="pub-year-h2">2026</h2>
-						<div class="lucida-console h5">Towards Verifiable LLM Outputs for Software Development</div>
-						<div class="mt-1">Gulf Coast Undergraduate Research Symposium, Rice University, Oct 2026.</div>
-						<div class="lucida-console h5 mt-3">Exact Unlearning for Large Language Models</div>
-						<div class="mt-1">DAAD RISE Research Symposium.</div>
-					</div>
-					<div class="row mt-4">
-						<h2 class="pub-year-h2">2025</h2>
-						<div class="lucida-console h5">Head Shape Analysis Using Custom Feature Extraction</div>
-						<div class="mt-1">UT Dallas Undergraduate Research Scholars Awards Symposium.</div>
-					</div>
-					<div class="row mt-4">
-						<h2 class="pub-year-h2">2024</h2>
-						<div class="lucida-console h5">Evaluating Large Language Models in Scientific Research:
-							Practical Applications and Challenges</div>
-						<div class="mt-1">UT Dallas Summer Platform for Undergraduate Students.</div>
-					</div>
-					<div class="row mt-4">
-						<h2 class="pub-year-h2">2023</h2>
-						<div class="lucida-console h5">Coding Semantics: Sentiment Analysis for Movie Reviews</div>
-						<div class="mt-1">[Co-presented.] Association for Computing Machinery UT Dallas Research
-							Conference.</div>
-					</div>
-				</div>
-			</div>
+			</section>
 
 			<!-- Experience -->
-			<div class="section col-md-8 offset-md-1 mb-5" id="experienceContent">
+			<section class="section col-md-8 offset-md-1 mb-5" id="experienceContent" aria-label="Experience" tabindex="-1">
 				<div class="container">
 					<h3 class="h5 mt-2">Research</h3>
 					<ul>
@@ -689,10 +745,10 @@
 						<li class="justify mt-2">UTD Artificial Intelligence Society — Officer, Oct 2022 – May 2023.</li>
 					</ul>
 				</div>
-			</div>
+			</section>
 
 			<!-- Bookshelf: the whole library as spines (rendered by assets/js/bookshelf.js) -->
-			<div class="section col-md-8 offset-md-1 mb-5" id="bookshelfContent">
+			<section class="section col-md-8 offset-md-1 mb-5" id="bookshelfContent" aria-label="Bookshelf" tabindex="-1">
 				<div class="container">
 					<p class="mt-2 mb-3 bs-intro">My library</p>
 					<!-- Ways to see the library: visualisations and games built on library.json (rebuilt by build-views.js) -->
@@ -832,10 +888,10 @@
 					</div>
 					<div id="bookshelf" class="bs" aria-busy="true"></div>
 				</div>
-			</div>
+			</section>
 
 			<!-- Miscellaneous: small web toys, each opens in its own page -->
-			<div class="section col-md-8 offset-md-1 mb-5" id="miscContent">
+			<section class="section col-md-8 offset-md-1 mb-5" id="miscContent" aria-label="Miscellaneous" tabindex="-1">
 				<div class="container">
 					<p class="justify mt-2 mb-4">
 						Small things built for fun. Each one is a plain web page with no accounts, no servers
@@ -1143,10 +1199,10 @@
 						</a>
 					</div>
 				</div>
-			</div>
+			</section>
 
 		</div>
-	</div>
+	</main>
 
 
 	<!-- Scripts -->
@@ -1166,6 +1222,8 @@
 	<script src="assets/js/bookshelf.js"></script>
 	<script src="assets/js/palette.js"></script>
 	<script src="assets/js/glance.js" defer></script>
+	<script src="assets/js/cite.js" defer></script>
+	<script src="assets/js/i18n.js" defer></script>
 	<script src="misc/34-passport-atlas/widget.js" defer></script>
 	<script>
 		window.addEventListener('DOMContentLoaded', function () {

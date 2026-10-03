@@ -1,0 +1,362 @@
+/* ==========================================================================
+   Print: the page itself prints as a CV.
+
+   Linked with media="print" from index.html; window.Site.printCV() (main.js)
+   just calls window.print(). Whatever route is on screen, the printout is one
+   continuous document:
+
+     name + contact line (from the left profile panel)
+     About (bio, research interests, honors, languages)
+     Education · Publications · Presentations · Teaching · Experience
+     (source order of the sections in index.html)
+
+   Everything else (navbar, gadgets, canvases, the research gallery, widgets,
+   the Now card, writing & press, blog, bookshelf, misc) is hidden.
+   ========================================================================== */
+
+@page {
+	size: auto;
+	margin: 18mm 19mm 18mm 19mm;
+}
+
+/* ---------- Tokens: black on white whatever the screen theme is ---------- */
+
+:root,
+:root[data-theme="dark"] {
+	--bg: #fff;
+	--surface: #fff;
+	--surface-2: #fff;
+	--text: #000;
+	--text-2: #333;
+	--heading: #000;
+	--border: #999;
+	--border-strong: #666;
+	--accent: #000;
+	--accent-soft: transparent;
+	--accent-ring: transparent;
+	--bs-body-bg: #fff;
+	--bs-body-color: #000;
+	--bs-heading-color: #000;
+	color-scheme: light;
+}
+
+html,
+body {
+	background: #fff !important;
+	color: #000 !important;
+	font-family: Georgia, 'Times New Roman', Times, serif !important;
+	font-size: 10.5pt;
+	line-height: 1.38;
+	-webkit-print-color-adjust: exact;
+	print-color-adjust: exact;
+}
+
+/* ---------- What is not part of the CV ---------------------------------- */
+
+body > *:not(main) {
+	display: none !important;
+}
+
+/* The :is() list contains ids, so every entry outranks the layout rules below. */
+#main-content :is(canvas,
+	iframe,
+	video,
+	button,
+	.cite-btn,
+	#cv-glance,
+	#places,
+	#places-widget,
+	.now-card,
+	.sig-wrap,
+	.pub-play,
+	.blog-play,
+	#blogContent,
+	#postsContent,
+	#bookshelfContent,
+	#miscContent,
+	#leftPanel > .row.mb-3,
+	#leftPanel .row.mb-2 > .col-1,
+	#leftPanel .row.mb-2:has(a[href$=".pdf"]),
+	#leftPanel > :not(h1):not(h3):not(p):not(.row)) {
+	display: none !important;
+}
+
+/* ---------- Layout: one column, every CV section, fixed order ----------- */
+
+#main-content {
+	display: block !important;
+	width: auto !important;
+	max-width: none !important;
+	margin: 0 !important;
+	padding: 0 !important;
+}
+
+/* Plain block flow (flex/grid containers fragment badly across pages); the
+   sections print in source order, which index.html keeps in CV order. */
+
+#leftPanel,
+#aboutmeContent,
+#educationContent,
+#publicationsContent,
+#presentationsContent,
+#academicContent,
+#experienceContent {
+	display: block !important;
+	flex: none !important;
+	width: 100% !important;
+	max-width: none !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	position: static !important;
+}
+
+#main-content .container,
+#main-content .row {
+	--bs-gutter-x: 0;
+	--bs-gutter-y: 0;
+	display: block !important;
+	width: auto !important;
+	max-width: none !important;
+	margin-left: 0 !important;
+	margin-right: 0 !important;
+	padding-left: 0 !important;
+	padding-right: 0 !important;
+}
+
+/* Screen-only motion, cards and decoration. */
+#main-content,
+#main-content * {
+	animation: none !important;
+	transition: none !important;
+	opacity: 1 !important;
+	transform: none !important;
+	box-shadow: none !important;
+	text-shadow: none !important;
+	color: #000 !important;
+	font-family: inherit !important;
+	letter-spacing: normal !important;
+	background-image: none !important;
+}
+
+/* ---------- Header: name + contact line --------------------------------- */
+
+#leftPanel {
+	text-align: center;
+	padding-bottom: 7pt !important;
+	border-bottom: 1.2pt solid #000;
+}
+
+#leftPanel h1,
+#leftPanel h3 {
+	font-size: 22pt;
+	font-weight: 700;
+	margin: 0 0 3pt !important;
+}
+
+#leftPanel > p {
+	font-size: 10pt;
+	font-style: italic;
+	margin: 0 0 4pt !important;
+}
+
+#leftPanel .row.mb-2,
+#leftPanel .row.mb-2 > .col-10 {
+	display: inline !important;
+	font-size: 9.5pt;
+	/* Each contact item wraps as a unit, never inside its printed address. */
+	white-space: nowrap;
+}
+
+#leftPanel .row.mb-2 a::after {
+	word-break: normal !important;
+}
+
+#leftPanel .row.mb-2 ~ .row.mb-2::before {
+	content: "  \00B7  ";
+	white-space: pre;
+}
+
+/* ---------- Section headings -------------------------------------------- */
+
+/* The sections carry no visible title on screen (the navbar names them), so
+   the printed heading is generated here. */
+#educationContent::before,
+#publicationsContent::before,
+#presentationsContent::before,
+#academicContent::before,
+#experienceContent::before,
+#aboutmeContent h4 {
+	display: block;
+	font-size: 12pt;
+	font-weight: 700;
+	font-variant: small-caps;
+	letter-spacing: .04em !important;
+	border-bottom: .6pt solid #000;
+	margin: 13pt 0 5pt !important;
+	padding-bottom: 1.5pt;
+	break-after: avoid;
+	page-break-after: avoid;
+}
+
+#educationContent::before { content: "Education"; }
+#publicationsContent::before { content: "Publications"; }
+#presentationsContent::before { content: "Presentations"; }
+#academicContent::before { content: "Teaching"; }
+#experienceContent::before { content: "Experience"; }
+
+#aboutmeContent {
+	margin-top: 9pt !important;
+}
+
+/* ---------- Body text --------------------------------------------------- */
+
+#main-content p,
+#main-content li,
+#main-content div {
+	orphans: 3;
+	widows: 3;
+}
+
+#main-content p {
+	margin: 0 0 5pt !important;
+}
+
+#main-content .justify {
+	text-align: left;
+}
+
+#main-content ul {
+	margin: 0 0 4pt !important;
+	padding-left: 15pt !important;
+}
+
+#main-content li {
+	margin-top: 1.5pt !important;
+	font-size: 10.5pt;
+	break-inside: avoid;
+	page-break-inside: avoid;
+}
+
+/* Sub-headings: "Refereed abstracts", "Research", degree title, ... */
+#main-content .section h3 {
+	font-size: 11pt;
+	font-weight: 700;
+	font-style: italic;
+	margin: 8pt 0 3pt !important;
+	break-after: avoid;
+	page-break-after: avoid;
+}
+
+/* Institution names in Education. */
+#educationContent h2 {
+	font-size: 11pt !important;
+	font-weight: 700 !important;
+	margin: 6pt 0 0 !important;
+	line-height: 1.3;
+	break-after: avoid;
+	page-break-after: avoid;
+}
+
+#educationContent h3 {
+	font-style: normal;
+	font-weight: 400;
+	margin: 1pt 0 2pt !important;
+}
+
+.trnsf-thin {
+	font-weight: 400;
+	font-style: italic;
+	break-after: avoid;
+	page-break-after: avoid;
+}
+
+/* Year labels: small and bold instead of the large thin screen numerals. */
+.pub-year-h2,
+#academicContent .academic-year-h2 {
+	font-size: 10pt !important;
+	font-weight: 700 !important;
+	margin: 5pt 0 1.5pt !important;
+	line-height: 1.3;
+	break-after: avoid;
+	page-break-after: avoid;
+}
+
+/* Entries: publications, teaching, talks. */
+.pub-block,
+.academic-block {
+	border: 0 !important;
+	padding: 0 !important;
+	margin: 0 0 5pt !important;
+	break-inside: avoid;
+	page-break-inside: avoid;
+}
+
+.pub-block::before,
+.academic-block::before {
+	display: none !important;
+}
+
+#main-content .h5,
+.pub-block .h5,
+.academic-name {
+	font-size: 10.5pt !important;
+	font-weight: 700 !important;
+	line-height: 1.35;
+	margin: 0 !important;
+	break-after: avoid;
+	page-break-after: avoid;
+}
+
+.pub-authors,
+.pub-congress,
+.academic-rol,
+.academic-year {
+	font-weight: 400 !important;
+	margin-top: 0 !important;
+}
+
+.pub-authors .pub-author {
+	font-weight: 700 !important;
+}
+
+.academic-rol,
+.academic-year {
+	display: inline !important;
+}
+
+.academic-rol::after {
+	content: ", ";
+}
+
+/* Talks are sibling title/venue lines rather than blocks. */
+#presentationsContent .h5 {
+	margin-top: 4pt !important;
+}
+
+#presentationsContent .row > div:not(.h5) {
+	margin: 0 0 2pt !important;
+	break-before: avoid;
+	page-break-before: avoid;
+}
+
+/* ---------- Links ------------------------------------------------------- */
+
+#main-content a {
+	color: #000 !important;
+	text-decoration: none !important;
+}
+
+/* External links: print the address after the link text ... */
+#main-content a[href^="http"]::after {
+	content: " <" attr(href) ">";
+	font-size: 8.5pt;
+	font-weight: 400;
+	font-style: normal;
+	word-break: break-all;
+}
+
+/* ... unless the link text already is the address. */
+#leftPanel a[href^="https://nietztein.github.io"]::after,
+#main-content a.no-print-url::after {
+	content: none;
+}

@@ -150,8 +150,40 @@
 	function setActiveLink(route) {
 		var linkRoute = route === 'post' ? 'blog' : route;
 		$$('#top-nav .nav-link').forEach(function (a) {
-			a.classList.toggle('active', a.getAttribute('data-route') === linkRoute);
+			var on = a.getAttribute('data-route') === linkRoute;
+			a.classList.toggle('active', on);
+			if (on) a.setAttribute('aria-current', 'page');
+			else a.removeAttribute('aria-current');
 		});
+	}
+
+	// ---- Accessibility: focus + announcements on route change -------------
+
+	// Moves keyboard/screen-reader focus to the visible section without
+	// scrolling (showSection already handles the one scroll that is wanted).
+	function focusSection(id) {
+		var target = document.getElementById(id || currentSection);
+		if (!target) return;
+		if (!target.hasAttribute('tabindex')) target.setAttribute('tabindex', '-1');
+		try {
+			target.focus({ preventScroll: true });
+		} catch (e) {
+			target.focus();
+		}
+	}
+
+	function announce(text) {
+		var live = $('#route-announcer');
+		if (!live) return;
+		// Clear first so the same label is read again when a route is revisited.
+		live.textContent = '';
+		window.setTimeout(function () {
+			live.textContent = text;
+		}, 60);
+	}
+
+	function printCV() {
+		window.print();
 	}
 
 	function collapseMobileNav() {
@@ -175,12 +207,18 @@
 		return { route: route, rest: m[2] || '' };
 	}
 
+	var lastRoute = null; // null until the first route has been applied
+
 	function applyRoute() {
 		var r = parseHash();
 		if (!ROUTES[r.route]) {
 			window.location.replace('#/' + DEFAULT_ROUTE);
 			return;
 		}
+
+		var firstLoad = lastRoute === null;
+		var routeChanged = lastRoute !== r.route;
+		lastRoute = r.route;
 
 		showSection(ROUTES[r.route]);
 		setActiveLink(r.route);
@@ -197,6 +235,12 @@
 
 		if (r.route !== 'post') {
 			document.title = (r.route === DEFAULT_ROUTE ? '' : TITLES[r.route] + ' · ') + SITE_NAME;
+		}
+
+		// Not on the first load: focus stays where the browser put it.
+		if (!firstLoad && routeChanged) {
+			focusSection(ROUTES[r.route]);
+			announce(TITLES[r.route]);
 		}
 
 		trackPageView('/' + r.route + (r.rest ? '/' + r.rest : ''));
@@ -302,6 +346,7 @@
 		staggerReveal: staggerReveal,
 		updateProgress: updateProgress,
 		config: configPromise,
+		printCV: printCV,
 	};
 
 	document.addEventListener('DOMContentLoaded', function () {
@@ -310,6 +355,15 @@
 
 		var toggle = $('#theme-toggle');
 		if (toggle) toggle.addEventListener('click', toggleTheme);
+
+		// "Skip to content": its href is not a route, so handle it here.
+		var skip = $('.skip-link');
+		if (skip) {
+			skip.addEventListener('click', function (ev) {
+				ev.preventDefault();
+				focusSection();
+			});
+		}
 
 		window.addEventListener('hashchange', applyRoute);
 		window.addEventListener('scroll', updateProgress, { passive: true });

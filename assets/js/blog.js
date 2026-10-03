@@ -92,7 +92,7 @@
 
 	function cardHtml(p) {
 		return (
-			'<div class="blog-card mb-3" data-slug="' +
+			'<div class="blog-card mb-3" role="link" tabindex="0" data-slug="' +
 			escapeHtml(p.slug) +
 			'">' +
 			'<div class="blog-info">' +
@@ -423,6 +423,16 @@
 	document.addEventListener('click', function (e) {
 		var card = e.target.closest && e.target.closest('.blog-card');
 		if (!card) return;
+		var slug = card.getAttribute('data-slug');
+		if (slug) window.location.hash = '#/post/' + encodeURIComponent(slug);
+	});
+
+	// Keyboard: a focused card opens with Enter or Space, like a link.
+	document.addEventListener('keydown', function (e) {
+		if (e.key !== 'Enter' && e.key !== ' ') return;
+		var card = e.target && e.target.classList && e.target.classList.contains('blog-card') ? e.target : null;
+		if (!card) return;
+		e.preventDefault();
 		var slug = card.getAttribute('data-slug');
 		if (slug) window.location.hash = '#/post/' + encodeURIComponent(slug);
 	});

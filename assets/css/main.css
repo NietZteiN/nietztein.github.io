@@ -93,6 +93,45 @@ a {
 	text-underline-offset: 2px;
 }
 
+/* ---------- Accessibility helpers -------------------------------------- */
+
+/* Default keyboard focus ring. :where() keeps the specificity at zero so any
+   component with its own :focus-visible treatment still wins. */
+:where(a, button, summary, [role="button"], [tabindex="0"]):focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 2px;
+	border-radius: 3px;
+}
+
+/* Containers that only receive focus from script (route change, skip link). */
+#main-content:focus,
+.section:focus {
+	outline: none;
+}
+
+/* "Skip to content": first focusable element, off-screen until focused. */
+.skip-link {
+	position: fixed;
+	top: 8px;
+	left: 8px;
+	z-index: 2000;
+	padding: .5rem .9rem;
+	border-radius: 8px;
+	background: var(--heading);
+	color: var(--bg);
+	font-weight: 600;
+	text-decoration: none;
+	transform: translateY(-200%);
+}
+
+.skip-link:focus,
+.skip-link:focus-visible {
+	transform: none;
+	color: var(--bg);
+	outline: 3px solid var(--accent-ring);
+	outline-offset: 2px;
+}
+
 /* In-content "quiet" links (name kept from the original markup). */
 .link-dark {
 	color: var(--heading) !important;
@@ -237,6 +276,13 @@ a {
 
 #top-nav .nav-link.active {
 	color: var(--heading);
+}
+
+#top-nav .nav-link:focus-visible,
+#top-nav .navbar-brand:focus-visible {
+	outline: none;
+	border-radius: 6px;
+	box-shadow: 0 0 0 3px var(--accent-ring);
 }
 
 #top-nav .nav-link.active::after {
@@ -539,16 +585,20 @@ a {
 	transform: translateY(-1px);
 }
 
+/* Chip text/background pairs are fixed colours (not tokens) and each clears
+   4.5:1 in both themes: white on the purple, near-black on lime and sky. */
 .blog-tags > .t-purple {
-	background-color: rgba(137, 70, 255, 0.85);
+	background-color: #8043f5;
 }
 
 .blog-tags > .t-lime {
 	background-color: rgba(118, 185, 0, 0.85);
+	color: #0d1117;
 }
 
 .blog-tags > .t-sky {
 	background-color: rgba(37, 197, 223, 0.85);
+	color: #0d1117;
 }
 
 .blog-card {
@@ -568,6 +618,10 @@ a {
 	box-shadow: var(--shadow-hover);
 	border-color: var(--accent-ring);
 	outline: none;
+}
+
+.blog-card:focus-visible {
+	box-shadow: 0 0 0 3px var(--accent-ring), var(--shadow-hover);
 }
 
 .blog-card .h5 {
