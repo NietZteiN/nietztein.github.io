@@ -1,17 +1,28 @@
-/* CV at a glance — a research map (topics as regions, works as points, in the
- * manner of a map of science) above one thin year line, both parsed at runtime
- * from the About, Publications, Teaching, Talks and Experience sections of
- * index.html (nothing is duplicated here). It is inserted right after the bio
- * paragraph so main.js's staggered reveal covers it like any other About item.
+/* CV at a glance — a small gallery inserted after the About bio: one main stage
+ * and a strip of previews underneath. Views:
+ *   loop      the human–machine loop as a live diagram (two columns of three
+ *             stages, the crossing arrows, the empirical and philosophical
+ *             bands), with project cards wired to the stage they study;
+ *   3d        the same loop as a rotatable model (assets/js/glance/loop3d.js,
+ *             loaded on first use);
+ *   timeline  one thin year line, 2022–2026.
+ * Everything shown is parsed at runtime from the About, Publications, Teaching,
+ * Talks and Experience sections of index.html (nothing is duplicated here).
  *
- * A new paper, talk or research role lands on the map by itself when its title
- * (or, for roles, its description) matches a TOPICS regex below; anything that
- * matches nothing is drawn in the "Other" region instead of being dropped.
+ * A new paper, talk or research role lands on a card by itself when its title
+ * (or, for roles, its description) matches a CARDS regex below; anything that
+ * matches nothing goes in the "Other" card instead of being dropped.
+ *
+ * Screenshot hook: ?glanceDebug=loop|3d|timeline&frame=N[&pick=<card id>]
+ * freezes the animation at frame N (60 frames = 1 s) and forces the view.
  *
  * Tags needed in index.html: <link rel="stylesheet" href="assets/css/glance.css">
  * after main.css, and <script src="assets/js/glance.js" defer> after palette.js. */
 (function () {
 	'use strict';
+
+	var SELF = (document.currentScript && document.currentScript.src) || '';
+	var BASE = SELF ? SELF.replace(/[^\/]*$/, '') : 'assets/js/';
 
 	var Y0 = 2022, Y1 = 2027, PAD = 2;     // year window [2022, 2027) and side gutter (%)
 	var GAP = 0.1;                          // minimum spacing between marks, in years
@@ -41,7 +52,7 @@
 		return +hit[2] + (SEASON.hasOwnProperty(k) ? SEASON[k] : 0.5);
 	}
 
-	// ---- parse the page ----------------------------------------------------
+	// ---- parse the page: timeline events ---------------------------------------
 	function collect() {
 		var ev = [];
 		function add(kind, t, label, extra) {
@@ -76,66 +87,51 @@
 		return ev;
 	}
 
-	// ---- research map: topics, works, layout -----------------------------------------
-	// Order matters: a work's first match is its home region, its second (if any) is
-	// where its linked twin dot goes. Papers and talks are matched on their title,
-	// roles on their whole line.
-	var TOPICS = [
-		{ id: 'comp', label: ['Code obfuscation &', 'comprehension'], name: 'Code obfuscation and program comprehension',
+	// ---- the loop: stages, cards, works ----------------------------------------
+	var STAGES = [
+		{ id: 'h1', side: 'Human', name: 'Interpret and set goals', sub: 'knowledge, intention, context' },
+		{ id: 'h2', side: 'Human', name: 'Read and reason', sub: 'attention, tracing, understanding' },
+		{ id: 'h3', side: 'Human', name: 'Judge and revise', sub: 'check, select, explain, challenge' },
+		{ id: 'm1', side: 'Model', name: 'Represent the task', sub: 'tokens and internal features' },
+		{ id: 'm2', side: 'Model', name: 'Generate and reason', sub: 'candidate outputs and evidence' },
+		{ id: 'm3', side: 'Model', name: 'Change capabilities', sub: 'training, composition, removal' },
+		{ id: 'xin', side: 'Human to model', name: 'Instruction and context' },
+		{ id: 'xout', side: 'Model to human', name: 'Output and explanation' }
+	];
+	// Order matters: a work joins the first two cards whose regex it matches. Papers
+	// and talks are matched on their title, roles on their whole line.
+	// stages: what lights up with the card; wire: where its connector ends.
+	var CARDS = [
+		{ id: 'comp', label: 'Human code comprehension', stages: ['h2'], wire: ['h2'], to: 'Human · Read and reason',
 			re: /obfuscat|program comprehension|code comprehension/i },
-		{ id: 'cog', label: ['Human vs. model', 'cognition'], name: 'Human vs. model cognition',
+		{ id: 'align', label: 'Human–model alignment', stages: ['xin', 'xout', 'm2'], wire: ['xin', 'xout'], to: 'the crossing arrows · Generate and reason',
 			re: /\bhumans?\b[^.]*\b(machines?|models?|llms?)\b|\b(machines?|models?|llms?)\b[^.]*\bhumans?\b|dual-process|cognit|psycholinguist|human language processing/i },
-		{ id: 'se', label: ['LLMs for software', 'engineering'], name: 'LLMs for software engineering',
+		{ id: 'se', label: 'LLMs for software engineering', stages: ['h3'], wire: ['h3'], to: 'Human · Judge and revise',
 			re: /software (engineering|development)|verifiab|program repair|code generation/i },
-		{ id: 'unl', label: ['Machine', 'unlearning'], name: 'Machine unlearning',
+		{ id: 'unl', label: 'Adaptation and unlearning', stages: ['m3'], wire: ['m3'], to: 'Model · Change capabilities',
 			re: /unlearn|forgetting/i },
-		{ id: 'attr', label: ['Training', 'attribution'], name: 'Training-data and objective attribution',
+		{ id: 'attr', label: 'Attribution', stages: ['m3'], wire: ['m3'], to: 'Model · Change capabilities',
 			re: /attribut|provenance|influence function/i },
-		{ id: 'sci', label: ['Science mapping &', 'ML for science'], name: 'Science mapping and ML for science',
-			re: /summariz|scientometric|patent|map of science|\bCSET\b|landscape|materials|scientific (research|text|discovery)/i },
-		{ id: 'phil', label: ['Meaning &', 'representation'], name: 'Meaning and representation (semiotics of embeddings)',
+		{ id: 'phil', label: 'Meaning and representation', stages: ['m1'], wire: ['m1'], to: 'Model · Represent the task (philosophical inquiry)',
 			re: /semiotic|embedding|philosoph|\bmeaning\b/i },
-		{ id: 'vision', label: ['Computer', 'vision'], name: 'Computer vision',
-			re: /\bvision\b|\bimages?\b|shape analysis|cranial|feature (extraction|selection)/i },
-		{ id: 'eval', label: ['Model behavior', '& evaluation'], name: 'Model behavior and evaluation',
+		{ id: 'sci', label: 'Science mapping and ML for science', stages: ['m2'], wire: ['m2'], to: 'Model · Generate and reason',
+			re: /summariz|scientometric|patent|map of science|\bCSET\b|landscape|materials|scientific (research|text|discovery)/i },
+		{ id: 'eval', label: 'Model behavior and evaluation', stages: ['xout'], wire: ['xout'], to: 'Output and explanation',
 			re: /evaluat|recurrence|frontier|\bbias\b|fairness|benchmark/i }
 	];
-	var OTHER = { id: 'other', label: ['Other'], name: 'Other' };
-	// Desktop (>= 640px): one continuous map. Hand-tuned anchors in a 720x320 design
-	// space, [x, y, label side, label x-shift]. Related topics touch or overlap:
-	// obfuscation overlaps cognition (papers in both sit in the overlap), software
-	// engineering and meaning sit beside them, behavior is central, unlearning is
-	// next to attribution, science mapping and vision share the right-hand side.
-	var ATLAS = {
-		se: [72, 152, 'above'], comp: [170, 190, 'below'], cog: [200, 135, 'above', -22], phil: [292, 95, 'above'],
-		eval: [400, 182, 'above'], unl: [540, 84, 'above'], attr: [618, 104, 'below'],
-		sci: [530, 228, 'below'], vision: [640, 238, 'below'], other: [310, 280, 'right']
-	};
-	// Narrower: small multiples on a grid, neighbours kept side by side.
-	var GRIDS = {
-		mid: [['se', 'comp', 'cog'], ['sci', 'eval', 'phil'], ['unl', 'attr', 'vision'], [null, 'other', null]],
-		narrow: [['comp', 'cog'], ['se', 'phil'], ['sci', 'eval'], ['unl', 'attr'], ['vision', 'other']]
-	};
+	var OTHER = { id: 'other', label: 'Other', stages: [], wire: [], to: '' };
 	var KIND = {
 		paper: { word: 'Paper', many: 'papers', href: '#/publications' },
 		talk: { word: 'Talk', many: 'talks', href: '#/presentations' },
 		role: { word: 'Role', many: 'roles', href: '#/experience' }
 	};
-	var MAP_HEAD = '<div class="glance-maphead"><span class="glance-maptitle">Research map</span>' +
-		'<span class="glance-key">' +
-		'<span><svg width="12" height="12" aria-hidden="true"><circle class="glance-pt-paper" cx="6" cy="6" r="4.5"/></svg>paper</span>' +
-		'<span><svg width="12" height="12" aria-hidden="true"><path class="glance-pt-talk" d="M6 0.5 11.5 6 6 11.5 0.5 6Z"/></svg>talk</span>' +
-		'<span><svg width="12" height="12" aria-hidden="true"><circle class="glance-pt-role" cx="6" cy="6" r="3.6"/></svg>research role</span>' +
-		'<span><svg width="24" height="12" aria-hidden="true"><path class="glance-link" d="M5 6H20"/><circle class="glance-pt-paper" cx="5" cy="6" r="3.5"/><circle class="glance-twin-dot" cx="20" cy="6" r="2.2"/></svg>spans two topics</span>' +
-		'</span></div>';
 
 	function works() {
 		var out = [];
 		function add(kind, title, where, hay, year) {
 			if (!title) return;
-			var ts = TOPICS.filter(function (t) { return t.re.test(hay); }).map(function (t) { return t.id; }).slice(0, 2);
-			out.push({ kind: kind, topics: ts.length ? ts : [OTHER.id],
-				label: KIND[kind].word + ' · ' + clip(title, 110) + (where ? ' — ' + clip(where, 70) : '') + (year ? ' (' + year + ')' : '') });
+			var cs = CARDS.filter(function (c) { return c.re.test(hay); }).map(function (c) { return c.id; }).slice(0, 2);
+			out.push({ kind: kind, cards: cs.length ? cs : [OTHER.id], title: title, where: where || '', year: year || '' });
 		}
 		function year(el) { var row = el.closest('.row'); return txt(row && $('.pub-year-h2', row)); }
 		$$('#publicationsContent .pub-block').forEach(function (b) {
@@ -146,249 +142,202 @@
 			var title = txt(el);
 			add('talk', title, txt(el.nextElementSibling).replace(/^\[[^\]]*\]\s*/, '').replace(/\.$/, ''), title, year(el));
 		});
-		// Research roles always; industry roles only when they match a topic.
+		// Research roles always; industry roles only when they match a card.
 		$$('#experienceContent h3').forEach(function (h) {
 			var research = /research/i.test(txt(h)), ul = h.nextElementSibling;
 			if (!ul || !(research || /industry/i.test(txt(h)))) return;
 			$$('li', ul).forEach(function (li) {
-				var s = txt(li), cut = s.search(/\s[—–]\s/), known = TOPICS.some(function (t) { return t.re.test(s); });
+				var s = txt(li), cut = s.search(/\s[—–]\s/), known = CARDS.some(function (c) { return c.re.test(s); });
 				if (research || known) add('role', cut > 0 ? s.slice(0, cut) : s, cut > 0 ? s.slice(cut + 3).replace(/\.$/, '') : '', s);
 			});
 		});
 		return out;
 	}
 
-	function seed(str) {   // string -> seeded mulberry32, so a region keeps its shape whatever else changes
-		var h = 2166136261;
-		for (var i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
-		return function () {
-			h = (h + 0x6D2B79F5) | 0;
-			var t = Math.imul(h ^ (h >>> 15), 1 | h);
-			t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-			return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+	function counts(list) {
+		return ['paper', 'talk', 'role'].map(function (k) {
+			var n = list.filter(function (w) { return w.kind === k; }).length;
+			return n ? n + ' ' + (n === 1 ? k : KIND[k].many) : '';
+		}).filter(Boolean).join(', ');
+	}
+
+	// Cards that actually hold something, each with its works.
+	function model(items) {
+		var cards = CARDS.concat([OTHER]).map(function (c) {
+			var mine = items.filter(function (w) { return w.cards.indexOf(c.id) >= 0; });
+			return { id: c.id, label: c.label, stages: c.stages, wire: c.wire, to: c.to, works: mine, meta: counts(mine) };
+		}).filter(function (c) { return c.works.length; });
+		return { stages: STAGES, cards: cards, total: items.length };
+	}
+
+	// ---- loop view: the diagram ------------------------------------------------
+	// Two hand-tuned layouts in their own design space; the SVG scales to its box.
+	var WIDE = { W: 760, H: 512, bx: 160, bw: 440, by: 96, bh: 324, hx: 184, mx: 436, cw: 140, sy: [150, 234, 318], sh: 62,
+		bandY: 6, bandH: 34, philY: 482, philH: 22, titleY: 113, headY: 142, underY: 396, retX: 172, nameN: 99, subN: 25, wide: true };
+	var NARROW = { W: 340, H: 424, bx: 4, bw: 332, by: 50, bh: 332, hx: 22, mx: 210, cw: 122, sy: [106, 192, 278], sh: 66,
+		bandY: 6, bandH: 34, philY: 394, philH: 22, titleY: 67, headY: 98, underY: 358, retX: 12, nameN: 20, subN: 25, wide: false };
+	// card boxes in the wide layout: [x, y, w, h]
+	var SLOT = {
+		comp: [8, 243, 140, 44], se: [8, 319, 140, 44], other: [8, 430, 140, 44],
+		align: [310, 46, 140, 42], eval: [310, 430, 140, 44],
+		phil: [612, 159, 140, 44], sci: [612, 243, 140, 44], unl: [612, 315, 140, 44], attr: [612, 365, 140, 44]
+	};
+	var PERIOD = 9;   // seconds for one pulse to go round the loop
+
+	function wrap(s, n) {
+		var out = [], line = '';
+		s.split(' ').forEach(function (w) {
+			if (line && (line + ' ' + w).length > n) { out.push(line); line = w; }
+			else line = line ? line + ' ' + w : w;
+		});
+		if (line) out.push(line);
+		return out;
+	}
+	function text(cls, x, y, lines, anchor, lh) {
+		return '<text class="' + cls + '" x="' + x + '" y="' + y + '"' + (anchor ? ' text-anchor="' + anchor + '"' : '') + '>' +
+			lines.map(function (l, i) { return '<tspan x="' + x + '"' + (i ? ' dy="' + lh + '"' : '') + '>' + esc(l) + '</tspan>'; }).join('') + '</text>';
+	}
+	function head(x, y, d) {   // arrowhead with its tip at (x, y), pointing r, l, d or u
+		var s = 5, w = 3.2, p = d === 'r' ? [x - s, y - w, x - s, y + w] : d === 'l' ? [x + s, y - w, x + s, y + w] :
+			d === 'd' ? [x - w, y - s, x + w, y - s] : [x - w, y + s, x + w, y + s];
+		return '<path class="glance-ahead" d="M' + x + ' ' + y + 'L' + p[0] + ' ' + p[1] + 'L' + p[2] + ' ' + p[3] + 'Z"/>';
+	}
+	function vline(x, y1, y2) {   // vertical arrow, either direction
+		var down = y2 > y1;
+		return '<path class="glance-arrow" d="M' + x + ' ' + y1 + 'V' + (down ? y2 - 4 : y2 + 4) + '"/>' + head(x, y2, down ? 'd' : 'u');
+	}
+
+	function loopSvg(md, wide) {
+		var L = wide ? WIDE : NARROW, hc = L.hx + L.cw / 2, mc = L.mx + L.cw / 2, cx = L.bx + L.bw / 2;
+		var r = L.sy.map(function (y) { return y + L.sh / 2; }), ry = L.sy[2] + L.sh - 18, hr = L.hx + L.cw, mr = L.mx + L.cw;
+		var o = [], zones = [], pos = {};
+		function n(card) { return md.cards.filter(function (c) { return c.stages.indexOf(card) >= 0; }).length; }
+
+		// inquiry bands, with their arrows into the loop
+		o.push('<rect class="glance-band" x="' + L.bx + '" y="' + L.bandY + '" width="' + L.bw + '" height="' + L.bandH + '" rx="6"/>' +
+			text('glance-bandname', cx, L.bandY + 14, ['Empirical inquiry · top down'], 'middle') +
+			text('glance-bandsub', cx, L.bandY + 26, ['Observe behavior. Test mechanisms. Evaluate interventions.'], 'middle') +
+			vline(hc, L.bandY + L.bandH, L.by) + vline(mc, L.bandY + L.bandH, L.by));
+		o.push('<rect class="glance-band" x="' + L.bx + '" y="' + L.philY + '" width="' + L.bw + '" height="' + L.philH + '" rx="6"/>' +
+			text('glance-bandname', cx, L.philY + 14.5, ['Philosophical inquiry · bottom up'], 'middle') +
+			vline(hc, L.philY, L.by + L.bh) + vline(mc, L.philY, L.by + L.bh));
+
+		// the loop box
+		o.push('<rect class="glance-box" x="' + L.bx + '" y="' + L.by + '" width="' + L.bw + '" height="' + L.bh + '" rx="10"/>' +
+			text('glance-boxname', L.bx + 12, L.titleY, ['The human–machine loop']) +
+			text('glance-boxsub', L.bx + 12, L.titleY + 11, ['the interaction as a unit of study']) +
+			text('glance-colname', hc, L.headY, ['Human'], 'middle') + text('glance-colname', mc, L.headY, ['Model'], 'middle'));
+
+		// connectors (wide only): card edge -> stage edge, drawn under everything else
+		if (L.wide) {
+			var route = {
+				comp: 'M148 ' + r[1] + 'H' + L.hx, se: 'M148 ' + (r[2] - 8) + 'H' + L.hx,
+				phil: 'M612 ' + r[0] + 'H' + mr, sci: 'M612 ' + r[1] + 'H' + mr, unl: 'M612 ' + (r[2] - 12) + 'H' + mr,
+				attr: 'M612 ' + (r[2] + 38) + 'H594V' + (r[2] + 18) + 'H' + mr,
+				align: 'M' + cx + ' 88V' + r[0], eval: 'M' + cx + ' 430V' + r[1]
+			};
+			var end = { comp: [L.hx, r[1]], se: [L.hx, r[2] - 8], phil: [mr, r[0]], sci: [mr, r[1]], unl: [mr, r[2] - 12],
+				attr: [mr, r[2] + 18], align: [cx, r[0]], eval: [cx, r[1]] };
+			md.cards.forEach(function (c) {
+				if (!route[c.id]) return;
+				o.push('<path class="glance-wire" data-card="' + c.id + '" d="' + route[c.id] + '"/>' +
+					'<circle class="glance-wire-end" data-card="' + c.id + '" cx="' + end[c.id][0] + '" cy="' + end[c.id][1] + '" r="2.4"/>');
+			});
+		}
+
+		// arrows of the loop itself
+		o.push(vline(hc, L.sy[0] + L.sh, L.sy[1]) + vline(hc, L.sy[1] + L.sh, L.sy[2]) +
+			vline(mc, L.sy[0] + L.sh, L.sy[1]) + vline(mc, L.sy[1] + L.sh, L.sy[2]));
+		o.push('<path class="glance-arrow" d="M' + L.hx + ' ' + ry + 'H' + L.retX + 'V' + r[0] + 'H' + (L.hx - 4) + '"/>' + head(L.hx, r[0], 'r'));
+		o.push(text('glance-note', hc, L.underY, ['Review reshapes', 'the next instruction'], 'middle', 10) +
+			text('glance-note', mc, L.underY, L.wide ? ['Outputs shape interpretation', 'and action'] : ['Outputs shape', 'interpretation and action'], 'middle', 10));
+
+		// pulses: under the stage boxes, so they are seen only on the arrows
+		o.push('<g class="glance-pulses" aria-hidden="true"><circle class="glance-pulse" r="3.2"/><circle class="glance-pulse" r="3.2"/>' +
+			'<circle class="glance-pulse" r="3.2"/><circle class="glance-pulse glance-pulse-side" r="2.6"/></g>');
+
+		// crossing arrows
+		[['xin', hr, L.mx, r[0], 'r', ['Instruction', 'and context'], 14], ['xout', L.mx, hr, r[1], 'l', ['Output and', 'explanation'], -19]].forEach(function (a) {
+			var x0 = Math.min(a[1], a[2]), w = Math.abs(a[2] - a[1]);
+			pos[a[0]] = { x: x0, y: a[3] - 3, w: w, h: 6 };
+			zones.push({ id: a[0], x: x0, y: a[3] - 3, w: w, h: 6 });
+			o.push('<g class="glance-x" data-stage="' + a[0] + '" tabindex="0" role="button" aria-label="' + esc(a[5].join(' ') + ': ' + n(a[0]) + ' cards') + '">' +
+				'<rect class="glance-hit" x="' + x0 + '" y="' + (a[3] - 24) + '" width="' + w + '" height="48"/>' +
+				'<path class="glance-arrow" d="M' + a[1] + ' ' + a[3] + 'H' + (a[4] === 'r' ? a[2] - 4 : a[2] + 4) + '"/>' + head(a[2], a[3], a[4]) +
+				text('glance-xlabel', x0 + w / 2, a[3] + a[6], a[5], 'middle', 10) + '</g>');
+		});
+
+		// stages
+		STAGES.slice(0, 6).forEach(function (s, i) {
+			var x = i < 3 ? L.hx : L.mx, y = L.sy[i % 3], name = wrap(s.name, L.nameN), sub = wrap(s.sub, L.subN);
+			var ny = name.length > 1 ? 15 : 17, sy0 = y + ny + (name.length - 1) * 11 + 14;
+			zones.push({ id: s.id, x: x, y: y, w: L.cw, h: L.sh });
+			o.push('<g class="glance-stage" data-stage="' + s.id + '" tabindex="0" role="button" aria-label="' +
+				esc(s.side + ' stage: ' + s.name + ' (' + s.sub + '). ' + n(s.id) + ' cards') + '">' +
+				'<rect class="glance-stage-base" x="' + x + '" y="' + y + '" width="' + L.cw + '" height="' + L.sh + '" rx="6"/>' +
+				'<rect class="glance-stage-glow" x="' + x + '" y="' + y + '" width="' + L.cw + '" height="' + L.sh + '" rx="6"/>' +
+				text('glance-sname', x + L.cw / 2, y + ny, name, 'middle', 11) +
+				text('glance-ssub', x + L.cw / 2, sy0, sub, 'middle', 10) + '</g>');
+		});
+
+		// project cards (wide only; narrower widths list them as buttons under the gallery)
+		if (L.wide) md.cards.forEach(function (c) {
+			var b = SLOT[c.id];
+			if (!b) return;
+			var lab = wrap(c.label, 22), two = lab.length > 1;
+			o.push('<g class="glance-card' + (c.id === 'other' ? ' is-other' : '') + '" data-card="' + c.id + '" tabindex="0" role="button" aria-label="' +
+				esc(c.label + ': ' + c.meta + (c.to ? ', wired to ' + c.to : '')) + '">' +
+				'<rect x="' + b[0] + '" y="' + b[1] + '" width="' + b[2] + '" height="' + b[3] + '" rx="6"/>' +
+				text('glance-cname', b[0] + 9, b[1] + (two ? 14 : 18), lab, '', 11) +
+				text('glance-cmeta', b[0] + 9, b[1] + (two ? 37 : 33), [c.meta]) + '</g>');
+		});
+
+		return {
+			html: '<svg class="glance-loop' + (L.wide ? '' : ' is-narrow') + '" viewBox="0 0 ' + L.W + ' ' + L.H + '" width="100%" role="group" aria-label="' +
+				'The human–machine loop: human and model columns of three stages each, joined by instruction and output arrows, with ' +
+				md.cards.length + ' project cards wired to the stage they study">' + o.join('') + '</svg>',
+			ratio: L.H / L.W, zones: zones,
+			path: [[hc, r[0]], [mc, r[0]], [mc, r[1]], [hc, r[1]], [hc, ry], [L.retX, ry], [L.retX, r[0]], [hc, r[0]]],
+			side: [[mc, r[1]], [mc, r[2]]]
 		};
 	}
-	function f1(n) { return Math.round(n * 10) / 10; }
 
-	function summary(t, items) {
-		var mine = items.filter(function (w) { return w.topics.indexOf(t.id) >= 0; });
-		var bits = ['paper', 'talk', 'role'].map(function (k) {
-			var n = mine.filter(function (w) { return w.kind === k; }).length;
-			return n ? n + ' ' + (n === 1 ? k : KIND[k].many) : '';
-		}).filter(Boolean);
-		return { n: mine.length, text: t.name + ' · ' + (bits.join(', ') || 'nothing yet') };
+	function along(pts, d) {   // point at distance d on an axis-aligned polyline, or null past its end
+		for (var i = 1; i < pts.length; i++) {
+			var a = pts[i - 1], b = pts[i], seg = Math.abs(b[0] - a[0]) + Math.abs(b[1] - a[1]);
+			if (d <= seg) return [a[0] + (b[0] - a[0]) * d / seg, a[1] + (b[1] - a[1]) * d / seg];
+			d -= seg;
+		}
+		return null;
+	}
+	function length(pts) {
+		var n = 0;
+		for (var i = 1; i < pts.length; i++) n += Math.abs(pts[i][0] - pts[i - 1][0]) + Math.abs(pts[i][1] - pts[i - 1][1]);
+		return n;
 	}
 
-	function mapSvg(items, W) {
-		var mode = W >= 640 ? 'wide' : W >= 420 ? 'mid' : 'narrow', wide = mode === 'wide', grid = GRIDS[mode];
-		var R = mode === 'mid' ? 34 : 30, RY = R * 0.92, LAB = 30, rowH = LAB + 2 * RY + 12;
-		var S = Math.min(1.1, W / 720), OX = (W - 720 * S) / 2, H = wide ? Math.round(320 * S) : Math.round(grid.length * rowH);
-		var all = TOPICS.concat([OTHER]), pos = {}, out = { blobs: [], dots: [], labels: [], links: [], pts: [] };
-		var hasOther = items.some(function (w) { return w.topics[0] === OTHER.id; });
-		function count(id) { return items.filter(function (w) { return w.topics.indexOf(id) >= 0; }).length; }
-		function sunflower(p, n, step, kx, ky) {
-			for (var i = 0; i < n; i++) {
-				var rad = n === 1 ? 0 : step * Math.sqrt(i + 0.35), a = p.rot + i * 2.39996;
-				p.slots.push({ x: p.hx + Math.cos(a) * rad * kx, y: p.hy + Math.sin(a) * rad * ky });
-			}
-		}
-		items.forEach(function (w) { w.at = w.twin = null; });
+	// ---- thumbnails --------------------------------------------------------------
+	var VIEWS = ['loop', '3d', 'timeline'];
+	var NAMES = { loop: 'Loop', '3d': '3D', timeline: 'Timeline' };
+	var THUMB = {
+		loop: '<rect class="t-l" x="20" y="9" width="56" height="36" rx="3"/><path class="t-l" d="M30 4H66M30 50H66"/>' +
+			'<rect class="t-f" x="25" y="13" width="17" height="7" rx="1.5"/><rect class="t-f" x="25" y="23.5" width="17" height="7" rx="1.5"/><rect class="t-f" x="25" y="34" width="17" height="7" rx="1.5"/>' +
+			'<rect class="t-f" x="54" y="13" width="17" height="7" rx="1.5"/><rect class="t-f" x="54" y="23.5" width="17" height="7" rx="1.5"/><rect class="t-f" x="54" y="34" width="17" height="7" rx="1.5"/>' +
+			'<path class="t-a" d="M42 16.5H54M54 27H42"/><circle class="t-d" cx="48" cy="16.5" r="1.8"/>' +
+			'<rect class="t-l" x="3" y="23" width="11" height="8" rx="1.5"/><rect class="t-l" x="82" y="13" width="11" height="8" rx="1.5"/><rect class="t-l" x="82" y="33" width="11" height="8" rx="1.5"/>' +
+			'<path class="t-l" d="M14 27H25M82 17H71M82 37H71"/>',
+		'3d': '<path class="t-a" d="M48 27C56 12 86 12 86 27S56 42 48 27S10 12 10 27S40 42 48 27Z"/>' +
+			'<path class="t-l" d="M22 16L12 7M74 38L86 47M74 16L84 7"/>' +
+			'<circle class="t-d" cx="22" cy="16" r="2.4"/><circle class="t-d" cx="10" cy="27" r="2.4"/><circle class="t-d" cx="22" cy="38" r="2.4"/>' +
+			'<circle class="t-d" cx="74" cy="16" r="2.4"/><circle class="t-d" cx="74" cy="38" r="2.4"/>' +
+			'<circle class="t-f" cx="12" cy="7" r="2"/><circle class="t-f" cx="86" cy="47" r="2"/><circle class="t-f" cx="84" cy="7" r="2"/>',
+		timeline: '<path class="t-l" d="M8 42H88M8 8V45M28 8V45M48 8V45M68 8V45M88 8V45"/>' +
+			'<circle class="t-d" cx="36" cy="14" r="2.2"/><circle class="t-d" cx="72" cy="14" r="2.2"/><circle class="t-d" cx="78" cy="14" r="2.2"/><circle class="t-d" cx="84" cy="14" r="2.2"/>' +
+			'<circle class="t-f" cx="14" cy="22" r="2"/><circle class="t-f" cx="56" cy="22" r="2"/><circle class="t-f" cx="62" cy="22" r="2"/>' +
+			'<path class="t-a" d="M30 31H52M44 35H80"/>'
+	};
 
-		// 1. anchors and one slot per work
-		if (wide) {
-			// One continuous map: hand-placed anchors, each region's area in proportion
-			// to the number of works in it.
-			all.forEach(function (t) {
-				var a = ATLAS[t.id], n = count(t.id);
-				if (!a || (t.id === OTHER.id && !hasOther)) return;
-				var rnd = seed(t.id), r = (t.id === OTHER.id ? 20 : Math.min(56, 24 * Math.sqrt(Math.max(n, 1)))) * S;
-				pos[t.id] = { id: t.id, x: OX + a[0] * S, y: a[1] * S, r: r, side: a[2], shift: (a[3] || 0) * S, rnd: rnd, slots: [], rot: rnd() * 6.283, away: [0, 0], shared: 0 };
-			});
-			// Works spanning two overlapping regions sit in the overlap itself: no link needed.
-			var lens = {};
-			items.forEach(function (w) {
-				var p = pos[w.topics[0]], o = w.topics[1] && pos[w.topics[1]];
-				if (!p || !o) return;
-				var d = Math.sqrt((o.x - p.x) * (o.x - p.x) + (o.y - p.y) * (o.y - p.y));
-				if (d > p.r + o.r - 12 * S) return;
-				var key = p.id + ' ' + o.id;
-				(lens[key] = lens[key] || { p: p, o: o, d: d, list: [] }).list.push(w);
-			});
-			Object.keys(lens).forEach(function (key) {
-				var l = lens[key], ux = (l.o.x - l.p.x) / l.d, uy = (l.o.y - l.p.y) / l.d, m = (l.p.r + l.d - l.o.r) / 2;
-				l.list.forEach(function (w, j) {
-					var off = (j - (l.list.length - 1) / 2) * 15 * S;
-					w.at = { x: l.p.x + ux * m - uy * off, y: l.p.y + uy * m + ux * off, used: true };
-					l.p.slots.push(w.at);
-				});
-				l.p.shared += l.list.length; l.o.shared += l.list.length;
-				l.p.away = [-ux, -uy]; l.o.away = [ux, uy];
-			});
-			all.forEach(function (t) {   // the rest cluster on the side away from any overlap
-				var p = pos[t.id];
-				if (!p) return;
-				p.hx = p.x + p.away[0] * p.r * 0.42; p.hy = p.y + p.away[1] * p.r * 0.42;
-				sunflower(p, count(t.id) - p.shared, 11.5 * S, 1, 1);
-			});
-		} else {
-			grid.forEach(function (row, r) {
-				row.forEach(function (id, c) {
-					if (!id || (id === OTHER.id && !hasOther)) return;
-					var rnd = seed(id), cw = W / row.length, cy = r * rowH + LAB + RY + 4;
-					var p = { id: id, x: (c + 0.5) * cw + (rnd() - 0.5) * cw * 0.14, y: cy + (rnd() - 0.5) * 12,
-						rnd: rnd, slots: [], rot: rnd() * 6.283, tilt: (rnd() - 0.5) * 36 };
-					p.hx = p.x; p.hy = p.y;
-					sunflower(p, count(id), R / 3.3, 1.12, 0.92);
-					pos[id] = p;
-				});
-			});
-		}
-		function take(p, to) {   // nearest free slot to a point, or simply the innermost free one
-			var best = null, bd = Infinity;
-			p.slots.forEach(function (q, i) {
-				var d = to ? (q.x - to.x) * (q.x - to.x) + (q.y - to.y) * (q.y - to.y) : i;
-				if (!q.used && d < bd) { bd = d; best = q; }
-			});
-			if (best) best.used = true;
-			return best;
-		}
-		// Works that span two separate regions sit on the side facing the other one,
-		// so a link never appears to start from a neighbour.
-		items.forEach(function (w) {
-			var p = pos[w.topics[0]], o = w.topics[1] && pos[w.topics[1]];
-			w.linked = !w.at && !!(p && o);
-			if (w.linked) w.at = take(p, o);
-		});
-		items.forEach(function (w) {
-			var p = pos[w.topics[0]], o = w.topics[1] && pos[w.topics[1]];
-			if (p && !w.at) w.at = take(p);
-			if (w.linked && w.at) w.twin = take(o, w.at);
-		});
-
-		// 2. the quiet field: sparse dots everywhere, denser clouds around each anchor
-		var rf = seed('field'), nf = Math.round(W * H / (wide ? 1500 : 3000)), i;
-		for (i = 0; i < nf; i++) out.dots.push('<circle class="glance-field" cx="' + f1(4 + rf() * (W - 8)) + '" cy="' + f1(4 + rf() * (H - 8)) + '" r="0.9"/>');
-		if (wide) out.blobs.push('<defs><filter id="glance-soft" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="' + f1(4 * S) + '"/></filter></defs>');
-		all.forEach(function (t) {
-			var p = pos[t.id];
-			if (!p) return;
-			var s = summary(t, items), rnd = p.rnd, plain = t.id === OTHER.id || !s.n, k, made;
-			var rx = wide ? p.r : R * 1.22, ry = wide ? p.r : RY, want = wide ? Math.round(12 + 13 * s.n) : 46;
-			if (wide && !plain) {   // an irregular landmass: a seeded union of soft circles
-				var land = '<circle cx="' + f1(p.x) + '" cy="' + f1(p.y) + '" r="' + f1(p.r) + '"/>';
-				for (k = 0; k < 3; k++) {
-					var la = p.rot + k * 2.094 + (rnd() - 0.5) * 0.9, lr = p.r * (0.48 + rnd() * 0.16);
-					land += '<circle cx="' + f1(p.x + Math.cos(la) * p.r * 0.6) + '" cy="' + f1(p.y + Math.sin(la) * p.r * 0.6) + '" r="' + f1(lr) + '"/>';
-				}
-				out.blobs.push('<g class="glance-land" filter="url(#glance-soft)">' + land + '</g>');
-			} else if (wide) {
-				out.blobs.push('<circle class="glance-blob is-plain" cx="' + f1(p.x) + '" cy="' + f1(p.y) + '" r="' + f1(p.r) + '"/>');
-			} else {
-				out.blobs.push('<ellipse class="glance-blob' + (plain ? ' is-plain' : '') + '" cx="' + f1(p.x) + '" cy="' + f1(p.y) +
-					'" rx="' + f1(rx) + '" ry="' + f1(ry) + '" transform="rotate(' + f1(p.tilt) + ' ' + f1(p.x) + ' ' + f1(p.y) + ')"/>');
-			}
-			for (k = 0, made = 0; k < 400 && made < want; k++) {
-				var u = Math.sqrt(-2 * Math.log(1 - rnd() * 0.999)), v = rnd() * 6.283;
-				var dx = u * Math.cos(v) * rx * (wide ? 0.52 : 0.46), dy = u * Math.sin(v) * ry * (wide ? 0.52 : 0.48);
-				if (dx * dx / (rx * rx * 1.44) + dy * dy / (ry * ry * 1.5) > 1) continue;
-				var x = p.x + dx, y = p.y + dy;
-				if (x < 3 || x > W - 3 || y < 3 || y > H - 3 || items.some(function (w) {
-					return (w.at && Math.abs(w.at.x - x) < 8 && Math.abs(w.at.y - y) < 8) || (w.twin && Math.abs(w.twin.x - x) < 6 && Math.abs(w.twin.y - y) < 6);
-				})) continue;
-				out.dots.push('<circle class="glance-dot" cx="' + f1(x) + '" cy="' + f1(y) + '" r="' + f1(1 + rnd() * 0.7) + '"/>');
-				made++;
-			}
-			var n = t.label.length, lx = p.x, y0 = p.y - RY - 8 - (n - 1) * 11.5, anchor = 'middle';
-			if (wide) {
-				lx = p.x + p.shift;
-				if (p.side === 'below') y0 = p.y + p.r + 18;
-				else if (p.side === 'above') y0 = p.y - p.r - 12 - (n - 1) * 11.5;
-				else { y0 = p.y + 3.5 - (n - 1) * 5.75; anchor = p.side === 'right' ? 'start' : 'end'; lx = p.x + (p.side === 'right' ? 1 : -1) * (p.r + 9) + p.shift; }
-			}
-			out.labels.push('<text class="glance-region" data-r="' + t.id + '" tabindex="0" role="img" aria-label="' + esc(s.text) + '" x="' + f1(lx) + '" y="' + f1(y0) + '" text-anchor="' + anchor + '">' +
-				'<title>' + esc(s.text) + '</title>' +
-				t.label.map(function (line, j) {
-					return '<tspan x="' + f1(lx) + '"' + (j ? ' dy="11.5"' : '') + '>' + esc(line) +
-						(j === n - 1 ? '<tspan class="glance-count"> · ' + s.n + '</tspan>' : '') + '</tspan>';
-				}).join('') + '</text>');
-		});
-
-		// 3. works: one focusable point each, plus a linked twin dot in a second topic
-		items.forEach(function (w, idx) {
-			if (!w.at) return;
-			var x = f1(w.at.x), y = f1(w.at.y), ds = ' data-w="' + idx + '" data-ts="' + w.topics.join(' ') + '"';
-			if (w.twin) {
-				var tx = w.twin.x, ty = w.twin.y, mx = (w.at.x + tx) / 2, my = (w.at.y + ty) / 2;
-				out.links.push('<path class="glance-link"' + ds + ' d="M' + x + ' ' + y + 'Q' + f1(mx - (ty - w.at.y) * 0.12) + ' ' + f1(my + (tx - w.at.x) * 0.12) + ' ' + f1(tx) + ' ' + f1(ty) + '"/>');
-				out.pts.push('<g class="glance-twin"' + ds + ' aria-hidden="true"><circle class="glance-hit" cx="' + f1(tx) + '" cy="' + f1(ty) + '" r="7"/>' +
-					'<circle class="glance-twin-dot" cx="' + f1(tx) + '" cy="' + f1(ty) + '" r="2.8"/></g>');
-			}
-			var shape = w.kind === 'talk' ? '<path class="glance-shape" d="M' + x + ' ' + f1(w.at.y - 5.5) + 'L' + f1(w.at.x + 5.5) + ' ' + y + 'L' + x + ' ' + f1(w.at.y + 5.5) + 'L' + f1(w.at.x - 5.5) + ' ' + y + 'Z"/>'
-				: '<circle class="glance-shape" cx="' + x + '" cy="' + y + '" r="' + (w.kind === 'paper' ? 4.8 : 3.6) + '"/>';
-			out.pts.push('<g class="glance-pt glance-pt-' + w.kind + '"' + ds + ' tabindex="0" role="link" aria-label="' + esc(w.label) +
-				'" style="--d:' + (160 + idx * 28) + '"><title>' + esc(w.label) + '</title>' +
-				'<circle class="glance-hit" cx="' + x + '" cy="' + y + '" r="9"/>' + shape + '</g>');
-		});
-
-		var nt = all.filter(function (t) { return pos[t.id] && t.id !== OTHER.id && summary(t, items).n; }).length;
-		return { topics: nt, html: '<svg class="glance-mapsvg" viewBox="0 0 ' + W + ' ' + H + '" width="100%" role="group" aria-label="Research map: ' +
-			items.length + ' works across ' + nt + ' topics">' + out.blobs.join('') + out.dots.join('') + out.links.join('') +
-			out.labels.join('') + out.pts.join('') + '</svg>' };
-	}
-
-	// Draw into the wrap, keep it in step with its width, and wire hover/focus/click once.
-	function mount(wrap, cap, items) {
-		var drawn = 0, idle = '', all = TOPICS.concat([OTHER]);
-		function draw() {
-			var w = Math.round(wrap.clientWidth) || (drawn ? 0 : 700);
-			if (!w || Math.abs(w - drawn) < 6) return;
-			if (drawn) wrap.classList.add('is-settled');   // no second entrance on resize
-			drawn = w;
-			var m = mapSvg(items, w);
-			wrap.innerHTML = m.html;
-			idle = items.length + ' works across ' + m.topics + ' topics · hover or tab a point or a region label';
-			cap.textContent = idle;
-		}
-		function clear() {
-			$$('.is-on', wrap).forEach(function (n) { n.classList.remove('is-on'); });
-			wrap.classList.remove('is-dim');
-			cap.textContent = idle; cap.classList.remove('is-live');
-		}
-		function hit(e) { return e.target && e.target.closest ? e.target.closest('[data-w],[data-r]') : null; }
-		function show(n) {
-			clear();
-			if (!n) return;
-			var on, w = n.getAttribute('data-w'), r = n.getAttribute('data-r');
-			if (w != null) {
-				on = $$('[data-w="' + w + '"]', wrap);
-				items[w].topics.forEach(function (t) { on = on.concat($$('[data-r="' + t + '"]', wrap)); });
-				cap.textContent = items[w].label;
-			} else {
-				on = $$('[data-ts~="' + r + '"]', wrap).concat([n]);
-				cap.textContent = summary(all.filter(function (t) { return t.id === r; })[0], items).text;
-			}
-			on.forEach(function (x) { x.classList.add('is-on'); });
-			wrap.classList.add('is-dim');
-			cap.classList.add('is-live');
-		}
-		function go(n) {
-			var w = n && n.getAttribute('data-w');
-			if (w != null) window.location.hash = KIND[items[w].kind].href;
-		}
-		wrap.addEventListener('mouseover', function (e) { show(hit(e)); });
-		wrap.addEventListener('mouseleave', clear);
-		wrap.addEventListener('focusin', function (e) { show(hit(e)); });
-		wrap.addEventListener('focusout', clear);
-		wrap.addEventListener('click', function (e) { go(hit(e)); });
-		wrap.addEventListener('keydown', function (e) {
-			if (e.key === 'Enter' || e.key === ' ') { var n = hit(e); if (n && n.hasAttribute('data-w')) { e.preventDefault(); go(n); } }
-		});
-		draw();
-		if (window.ResizeObserver) new ResizeObserver(draw).observe(wrap);
-		else window.addEventListener('resize', draw);
-	}
-
-	// ---- layout -----------------------------------------------------------------
+	// ---- year line -------------------------------------------------------------------
 	function pct(t) { return PAD + (Math.min(Math.max(t, Y0), Y1) - Y0) / (Y1 - Y0) * (100 - 2 * PAD); }
 
 	function spread(list) {
@@ -450,7 +399,6 @@
 			parts.join('') + marks.join('') + '</svg>';
 	}
 
-	// ---- build ------------------------------------------------------------------
 	function range(list) {
 		if (!list.length) return '';
 		var ys = list.map(function (e) { return e.y; });
@@ -458,11 +406,22 @@
 		return a === b ? String(a) : a + '–' + b;
 	}
 
+	// ---- build -------------------------------------------------------------------------
+	function debugOpts() {
+		var m = /[?&]glanceDebug=([\w]+)/.exec(window.location.search + window.location.hash);
+		if (!m) return null;
+		var f = /[?&]frame=(\d+)/.exec(window.location.search + window.location.hash);
+		var p = /[?&]pick=(\w+)/.exec(window.location.search + window.location.hash);
+		return { view: m[1], frame: f ? +f[1] : 0, pick: p ? p[1] : '' };
+	}
+
 	function build() {
 		if ($('#cv-glance')) return;
 		var row = $('#aboutmeContent .container > .row'), bio = row && $('p.justify', row);
 		if (!bio) return;
-		var ev = collect(), items = works();
+		var ev = collect(), md = model(works()), debug = debugOpts();
+		var mq = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
+		var reduced = !!(mq && mq.matches);
 
 		var el = document.createElement('div');
 		el.className = 'glance';
@@ -470,23 +429,244 @@
 		el.tabIndex = -1;
 		el.setAttribute('role', 'group');
 		el.setAttribute('aria-label', 'CV at a glance');
-		el.innerHTML = (items.length ? MAP_HEAD + '<div class="glance-map"></div>' +
-			'<p class="glance-caption glance-mapcap" aria-hidden="true"></p>' : '') +
-			'<div class="glance-line">' + svg(ev) + '</div>' +
-			'<p class="glance-caption glance-linecap" aria-hidden="true"></p>';
+		el.innerHTML =
+			'<div class="glance-head"><span class="glance-title">Research map</span><span class="glance-viewname"></span></div>' +
+			'<div class="glance-frame">' +
+			'<div class="glance-view glance-view-loop" data-view="loop"></div>' +
+			'<div class="glance-view glance-view-3d" data-view="3d" hidden><div class="glance-3d-host"></div>' +
+			'<p class="glance-3d-msg" hidden></p><div class="glance-sr">' +
+			md.cards.map(function (c) { return '<button type="button" data-card="' + c.id + '">' + esc(c.label + ': ' + c.meta) + '</button>'; }).join('') +
+			STAGES.map(function (s) { return '<button type="button" data-stage="' + s.id + '">' + esc(s.side + ': ' + s.name) + '</button>'; }).join('') +
+			'</div></div>' +
+			'<div class="glance-view glance-view-timeline" data-view="timeline" hidden><div class="glance-line">' + svg(ev) + '</div></div>' +
+			'<p class="glance-caption" aria-live="polite"></p>' +
+			'</div>' +
+			'<div class="glance-thumbs" role="group" aria-label="Research map views">' +
+			VIEWS.map(function (v) {
+				return '<button type="button" class="glance-thumb" data-view="' + v + '" aria-pressed="false" aria-label="' + NAMES[v] + ' view">' +
+					'<svg viewBox="0 0 96 54" aria-hidden="true">' + THUMB[v] + '</svg><span>' + NAMES[v] + '</span></button>';
+			}).join('') + '</div>' +
+			'<div class="glance-cards">' + md.cards.map(function (c) {
+				return '<button type="button" class="glance-hcard' + (c.id === 'other' ? ' is-other' : '') + '" data-card="' + c.id + '">' +
+					'<span class="glance-hcard-name">' + esc(c.label) + '</span><span class="glance-hcard-meta">' + esc(c.meta) +
+					(c.to ? ' → ' + esc(c.to) : '') + '</span></button>';
+			}).join('') + '</div>' +
+			'<div class="glance-detail"></div>';
 
-		var cap = $('.glance-linecap', el);
-		var idle = ev.length + ' entries, ' + range(ev) + ' · hover or tab a mark for its label';
-		cap.textContent = idle;
+		var frame = $('.glance-frame', el), cap = $('.glance-caption', el), detail = $('.glance-detail', el);
+		var loopView = $('.glance-view-loop', el), host3d = $('.glance-3d-host', el), msg3d = $('.glance-3d-msg', el);
+		var cur = '', pinned = null, described = null, onscreen = !window.IntersectionObserver, drawn = 0;
+		var geo = null, raf = 0, t0 = 0, v3 = null, loading3d = false, hoverTimer = 0;
+		var idle = {
+			loop: md.total + ' works on ' + md.cards.length + ' cards · hover, tab or tap a card or a stage',
+			'3d': 'drag to turn · hover, tab or tap a node for its works',
+			timeline: ev.length + ' entries, ' + range(ev) + ' · hover or tab a mark for its label'
+		};
+
+		// -- selection: {card: id} or {stage: id} ------------------------------------------
+		function card(id) { return md.cards.filter(function (c) { return c.id === id; })[0]; }
+		function stage(id) { return STAGES.filter(function (s) { return s.id === id; })[0]; }
+		function resolve(sel) {
+			if (!sel) return null;
+			if (sel.card) { var c = card(sel.card); return c ? { cards: [c.id], stages: c.stages } : null; }
+			if (!stage(sel.stage)) return null;
+			return { stages: [sel.stage], cards: md.cards.filter(function (c) { return c.stages.indexOf(sel.stage) >= 0; }).map(function (c) { return c.id; }) };
+		}
+		function paint(sel) {   // highlight only
+			var r = resolve(sel);
+			$$('.is-on', el).forEach(function (n) { n.classList.remove('is-on'); });
+			el.classList.toggle('is-dim', !!r);
+			if (r) $$('[data-card],[data-stage]', el).forEach(function (n) {
+				if (n.classList.contains('glance-thumb')) return;
+				var c = n.getAttribute('data-card'), s = n.getAttribute('data-stage');
+				if ((c && r.cards.indexOf(c) >= 0) || (s && r.stages.indexOf(s) >= 0)) n.classList.add('is-on');
+			});
+			if (v3) v3.setHighlight(r);
+		}
+		function li(w) {
+			return '<li><span class="glance-kind">' + KIND[w.kind].word + '</span><a href="' + KIND[w.kind].href + '">' + esc(w.title) + '</a>' +
+				(w.where || w.year ? '<span class="glance-venue">' + esc([clip(w.where, 90), w.where.indexOf(w.year) < 0 ? w.year : ''].filter(Boolean).join(' · ')) + '</span>' : '') + '</li>';
+		}
+		function describe(sel) {   // caption and the list of works; stays until something else is chosen
+			var r = resolve(sel), list = [], headline, to;
+			if (!r) return;
+			described = sel;
+			if (sel.card) {
+				var c = card(sel.card);
+				headline = c.label; to = c.to; list = c.works;
+				cap.textContent = c.label + ' · ' + c.meta + (c.to ? ' → ' + c.to : '');
+			} else {
+				var s = stage(sel.stage);
+				headline = s.side + ' · ' + s.name;
+				to = r.cards.length ? r.cards.map(function (id) { return card(id).label; }).join(', ') : 'no card is wired here';
+				r.cards.forEach(function (id) { card(id).works.forEach(function (w) { if (list.indexOf(w) < 0) list.push(w); }); });
+				cap.textContent = headline + ' · ' + (r.cards.length ? r.cards.length + (r.cards.length === 1 ? ' card: ' : ' cards: ') + to : to);
+			}
+			cap.classList.add('is-live');
+			detail.innerHTML = '<p class="glance-detail-head"><span>' + esc(headline) + '</span>' + (to ? '<span class="glance-detail-to">' + (sel.card ? '→ ' : '') + esc(to) + '</span>' : '') + '</p>' +
+				(list.length ? '<ul>' + list.map(li).join('') + '</ul>' : '');
+		}
+		function hit(e) {
+			var n = e.target && e.target.closest ? e.target.closest('[data-card],[data-stage]') : null;
+			if (!n || !el.contains(n)) return null;
+			return n.hasAttribute('data-card') ? { card: n.getAttribute('data-card') } : { stage: n.getAttribute('data-stage') };
+		}
+		function same(a, b) { return !!a && !!b && a.card === b.card && a.stage === b.stage; }
+		function hover(sel) { if (sel) { paint(sel); describe(sel); } else paint(pinned); }
+		function pin(sel) { pinned = same(sel, pinned) ? null : sel; paint(pinned || sel); if (sel) describe(sel); }
+
+		el.addEventListener('mouseover', function (e) { if (cur !== 'timeline' && !e.target.closest('canvas')) hover(hit(e)); });
+		el.addEventListener('mouseleave', function () { paint(pinned); });
+		el.addEventListener('focusin', function (e) { var s = hit(e); if (s) hover(s); });
+		el.addEventListener('focusout', function (e) { if (hit(e)) paint(pinned); });
+		el.addEventListener('click', function (e) { var s = hit(e); if (s) pin(s); });
+		el.addEventListener('keydown', function (e) {
+			if ((e.key === 'Enter' || e.key === ' ') && e.target.tagName !== 'BUTTON' && e.target.tagName !== 'A') {
+				var s = hit(e);
+				if (s) { e.preventDefault(); pin(s); }
+			}
+		});
+
+		// -- loop view ---------------------------------------------------------------------------
+		function tick(t) {   // place the pulses and light the stages they are passing through, t in seconds
+			if (!geo) return;
+			var len = length(geo.path), speed = len / PERIOD, lit = {}, ps = geo.pulses, i, p;
+			function mark(p) { geo.zones.forEach(function (z) { if (p[0] >= z.x && p[0] <= z.x + z.w && p[1] >= z.y && p[1] <= z.y + z.h) lit[z.id] = 1; }); }
+			for (i = 0; i < 3; i++) {
+				p = along(geo.path, ((t / PERIOD + i / 3) % 1) * len) || geo.path[0];
+				ps[i].setAttribute('cx', p[0].toFixed(1)); ps[i].setAttribute('cy', p[1].toFixed(1));
+				mark(p);
+			}
+			// a side pulse leaves "Generate and reason" for "Change capabilities" each time a pulse passes
+			var d0 = length(geo.path.slice(0, 3)), gap = PERIOD / 3, since = (((t - d0 / speed) % gap) + gap) % gap;
+			p = along(geo.side, since * speed * 0.8);
+			ps[3].style.display = p ? '' : 'none';
+			if (p) { ps[3].setAttribute('cx', p[0].toFixed(1)); ps[3].setAttribute('cy', p[1].toFixed(1)); mark(p); }
+			geo.stages.forEach(function (n) { n.classList.toggle('is-lit', !!lit[n.getAttribute('data-stage')]); });
+		}
+		function drawLoop() {
+			var w = Math.round(frame.clientWidth) || (drawn ? 0 : 760);
+			if (!w || Math.abs(w - drawn) < 6) return;
+			drawn = w;
+			var wide = w >= 600, g = loopSvg(md, wide);
+			loopView.innerHTML = g.html;
+			el.classList.toggle('is-narrow', !wide);
+			frame.style.setProperty('--gh', Math.round(w * g.ratio) + 'px');
+			geo = { path: g.path, side: g.side, zones: g.zones, pulses: $$('.glance-pulse', loopView), stages: $$('.glance-stage,.glance-x', loopView) };
+			tick(debug ? debug.frame / 60 : reduced ? 1.25 : (performance.now() - t0) / 1000);
+			paint(pinned);
+		}
+		function step(ms) {
+			raf = requestAnimationFrame(step);
+			tick((ms - t0) / 1000);
+		}
+
+		// -- 3D view (lazy) --------------------------------------------------------------------
+		function fail3d() {
+			host3d.hidden = true; msg3d.hidden = false;
+			msg3d.textContent = 'The 3D view could not load here. The Loop view shows the same diagram.';
+		}
+		function ensure3d() {
+			if (v3 || loading3d) return;
+			loading3d = true;
+			msg3d.hidden = false; msg3d.textContent = 'Loading the 3D model…';
+			function ready() {
+				try {
+					v3 = window.GlanceLoop3D.mount(host3d, {
+						stages: STAGES.map(function (s) { return { id: s.id, name: s.name }; }),
+						cards: md.cards.map(function (c) { return { id: c.id, label: c.label, wire: c.wire }; })
+					}, {
+						reduced: reduced,
+						onHover: function (sel) { hover(sel); },
+						onPick: function (sel) { if (sel) pin(sel); }
+					});
+				} catch (err) { v3 = null; }
+				if (!v3) return fail3d();
+				msg3d.hidden = true;
+				if (debug) v3.frame(debug.frame);
+				paint(pinned);
+				sync();
+			}
+			if (window.GlanceLoop3D) return ready();
+			var s = document.createElement('script');
+			s.src = BASE + 'glance/loop3d.js';
+			s.onload = function () { if (window.GlanceLoop3D) ready(); else fail3d(); };
+			s.onerror = fail3d;
+			document.head.appendChild(s);
+		}
+
+		// -- gallery ---------------------------------------------------------------------------------
+		function sync() {   // animate only what is selected, on screen, and allowed to move
+			var run = onscreen && !document.hidden && !reduced && !debug;
+			if (cur === 'loop' && run) { if (!raf) raf = requestAnimationFrame(step); }
+			else if (raf) { cancelAnimationFrame(raf); raf = 0; }
+			if (v3) { if (cur === '3d' && run) v3.start(); else v3.stop(); }
+		}
+		function setView(v, save) {
+			if (VIEWS.indexOf(v) < 0) v = 'loop';
+			if (v === cur) return;
+			cur = v;
+			$$('.glance-view', el).forEach(function (n) { n.hidden = n.getAttribute('data-view') !== v; });
+			$$('.glance-thumb', el).forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-view') === v)); });
+			el.setAttribute('data-view', v);
+			$('.glance-viewname', el).textContent = NAMES[v];
+			cap.classList.remove('is-live');
+			cap.textContent = idle[v];
+			if (v !== 'timeline' && described) describe(described);
+			if (v === '3d') { ensure3d(); if (v3) { v3.resize(); if (debug) v3.frame(debug.frame); } }
+			if (save) { try { window.localStorage.setItem('glance-view', v); } catch (e) { } }
+			sync();
+		}
+		$$('.glance-thumb', el).forEach(function (b, i, all) {
+			var v = b.getAttribute('data-view');
+			b.addEventListener('click', function () { clearTimeout(hoverTimer); setView(v, true); });
+			b.addEventListener('focus', function () { setView(v, true); });
+			b.addEventListener('mouseenter', function () {   // hover intent: a short pause, not a fly-over
+				clearTimeout(hoverTimer);
+				hoverTimer = setTimeout(function () { setView(v, true); }, 160);
+			});
+			b.addEventListener('mouseleave', function () { clearTimeout(hoverTimer); });
+			b.addEventListener('keydown', function (e) {
+				var j = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? i + 1 : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? i - 1 :
+					e.key === 'Home' ? 0 : e.key === 'End' ? all.length - 1 : -1;
+				if (j < 0 && e.key !== 'ArrowLeft' && e.key !== 'ArrowUp') return;
+				e.preventDefault();
+				all[(j + all.length) % all.length].focus();
+			});
+		});
+
+		// -- timeline marks ------------------------------------------------------------------------
 		$$('.glance-mark', el).forEach(function (m) {
 			var show = function () { cap.textContent = m.getAttribute('aria-label'); cap.classList.add('is-live'); };
-			var hide = function () { cap.textContent = idle; cap.classList.remove('is-live'); };
+			var hide = function () { cap.textContent = idle.timeline; cap.classList.remove('is-live'); };
 			m.addEventListener('mouseenter', show); m.addEventListener('focus', show);
 			m.addEventListener('mouseleave', hide); m.addEventListener('blur', hide);
 		});
 
 		bio.insertAdjacentElement('afterend', el);
-		if (items.length) mount($('.glance-map', el), $('.glance-mapcap', el), items);
+		t0 = performance.now();
+		drawLoop();
+		var start = 'loop';
+		try { start = window.localStorage.getItem('glance-view') || 'loop'; } catch (e) { }
+		setView(debug ? debug.view : start, false);
+		if (debug && debug.pick) pin(card(debug.pick) ? { card: debug.pick } : { stage: debug.pick });
+
+		if (window.ResizeObserver) new ResizeObserver(function () { drawLoop(); if (v3) v3.resize(); }).observe(frame);
+		else window.addEventListener('resize', function () { drawLoop(); if (v3) v3.resize(); });
+		if (window.IntersectionObserver) {
+			new IntersectionObserver(function (es) { onscreen = es[es.length - 1].isIntersecting; sync(); }).observe(frame);
+		}
+		document.addEventListener('visibilitychange', sync);
+		if (mq) {
+			var onMq = function () {
+				reduced = mq.matches;
+				if (v3) v3.setReduced(reduced);
+				if (reduced) tick(1.25);
+				sync();
+			};
+			if (mq.addEventListener) mq.addEventListener('change', onMq); else if (mq.addListener) mq.addListener(onMq);
+		}
+
 		// If About was already revealed by main.js before we arrived, join the stagger.
 		if (bio.classList.contains('rise')) {
 			el.style.setProperty('--i', String(Array.prototype.indexOf.call(row.children, el)));
@@ -495,7 +675,7 @@
 
 		if (window.Palette && window.Palette.addActions) {
 			window.Palette.addActions([{
-				label: 'CV at a glance', keywords: 'summary research map topics science papers timeline years', hint: 'About',
+				label: 'CV at a glance', keywords: 'summary research map loop human machine 3d gallery cards papers timeline years', hint: 'About',
 				run: function () {
 					if (window.location.hash !== '#/about') window.location.hash = '#/about';
 					setTimeout(function () {

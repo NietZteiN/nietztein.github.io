@@ -1,5 +1,7 @@
-/* CV at a glance (assets/js/glance.js): a research map and one thin year line,
-   inserted after the About bio. Uses only main.css tokens; light/dark follow them. */
+/* CV at a glance (assets/js/glance.js): a small gallery inserted after the About
+   bio — the human–machine loop as a diagram, the same loop as a 3D model, and one
+   thin year line — with a strip of previews underneath. Uses only main.css tokens;
+   light/dark follow them. */
 
 .glance {
 	margin: 18px 0 10px;
@@ -13,108 +15,191 @@
 	border-radius: 4px;
 }
 
-/* ---- research map ---- */
+/* ---- gallery shell ---- */
 
-.glance-maphead {
+.glance-head {
 	display: flex;
-	flex-wrap: wrap;
 	align-items: baseline;
 	justify-content: space-between;
 	gap: 4px 16px;
 	margin-bottom: 6px;
 	font-family: var(--font-mono);
 	font-size: 10.5px;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
 	color: var(--text-2);
 }
 
-.glance-maptitle {
-	letter-spacing: 0.08em;
-	text-transform: uppercase;
+.glance-viewname {
+	color: var(--text);
 }
 
-.glance-key {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 4px 14px;
-}
-
-.glance-key > span {
-	display: inline-flex;
-	align-items: center;
-	gap: 5px;
-	white-space: nowrap;
-}
-
-.glance-map {
+.glance-frame {
 	border: 1px solid var(--border);
 	border-radius: 10px;
 	background: var(--surface);
 	overflow: hidden;
 }
 
-.glance-mapsvg {
+.glance-view[hidden],
+.glance-3d-host[hidden],
+.glance-3d-msg[hidden] {
+	display: none;
+}
+
+.glance-caption {
+	margin: 0;
+	padding: 7px 12px 8px;
+	border-top: 1px solid var(--border);
+	font-family: var(--font-mono);
+	font-size: 11.5px;
+	line-height: 1.4;
+	color: var(--text-2);
+	min-height: calc(1.4em + 16px);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.glance-caption.is-live {
+	color: var(--text);
+}
+
+/* ---- previews ---- */
+
+.glance-thumbs {
+	display: flex;
+	gap: 8px;
+	margin-top: 8px;
+}
+
+.glance-thumb {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 3px;
+	width: 108px;
+	padding: 5px 6px 4px;
+	border: 1px solid var(--border);
+	border-radius: 8px;
+	background: var(--surface);
+	color: var(--text-2);
+	font-family: var(--font-mono);
+	font-size: 10px;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	line-height: 1.3;
+	cursor: pointer;
+	transition: border-color var(--dur) var(--ease-out), background-color var(--dur) var(--ease-out), color var(--dur) var(--ease-out);
+}
+
+.glance-thumb svg {
+	display: block;
+	width: 100%;
+	height: auto;
+}
+
+.glance-thumb .t-l {
+	fill: none;
+	stroke: var(--border-strong);
+	stroke-width: 1;
+}
+
+.glance-thumb .t-f {
+	fill: var(--surface-2);
+	stroke: var(--text-2);
+	stroke-width: 0.8;
+}
+
+.glance-thumb .t-a {
+	fill: none;
+	stroke: var(--text-2);
+	stroke-width: 1.2;
+}
+
+.glance-thumb .t-d {
+	fill: var(--text-2);
+}
+
+.glance-thumb:hover {
+	border-color: var(--border-strong);
+	color: var(--text);
+}
+
+.glance-thumb[aria-pressed="true"] {
+	border-color: var(--accent);
+	background: var(--accent-soft);
+	color: var(--text);
+}
+
+.glance-thumb[aria-pressed="true"] .t-a {
+	stroke: var(--accent);
+}
+
+.glance-thumb[aria-pressed="true"] .t-d {
+	fill: var(--accent);
+}
+
+.glance-thumb:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 2px;
+}
+
+/* ---- loop view ---- */
+
+.glance-loop {
 	display: block;
 	height: auto;
 	font-family: var(--font-mono);
 }
 
-/* the field: neutral greys only */
-.glance-field {
-	fill: var(--text-2);
-	opacity: 0.28;
+.glance-band {
+	fill: var(--surface-2);
+	stroke: var(--border-strong);
+	stroke-width: 1;
 }
 
-.glance-dot {
-	fill: var(--text-2);
-	opacity: 0.5;
-}
-
-.glance-blob {
-	fill: var(--accent-soft);
-}
-
-/* desktop landmasses: accent at low opacity, darker where two regions overlap */
-.glance-land {
-	fill: var(--accent);
-	opacity: 0.15;
-}
-
-.glance-blob.is-plain {
-	fill: none;
-	stroke: var(--border);
-	stroke-dasharray: 2 3;
-}
-
-.glance-region {
-	font-size: 9.5px;
-	letter-spacing: 0.06em;
+.glance-bandname,
+.glance-boxname,
+.glance-colname {
+	font-size: 8.5px;
+	letter-spacing: 0.08em;
 	text-transform: uppercase;
+	fill: var(--text);
+}
+
+.glance-colname {
 	fill: var(--text-2);
-	cursor: default;
-	outline: none;
-	transition: opacity var(--dur) var(--ease-out);
 }
 
-.glance-count {
-	fill: var(--text);
-	font-weight: 600;
+.glance-bandsub,
+.glance-boxsub,
+.glance-note,
+.glance-xlabel,
+.glance-ssub,
+.glance-cmeta {
+	font-size: 8.5px;
+	fill: var(--text-2);
 }
 
-.glance-region:hover,
-.glance-region:focus-visible,
-.glance-region.is-on {
-	fill: var(--text);
+.glance-note {
+	font-style: italic;
 }
 
-.glance-region:focus-visible {
-	text-decoration: underline;
+.glance-box {
+	fill: none;
+	stroke: var(--border-strong);
+	stroke-width: 1;
 }
 
-/* works: one accent hue; kind is carried by shape (disc, diamond, ring) */
-.glance-pt {
-	cursor: pointer;
-	outline: none;
-	transition: opacity var(--dur) var(--ease-out);
+.glance-arrow {
+	fill: none;
+	stroke: var(--text-2);
+	stroke-width: 1.1;
+}
+
+.glance-ahead {
+	fill: var(--text-2);
 }
 
 .glance-hit {
@@ -122,81 +207,347 @@
 	stroke: none;
 }
 
-.glance-pt-paper,
-.glance-pt-paper .glance-shape {
-	fill: var(--accent);
+.glance-stage,
+.glance-x,
+.glance-card {
+	cursor: pointer;
+	outline: none;
+	transition: opacity var(--dur) var(--ease-out);
 }
 
-.glance-pt-talk,
-.glance-pt-talk .glance-shape,
-.glance-pt-role,
-.glance-pt-role .glance-shape {
-	fill: var(--surface);
+.glance-stage-base {
+	fill: var(--surface-2);
+	stroke: var(--border-strong);
+	stroke-width: 1;
+}
+
+.glance-stage-glow {
+	fill: var(--accent-soft);
+	stroke: var(--accent);
+	stroke-width: 1.2;
+	opacity: 0;
+	transition: opacity 420ms var(--ease-out);
+}
+
+.glance-stage.is-lit .glance-stage-glow {
+	opacity: 0.55;
+}
+
+/* while a card or stage is chosen, only the choice glows */
+.glance.is-dim .glance-stage.is-lit:not(.is-on) .glance-stage-glow {
+	opacity: 0;
+}
+
+.glance-stage.is-on .glance-stage-glow,
+.glance-stage:hover .glance-stage-glow,
+.glance-stage:focus-visible .glance-stage-glow {
+	opacity: 1;
+}
+
+.glance-sname {
+	font-size: 9.5px;
+	font-weight: 600;
+	fill: var(--text);
+}
+
+.glance-x.is-lit .glance-arrow,
+.glance-x.is-on .glance-arrow,
+.glance-x:hover .glance-arrow,
+.glance-x:focus-visible .glance-arrow {
 	stroke: var(--accent);
 	stroke-width: 1.6;
 }
 
-.glance-twin {
-	transition: opacity var(--dur) var(--ease-out);
-}
-
-.glance-twin-dot {
+.glance-x.is-lit .glance-ahead,
+.glance-x.is-on .glance-ahead,
+.glance-x:hover .glance-ahead,
+.glance-x:focus-visible .glance-ahead {
 	fill: var(--accent);
 }
 
-.glance-link {
+.glance-x.is-on .glance-xlabel,
+.glance-x:hover .glance-xlabel,
+.glance-x:focus-visible .glance-xlabel {
+	fill: var(--text);
+}
+
+.glance-pulse {
+	fill: var(--accent);
+}
+
+.glance-pulse-side {
+	opacity: 0.7;
+}
+
+/* connectors: a faint dash that flows from the card towards its stage */
+.glance-wire {
 	fill: none;
-	stroke: var(--accent);
+	stroke: var(--text-2);
 	stroke-width: 1;
-	opacity: 0.5;
+	stroke-dasharray: 3 4;
+	opacity: 0.7;
+	pointer-events: none;
+	animation: glance-flow 1.4s linear infinite;
+	transition: opacity var(--dur) var(--ease-out);
+}
+
+.glance-wire-end {
+	fill: var(--text-2);
 	pointer-events: none;
 	transition: opacity var(--dur) var(--ease-out);
 }
 
-.glance-pt:hover .glance-shape,
-.glance-pt:focus-visible .glance-shape,
-.glance-pt.is-on .glance-shape {
-	stroke: var(--text);
-	stroke-width: 1.6;
-}
-
-.glance-pt:focus-visible .glance-hit {
+.glance-wire.is-on {
 	stroke: var(--accent);
 	stroke-width: 1.5;
-}
-
-.glance-map.is-dim .glance-pt,
-.glance-map.is-dim .glance-twin {
-	opacity: 0.28;
-}
-
-.glance-map.is-dim .glance-link {
-	opacity: 0.15;
-}
-
-.glance-map.is-dim .glance-region {
-	opacity: 0.55;
-}
-
-.glance-map.is-dim .is-on {
 	opacity: 1;
 }
 
-.glance-caption.glance-mapcap {
-	margin-left: 0;
+.glance-wire-end.is-on {
+	fill: var(--accent);
 }
 
+@keyframes glance-flow {
+	from { stroke-dashoffset: 0; }
+	to { stroke-dashoffset: -14; }
+}
 
-/* ---- year line ---- */
+.glance-card rect {
+	fill: var(--surface);
+	stroke: var(--border-strong);
+	stroke-width: 1;
+}
+
+.glance-card.is-other rect {
+	stroke-dasharray: 3 3;
+}
+
+.glance-cname {
+	font-size: 9.5px;
+	font-weight: 600;
+	fill: var(--text);
+}
+
+.glance-card:hover rect,
+.glance-card:focus-visible rect,
+.glance-card.is-on rect {
+	fill: var(--accent-soft);
+	stroke: var(--accent);
+	stroke-width: 1.4;
+	stroke-dasharray: none;
+}
+
+.glance.is-dim .glance-card:not(.is-on),
+.glance.is-dim .glance-stage:not(.is-on) text,
+.glance.is-dim .glance-x:not(.is-on),
+.glance.is-dim .glance-hcard:not(.is-on) {
+	opacity: 0.6;
+}
+
+.glance.is-dim .glance-wire:not(.is-on),
+.glance.is-dim .glance-wire-end:not(.is-on) {
+	opacity: 0.25;
+}
+
+.glance-loop.is-narrow .glance-sname {
+	font-size: 9px;
+}
+
+.glance-loop.is-narrow .glance-bandsub,
+.glance-loop.is-narrow .glance-boxsub,
+.glance-loop.is-narrow .glance-note,
+.glance-loop.is-narrow .glance-xlabel,
+.glance-loop.is-narrow .glance-ssub {
+	font-size: 7.5px;
+}
+
+/* ---- cards as buttons (narrow widths only) ---- */
+
+.glance-cards {
+	display: none;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 6px;
+	margin-top: 8px;
+}
+
+.glance.is-narrow .glance-cards {
+	display: grid;
+}
+
+.glance[data-view="timeline"] .glance-cards,
+.glance[data-view="timeline"] .glance-detail {
+	display: none;
+}
+
+.glance-hcard {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	padding: 6px 8px;
+	border: 1px solid var(--border-strong);
+	border-radius: 6px;
+	background: var(--surface);
+	color: var(--text);
+	font-family: var(--font-mono);
+	text-align: left;
+	cursor: pointer;
+	transition: opacity var(--dur) var(--ease-out), border-color var(--dur) var(--ease-out);
+}
+
+.glance-hcard.is-other {
+	border-style: dashed;
+}
+
+.glance-hcard-name {
+	font-size: 10.5px;
+	font-weight: 600;
+	line-height: 1.3;
+}
+
+.glance-hcard-meta {
+	font-size: 9.5px;
+	line-height: 1.35;
+	color: var(--text-2);
+}
+
+.glance-hcard:hover,
+.glance-hcard.is-on {
+	border-color: var(--accent);
+	border-style: solid;
+	background: var(--accent-soft);
+}
+
+.glance-hcard:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 2px;
+}
+
+/* ---- works of the chosen card or stage ---- */
+
+.glance-detail {
+	margin-top: 8px;
+	font-size: 13px;
+	line-height: 1.45;
+}
+
+.glance-detail:empty {
+	display: none;
+}
+
+.glance-detail-head {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 2px 10px;
+	margin: 0 0 4px;
+	font-family: var(--font-mono);
+	font-size: 10.5px;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: var(--text);
+}
+
+.glance-detail-to {
+	color: var(--text-2);
+}
+
+.glance-detail ul {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	border-top: 1px solid var(--border);
+}
+
+.glance-detail li {
+	display: grid;
+	grid-template-columns: 44px minmax(0, 1fr);
+	gap: 0 8px;
+	padding: 5px 0;
+	border-bottom: 1px solid var(--border);
+}
+
+.glance-kind {
+	padding-top: 2px;
+	font-family: var(--font-mono);
+	font-size: 10px;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: var(--text-2);
+}
+
+.glance-detail a {
+	grid-column: 2;
+	color: var(--text);
+	text-decoration: none;
+}
+
+.glance-detail a:hover,
+.glance-detail a:focus-visible {
+	color: var(--accent);
+	text-decoration: underline;
+}
+
+.glance-venue {
+	grid-column: 2;
+	font-size: 12px;
+	color: var(--text-2);
+}
+
+/* ---- 3D view ---- */
+
+.glance-3d-host {
+	height: var(--gh, 420px);
+	min-height: 300px;
+}
+
+.glance-3d-canvas {
+	display: block;
+	width: 100%;
+	height: 100%;
+	touch-action: pan-y;
+	cursor: grab;
+}
+
+.glance-3d-canvas:active {
+	cursor: grabbing;
+}
+
+.glance-3d-msg {
+	margin: 0;
+	padding: 40px 16px;
+	font-family: var(--font-mono);
+	font-size: 11.5px;
+	text-align: center;
+	color: var(--text-2);
+}
+
+.glance-sr {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+}
+
+.glance-view-3d {
+	position: relative;
+}
+
+/* ---- timeline view: the year line ---- */
+
+.glance-view-timeline {
+	display: flex;
+	align-items: center;
+	min-height: var(--gh, 0);
+	padding: 14px 12px;
+}
 
 .glance-line {
 	position: relative;
 	display: grid;
 	grid-template-columns: 56px minmax(0, 1fr);
 	gap: 8px;
-	margin-top: 14px;
-	padding-top: 10px;
-	border-top: 1px solid var(--border);
+	width: 100%;
 }
 
 .glance-lanes {
@@ -277,22 +628,6 @@
 	border-radius: 50%;
 }
 
-.glance-caption {
-	margin: 6px 0 0 64px;
-	font-family: var(--font-mono);
-	font-size: 11.5px;
-	line-height: 1.4;
-	color: var(--text-2);
-	min-height: 1.4em;
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
-}
-
-.glance-caption.is-live {
-	color: var(--text);
-}
-
 /* ---- grow-in, replayed with main.js's .rise stagger ---- */
 
 .glance.rise .glance-axis {
@@ -316,26 +651,21 @@
 	to { opacity: 1; }
 }
 
-.glance.rise .glance-map:not(.is-settled) .glance-pt,
-.glance.rise .glance-map:not(.is-settled) .glance-twin,
-.glance.rise .glance-map:not(.is-settled) .glance-link {
-	animation: glance-in var(--dur) var(--ease-out) backwards;
-	animation-delay: calc(var(--d, 600) * 1ms);
-}
-
 @media (prefers-reduced-motion: reduce) {
 	.glance.rise .glance-axis,
 	.glance.rise .glance-mark,
-	.glance.rise .glance-map:not(.is-settled) .glance-pt,
-	.glance.rise .glance-map:not(.is-settled) .glance-twin,
-	.glance.rise .glance-map:not(.is-settled) .glance-link {
+	.glance-wire {
 		animation: none;
 	}
 	.glance-mark,
-	.glance-pt,
-	.glance-twin,
-	.glance-link,
-	.glance-region {
+	.glance-stage,
+	.glance-x,
+	.glance-card,
+	.glance-hcard,
+	.glance-wire,
+	.glance-wire-end,
+	.glance-stage-glow,
+	.glance-thumb {
 		transition: none;
 	}
 }
@@ -356,13 +686,24 @@
 		r: 3;
 	}
 	.glance-caption {
-		margin-left: 0;
 		white-space: normal;
+		min-height: calc(2.8em + 16px);
 	}
-	.glance-mapcap {
-		min-height: 4.2em;
+	.glance-view-timeline {
+		padding: 12px 8px;
 	}
-	.glance-key {
-		gap: 4px 10px;
+	.glance-thumbs {
+		gap: 6px;
+	}
+	.glance-thumb {
+		flex: 1 1 0;
+		width: auto;
+		min-width: 0;
+	}
+}
+
+@media (max-width: 379.98px) {
+	.glance-cards {
+		grid-template-columns: minmax(0, 1fr);
 	}
 }
