@@ -13,7 +13,7 @@
   //  airport code on the stamp; `pop` is the UN WPP 2024 mid-2024 estimate.
   // =====================================================================================
   var VISITED = [
-    { id: '840', name: 'United States', home: true, city: 'Garland, Texas', tz: 'America/Chicago',    lat: 32.91, lon:  -96.64, code: 'DFW', continent: 'North America', pop: 345426571 },
+    { id: '840', name: 'United States', home: true, city: 'Texas',          tz: 'America/Chicago',    lat: 32.99, lon:  -96.75, code: 'DFW', continent: 'North America', pop: 345426571 },
     { id: '704', name: 'Vietnam',       city: 'Hanoi',          tz: 'Asia/Ho_Chi_Minh',    lat: 21.03, lon:  105.85, code: 'HAN', continent: 'Asia',          pop: 100987686 },
     { id: '484', name: 'Mexico',        city: 'Mexico City',    tz: 'America/Mexico_City', lat: 19.43, lon:  -99.13, code: 'MEX', continent: 'North America', pop: 130861007 },
     { id: '124', name: 'Canada',        city: 'Toronto',        tz: 'America/Toronto',     lat: 43.65, lon:  -79.38, code: 'YYZ', continent: 'North America', pop:  39742430 },

@@ -1,4 +1,4 @@
-// "Now in Garland" card: a compact live card under the contact rows in the
+// "Now" card: a compact live card under the contact rows in the
 // left column. Sky strip with the day's solar arc (real NOAA-style solar
 // position), the local clock, weather from Open-Meteo, the latest GitHub
 // push and a date-seeded pick from the bookshelf. Registered with the
@@ -11,8 +11,8 @@
 	'use strict';
 	if (!window.Gadgets) return;
 
-	var LAT = 32.9126, LON = -96.6389, ZONE = 'America/Chicago';
-	var WX_URL = 'https://api.open-meteo.com/v1/forecast?latitude=32.9126&longitude=-96.6389&current=temperature_2m,weather_code,is_day&temperature_unit=fahrenheit&timezone=America%2FChicago';
+	var LAT = 32.99, LON = -96.75, ZONE = 'America/Chicago';
+	var WX_URL = 'https://api.open-meteo.com/v1/forecast?latitude=' + LAT + '&longitude=' + LON + '&current=temperature_2m,weather_code,is_day&temperature_unit=fahrenheit&timezone=America%2FChicago';
 	var GH_URL = 'https://api.github.com/users/nietztein/events/public';
 	var LIB_URL = 'assets/data/library.json';
 	var WX_KEY = 'gadgets.now.wx', GH_KEY = 'gadgets.now.gh';
@@ -278,7 +278,7 @@
 	function build() {
 		root = el('section', 'now-card');
 		root.id = 'now-card';
-		root.setAttribute('aria-label', 'Now in Garland, Texas');
+		root.setAttribute('aria-label', 'Now in Texas');
 
 		var strip = el('div', 'now-strip');
 		sky = buildSky();
@@ -307,7 +307,7 @@
 		root.appendChild(refs.pick);
 
 		var foot = el('div', 'now-foot');
-		foot.appendChild(el('span', null, 'Garland, TX'));
+		foot.appendChild(el('span', null, 'Texas'));
 		foot.appendChild(el('span', 'now-dot', '·'));
 		foot.appendChild(el('span', 'now-mono', 'UTC−5/−6'));
 		root.appendChild(foot);
@@ -533,5 +533,5 @@
 		root = null; sky = null; refs = {}; books = null; lastSecond = -1; lastMinuteKey = '';
 	}
 
-	Gadgets.register('now', { label: 'Now in Garland card', enable: enable, disable: disable });
+	Gadgets.register('now', { label: 'Now card', enable: enable, disable: disable });
 })();

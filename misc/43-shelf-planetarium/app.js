@@ -1,4 +1,4 @@
-/* Garland Planetarium: chart, interaction and the bookshelf relabelling. Needs sky.js. */
+/* Bookshelf Planetarium: chart, interaction and the bookshelf relabelling. Needs sky.js. */
 (function () {
   'use strict';
   var $ = function (id) { return document.getElementById(id); };
@@ -17,7 +17,7 @@
   if (THUMB) document.body.classList.add('thumb');
 
   var state = {
-    lat: 32.9126, lon: -96.6389, locName: 'Garland, TX',
+    lat: 32.99, lon: -96.75, locName: 'Texas',
     anchor: null, offMin: 0, offDay: 0,
     mode: 'dome', labels: 'author', showMW: true, showLines: true, showSkyline: true,
     panoAz: 180, selected: null, hover: null, playing: false
@@ -56,7 +56,7 @@
     prepStars(res[0].stars);
     prepCons(res[1].constellations);
     prepLibrary(res[2]);
-    data.mw = Sky.milkyWay(3600, 'garland');
+    data.mw = Sky.milkyWay(3600, 'shelf');
     assignAuthors();
     initUI();
     resize();
@@ -132,7 +132,7 @@
 
   // ---------- skyline profile (degrees of altitude as a function of azimuth)
   var skyline = (function () {
-    var rng = Sky.mulberry32(Sky.hash32('garland skyline'));
+    var rng = Sky.mulberry32(Sky.hash32('shelf skyline'));
     var prof = new Float32Array(1440); // 0.25 deg steps
     function bump(a0, w, fn) {
       var i0 = Math.floor((a0 - w) * 4), i1 = Math.ceil((a0 + w) * 4);
@@ -159,7 +159,7 @@
         az += 3 + rng() * 3;
       }
     }
-    // the water tower, south-south-west of the house: a stem, a round tank, a mast
+    // an invented water tower: a stem, a round tank, a mast
     bump(208, 0.7, function (d) { return Math.abs(d) < 0.7 ? 6.0 : 0; });
     bump(208, 2.4, function (d, w) { var u = d / w; return u * u < 1 ? 5.6 + 3.0 * Math.sqrt(1 - u * u) : 0; });
     bump(208, 0.15, function () { return 9.4; });
@@ -651,7 +651,7 @@
       if (!isFinite(la) || !isFinite(lo)) return;
       state.lat = clamp(la, -89.9, 89.9); state.lon = clamp(lo, -180, 180);
       state.locName = la.toFixed(2) + '°, ' + lo.toFixed(2) + '°';
-      if (Math.abs(la - 32.9126) < 0.05 && Math.abs(lo + 96.6389) < 0.05) state.locName = 'Garland, TX';
+      if (Math.abs(la - 32.99) < 0.05 && Math.abs(lo + 96.75) < 0.05) state.locName = 'Texas';
       $('loc-name').textContent = state.locName; panelKey = ''; render();
     });
     $('btn-geo').addEventListener('click', function () {

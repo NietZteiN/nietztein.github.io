@@ -23,7 +23,7 @@
   // lat/lon: the city the thread goes to; vlat/vlon: where the globe centres for the country
   var COUNTRIES = [
     { id: '704', name: 'Vietnam',       city: 'Hanoi',          lat: 21.03, lon: 105.85, vlat: 16,   vlon: 106,  cont: 'Asia',          pop: 100987686 },
-    { id: '840', name: 'United States', city: 'Garland, Texas', lat: 32.91, lon: -96.64, vlat: 38,   vlon: -98,  cont: 'North America', pop: 345426571, home: true },
+    { id: '840', name: 'United States', city: 'Texas',          lat: 32.99, lon: -96.75, vlat: 38,   vlon: -98,  cont: 'North America', pop: 345426571, home: true },
     { id: '484', name: 'Mexico',        city: 'Mexico City',    lat: 19.43, lon: -99.13, vlat: 23,   vlon: -102, cont: 'North America', pop: 130861007 },
     { id: '124', name: 'Canada',        city: 'Toronto',        lat: 43.65, lon: -79.38, vlat: 57,   vlon: -95,  cont: 'North America', pop: 39742430 },
     { id: '276', name: 'Germany',       city: 'Berlin',         lat: 52.52, lon: 13.40,  vlat: 51,   vlon: 10,   cont: 'Europe',        pop: 84552242 },
@@ -450,7 +450,7 @@
     }
     function setLabel() {
       var c = hover ? BY_ID[hover] : chipActive ? BY_ID[chipActive] : null;
-      if (!c) label.innerHTML = '<b>Home: Garland, Texas.</b> Drag the globe; hover a lit country. Shade is night.';
+      if (!c) label.innerHTML = '<b>Home: Texas.</b> Drag the globe; hover a lit country. Shade is night.';
       else if (c.home) label.innerHTML = '<b>' + c.name + '</b> — home, ' + c.city + ' · ' + c.cont;
       else label.innerHTML = '<b>' + c.name + '</b> — ' + c.city + ' · ' + fmtInt(c.km) + ' km from home · ' + c.cont;
     }

@@ -6,7 +6,7 @@
 //     called 'signature' exists, "Replay signature" (fires `signature:replay`).
 //   - Konami code (up up down down left right left right B A) anywhere outside
 //     an input: a toast, then Bookshelf Tetris (misc/17) in a modal overlay.
-//   - Typing "stars": the Garland planetarium (misc/43) at near-full viewport.
+//   - Typing "stars": the bookshelf planetarium (misc/43) at near-full viewport.
 //   - Typing "nietzsche": one of twelve short aphorisms slides up for 8 s.
 //   - Typing "cat": dispatches `navcat:purr` for the navbar cat, if any.
 //   - A sparkle button next to #theme-toggle opens an "Effects" popover with a
@@ -28,7 +28,7 @@
 
 	var NAME = 'eggs';
 	var TETRIS_URL = 'misc/17-bookshelf-tetris/';
-	var STARS_URL = 'misc/43-garland-planetarium/?thumb=1';
+	var STARS_URL = 'misc/43-shelf-planetarium/?thumb=1';
 	var LIBRARY_URL = 'assets/data/library.json';
 	var HOME_HASH = '#/about';
 	var TOAST_MS = 5000;
@@ -193,11 +193,11 @@
 		var ov = el('div', 'eggs-overlay');
 		ov.setAttribute('role', 'dialog');
 		ov.setAttribute('aria-modal', 'true');
-		ov.setAttribute('aria-label', isStars ? 'The sky over Garland' : 'Bookshelf Tetris');
+		ov.setAttribute('aria-label', isStars ? 'The Texas sky right now' : 'Bookshelf Tetris');
 
 		var modal = el('div', 'eggs-modal is-' + kind);
 		var head = el('div', 'eggs-modal-head');
-		head.appendChild(el('strong', null, isStars ? 'Garland Planetarium' : 'Bookshelf Tetris'));
+		head.appendChild(el('strong', null, isStars ? 'Bookshelf Planetarium' : 'Bookshelf Tetris'));
 		var note = el('span');
 		note.innerHTML = isStars
 			? '<kbd>esc</kbd> closes'
@@ -210,12 +210,12 @@
 		head.appendChild(close);
 
 		var frame = el('iframe');
-		frame.title = isStars ? 'Garland planetarium' : 'Bookshelf Tetris';
+		frame.title = isStars ? 'Bookshelf planetarium' : 'Bookshelf Tetris';
 		frame.src = isStars ? STARS_URL : TETRIS_URL;
 
 		modal.appendChild(head);
 		modal.appendChild(frame);
-		if (isStars) modal.appendChild(el('div', 'eggs-caption', 'the sky over Garland right now'));
+		if (isStars) modal.appendChild(el('div', 'eggs-caption', 'the Texas sky right now'));
 		ov.appendChild(modal);
 		document.body.appendChild(ov);
 		document.body.classList.add('eggs-lock');
@@ -358,7 +358,7 @@
 		var acts = [
 			{ label: 'Surprise me', keywords: 'eggs random misc toy lucky dice', hint: 'a random Misc toy', run: surpriseMe },
 			{ label: 'Pull a random book', keywords: 'eggs random bookshelf library shelf lucky', hint: 'from the shelves', run: randomBook },
-			{ label: 'Stargaze', keywords: 'eggs stars sky night planetarium garland', hint: 'the sky over Garland', run: stargaze },
+			{ label: 'Stargaze', keywords: 'eggs stars sky night planetarium texas', hint: 'the Texas sky right now', run: stargaze },
 			{ label: 'Play Tetris', keywords: 'eggs game bookshelf tetris konami', hint: 'Bookshelf Tetris', run: playTetris },
 		];
 		var list = G.list();

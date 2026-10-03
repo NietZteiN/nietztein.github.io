@@ -1,4 +1,4 @@
-/* "Now in Garland" card (assets/js/gadgets/now.js). Sits in #leftPanel after
+/* "Now" card (assets/js/gadgets/now.js). Sits in #leftPanel after
    the contact rows. Height is reserved up front so nothing shifts while the
    weather / GitHub / shelf rows load or quietly hide. */
 

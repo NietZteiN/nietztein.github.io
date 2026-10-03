@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Garland Planetarium</title>
-<meta name="description" content="The real night sky over Garland, Texas right now, with the eighty-eight constellations renamed after the authors on one bookshelf.">
+<title>Bookshelf Planetarium</title>
+<meta name="description" content="The real night sky over Texas right now, with the eighty-eight constellations renamed after the authors on one bookshelf.">
 <link rel="icon" href="data:,">
 <style>
   :root {
@@ -139,13 +139,13 @@
 <body>
 <header>
   <a class="back" href="../../#/misc">&larr; Jack V. Le</a>
-  <h1>Garland Planetarium</h1>
-  <span class="sub">The sky over the house right now, with the constellations renamed after the bookshelf.</span>
+  <h1>Bookshelf Planetarium</h1>
+  <span class="sub">The Texas sky right now, with the constellations renamed after the bookshelf.</span>
   <span class="spacer"></span>
   <span class="tools">
     <span class="seg" role="group" aria-label="view">
       <button id="btn-dome" class="on" title="all-sky chart, zenith in the middle (V)">dome</button>
-      <button id="btn-pano" title="look around from the back yard, drag to turn (V)">look around</button>
+      <button id="btn-pano" title="look around from the ground, drag to turn (V)">look around</button>
     </span>
     <span class="seg" role="group" aria-label="labels">
       <button id="lab-author" class="on" title="label constellations with authors (L)">authors</button>
@@ -219,8 +219,8 @@
 
 <div class="overlay" id="help">
   <div class="box">
-    <h2>Garland Planetarium</h2>
-    <p>This is the real sky over Garland, Texas (or wherever you tell it) at the time on the clock. The dome view is an all-sky chart meant to be held above your head; "look around" is the view from the yard, drag to turn. The constellations keep their shapes but each one is renamed, for today only, after an author from Jack's bookshelf: the authors with the most books get the biggest constellations, and the deal is reshuffled every midnight. Click a constellation for its real name, the author's books and the myth the sky made up for them.</p>
+    <h2>Bookshelf Planetarium</h2>
+    <p>This is the real sky over Texas (or wherever you tell it) at the time on the clock. The dome view is an all-sky chart meant to be held above your head; "look around" is the view from the ground, drag to turn. The constellations keep their shapes but each one is renamed, for today only, after an author from Jack's bookshelf: the authors with the most books get the biggest constellations, and the deal is reshuffled every midnight. Click a constellation for its real name, the author's books and the myth the sky made up for them.</p>
     <div class="keys">
       <span><kbd>&larr;</kbd> <kbd>&rarr;</kbd></span><span>ten minutes back / forward (shift: one hour)</span>
       <span><kbd>space</kbd></span><span>play / pause</span>
@@ -230,7 +230,7 @@
       <span><kbd>L</kbd></span><span>cycle labels</span>
       <span><kbd>esc</kbd></span><span>deselect</span>
     </div>
-    <p class="lic">Star positions, magnitudes and B&minus;V colours, star names and constellation lines come from d3-celestial by Olaf Frohn (BSD-3-Clause), cut to stars brighter than magnitude 5. Sun, Moon and planets use low-precision formulas accurate to a degree or two. The skyline is invented; the water tower is roughly where Garland's is.</p>
+    <p class="lic">Star positions, magnitudes and B&minus;V colours, star names and constellation lines come from d3-celestial by Olaf Frohn (BSD-3-Clause), cut to stars brighter than magnitude 5. Sun, Moon and planets use low-precision formulas accurate to a degree or two. The skyline and its water tower are invented.</p>
     <p><button id="btn-close">close</button></p>
   </div>
 </div>

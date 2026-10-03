@@ -1,4 +1,4 @@
-/* Garland Planetarium: astronomy engine (no DOM). Works in the browser as window.Sky and under Node.
+/* Bookshelf Planetarium: astronomy engine (no DOM). Works in the browser as window.Sky and under Node.
    Low-precision formulas: Meeus (sidereal time, Sun) and Paul Schlyter's simplified orbital
    elements (Moon, planets). Good to a degree or two, which is all a naked-eye chart needs. */
 (function (root, factory) {
