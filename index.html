@@ -49,6 +49,14 @@
 		integrity="sha384-PPIZEGYM1v8zp5Py7UjFb79S58UeqCL9pYVnVPURKEqvioPROaVAJKKLzvH2rDnI" crossorigin="anonymous">
 	<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
 	<link rel="stylesheet" href="assets/css/main.css">
+	<!-- Gadgets: small shell-level effects, each switchable from the sparkle menu / Ctrl+K (assets/js/gadgets/core.js) -->
+	<link rel="stylesheet" href="assets/css/gadgets/ambient.css">
+	<link rel="stylesheet" href="assets/css/gadgets/tilt.css">
+	<link rel="stylesheet" href="assets/css/gadgets/signature.css">
+	<link rel="stylesheet" href="assets/css/gadgets/now.css">
+	<link rel="stylesheet" href="assets/css/gadgets/navcat.css">
+	<link rel="stylesheet" href="assets/css/gadgets/book3d.css">
+	<link rel="stylesheet" href="assets/css/gadgets/eggs.css">
 
 	<!-- Blog: code highlighting (stylesheet swapped with the light/dark toggle) + math -->
 	<link id="hljs-theme" rel="stylesheet"
@@ -684,6 +692,141 @@
 			<div class="section col-md-8 offset-md-1 mb-5" id="bookshelfContent">
 				<div class="container">
 					<p class="mt-2 mb-3 bs-intro">My library</p>
+					<!-- Ways to see the library: visualisations and games built on library.json (rebuilt by build-views.js) -->
+					<div class="bs-views" id="bs-views">
+						<div class="bs-views-head">
+							<span class="bs-views-title">Ways to see the library</span>
+							<span class="bs-views-hint">18 views, each opens in a new tab · scroll →</span>
+						</div>
+						<div class="bs-views-row">
+						<a class="misc-card" href="misc/45-reading-room/" target="_blank" rel="noopener">
+							<div class="misc-thumb"><img src="assets/img/misc/45-reading-room.jpg" alt="" loading="lazy"></div>
+							<div class="misc-body">
+								<div class="misc-title">Reading Room</div>
+								<p class="misc-desc">The library as an isometric room: twelve real bookcases, every spine in shelf order, trophies and game boxes where they really sit. Walk up and press E.</p>
+							</div>
+						</a>
+						<a class="misc-card" href="misc/46-shelf-terminus/" target="_blank" rel="noopener">
+							<div class="misc-thumb"><img src="assets/img/misc/46-shelf-terminus.jpg" alt="" loading="lazy"></div>
+							<div class="misc-body">
+								<div class="misc-title">Terminus</div>
+								<p class="misc-desc">Mini Metro built from one real library: thirteen bookcases are the stations and every passenger is a book trying to get home to its shelf.</p>
+							</div>
+						</a>
+						<a class="misc-card" href="misc/47-spine-wall/" target="_blank" rel="noopener">
+							<div class="misc-thumb"><img src="assets/img/misc/47-spine-wall.jpg" alt="" loading="lazy"></div>
+							<div class="misc-body">
+								<div class="misc-title">Spine Wall</div>
+								<p class="misc-desc">The whole library as one long wall of shelves, every spine drawn to size in its real place. Zoom in to read the titles; search shines a torch on the book.</p>
+							</div>
+						</a>
+						<a class="misc-card" href="misc/48-library-sunburst/" target="_blank" rel="noopener">
+							<div class="misc-thumb"><img src="assets/img/misc/48-library-sunburst.jpg" alt="" loading="lazy"></div>
+							<div class="misc-body">
+								<div class="misc-title">Sunburst</div>
+								<p class="misc-desc">The whole library as one ring: genres inside, 889 books on the rim. Click a wedge to dive in, or fold the same tree into a treemap or an icicle.</p>
+							</div>
+						</a>
+						<a class="misc-card" href="misc/49-publication-strata/" target="_blank" rel="noopener">
+							<div class="misc-thumb"><img src="assets/img/misc/49-publication-strata.jpg" alt="" loading="lazy"></div>
+							<div class="misc-body">
+								<div class="misc-title">Strata</div>
+								<p class="misc-desc">The library cut like a cliff face: every book a grain of sediment in the year it was first published, from Gilgamesh to this year.</p>
+							</div>
+						</a>
+						<a class="misc-card" href="misc/50-author-constellations/" target="_blank" rel="noopener">
+							<div class="misc-thumb"><img src="assets/img/misc/50-author-constellations.jpg" alt="" loading="lazy"></div>
+							<div class="misc-body">
+								<div class="misc-title">Constellations</div>
+								<p class="misc-desc">The library's 529 authors as a night sky: stars sized by their books, joined by the shelves, genres, publishers and decades they share.</p>
+							</div>
+						</a>
+						<a class="misc-card" href="misc/51-library-flows/" target="_blank" rel="noopener">
+							<div class="misc-thumb"><img src="assets/img/misc/51-library-flows.jpg" alt="" loading="lazy"></div>
+							<div class="misc-body">
+								<div class="misc-title">Flows</div>
+								<p class="misc-desc">The library as 889 threads braided between facets. Pick language, type, genre, bookcase, era or author as columns and watch the ribbons reshape.</p>
+							</div>
+						</a>
+						<a class="misc-card" href="misc/52-library-by-numbers/" target="_blank" rel="noopener">
+							<div class="misc-thumb"><img src="assets/img/misc/52-library-by-numbers.jpg" alt="" loading="lazy"></div>
+							<div class="misc-body">
+								<div class="misc-title">By the Numbers</div>
+								<p class="misc-desc">One library weighed, measured and timed: 889 books as 360 kg of paper, a six-storey stack, fifteen years of reading, every count drawn live from the catalogue.</p>
+							</div>
+						</a>
+						<a class="misc-card" href="misc/53-series-tracker/" target="_blank" rel="noopener">
+							<div class="misc-thumb"><img src="assets/img/misc/53-series-tracker.jpg" alt="" loading="lazy"></div>
+							<div class="misc-body">
+								<div class="misc-title">Runs</div>
+								<p class="misc-desc">Every numbered series in the library as a shelf of spines: filled ones are here, dashed ones are the gaps, and a shopping list names what is missing.</p>
+							</div>
+						</a>
+						<a class="misc-card" href="misc/54-card-catalog/" target="_blank" rel="noopener">
+							<div class="misc-thumb"><img src="assets/img/misc/54-card-catalog.jpg" alt="" loading="lazy"></div>
+							<div class="misc-body">
+								<div class="misc-title">Card Catalog</div>
+								<p class="misc-desc">The library as an oak card catalogue: pull a drawer and riffle through 889 typed 3×5 cards filed by author, title, subject, shelf or year.</p>
+							</div>
+						</a>
+						<a class="misc-card" href="misc/40-shelf-raycaster/" target="_blank" rel="noopener">
+							<div class="misc-thumb"><img src="assets/img/misc/40-shelf-raycaster.jpg" alt="" loading="lazy"></div>
+							<div class="misc-body">
+								<div class="misc-title">Stacks</div>
+								<p class="misc-desc">The library as a Wolfenstein-style raycaster: thirteen aisles of real spines drawn from the catalogue. Walk the stacks and pull a book.</p>
+							</div>
+						</a>
+						<a class="misc-card" href="misc/35-library-orrery/" target="_blank" rel="noopener">
+							<div class="misc-thumb"><img src="assets/img/misc/35-library-orrery.jpg" alt="" loading="lazy"></div>
+							<div class="misc-body">
+								<div class="misc-title">Library Orrery</div>
+								<p class="misc-desc">The library as a solar system: every book a planet, the older it is the farther out and the slower it crawls. Scrub ten thousand years for conjunctions.</p>
+							</div>
+						</a>
+						<a class="misc-card" href="misc/22-shelf-genome/" target="_blank" rel="noopener">
+							<div class="misc-thumb"><img src="assets/img/misc/22-shelf-genome.jpg" alt="" loading="lazy"></div>
+							<div class="misc-body">
+								<div class="misc-title">Shelf Genome</div>
+								<p class="misc-desc">The library as one chromosome: genre bands, year glow, collision hotspots, and fake crossover books.</p>
+							</div>
+						</a>
+						<a class="misc-card" href="misc/23-read-order-oracle/" target="_blank" rel="noopener">
+							<div class="misc-thumb"><img src="assets/img/misc/23-read-order-oracle.jpg" alt="" loading="lazy"></div>
+							<div class="misc-body">
+								<div class="misc-title">Read-Order Oracle</div>
+								<p class="misc-desc">Ride the library: twelve genre lines, interchanges where books overlap, and a journey planner for what to read next.</p>
+							</div>
+						</a>
+						<a class="misc-card" href="misc/20-library-roguelike/" target="_blank" rel="noopener">
+							<div class="misc-thumb"><img src="assets/img/misc/20-library-roguelike.jpg" alt="" loading="lazy"></div>
+							<div class="misc-body">
+								<div class="misc-title">Library Roguelike</div>
+								<p class="misc-desc">A daily text roguelike where every room is a real shelf of the library and every monster is a book.</p>
+							</div>
+						</a>
+						<a class="misc-card" href="misc/14-bookshelf-poster/" target="_blank" rel="noopener">
+							<div class="misc-thumb"><img src="assets/img/misc/14-bookshelf-poster.jpg" alt="" loading="lazy"></div>
+							<div class="misc-body">
+								<div class="misc-title">Bookshelf poster</div>
+								<p class="misc-desc">A whole book collection as one printable SVG poster of spines, sized to the paper you pick.</p>
+							</div>
+						</a>
+						<a class="misc-card" href="misc/17-bookshelf-tetris/" target="_blank" rel="noopener">
+							<div class="misc-thumb"><img src="assets/img/misc/17-bookshelf-tetris.jpg" alt="" loading="lazy"></div>
+							<div class="misc-body">
+								<div class="misc-title">Bookshelf Tetris</div>
+								<p class="misc-desc">Falling pieces are books. A shelf only clears when its titles read in alphabetical order.</p>
+							</div>
+						</a>
+						<a class="misc-card" href="misc/01-virtual-library/" target="_blank" rel="noopener">
+							<div class="misc-thumb"><img src="assets/img/misc/01-virtual-library.jpg" alt="" loading="lazy"></div>
+							<div class="misc-body">
+								<div class="misc-title">Virtual library</div>
+								<p class="misc-desc">A library catalog as shelves of spines: find a book, browse stats, run integrity checks.</p>
+							</div>
+						</a>
+						</div>
+					</div>
 					<div id="bookshelf" class="bs" aria-busy="true"></div>
 				</div>
 			</div>
@@ -1020,6 +1163,15 @@
 			}
 		});
 	</script>
+	<!-- Gadgets (see assets/js/gadgets/core.js; each registers itself and can be switched off) -->
+	<script src="assets/js/gadgets/core.js" defer></script>
+	<script src="assets/js/gadgets/ambient.js" defer></script>
+	<script src="assets/js/gadgets/tilt.js" defer></script>
+	<script src="assets/js/gadgets/signature.js" defer></script>
+	<script src="assets/js/gadgets/now.js" defer></script>
+	<script src="assets/js/gadgets/navcat.js" defer></script>
+	<script src="assets/js/gadgets/book3d.js" defer></script>
+	<script src="assets/js/gadgets/eggs.js" defer></script>
 </body>
 
 </html>

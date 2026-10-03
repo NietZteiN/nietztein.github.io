@@ -1,0 +1,68 @@
+/* Gadget "signature": self-drawing cursive name under the profile photo.
+   Space is reserved by the fixed box so nothing moves while it draws. */
+
+.sig-wrap {
+	display: block;
+	width: 180px;
+	max-width: 100%;
+	height: 56px;
+	margin: -4px 0 12px;
+	cursor: pointer;
+	-webkit-user-select: none;
+	user-select: none;
+	-webkit-tap-highlight-color: transparent;
+}
+
+.sig-wrap svg {
+	display: block;
+	width: 100%;
+	height: 100%;
+	overflow: visible;
+}
+
+.sig-ink {
+	fill: none;
+	stroke: var(--text);
+	stroke-linecap: round;
+	stroke-linejoin: round;
+	transition: stroke var(--dur) ease;
+}
+
+.sig-swash {
+	stroke: var(--accent);
+}
+
+.sig-dot {
+	fill: var(--text);
+	transition: fill var(--dur) ease;
+}
+
+/* The name fades and rises 4px once, in step with the first draw-in. */
+.sig-name-pre {
+	opacity: 0;
+	transform: translateY(4px);
+}
+
+.sig-name-in {
+	animation: sig-name-in 640ms var(--ease-out) both;
+}
+
+@keyframes sig-name-in {
+	from {
+		opacity: 0;
+		transform: translateY(4px);
+	}
+	to {
+		opacity: 1;
+		transform: none;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.sig-name-pre,
+	.sig-name-in {
+		opacity: 1;
+		transform: none;
+		animation: none;
+	}
+}

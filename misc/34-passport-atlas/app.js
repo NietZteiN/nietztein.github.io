@@ -37,6 +37,14 @@
   var HOME = VISITED.filter(function (c) { return c.home; })[0] || VISITED[0];
   var byId = {};
   VISITED.forEach(function (c) { byId[c.id] = c; });
+  // ?focus=<world-atlas id or country name>: the About-page widget links here
+  var FOCUS = (function () {
+    var q = (params.get('focus') || '').trim().toLowerCase();
+    if (!q) return null;
+    var padded = (/^\d+$/.test(q) && q.length < 3) ? ('000' + q).slice(-3) : q;
+    for (var i = 0; i < VISITED.length; i++) if (VISITED[i].id === padded || VISITED[i].name.toLowerCase() === q) return VISITED[i];
+    return null;
+  })();
   var rad = function (d) { return d * Math.PI / 180; }, deg = function (r) { return r * 180 / Math.PI; };
   function hash(s) { var h = 2166136261; for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
   function rng(seed) { var x = seed >>> 0 || 1; return function () { x ^= x << 13; x >>>= 0; x ^= x >>> 17; x ^= x << 5; x >>>= 0; return x / 4294967296; }; }
@@ -479,6 +487,28 @@
     if (!showNight) $('btn-night').classList.remove('on');
     updateStatus();
     map = { svg: svg, countryEl: countryEl, projection: function (p) { return projection(p); }, visible: visible, stop: function () { timer.stop(); } };
+
+    // ---- ?focus: turn to the country (centre it on the flat map), pulse it, stamp it once
+    function focusCountry(c) {
+      var ctr = centroids[c.id] || [c.lon, c.lat];
+      var tLon = -ctr[0], tLat = mode === 'globe' ? -ctr[1] : 0;
+      var from = rot.slice(), dLon = ((tLon - from[0]) % 360 + 540) % 360 - 180, dLat = tLat - from[1];
+      vel = [0, 0];
+      function finish() {
+        rot[0] = tLon; rot[1] = tLat; rot[2] = 0; lastInput = performance.now() + 4000;
+        redraw(); updateStatus();
+        if (stamps.indexOf(c.id) < 0) addStamp(c, false); else flashCountry(c.id);
+      }
+      if (REDUCED || THUMB) { finish(); return; }
+      var dur = 1100;
+      var tw = d3.timer(function (el) {
+        var t = Math.min(1, el / dur), e = d3.easeCubicInOut(t);
+        rot[0] = from[0] + dLon * e; rot[1] = from[1] + dLat * e; lastInput = performance.now();
+        redraw();
+        if (t >= 1) { tw.stop(); finish(); }
+      });
+    }
+    if (FOCUS) focusCountry(FOCUS);
   }
 
   // ---------------------------------------------------------------------------- boot
@@ -497,6 +527,7 @@
       renderFurthest(VISITED.map(function (c) { return { name: c.name, lat: c.lat, lon: c.lon, how: 'city to city', dist: function (o) { return haversine(c, o); } }; }));
       $('st-land').innerHTML = '—';
       $('st-land-s').textContent = 'needs the map geometry';
+      if (FOCUS && stamps.indexOf(FOCUS.id) < 0) addStamp(FOCUS, false); // no globe to turn, but the stamp still lands
     };
     if (!window.d3 || !window.topojson) {
       showMapMessage('<div>The map library (d3 and topojson-client from jsDelivr) did not load, so there is no globe this time.<br>The passport, the stats and the sun row still work: try <b>stamp all</b>.</div>');

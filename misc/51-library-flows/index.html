@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Flows</title>
+<meta name="description" content="The library as an alluvial diagram. Every book is one thread; pick the facets (language, type, genre, bookcase, era, author...) and watch 889 threads braid between them.">
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    --bg: #0c1118;
+    --bg-2: #141c27;
+    --panel: rgba(255, 255, 255, 0.045);
+    --panel-2: rgba(255, 255, 255, 0.09);
+    --line: rgba(226, 232, 240, 0.14);
+    --ink: #e6e9ef;
+    --ink-2: #a3acba;
+    --ink-3: rgba(230, 233, 239, 0.4);
+    --accent: #8fd3c0;
+    --lamp: #ffd98a;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif CJK JP", serif;
+    --sans: -apple-system, "Segoe UI", Helvetica, Arial, "Hiragino Sans", "Yu Gothic", "Noto Sans CJK JP", sans-serif;
+    --mono: ui-monospace, "Cascadia Mono", Consolas, Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); }
+  body {
+    font: 15px/1.45 var(--sans);
+    background: radial-gradient(130% 80% at 50% -10%, var(--bg-2) 0%, var(--bg) 70%);
+    min-height: 100vh; display: flex; flex-direction: column;
+    padding: 12px 16px 18px; overflow-x: hidden;
+  }
+  a { color: inherit; }
+  h1 { font-size: 22px; margin: 0; font-weight: 600; letter-spacing: 0.01em; font-family: var(--serif); }
+  header { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+  header .sub { color: var(--ink-2); font-size: 14px; }
+  header .spacer { flex: 1; }
+  header .back { color: var(--ink-2); font-size: 14px; text-decoration: none; }
+  header .back:hover { color: var(--ink); }
+  button {
+    font: inherit; color: var(--ink); background: var(--panel-2); border: 1px solid var(--line);
+    border-radius: 7px; padding: 5px 11px; cursor: pointer; line-height: 1.2; font-size: 13px;
+  }
+  button:hover { background: rgba(255,255,255,0.15); }
+  button:active { transform: translateY(1px); }
+  button.on { background: var(--accent); color: #0c1118; border-color: transparent; }
+  button:focus-visible, input:focus-visible, select:focus-visible, .chip:focus-visible { outline: 1px solid var(--lamp); outline-offset: 1px; }
+  select, input[type=search] {
+    font: inherit; font-size: 13px; color: var(--ink); background: rgba(0,0,0,0.3); border: 1px solid var(--line);
+    border-radius: 7px; padding: 5px 9px;
+  }
+  select option { background: #141c27; color: var(--ink); }
+  input[type=search]::placeholder { color: var(--ink-3); }
+  label.ctl { display: inline-flex; align-items: center; gap: 6px; color: var(--ink-2); font-size: 13px; }
+
+  /* toolbar */
+  #toolbar { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; margin-bottom: 10px; }
+  #cols { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; touch-action: none; }
+  #cols .lbl { color: var(--ink-2); font-size: 13px; margin-right: 2px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px; padding: 4px 6px 4px 9px; border-radius: 7px; font-size: 13px;
+    background: var(--panel-2); border: 1px solid var(--line); cursor: grab; user-select: none; -webkit-user-select: none;
+    position: relative;
+  }
+  .chip .grip { color: var(--ink-3); font-size: 12px; letter-spacing: -2px; }
+  .chip .sw { width: 9px; height: 9px; border-radius: 2px; background: var(--ink-3); }
+  .chip .x { border: 0; background: transparent; padding: 0 3px; color: var(--ink-3); font-size: 14px; line-height: 1; cursor: pointer; }
+  .chip .x:hover { color: var(--ink); }
+  .chip.dragging { opacity: 0.55; cursor: grabbing; }
+  .chip .arrow { color: var(--ink-3); margin-left: 2px; }
+  #add { max-width: 11em; }
+  .ctls { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-left: auto; }
+  #search-wrap { position: relative; }
+  #search { width: 17em; max-width: 60vw; }
+  #results {
+    position: absolute; top: calc(100% + 4px); left: 0; z-index: 30; min-width: 100%; width: max-content; max-width: 90vw;
+    background: #161e2a; border: 1px solid var(--line); border-radius: 8px; padding: 4px; display: none; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  }
+  #results.show { display: block; }
+  #results button { display: block; width: 100%; text-align: left; background: transparent; border: 0; border-radius: 5px; padding: 5px 8px; font-size: 13px; }
+  #results button:hover, #results button.sel { background: var(--panel-2); }
+  #results .m { color: var(--ink-2); font-size: 12px; }
+
+  /* main */
+  main { flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 14px; align-items: start; min-height: 0; }
+  #diagram-wrap { position: relative; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; overflow-x: auto; overflow-y: hidden; }
+  #diagram-wrap, #panel, #matrix { min-width: 0; }
+  #scrollhint { display: none; position: sticky; left: 0; width: 100%; text-align: right; padding: 0 10px 4px; font-size: 11px; color: var(--ink-3); pointer-events: none; margin-top: -18px; }
+  #diagram-wrap.scroll #scrollhint { display: block; }
+  #diagram { display: block; }
+  #diagram text { font-family: var(--sans); pointer-events: none; }
+  #diagram .node { cursor: grab; }
+  #diagram .node.dragging { cursor: grabbing; }
+  #diagram .flow { cursor: pointer; }
+  #status { position: absolute; left: 50%; top: 45%; transform: translate(-50%, -50%); color: var(--ink-2); font-size: 14px; text-align: center; max-width: 80%; }
+  #tip {
+    position: fixed; z-index: 40; pointer-events: none; display: none; max-width: 320px;
+    background: rgba(14, 20, 30, 0.96); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font-size: 13px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5); line-height: 1.4;
+  }
+  #tip.show { display: block; }
+  #tip .n { font-weight: 600; }
+  #tip .path { color: var(--ink); }
+  #tip .path .sep { color: var(--ink-3); margin: 0 4px; }
+  #tip ul { margin: 6px 0 0; padding: 0 0 0 1em; color: var(--ink-2); }
+  #tip li { margin: 1px 0; }
+  #tip .more { color: var(--accent); margin-top: 4px; font-size: 12px; }
+  #tip .row { display: flex; justify-content: space-between; gap: 10px; color: var(--ink-2); font-size: 12px; }
+  #tip .row b { color: var(--ink); font-weight: 500; }
+
+  /* side panel */
+  #panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; min-height: 200px; position: sticky; top: 10px; max-height: calc(100vh - 20px); overflow: auto; }
+  #panel h2 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-2); margin: 0 0 8px; font-weight: 600; }
+  #panel h3 { font-size: 15px; margin: 0 0 4px; font-weight: 600; font-family: var(--serif); }
+  #legend { display: flex; flex-wrap: wrap; gap: 3px 10px; margin-bottom: 12px; font-size: 12px; color: var(--ink-2); }
+  #legend .it { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; padding: 1px 3px; border-radius: 4px; }
+  #legend .it:hover { background: var(--panel-2); color: var(--ink); }
+  #legend .it.on { background: var(--panel-2); color: var(--ink); }
+  #legend .sw { width: 10px; height: 10px; border-radius: 2px; flex: none; }
+  #legend .c { color: var(--ink-3); }
+  #sel { font-size: 13px; }
+  #sel .path { color: var(--ink-2); margin-bottom: 6px; }
+  #sel .path .sep { color: var(--ink-3); margin: 0 4px; }
+  #sel .count { color: var(--ink); font-weight: 500; }
+  #sel .hint { color: var(--ink-3); font-size: 12px; }
+  #sel .bd { margin: 6px 0; }
+  #sel .bd h4 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-3); margin: 8px 0 3px; font-weight: 600; }
+  #sel .bar { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-2); margin: 2px 0; }
+  #sel .bar .f { height: 7px; border-radius: 2px; background: var(--accent); opacity: 0.7; flex: none; }
+  #sel .bar .t { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #sel .bar .n { color: var(--ink-3); margin-left: auto; }
+  #sel ol { margin: 6px 0 0; padding: 0 0 0 1.5em; }
+  #sel li { margin: 3px 0; color: var(--ink-2); font-size: 12.5px; }
+  #sel li a { color: var(--ink); text-decoration: none; }
+  #sel li a:hover { text-decoration: underline; }
+  #sel li .m { color: var(--ink-3); }
+  #sel .card p { margin: 6px 0; font-size: 13px; color: var(--ink-2); }
+  #sel .card .meta { color: var(--ink-2); font-size: 12.5px; }
+  #sel .card a.open { color: var(--accent); }
+  #sel .actions { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+
+  /* matrix */
+  #matrix { grid-column: 1 / -1; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+  #matrix .head { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; margin-bottom: 8px; }
+  #matrix h2 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-2); margin: 0; font-weight: 600; }
+  #matrix .scroll { overflow: auto; max-height: 70vh; }
+  table.mx { border-collapse: separate; border-spacing: 2px; font-size: 12px; }
+  table.mx th { font-weight: 500; color: var(--ink-2); text-align: left; padding: 2px 6px; white-space: nowrap; }
+  table.mx th.col { writing-mode: vertical-rl; transform: rotate(180deg); text-align: left; vertical-align: bottom; max-height: 160px; height: 160px; padding: 4px 0; overflow: hidden; }
+  table.mx th.row { position: sticky; left: 0; background: var(--bg-2); max-width: 190px; overflow: hidden; text-overflow: ellipsis; z-index: 1; }
+  table.mx th.row.on, table.mx th.col.on { color: var(--lamp); }
+  table.mx td { text-align: center; padding: 0; min-width: 32px; height: 26px; border-radius: 3px; background: rgba(255,255,255,0.03); color: var(--ink-3); font-variant-numeric: tabular-nums; cursor: pointer; }
+  table.mx td.v { color: var(--ink); }
+  table.mx td:hover { outline: 1px solid var(--lamp); }
+  table.mx td.on { outline: 2px solid var(--lamp); }
+  table.mx td.tot, table.mx th.tot { color: var(--ink-2); background: transparent; cursor: default; font-weight: 500; }
+  table.mx td.tot:hover { outline: none; }
+
+  footer { margin-top: 10px; color: var(--ink-2); font-size: 13px; }
+  footer p { margin: 0; }
+
+  @media (max-width: 1000px) {
+    main { grid-template-columns: minmax(0, 1fr); }
+    #panel { position: static; max-height: none; }
+  }
+  @media (max-width: 640px) {
+    body { padding: 10px 12px 16px; }
+    .ctls { margin-left: 0; }
+    #search { width: 100%; max-width: none; }
+    #search-wrap { flex: 1 1 100%; }
+  }
+  body.thumb header, body.thumb #toolbar, body.thumb #panel, body.thumb #matrix, body.thumb footer { display: none; }
+  body.thumb { padding: 0; }
+  body.thumb main { display: block; }
+  body.thumb #diagram-wrap { border: 0; border-radius: 0; background: transparent; }
+  body.thumb #diagram .flow.dim { fill-opacity: 0.3; }
+  body.thumb #diagram .band.dim { opacity: 0.5; }
+  body.thumb #diagram .lbl.dim { opacity: 0.6; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Flows</h1>
+  <span class="sub">The library as 889 threads braided between facets. Drag the columns; drag the nodes; hover a ribbon.</span>
+  <span class="spacer"></span>
+  <a class="back" href="../../#/bookshelf">&larr; Bookshelf</a>
+</header>
+
+<div id="toolbar">
+  <div id="cols" aria-label="columns, drag to reorder"><span class="lbl">Columns</span></div>
+  <select id="add" aria-label="add a column"><option value="">+ add column…</option></select>
+  <div class="ctls">
+    <label class="ctl">Colour <select id="color"><option value="first">first column</option><option value="genre">genre</option></select></label>
+    <label class="ctl">Order <select id="order"><option value="cross">fewest crossings</option><option value="size">by size</option><option value="natural">natural</option></select></label>
+    <span id="search-wrap">
+      <input id="search" type="search" placeholder="trace a book: title or author…" autocomplete="off" spellcheck="false" aria-label="trace a book">
+      <div id="results" role="listbox"></div>
+    </span>
+    <button id="btn-svg" title="download the diagram as SVG">SVG</button>
+    <button id="btn-png" title="download the diagram as PNG">PNG</button>
+  </div>
+</div>
+
+<main>
+  <div id="diagram-wrap">
+    <svg id="diagram" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="alluvial diagram of the library"></svg>
+    <div id="scrollhint">swipe sideways for the other columns →</div>
+    <div id="status">Loading the catalogue…</div>
+  </div>
+  <aside id="panel">
+    <h2 id="legend-title">Colour</h2>
+    <div id="legend"></div>
+    <div id="sel"><span class="hint">Hover a ribbon to see which books it carries. Click a node to light every path through it; click a ribbon to list its books here. Type a title to trace a single book.</span></div>
+  </aside>
+  <section id="matrix">
+    <div class="head">
+      <h2>Matrix</h2>
+      <label class="ctl">rows <select id="mx-a"></select></label>
+      <label class="ctl">columns <select id="mx-b"></select></label>
+      <span class="hint" style="color:var(--ink-3);font-size:12px">counts of books; click a cell to list them and light their ribbons</span>
+    </div>
+    <div class="scroll" id="mx-scroll"></div>
+  </section>
+</main>
+
+<div id="tip" role="tooltip"></div>
+
+<footer>
+  <p>An alluvial diagram drawn by hand on SVG: each column is a facet of the catalogue, each node a value, and each ribbon the set of books that share every value along its path, so thickness is always a count. Nodes are ordered by a few passes of barycentre sorting to reduce crossings. Data: <code>assets/data/library.json</code> (889 books); unit names and genre hues are the Bookshelf tab's own. No libraries, nothing leaves the browser.</p>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>

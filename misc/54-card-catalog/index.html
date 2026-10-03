@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Card Catalog</title>
+<meta name="description" content="The library as an oak card catalogue. Pull a drawer, riffle through typed 3×5 cards filed by author, title, subject, shelf or year.">
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Courier+Prime:ital@0;1&family=Caveat:wght@500&display=swap">
+<style>
+  :root {
+    --bg: #14110d;
+    --bg-2: #1f1912;
+    --ink: #ece3d0;
+    --ink-2: #b3a68e;
+    --ink-3: rgba(236, 227, 208, 0.42);
+    --line: rgba(236, 227, 208, 0.14);
+    --panel: rgba(255, 255, 255, 0.045);
+    --panel-2: rgba(255, 255, 255, 0.09);
+    --brass: #d9b45a;
+    --brass-2: #8c6a22;
+    --brass-3: #f3dc92;
+    --oak: #7d5230;
+    --oak-2: #5c391d;
+    --oak-3: #9a6a3a;
+    --oak-dark: #3d2412;
+    --cavity: #1a0f07;
+    --paper: #f1e8cf;
+    --paper-2: #e6d9b8;
+    --type: #2b2520;
+    --red: #b8403a;
+    --blue: rgba(70, 110, 160, 0.35);
+    --pencil: #6e6a62;
+    --stamp: #6b3e8e;
+    --sans: -apple-system, "Segoe UI", Helvetica, Arial, "Hiragino Sans", "Yu Gothic", "Noto Sans CJK JP", sans-serif;
+    --type-face: "Special Elite", "Courier Prime", "Courier New", Courier, monospace;
+    --type-small: "Courier Prime", "Courier New", Courier, monospace;
+    --hand: "Caveat", "Segoe Script", "Bradley Hand", cursive;
+    --mincho: "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", "Noto Serif CJK JP", "Noto Serif JP", "MS Mincho", serif;
+    --depth: 58px;
+    --cardw: 440px;
+    --cardh: calc(var(--cardw) * 0.6);
+    --dur: 0.55s;
+    --ease: cubic-bezier(0.2, 0.9, 0.25, 1);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); }
+  body {
+    font: 15px/1.45 var(--sans);
+    background: radial-gradient(1200px 600px at 50% -10%, #2a2015 0%, var(--bg) 60%), var(--bg);
+    min-height: 100vh; display: flex; flex-direction: column;
+    padding: 14px 16px 24px; overflow-x: hidden;
+  }
+  a { color: inherit; }
+  h1 { font-size: 22px; margin: 0; font-weight: 600; letter-spacing: 0.01em; }
+  header { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 10px; }
+  header .sub { color: var(--ink-2); font-size: 14px; }
+  header .spacer { flex: 1; }
+  header .back { color: var(--ink-2); text-decoration: none; font-size: 14px; }
+  header .back:hover { color: var(--ink); }
+  button {
+    font: inherit; color: var(--ink); background: var(--panel-2); border: 1px solid var(--line);
+    border-radius: 7px; padding: 6px 12px; cursor: pointer; line-height: 1.2;
+  }
+  button:hover { background: rgba(255,255,255,0.14); }
+  button:active { transform: translateY(1px); }
+  button.on { background: var(--brass); color: #1b1408; border-color: transparent; }
+  button.small { font-size: 13px; padding: 4px 10px; }
+  button:disabled { opacity: 0.4; cursor: default; }
+  button:focus-visible, input:focus-visible, select:focus-visible { outline: 1px solid var(--brass); outline-offset: 1px; }
+  input[type=search] {
+    font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 7px;
+    padding: 6px 10px; min-width: 190px;
+  }
+  input[type=search]::placeholder { color: var(--ink-3); }
+
+  /* toolbar */
+  #tools { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .seg button { border: 0; border-radius: 0; background: transparent; padding: 6px 11px; font-size: 14px; }
+  .seg button + button { border-left: 1px solid var(--line); }
+  .seg button.on { background: var(--brass); color: #1b1408; }
+  .seg button.on:hover { background: var(--brass-3); }
+  .searchwrap { display: inline-flex; align-items: center; gap: 4px; }
+  .searchwrap .hits { color: var(--ink-2); font-size: 13px; min-width: 64px; text-align: center; font-variant-numeric: tabular-nums; }
+  #tools .right { margin-left: auto; display: inline-flex; gap: 6px; flex-wrap: wrap; }
+
+  /* layout */
+  main { display: grid; grid-template-columns: minmax(300px, 640px) minmax(300px, 1fr); gap: 22px; align-items: start; flex: 1; }
+  @media (max-width: 980px) { main { grid-template-columns: 1fr; } }
+
+  /* the cabinet */
+  #cabinet {
+    position: relative; border-radius: 6px; padding: 12px 10px 14px;
+    background:
+      repeating-linear-gradient(94deg, rgba(0,0,0,0.08) 0 2px, transparent 2px 7px),
+      linear-gradient(180deg, var(--oak-2), var(--oak-dark));
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.10), inset 0 -2px 0 rgba(0,0,0,0.5), 0 24px 50px -20px rgba(0,0,0,0.9), 0 2px 0 #1b0f06;
+    perspective: 1500px; perspective-origin: 50% 22%;
+  }
+  #cabinet::before { /* top rail */
+    content: ""; position: absolute; left: 6px; right: 6px; top: 4px; height: 3px; border-radius: 2px;
+    background: linear-gradient(90deg, rgba(255,255,255,0.05), rgba(255,255,255,0.18), rgba(255,255,255,0.05));
+  }
+  #cabinet::after { /* plinth */
+    content: ""; position: absolute; left: -6px; right: -6px; bottom: -8px; height: 10px; border-radius: 3px;
+    background: linear-gradient(180deg, #4a2b14, #2a170a); box-shadow: 0 6px 14px rgba(0,0,0,0.6);
+  }
+  #cabinet .brand {
+    position: absolute; top: -3px; left: 50%; transform: translateX(-50%); padding: 1px 10px; font-size: 10px; letter-spacing: 0.18em;
+    text-transform: uppercase; color: #2a1a07; background: linear-gradient(180deg, var(--brass-3), var(--brass) 60%, var(--brass-2)); border-radius: 0 0 4px 4px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.6); white-space: nowrap;
+  }
+  #grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 5px; transform-style: preserve-3d; margin-top: 6px; }
+  .rail {
+    grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; margin: 4px 0 -2px; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: rgba(243, 220, 146, 0.75);
+  }
+  .rail::before, .rail::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, rgba(243,220,146,0.35), rgba(243,220,146,0.05)); }
+  .rail::after { background: linear-gradient(270deg, rgba(243,220,146,0.35), rgba(243,220,146,0.05)); }
+  .rail b { font-weight: 600; color: var(--brass-3); }
+
+  .drawer {
+    position: relative; height: 64px; padding: 0; margin: 0; border: 0; background: var(--cavity); border-radius: 2px;
+    transform-style: preserve-3d; cursor: pointer; font: inherit; color: inherit; text-align: left;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.9);
+  }
+  .drawer:hover { background: var(--cavity); }
+  .drawer:active { transform: none; }
+  .drawer > span, .drawer .front > span { display: block; position: absolute; }
+  .drawer .front {
+    inset: 0; border-radius: 2px; overflow: hidden;
+    background:
+      repeating-linear-gradient(92deg, rgba(0,0,0,0.07) 0 1px, transparent 1px 5px, rgba(255,255,255,0.03) 5px 6px, transparent 6px 11px),
+      linear-gradient(180deg, var(--oak-3), var(--oak) 55%, var(--oak-2));
+    background-position: var(--grain, 0) 0;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -1px 0 rgba(0,0,0,0.45), inset 1px 0 0 rgba(255,255,255,0.08), inset -1px 0 0 rgba(0,0,0,0.3);
+    transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+    transform: translateZ(0);
+  }
+  .drawer .side { top: 0; bottom: 0; width: var(--depth); background: linear-gradient(90deg, var(--oak-2), #5a3519); transition: transform var(--dur) var(--ease); }
+  .drawer .side.l { left: 0; transform-origin: left center; transform: rotateY(-90deg) scaleX(0.001); }
+  .drawer .side.r { right: 0; transform-origin: right center; transform: rotateY(90deg) scaleX(0.001); }
+  .drawer .floor { left: 0; right: 0; bottom: 0; height: var(--depth); background: linear-gradient(180deg, #4e2e15, #2f1a0a); transform-origin: top center; transform: rotateX(90deg) scaleY(0.001); transition: transform var(--dur) var(--ease); }
+  .drawer .top {
+    left: 0; right: 0; top: 0; height: var(--depth); transform-origin: top center; transform: rotateX(-90deg) scaleY(0.001); transition: transform var(--dur) var(--ease);
+    background:
+      repeating-linear-gradient(180deg, var(--paper) 0 2px, #c9bc9b 2px 3px, var(--paper-2) 3px 4px),
+      var(--paper);
+    box-shadow: inset 0 0 8px rgba(0,0,0,0.5);
+  }
+  .drawer .top::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,0.0), rgba(0,0,0,0.35)); }
+  .drawer.open .front { transform: translateZ(var(--depth)); box-shadow: inset 0 1px 0 rgba(255,255,255,0.3), 0 10px 20px rgba(0,0,0,0.6); }
+  .drawer.open .side.l { transform: rotateY(-90deg) scaleX(1); }
+  .drawer.open .side.r { transform: rotateY(90deg) scaleX(1); }
+  .drawer.open .floor { transform: rotateX(90deg) scaleY(1); }
+  .drawer.open .top { transform: rotateX(-90deg) scaleY(1); }
+  .drawer:focus-visible { outline: none; }
+  .drawer:focus-visible .front { box-shadow: inset 0 0 0 2px var(--brass-3); }
+
+  .drawer .plate {
+    left: 50%; top: 9px; transform: translateX(-50%); width: calc(100% - 16px); height: 26px; border-radius: 2px; padding: 2px;
+    background: linear-gradient(135deg, var(--brass-3), var(--brass) 40%, var(--brass-2) 75%, var(--brass-3));
+    box-shadow: 0 1px 1px rgba(0,0,0,0.6), inset 0 0 0 1px rgba(0,0,0,0.25);
+  }
+  .drawer .plate::before, .drawer .plate::after { /* screws */
+    content: ""; position: absolute; top: 50%; width: 4px; height: 4px; margin-top: -2px; border-radius: 50%;
+    background: radial-gradient(circle at 40% 35%, #fff2c0, var(--brass-2)); box-shadow: 0 0 0 0.5px rgba(0,0,0,0.5);
+  }
+  .drawer .plate::before { left: -1px; } .drawer .plate::after { right: -1px; }
+  .drawer .label {
+    display: flex; align-items: center; justify-content: center; gap: 4px; height: 100%; background: var(--paper); color: var(--type);
+    font: 11px/1 var(--type-face); letter-spacing: 0; padding: 0 3px; white-space: nowrap; overflow: hidden; border-radius: 1px;
+    box-shadow: inset 0 0 6px rgba(0,0,0,0.12);
+  }
+  .drawer .label .rng { overflow: hidden; text-overflow: ellipsis; }
+  .drawer .label .n { font: 8px/1 var(--type-small); color: var(--pencil); flex: none; }
+  .drawer .label.long .rng { font-size: 9.5px; letter-spacing: 0; }
+  .drawer .label .caret { display: inline-block; width: 1px; height: 11px; background: var(--type); animation: blink 0.8s steps(1) infinite; margin-left: 1px; }
+  .drawer.typing .label { background: #fbf4dd; }
+  @keyframes blink { 50% { opacity: 0; } }
+  .drawer .pull {
+    left: 50%; bottom: 7px; transform: translateX(-50%); width: 34px; height: 13px; border-radius: 3px 3px 9px 9px;
+    background: linear-gradient(180deg, var(--brass-3), var(--brass) 45%, var(--brass-2) 100%);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.7), inset 0 -4px 5px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.5);
+  }
+  .drawer .pull::after { content: ""; position: absolute; left: 5px; right: 5px; top: 4px; bottom: 2px; border-radius: 0 0 7px 7px; background: linear-gradient(180deg, #4a3410, #8a6a24); box-shadow: inset 0 2px 3px rgba(0,0,0,0.6); }
+  .drawer .front > .hue { left: 6px; right: 6px; top: 2px; height: 3px; border-radius: 2px; background: hsl(var(--hue, 40) 60% 55%); opacity: 0.9; display: none; }
+  .drawer.hued .front > .hue { display: block; }
+  .drawer .front > .badge {
+    right: 5px; bottom: 6px; min-width: 16px; height: 16px; border-radius: 8px; padding: 0 4px; font: 10px/16px var(--sans); text-align: center;
+    background: var(--brass-3); color: #2a1a07; box-shadow: 0 1px 2px rgba(0,0,0,0.6); display: none;
+  }
+  .drawer.hit .front > .badge { display: block; }
+  .drawer.empty .front { opacity: 0.75; }
+
+  /* the open drawer / reading tray */
+  #tray { position: relative; min-height: 420px; outline: none; }
+  #trayhead { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+  #trayhead .name { font-size: 15px; color: var(--ink); }
+  #trayhead .name b { font-weight: 600; color: var(--brass-3); }
+  #trayhead .pos { color: var(--ink-2); font-variant-numeric: tabular-nums; font-size: 13px; }
+  #trayhead .nav { margin-left: auto; display: inline-flex; gap: 6px; }
+  #box {
+    position: relative; border-radius: 6px; padding: 26px 18px 18px;
+    background:
+      repeating-linear-gradient(0deg, rgba(0,0,0,0.06) 0 1px, transparent 1px 6px),
+      linear-gradient(180deg, #3b2311, #5a3519 30%, #4a2b14);
+    box-shadow: inset 0 14px 30px rgba(0,0,0,0.6), inset 0 -2px 0 rgba(255,255,255,0.08), 0 20px 40px -18px rgba(0,0,0,0.9);
+    overflow: hidden; touch-action: pan-y; user-select: none; -webkit-user-select: none;
+  }
+  #box::before { /* drawer front edge at the bottom */
+    content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 22px;
+    background: linear-gradient(180deg, var(--oak-3), var(--oak) 50%, var(--oak-2)); box-shadow: 0 -2px 6px rgba(0,0,0,0.5); z-index: 5;
+  }
+  #box::after { /* the rod */
+    content: ""; position: absolute; left: 14px; right: 14px; bottom: 30px; height: 4px; border-radius: 2px; z-index: 4;
+    background: linear-gradient(180deg, #fff3c4, var(--brass) 50%, var(--brass-2)); box-shadow: 0 1px 2px rgba(0,0,0,0.7); opacity: 0.9;
+  }
+  #stack { position: relative; height: calc(var(--cardh) + 86px); perspective: 1100px; perspective-origin: 50% 12%; }
+  #cards { position: absolute; inset: 0; transform-style: preserve-3d; }
+  .card {
+    position: absolute; left: 50%; bottom: 36px; width: var(--cardw); height: var(--cardh); margin-left: calc(var(--cardw) / -2);
+    transform-origin: 50% 100%; backface-visibility: hidden;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.35), transparent 30%),
+      var(--paper);
+    color: var(--type); border-radius: 3px; box-shadow: 0 1px 0 rgba(0,0,0,0.25), 0 -1px 0 rgba(255,255,255,0.4) inset;
+    transition: transform 0.26s var(--ease), opacity 0.22s ease, visibility 0s linear 0.26s; will-change: transform;
+    font-family: var(--type-face); font-size: calc(var(--cardw) / 36); line-height: 1.32; overflow: hidden;
+  }
+  #stack.fast .card { transition-duration: 0.09s, 0.09s, 0s; }
+  .card.off { display: none; }
+  .card.behind { box-shadow: 0 -1px 0 rgba(0,0,0,0.18); cursor: pointer; }
+  .card.behind:hover { filter: brightness(1.04); }
+  .card.cur { box-shadow: 0 18px 30px -12px rgba(0,0,0,0.9), 0 1px 0 rgba(0,0,0,0.3); }
+  .card.lat::before { /* red vertical rule */
+    content: ""; position: absolute; left: 7.5%; top: 0; bottom: 0; width: 1px; background: var(--red); opacity: 0.55;
+  }
+  .card.lat::after { /* horizontal rule under the heading */
+    content: ""; position: absolute; left: 0; right: 0; top: 19%; height: 1px; background: var(--red); opacity: 0.45;
+  }
+  .card .rules { position: absolute; inset: 0; pointer-events: none; opacity: 0.6;
+    background: repeating-linear-gradient(180deg, transparent 0 calc(var(--cardw) / 24.5), var(--blue) calc(var(--cardw) / 24.5) calc(var(--cardw) / 24.5 + 1px));
+    background-position: 0 calc(19% + 2px); background-size: 100% 100%; mask: linear-gradient(180deg, transparent 19%, #000 19.5%);
+    -webkit-mask: linear-gradient(180deg, transparent 19%, #000 19.5%);
+  }
+  .card .callno { position: absolute; left: 1.6%; top: 3.5%; width: 5.6%; font-size: 0.74em; line-height: 1.2; color: var(--type); text-align: center; white-space: normal; overflow: hidden; }
+  .card .callno span { display: block; overflow: hidden; text-overflow: clip; white-space: nowrap; }
+  .card .body { position: absolute; left: 9.5%; right: 4%; top: 4%; bottom: 20%; }
+  .card .heading { margin: 0; font-weight: 700; letter-spacing: 0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card .ttl { margin: 0.55em 0 0; padding-left: 1.4em; text-indent: -1.4em; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .card .ttl a { color: inherit; text-decoration: none; border-bottom: 1px dotted rgba(43,37,32,0.45); }
+  .card .ttl a:hover { border-bottom-color: var(--red); color: #000; }
+  .card .imp, .card .phys { margin: 0.2em 0 0; padding-left: 1.4em; font-size: 0.95em; }
+  .card .phys { color: #3a332c; }
+  .card .note { margin: 0.45em 0 0; padding-left: 1.4em; font-family: var(--type-small); font-size: 0.82em; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; color: #332d27; }
+  .card .tracings { position: absolute; left: 9.5%; right: 4%; bottom: 10.5%; margin: 0; font-size: 0.78em; line-height: 1.25; color: #3a332c; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card .tracings i { display: inline-block; width: 0.55em; height: 0.55em; border-radius: 50%; margin: 0 0.3em 0 0; vertical-align: -0.02em; background: hsl(var(--hue, 40) 55% 50%); }
+  .card .hole { position: absolute; left: 50%; bottom: 2.2%; width: 3.4%; aspect-ratio: 1; margin-left: -1.7%; border-radius: 50%; background: radial-gradient(circle at 45% 40%, #3b2a16, #1a0f07 70%); box-shadow: inset 0 1px 2px rgba(0,0,0,0.9), 0 0 0 1px rgba(0,0,0,0.15); }
+  .card .pencil { position: absolute; font-family: var(--hand); color: var(--pencil); font-size: 1.15em; line-height: 1; transform: rotate(-6deg); opacity: 0.85; white-space: nowrap; }
+  .card .pencil.tr { right: 4%; top: 3%; }
+  .card .pencil.br { right: 5%; bottom: 14%; }
+  .card .stamp {
+    position: absolute; right: 6%; top: 6%; padding: 0.2em 0.5em; border: 2px solid var(--stamp); color: var(--stamp); font: 700 0.78em/1.1 var(--type-small);
+    letter-spacing: 0.08em; transform: rotate(7deg); opacity: 0.6; border-radius: 2px; text-align: center; white-space: nowrap;
+    -webkit-mask: radial-gradient(circle at 30% 60%, #000 60%, rgba(0,0,0,0.5)); mask: radial-gradient(circle at 30% 60%, #000 60%, rgba(0,0,0,0.5));
+  }
+  .card .tick { position: absolute; right: 4.5%; bottom: 13%; font-family: var(--hand); color: var(--pencil); font-size: 1.6em; line-height: 1; transform: rotate(-10deg); opacity: 0.8; }
+  /* Japanese vertical card */
+  .card.ja { font-family: var(--mincho); }
+  .card.ja .vbody {
+    position: absolute; top: 5%; bottom: 18%; right: 4%; left: 9%; writing-mode: vertical-rl; text-orientation: mixed; overflow: hidden; line-height: 1.5;
+  }
+  .card.ja .pencil.tr, .card.ja .pencil.br, .card.ja .tick { right: auto; left: 9%; top: auto; bottom: 20%; }
+  .card.ja .stamp { right: auto; left: 8%; top: auto; bottom: 26%; }
+  .card.ja .vbody p { margin: 0 0.25em 0 0; }
+  .card.ja .vbody .heading { font-weight: 700; margin-right: 0.3em; }
+  .card.ja .vbody .ttl { font-size: 1.1em; margin-right: 0.5em; display: block; padding: 0; text-indent: 0; }
+  .card.ja .vbody .ttl a { text-decoration: none; border-left: 1px dotted rgba(43,37,32,0.45); border-bottom: 0; }
+  .card.ja .vbody .imp, .card.ja .vbody .phys { padding: 0; font-size: 0.9em; }
+  .card.ja .vbody .note { padding: 0; margin-right: 0.6em; font-family: var(--mincho); font-size: 0.8em; display: block; }
+  .card.ja .callno { writing-mode: horizontal-tb; font-family: var(--type-face); }
+  .card.ja .tracings { font-family: var(--type-small); }
+  .card.ja::before { content: ""; position: absolute; top: 0; bottom: 0; right: 24%; width: 1px; background: var(--red); opacity: 0.45; }
+  /* guide card */
+  .card.guide { background: linear-gradient(180deg, #e3c98f, #d6ba7f); overflow: visible; border-radius: 3px; }
+  .card.guide .tab {
+    position: absolute; top: -9%; height: 9.5%; width: 19%; left: 0; background: inherit; border-radius: 4px 4px 0 0; box-shadow: 0 -1px 0 rgba(0,0,0,0.12);
+    display: flex; align-items: center; justify-content: center; font: 700 0.95em/1 var(--type-face); color: #3a2a12; overflow: hidden; white-space: nowrap;
+  }
+  .card.guide .tab.long { font-size: 0.7em; }
+  .card.guide .gbig { position: absolute; left: 7%; top: 10%; font: 700 2.6em/1 var(--type-face); color: #3a2a12; max-width: 80%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card.guide .gsub { position: absolute; left: 7%; top: 42%; right: 7%; font-family: var(--type-small); font-size: 0.9em; color: #4b3a1c; line-height: 1.4; }
+  .card.guide .gsub ul { margin: 0.3em 0 0; padding: 0; list-style: none; columns: 2; column-gap: 1.5em; }
+  .card.guide .gsub li { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card.guide .hole { background: radial-gradient(circle at 45% 40%, #3b2a16, #1a0f07 70%); }
+  .card.guide::before, .card.guide::after { display: none; }
+  .card.guide .rules { display: none; }
+
+  #empty {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 3; pointer-events: none;
+  }
+  #empty .card { position: static; margin: 0; transform: rotateX(8deg); display: flex; align-items: center; justify-content: center; text-align: center; padding: 8%; }
+  #empty .card p { margin: 0; font-size: 1.1em; }
+
+  #guides { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+  #guides button { font: 12px/1 var(--type-face); padding: 5px 9px; border-radius: 4px 4px 2px 2px; background: #d6ba7f; color: #3a2a12; border-color: rgba(0,0,0,0.3); }
+  #guides button:hover { background: #e9d4a0; }
+  #guides button.on { background: var(--paper); }
+  #contents {
+    display: none; margin-top: 10px; max-height: 260px; overflow: auto; border: 1px solid var(--line); border-radius: 7px; background: var(--panel); padding: 6px 0;
+    font-size: 13px;
+  }
+  #contents.show { display: block; }
+  #contents button { display: block; width: 100%; text-align: left; border: 0; background: transparent; border-radius: 0; padding: 4px 12px; font-size: 13px; }
+  #contents button.g { color: var(--brass-3); font-family: var(--type-face); background: rgba(255,255,255,0.03); }
+  #contents button.cur { background: rgba(217,180,90,0.18); }
+  #contents button .y { color: var(--ink-3); margin-left: 6px; }
+  #hint { color: var(--ink-3); font-size: 12px; margin-top: 8px; }
+
+  #tip {
+    position: fixed; z-index: 50; pointer-events: none; background: #f1e8cf; color: var(--type); border-radius: 4px; padding: 6px 9px; font: 12px/1.35 var(--type-small);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.6); max-width: 300px; display: none;
+  }
+  #tip b { font-family: var(--type-face); font-weight: 700; }
+
+  footer { margin-top: 20px; color: var(--ink-2); font-size: 13px; max-width: 72em; }
+  footer p { margin: 4px 0; }
+  #warn { color: var(--brass-3); display: none; }
+
+  /* phone */
+  @media (max-width: 640px) {
+    body { padding: 10px 12px 20px; }
+    h1 { font-size: 20px; }
+    #tools .right { margin-left: 0; }
+    #grid { grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); }
+    .drawer { height: 58px; }
+    .drawer .plate { top: 7px; height: 24px; }
+    .drawer .pull { width: 28px; height: 11px; bottom: 6px; }
+    #box { padding: 20px 8px 14px; }
+    :root { --depth: 44px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    :root { --dur: 0s; }
+    .card, #stack.fast .card { transition: none; }
+    .drawer .label .caret { animation: none; }
+  }
+
+  /* print sheet */
+  #printsheet { display: none; }
+  @media print {
+    @page { margin: 0.5in; }
+    body { background: #fff; color: #000; padding: 0; display: block; }
+    header, #tools, main, footer, #tip { display: none !important; }
+    #printsheet { display: grid; grid-template-columns: repeat(2, 5in); gap: 0.2in; justify-content: center; }
+    #printsheet h2 { grid-column: 1 / -1; font: 700 14pt/1.2 var(--type-face); margin: 0 0 0.1in; color: #000; }
+    #printsheet .card { position: relative; left: auto; bottom: auto; margin: 0; width: 5in; height: 3in; transform: none; transition: none; break-inside: avoid; page-break-inside: avoid;
+      border: 1px solid #999; border-radius: 0; box-shadow: none; background: #fff; --cardw: 5in; font-size: 9.5pt; visibility: visible; }
+    #printsheet .card.guide { background: #f0e4c4; }
+    #printsheet .card .hole { box-shadow: none; background: #fff; border: 1px solid #777; }
+    #printsheet .card .rules { display: none; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Card Catalog</h1>
+  <span class="sub">The library as an oak card catalogue: 889 typed cards in drawers. Pull one.</span>
+  <span class="spacer"></span>
+  <a class="back" href="../../#/bookshelf">← Bookshelf</a>
+</header>
+
+<div id="tools">
+  <div class="seg" id="indexes" role="tablist" aria-label="Index">
+    <button data-index="author" class="on" role="tab">Author</button>
+    <button data-index="title" role="tab">Title</button>
+    <button data-index="subject" role="tab">Subject</button>
+    <button data-index="shelf" role="tab">Shelf</button>
+    <button data-index="year" role="tab">Year</button>
+  </div>
+  <div class="searchwrap">
+    <input type="search" id="q" placeholder="Find a title or author…" aria-label="Search title or author" autocomplete="off" spellcheck="false">
+    <span class="hits" id="hits"></span>
+    <button class="small" id="prev" title="Previous match (Shift+Enter)" disabled>‹</button>
+    <button class="small" id="next" title="Next match (Enter)" disabled>›</button>
+  </div>
+  <div class="right">
+    <button class="small" id="sound" aria-pressed="false" title="Drawer and card sounds">Sound: off</button>
+    <button class="small" id="print" title="Print the open drawer as 3×5 cards">Print drawer</button>
+  </div>
+</div>
+
+<main>
+  <section id="cabinet" aria-label="Cabinet">
+    <span class="brand">Library Bureau · Garland</span>
+    <div id="grid" role="list"></div>
+  </section>
+  <section id="tray" tabindex="0" aria-label="Open drawer">
+    <div id="trayhead">
+      <span class="name" id="trayname">No drawer open</span>
+      <span class="pos" id="pos"></span>
+      <span class="nav">
+        <button class="small" id="back" title="Previous card (←)">‹ prev</button>
+        <button class="small" id="fwd" title="Next card (→)">next ›</button>
+        <button class="small" id="list" title="List the cards in this drawer" aria-pressed="false">Contents</button>
+      </span>
+    </div>
+    <div id="box">
+      <div id="stack">
+        <div id="cards"></div>
+        <div id="empty"><article class="card lat"><div class="rules"></div><p>Pull a drawer to read its cards.<br><small>Wheel, arrow keys or drag to riffle.</small></p><span class="hole"></span></article></div>
+      </div>
+    </div>
+    <div id="guides"></div>
+    <div id="contents"></div>
+    <p id="hint">Wheel, ← →, PageUp/Down, Home/End, or drag the stack. Click a card edge to jump to it. Enter in the search box steps through matches.</p>
+  </section>
+</main>
+
+<footer>
+  <p id="warn">The catalogue could not be loaded (assets/data/library.json). Open this page from the site, not from a file.</p>
+  <p>How it works: every book in <a href="../../#/bookshelf">the Bookshelf</a> is typed onto a 3×5 catalogue card (heading, title / statement of responsibility, imprint, physical note, subject tracings) and filed by author heading as a cataloguer would write it (Surname, Given), by title with articles dropped, by subject, by bookcase and shelf, or by year. Japanese authors are filed in a separate kana run by reading, from a small surname table; names it cannot read go under 漢字 by code point. Pencil marks and date stamps are seeded by the card's id. Fonts: Special Elite, Courier Prime and Caveat from Google Fonts; the page works without them. Nothing leaves your browser.</p>
+</footer>
+<div id="tip" role="tooltip"></div>
+<div id="printsheet" aria-hidden="true"></div>
+<script src="app.js"></script>
+</body>
+</html>

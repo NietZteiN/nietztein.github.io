@@ -1,0 +1,55 @@
+/* Navbar cat: a 24x16 pixel tabby that lives on the bottom edge of #top-nav.
+   The stage covers the nav and is click-through; only the small .navcat box
+   (the cat's body) takes pointer events, so the links underneath stay usable. */
+
+.navcat-stage {
+	position: absolute;
+	inset: 0;
+	overflow: hidden;
+	pointer-events: none;
+	z-index: 2;
+}
+
+.navcat {
+	position: absolute;
+	left: 0;
+	bottom: 0;
+	width: 24px;
+	height: 16px;
+	pointer-events: auto;
+	cursor: pointer;
+	touch-action: manipulation;
+	-webkit-tap-highlight-color: transparent;
+	user-select: none;
+	-webkit-user-select: none;
+	will-change: transform;
+}
+
+.navcat canvas {
+	position: absolute;
+	left: 0;
+	bottom: 0;
+	display: block;
+	width: 24px;
+	height: 30px;
+	pointer-events: none;
+	image-rendering: pixelated;
+	image-rendering: crisp-edges;
+}
+
+/* Below the md breakpoint the nav collapses into a burger: no ledge to sit on. */
+@media (max-width: 767.98px) {
+	.navcat-stage {
+		display: none;
+	}
+}
+
+/* Debug sprite sheet (?gadgetDebug=navcat-sheet) */
+.navcat-sheet {
+	position: fixed;
+	left: 12px;
+	top: 70px;
+	z-index: 2000;
+	display: block;
+	image-rendering: pixelated;
+}

@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Strata</title>
+<meta name="description" content="The library as a geological section: every book is a grain of sediment laid down in the year it was first published, from Gilgamesh to this year.">
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --bg: #0f0d0b;
+    --bg-2: #1a1512;
+    --panel: rgba(255, 236, 214, 0.045);
+    --panel-2: rgba(255, 236, 214, 0.1);
+    --line: rgba(236, 220, 192, 0.15);
+    --hair: rgba(236, 220, 192, 0.07);
+    --ink: #ece2cf;
+    --ink-2: #ab9d86;
+    --ink-3: rgba(236, 226, 207, 0.42);
+    --lamp: #ffd27a;
+    --accent: #d9a55a;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif CJK JP", serif;
+    --sans: -apple-system, "Segoe UI", Helvetica, Arial, "Hiragino Sans", "Yu Gothic", "Noto Sans CJK JP", sans-serif;
+    --cond: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, "Cascadia Mono", Consolas, Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); }
+  body {
+    font: 15px/1.45 var(--sans);
+    background: radial-gradient(110% 70% at 50% 0%, var(--bg-2) 0%, var(--bg) 70%);
+    min-height: 100vh; display: flex; flex-direction: column;
+    padding: 12px 16px 16px; overflow-x: hidden;
+  }
+  a { color: inherit; }
+  h1 { font-size: 24px; margin: 0; font-weight: 600; letter-spacing: 0.08em; font-family: var(--cond); text-transform: uppercase; }
+  header { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; max-width: 1400px; width: 100%; align-self: center; }
+  header .sub { color: var(--ink-2); font-size: 14px; }
+  header .spacer { flex: 1; }
+  header .back { color: var(--ink-2); font-size: 14px; text-decoration: none; }
+  header .back:hover { color: var(--ink); }
+
+  .bar { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; max-width: 1400px; width: 100%; align-self: center; margin-bottom: 8px; }
+  .bar .grow { flex: 1; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
+  .seg button { border: 0; border-radius: 0; background: transparent; }
+  .seg button + button { border-left: 1px solid var(--line); }
+  button {
+    font: inherit; font-size: 13px; color: var(--ink); background: var(--panel-2); border: 1px solid var(--line);
+    border-radius: 7px; padding: 5px 10px; cursor: pointer; line-height: 1.2; white-space: nowrap;
+  }
+  button:hover { background: rgba(255,236,214,0.16); }
+  button:active { transform: translateY(1px); }
+  button.on, .seg button.on { background: var(--accent); color: #1a120a; border-color: transparent; }
+  button:focus-visible, input:focus-visible, select:focus-visible { outline: 1px solid var(--lamp); outline-offset: 1px; }
+  #search { font: inherit; font-size: 14px; color: var(--ink); background: rgba(0,0,0,0.3); border: 1px solid var(--line); border-radius: 7px; padding: 5px 10px; width: 15em; max-width: 100%; }
+  #search::placeholder { color: var(--ink-3); }
+  .hits { font-family: var(--cond); font-size: 14px; color: var(--ink-2); min-width: 4.5em; letter-spacing: 0.03em; }
+  .hits b { color: var(--lamp); font-weight: 500; }
+  label.lbl { color: var(--ink-3); font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; font-family: var(--cond); margin-left: 4px; }
+
+  /* stat tiles */
+  #era { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; max-width: 1400px; width: 100%; align-self: center; margin-bottom: 8px; }
+  .tile { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px 7px; min-width: 0; cursor: default; }
+  .tile.link { cursor: pointer; }
+  .tile.link:hover { background: var(--panel-2); }
+  .tile .k { font-family: var(--cond); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-3); }
+  .tile .v { font-family: var(--cond); font-size: 26px; font-weight: 500; line-height: 1.1; letter-spacing: 0.01em; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .tile .v small { font-size: 14px; color: var(--ink-2); font-weight: 400; margin-left: 4px; }
+  .tile .s { font-size: 12px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+
+  /* the section */
+  main { flex: 1; display: flex; flex-direction: column; align-items: center; width: 100%; }
+  #stage { position: relative; width: 100%; max-width: 1400px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: #0c0a09; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+  #view { display: block; width: 100%; height: 100%; cursor: crosshair; }
+  #tip { position: absolute; pointer-events: none; display: none; max-width: 300px; background: rgba(22, 17, 13, 0.96); border: 1px solid rgba(236,220,192,0.3); border-radius: 7px; padding: 7px 10px; font-size: 13px; line-height: 1.35; box-shadow: 0 8px 24px rgba(0,0,0,0.6); z-index: 3; }
+  #tip.show { display: block; }
+  #tip .t { font-family: var(--serif); font-size: 14.5px; font-weight: 600; }
+  #tip .m { color: var(--ink-2); font-size: 12.5px; }
+  #tip .y { font-family: var(--cond); font-size: 15px; color: var(--lamp); letter-spacing: 0.03em; }
+  #tip i.sw { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+  #msg { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; text-align: center; padding: 20px; color: var(--ink-2); font-size: 15px; background: #0c0a09; z-index: 4; }
+  #msg.show { display: flex; }
+  #hint { position: absolute; left: 12px; top: 8px; font-family: var(--cond); font-size: 12px; letter-spacing: 0.06em; color: var(--ink-3); pointer-events: none; text-transform: uppercase; }
+
+  /* legend */
+  #legend { display: flex; flex-wrap: wrap; gap: 4px 10px; max-width: 1400px; width: 100%; align-self: center; margin-top: 8px; font-size: 12px; color: var(--ink-2); }
+  #legend button { background: transparent; border: 0; padding: 2px 4px; font-size: 12px; color: var(--ink-2); display: inline-flex; align-items: center; gap: 6px; border-radius: 4px; }
+  #legend button:hover { color: var(--ink); background: var(--panel); }
+  #legend button.dim { opacity: 0.35; }
+  #legend button.on { color: var(--ink); background: var(--panel-2); }
+  #legend i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+  #legend .n { font-family: var(--cond); color: var(--ink-3); letter-spacing: 0.03em; }
+
+  /* book card */
+  #shade { position: fixed; inset: 0; background: rgba(4, 3, 2, 0.7); display: none; z-index: 5; }
+  #shade.show { display: block; }
+  #card { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(560px, calc(100% - 28px)); max-height: calc(100% - 28px);
+    overflow: auto; display: none; background: #1d1611; border: 1px solid rgba(236,220,190,0.25); border-radius: 10px; padding: 18px 20px 16px; z-index: 6;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.7), inset 0 0 0 1px rgba(0,0,0,0.6); }
+  #card.show { display: block; }
+  #card .spine { position: absolute; left: 0; top: 0; bottom: 0; width: 8px; border-radius: 10px 0 0 10px; }
+  #card .year { font-family: var(--cond); font-size: 34px; font-weight: 500; color: var(--lamp); line-height: 1; letter-spacing: 0.02em; margin-bottom: 4px; }
+  #card .year small { font-size: 13px; color: var(--ink-2); font-weight: 400; letter-spacing: 0.06em; margin-left: 8px; text-transform: uppercase; }
+  #card h2 { margin: 0 0 4px; font-family: var(--serif); font-size: 22px; font-weight: 600; line-height: 1.25; padding-right: 36px; overflow-wrap: anywhere; }
+  #card .by { color: var(--ink-2); margin-bottom: 10px; font-size: 14px; }
+  #card .meta { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--ink-2); margin-bottom: 10px; letter-spacing: 0.03em; text-transform: uppercase; }
+  #card .meta b { color: var(--ink); font-weight: 600; text-transform: none; letter-spacing: 0; }
+  #card p { margin: 0; font-family: var(--serif); font-size: 15.5px; line-height: 1.55; }
+  #card .links { margin-top: 14px; display: flex; gap: 8px 16px; flex-wrap: wrap; font-size: 14px; align-items: center; }
+  #card .links a.main { color: var(--lamp); font-weight: 600; text-decoration: none; }
+  #card .links a.main:hover { text-decoration: underline; }
+  #card .links a.free { color: var(--ink-2); }
+  #card .loc { margin-top: 10px; font-family: var(--mono); font-size: 12px; color: var(--ink-3); }
+  #card .close { position: absolute; right: 10px; top: 10px; width: 30px; height: 30px; padding: 0; border-radius: 50%; font-size: 16px; }
+
+  /* help */
+  .overlay { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(6, 4, 3, 0.84); padding: 18px; z-index: 7; }
+  .overlay.show { display: flex; }
+  .overlay .box { max-width: 520px; max-height: calc(100vh - 36px); overflow: auto; background: var(--bg-2); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; }
+  .overlay h2 { margin: 0 0 8px; font-size: 20px; font-weight: 600; font-family: var(--cond); letter-spacing: 0.08em; text-transform: uppercase; }
+  .overlay p { margin: 8px 0; font-size: 14px; }
+  .overlay p.lic { color: var(--ink-2); font-size: 13px; }
+  .overlay .keys { display: inline-grid; grid-template-columns: auto auto; gap: 4px 14px; margin: 8px 0; font-size: 13px; color: var(--ink-2); }
+  kbd { font-family: inherit; background: var(--panel-2); border: 1px solid var(--line); border-radius: 4px; padding: 0 6px; color: var(--ink); }
+  footer { margin-top: 10px; color: var(--ink-2); font-size: 13px; max-width: 1400px; width: 100%; align-self: center; }
+  footer p { margin: 0; }
+
+  @media (max-width: 720px) {
+    body { padding: 10px 12px 14px; }
+    #era { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    #era .tile:first-child { grid-column: span 2; }
+    .tile .v { font-size: 22px; }
+    #search { width: 100%; }
+    .bar .grow { display: none; }
+    #hint { display: none; }
+  }
+  body.thumb .bar, body.thumb #era, body.thumb #legend, body.thumb footer { display: none; }
+  body.thumb { padding-bottom: 12px; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Strata</h1>
+  <span class="sub">The library as a geological section: one grain per book, laid down in the year it was first published.</span>
+  <span class="spacer"></span>
+  <a class="back" href="../../#/bookshelf">&larr; Bookshelf</a>
+</header>
+
+<div class="bar" id="bar">
+  <input id="search" type="search" placeholder="find a title or author…" autocomplete="off" spellcheck="false" aria-label="search the library">
+  <span class="hits" id="hits"></span>
+  <button id="btn-prev" class="small" title="previous hit (Shift+Enter)">&#9664;</button>
+  <button id="btn-next" class="small" title="next hit (Enter)">&#9654;</button>
+  <span class="grow"></span>
+  <label class="lbl">layers</label>
+  <span class="seg" id="layers">
+    <button data-l="blocks">blocks</button>
+    <button data-l="streams">streams</button>
+    <button data-l="both" class="on">both</button>
+  </span>
+  <label class="lbl">colour</label>
+  <span class="seg" id="paint">
+    <button data-p="genre" class="on">genre</button>
+    <button data-p="lang">language</button>
+  </span>
+  <button id="btn-events" class="on" title="historical and literary markers (E)">events</button>
+  <button id="btn-authors" title="ribbons across each author's publication span (A)">authors</button>
+  <label class="lbl">zoom</label>
+  <span class="seg" id="zooms">
+    <button data-z="all" class="on">all</button>
+    <button data-z="1800">1800–</button>
+    <button data-z="1900">1900–</button>
+    <button data-z="1950">1950–</button>
+    <button data-z="2000">2000–</button>
+  </span>
+  <button id="btn-png" title="download the section as a PNG (P)">png</button>
+  <button id="btn-help" title="how to read this (?)">?</button>
+</div>
+
+<div id="era" aria-live="polite"></div>
+
+<main>
+  <div id="stage">
+    <canvas id="view" width="1200" height="560"></canvas>
+    <div id="hint">drag to zoom a range · wheel to zoom · double-click resets</div>
+    <div id="tip" role="tooltip"></div>
+    <div id="msg"></div>
+  </div>
+  <div id="legend"></div>
+</main>
+
+<div id="shade"></div>
+<div id="card" role="dialog" aria-modal="true" aria-labelledby="card-title">
+  <div class="spine" id="card-spine"></div>
+  <button class="close" id="card-close" aria-label="close">&times;</button>
+  <div class="year" id="card-year"></div>
+  <h2 id="card-title"></h2>
+  <div class="by" id="card-by"></div>
+  <div class="meta" id="card-meta"></div>
+  <p id="card-desc"></p>
+  <div class="links" id="card-links"></div>
+  <div class="loc" id="card-loc"></div>
+</div>
+
+<div class="overlay" id="help">
+  <div class="box">
+    <h2>Strata</h2>
+    <p>Time runs left to right. Everything before 1800 is folded into the compressed deep-time zone on the left (the torn edge marks the fold); from 1800 on, every year has its own column at full width. Each small block is one book, stacked in its year and sorted by genre so the columns band like sediment. Behind them, the streams show books per decade by genre.</p>
+    <p>Books whose first-publication year is not known sit in the hatched band at the bottom: when the catalogue gives a rough date ("2010s", "5th c. BC") the block is stretched over that range; otherwise it is parked at the left of the band.</p>
+    <div class="keys">
+      <span>drag</span><span>zoom to a range (wheel zooms too)</span>
+      <span>double-click</span><span>reset to the whole section</span>
+      <span>click a block</span><span>open the book card</span>
+      <span><kbd>&larr;</kbd> <kbd>&rarr;</kbd></span><span>step to the previous / next year with a book</span>
+      <span><kbd>&uarr;</kbd> <kbd>&darr;</kbd></span><span>step through the books of one year</span>
+      <span><kbd>Enter</kbd></span><span>open the selected book; in search, next hit</span>
+      <span><kbd>/</kbd></span><span>search</span>
+      <span><kbd>E</kbd> <kbd>A</kbd> <kbd>P</kbd></span><span>events, author ribbons, PNG</span>
+      <span><kbd>Esc</kbd></span><span>close</span>
+    </div>
+    <p class="lic">Data: the house catalogue (<code>assets/data/library.json</code>, 889 books). Genre colours are the site's own. The event markers are a hand-picked dozen. No libraries, nothing leaves the browser.</p>
+    <p><button id="help-close">close</button></p>
+  </div>
+</div>
+
+<footer>
+  <p>A stratigraphic section of one real library: every book is a grain laid down in its first-publication year, stacked by genre so each column bands like sediment, with a streamgraph of books per decade behind it. Data: the house catalogue (889 books, first-publication years as catalogued). Drawn on a canvas, no libraries.</p>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>

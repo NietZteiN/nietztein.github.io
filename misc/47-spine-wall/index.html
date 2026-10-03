@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spine Wall</title>
+<meta name="description" content="The whole library as one continuous wall of shelves: every bookcase, every shelf, every spine drawn to size in its real position. Scroll, zoom, search, and shine a torch on any book.">
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    --bg: #15110f;
+    --bg-2: #1d1715;
+    --panel: rgba(255, 255, 255, 0.045);
+    --panel-2: rgba(255, 255, 255, 0.09);
+    --line: rgba(236, 228, 210, 0.14);
+    --ink: #ece4d2;
+    --ink-2: #a89f8c;
+    --ink-3: rgba(236, 228, 210, 0.38);
+    --accent: #8fd3c0;
+    --lamp: #ffd98a;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif CJK JP", serif;
+    --sans: -apple-system, "Segoe UI", Helvetica, Arial, "Hiragino Sans", "Yu Gothic", "Noto Sans CJK JP", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); height: 100%; }
+  body {
+    font: 15px/1.45 var(--sans);
+    background: linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
+    min-height: 100vh; display: flex; flex-direction: column;
+    padding: 12px 16px 14px; overflow-x: hidden;
+  }
+  a { color: inherit; }
+  h1 { font-size: 22px; margin: 0; font-weight: 600; letter-spacing: 0.01em; font-family: var(--serif); }
+  header { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+  header .sub { color: var(--ink-2); font-size: 14px; }
+  header .spacer { flex: 1; }
+  header .tools { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  header .back { color: var(--ink-2); font-size: 14px; text-decoration: none; }
+  header .back:hover { color: var(--ink); }
+  button, select, input[type=search] {
+    font: inherit; font-size: 13px; color: var(--ink); background: var(--panel-2); border: 1px solid var(--line);
+    border-radius: 7px; padding: 5px 10px; line-height: 1.2;
+  }
+  button { cursor: pointer; }
+  button:hover { background: rgba(255,255,255,0.14); }
+  button:active { transform: translateY(1px); }
+  button.on { background: var(--accent); color: #15110f; border-color: transparent; }
+  button:disabled { opacity: 0.4; cursor: default; }
+  button:focus-visible, input:focus-visible, select:focus-visible { outline: 1px solid var(--accent); outline-offset: 1px; }
+  select { appearance: auto; background-color: #2a2422; }
+  select option { background: #2a2422; color: var(--ink); }
+  input[type=search] { width: 15em; }
+  input[type=search]::placeholder { color: var(--ink-3); }
+  .findbox { display: flex; align-items: center; gap: 4px; }
+  .findbox .hits { font-size: 12px; color: var(--ink-2); min-width: 4.5em; text-align: center; font-variant-numeric: tabular-nums; }
+  .findbox button { padding: 5px 7px; }
+
+  /* unit index and measure */
+  #nav { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+  #units { display: flex; gap: 3px; overflow-x: auto; max-width: 100%; scrollbar-width: none; }
+  #units::-webkit-scrollbar { display: none; }
+  #units button { padding: 3px 9px; font-size: 13px; font-family: var(--serif); font-weight: 600; border-radius: 5px; min-width: 2.2em; }
+  #units button.on { background: var(--lamp); color: #15110f; }
+  #measure { font-family: var(--serif); font-size: 15px; color: var(--ink); white-space: nowrap; }
+  #measure b { color: var(--lamp); font-weight: 600; }
+  #where { font-size: 12px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* the wall */
+  main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+  #stage { position: relative; flex: 1; min-height: 360px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: #211c19; touch-action: none; }
+  #stage canvas { position: absolute; left: 0; top: 0; display: block; }
+  #fx { cursor: grab; }
+  #fx:active { cursor: grabbing; }
+  #tip { position: absolute; pointer-events: none; background: rgba(21, 17, 15, 0.94); border: 1px solid var(--line); border-radius: 6px; padding: 6px 9px; font-size: 13px; max-width: 320px; z-index: 3; box-shadow: 0 6px 20px rgba(0,0,0,0.4); }
+  #tip b { display: block; font-weight: 600; font-family: var(--serif); font-size: 14px; }
+  #tip span { color: var(--ink-2); font-size: 12px; }
+  #legend { position: absolute; left: 8px; bottom: 8px; display: flex; flex-wrap: wrap; gap: 4px 10px; max-width: calc(100% - 16px); background: rgba(21, 17, 15, 0.86); border: 1px solid var(--line); border-radius: 6px; padding: 6px 9px; font-size: 12px; z-index: 2; pointer-events: none; }
+  #legend .sw { display: inline-flex; align-items: center; gap: 5px; color: var(--ink-2); }
+  #legend .sw i { width: 10px; height: 14px; border-radius: 2px; display: inline-block; }
+  #msg { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; text-align: center; padding: 20px; color: var(--ink-2); font-size: 14px; z-index: 4; pointer-events: none; }
+  #card { position: absolute; right: 10px; top: 10px; width: min(380px, calc(100% - 20px)); max-height: calc(100% - 20px); overflow: auto; background: rgba(21, 17, 15, 0.96); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px 12px; z-index: 5; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+  #card h2 { font-family: var(--serif); font-size: 18px; margin: 0 24px 4px 0; font-weight: 600; line-height: 1.3; }
+  #card .by { color: var(--ink-2); font-size: 13px; }
+  #card .meta { color: var(--ink-3); font-size: 12px; margin-top: 4px; }
+  #card p { font-size: 13px; line-height: 1.5; margin: 10px 0; color: var(--ink); }
+  #card .loc { font-size: 12px; color: var(--ink-2); margin-bottom: 10px; }
+  #card .row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  #card .row a { font-size: 13px; color: var(--accent); }
+  #card .close { position: absolute; right: 8px; top: 8px; padding: 2px 8px; font-size: 16px; line-height: 1; }
+
+  /* minimap */
+  #strip { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
+  #minimap { flex: 1; height: 44px; width: 100%; display: block; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); cursor: pointer; touch-action: none; }
+  footer { margin-top: 10px; color: var(--ink-2); font-size: 13px; }
+  footer p { margin: 0 0 4px; }
+  kbd { font-family: inherit; background: var(--panel-2); border: 1px solid var(--line); border-radius: 4px; padding: 0 6px; color: var(--ink); font-size: 12px; }
+
+  #help { position: fixed; inset: 0; background: rgba(10, 8, 7, 0.8); display: flex; align-items: center; justify-content: center; z-index: 20; padding: 16px; }
+  #help .box { background: #1d1715; border: 1px solid var(--line); border-radius: 10px; padding: 18px 22px; max-width: 560px; width: 100%; max-height: 90vh; overflow: auto; font-size: 14px; line-height: 1.55; }
+  #help h2 { font-family: var(--serif); margin: 0 0 8px; font-size: 20px; }
+  #help ul { padding-left: 18px; margin: 6px 0 12px; }
+  #help li { margin: 3px 0; }
+
+  @media (max-width: 640px) {
+    body { padding: 10px 12px 10px; }
+    h1 { font-size: 20px; }
+    header .sub { display: none; }
+    input[type=search] { width: 10em; }
+    #stage { min-height: 52vh; }
+    #measure { font-size: 14px; }
+    #where { display: none; }
+    .hide-narrow { display: none; }
+    #card { right: 6px; top: 6px; left: 6px; width: auto; }
+  }
+  @media (prefers-reduced-motion: reduce) { button:active { transform: none; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Spine Wall</h1>
+  <span class="sub">Every book in the house on one continuous wall of shelves, each spine drawn to size in its real place.</span>
+  <span class="spacer"></span>
+  <span class="tools">
+    <span class="findbox">
+      <input id="find" type="search" placeholder="find a title or author…" aria-label="find a book; the torch flies to it" autocomplete="off" spellcheck="false">
+      <span class="hits" id="hits" aria-live="polite"></span>
+      <button id="prev" title="previous match (shift+Enter)" disabled>&#9664;</button>
+      <button id="next" title="next match (Enter, N)" disabled>&#9654;</button>
+    </span>
+    <select id="paint" aria-label="X-ray paint" title="X-ray: repaint the spines by a field">
+      <option value="natural">Natural</option>
+      <option value="genre">X-ray: genre</option>
+      <option value="lang">X-ray: language</option>
+      <option value="era">X-ray: era</option>
+      <option value="free">X-ray: free e-text</option>
+      <option value="author">X-ray: same author</option>
+    </select>
+    <button id="btn-labels" class="on" aria-pressed="true" title="show or hide the titles (L)">labels</button>
+    <button id="btn-zoom-out" title="zoom out (−)">&minus;</button>
+    <button id="btn-zoom-in" title="zoom in (+)">+</button>
+    <button id="btn-fit" title="whole wall (0)">fit</button>
+    <button id="btn-export-view" class="hide-narrow" title="save the current view as a PNG">save view</button>
+    <button id="btn-export-wall" class="hide-narrow" title="render the whole wall to a tall PNG">save wall</button>
+    <button id="btn-help" title="controls and about (?)">?</button>
+    <a class="back" href="../../#/bookshelf">&larr; Bookshelf</a>
+  </span>
+</header>
+
+<div id="nav">
+  <div id="units" aria-label="jump to a bookcase"></div>
+  <span id="measure">You are 0.0 m into <span id="total">…</span> of shelf</span>
+  <span id="where"></span>
+</div>
+
+<main>
+  <div id="stage">
+    <canvas id="wall" width="800" height="400"></canvas>
+    <canvas id="fx" width="800" height="400" aria-label="the wall of shelves; drag to scroll, wheel to zoom" role="img"></canvas>
+    <div id="tip" hidden></div>
+    <div id="legend" hidden></div>
+    <div id="card" role="dialog" aria-labelledby="card-title" hidden>
+      <button class="close" id="card-close" aria-label="close">&times;</button>
+      <h2 id="card-title"></h2>
+      <div class="by" id="card-by"></div>
+      <div class="meta" id="card-meta"></div>
+      <p id="card-desc"></p>
+      <div class="loc" id="card-loc"></div>
+      <div class="row">
+        <a id="card-link" href="../../#/bookshelf">open on the Bookshelf &rarr;</a>
+        <a id="card-free" href="#" target="_blank" rel="noopener" hidden></a>
+        <button id="card-torch" class="small" title="shine the torch on this spine">torch</button>
+        <button id="card-author" class="small" title="paint every book by this author">same author</button>
+      </div>
+    </div>
+    <div id="msg">loading the catalogue…</div>
+  </div>
+</main>
+
+<div id="strip">
+  <canvas id="minimap" width="800" height="44" aria-label="minimap of the wall; click to jump"></canvas>
+</div>
+
+<footer>
+  <p><span id="count">…</span>. The bookcases are the real ones, in the site's order, shelf by shelf, book by book in catalogue position; the wood, the brass shelf plates and the clutter are drawn from the owner's descriptions. Spine sizes are assumed from type (manga 14 mm, bunko 12 mm, paperback 24 mm, hardback 34 mm, art book 32 mm, textbook 40 mm, magazine 8 mm, with a little hashed variation), so the "metres of shelf" are an estimate from those widths, not a tape measure. Colours and finishes come from publisher series where known (Harvard Classics, bunko, tankōbon, Penguin, Oxford, Vintage, ATI…) and otherwise from a stable hash of the catalogue id. Data: <code>assets/data/library.json</code>. No libraries, nothing leaves the browser.</p>
+</footer>
+
+<div id="help" hidden>
+  <div class="box">
+    <h2>Spine Wall</h2>
+    <p>One long wall: every bookcase in the house side by side, every shelf, every spine in its real position and at roughly its real size. Zoom in until you can read the titles.</p>
+    <ul>
+      <li><kbd>drag</kbd> or <kbd>←</kbd> <kbd>→</kbd> scroll along the wall (with inertia); <kbd>↑</kbd> <kbd>↓</kbd> pan when zoomed in</li>
+      <li><kbd>wheel</kbd>, pinch, <kbd>+</kbd> <kbd>−</kbd> zoom; <kbd>shift</kbd>+wheel scrolls; <kbd>0</kbd> fits the whole wall; double-click a spine to zoom to it</li>
+      <li><kbd>K · H · N …</kbd> jump to a bookcase; the strip at the bottom is a minimap, click or drag it</li>
+      <li><kbd>/</kbd> search a title or author (accent-insensitive; kana and kanji verbatim). The torch flies to the match; <kbd>Enter</kbd> or <kbd>N</kbd> steps through matches; <kbd>Esc</kbd> turns it off</li>
+      <li>hover a spine for the tooltip, click for the card and its link to the Bookshelf tab</li>
+      <li><b>X-ray</b> repaints the spines by genre (the site's hues), language, era (decade bands), whether a free e-text exists, or every book by the selected author; <kbd>L</kbd> hides the titles for a pure colour view</li>
+      <li><b>save view</b> exports what you see as a PNG; <b>save wall</b> renders the entire wall in slices to one tall stitched PNG</li>
+    </ul>
+    <p>Renders in 256 px tiles cached per zoom level so scrolling stays smooth; titles are drawn only once a spine is wide enough to read. Everything is deterministic from the catalogue ids, so the wall is the same on every visit.</p>
+    <button id="help-close">close</button>
+  </div>
+</div>
+
+<script src="wall.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

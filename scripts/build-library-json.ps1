@@ -4,7 +4,8 @@
 #   powershell -ExecutionPolicy Bypass -File scripts/build-library-json.ps1 -Xlsx path\to\catalog.xlsx
 #
 # Reads the "Library" and "Descriptions" sheets (joined on ID), keeps only rows
-# whose Status is OK or Partial (real books), and writes the public fields the
+# whose Status is OK or Partial (real books) into "books", rows whose Status is
+# "Not a book" (CDs, boxes, games and other shelf objects) into "objects", and writes the public fields the
 # Bookshelf tab needs. Photo numbers, file names, neighbours, confidence and the
 # working notes stay out of the published file. Needs only Windows PowerShell 5.1.
 
@@ -152,16 +153,18 @@ if (Test-Path $arrPath) {
 
 $counts = @{ rows = 0; books = 0; unreadable = 0; objects = 0 }
 $items = New-Object System.Collections.Generic.List[string]
+$objects = New-Object System.Collections.Generic.List[string]
 
 foreach ($r in $library) {
 	if (-not $r["ID"]) { continue }
 	$counts.rows++
+	$isObject = $false
 	switch ($r["Status"]) {
 		"Unreadable" { $counts.unreadable++; continue }
-		"Not a book" { $counts.objects++; continue }
+		"Not a book" { $counts.objects++; $isObject = $true }
 	}
-	if ($r["Status"] -ne "OK" -and $r["Status"] -ne "Partial") { continue }
-	$counts.books++
+	if (-not $isObject -and $r["Status"] -ne "OK" -and $r["Status"] -ne "Partial") { continue }
+	if (-not $isObject) { $counts.books++ }
 
 	$d = $descById[$r["ID"]]
 	$yearRaw = if ($d) { $d["Year (first pub. or edition)"] } else { "" }
@@ -196,13 +199,14 @@ foreach ($r in $library) {
 		if ($f.note) { $ff += ',"note":' + (Json-String $f.note) }
 		$fields += ('"free":{' + $ff + '}')
 	}
-	$items.Add("{" + ($fields -join ",") + "}")
+	if ($isObject) { $objects.Add("{" + ($fields -join ",") + "}") } else { $items.Add("{" + ($fields -join ",") + "}") }
 }
 
 $json = "{`n" +
 	'"generated":' + (Json-String (Get-Date -Format "yyyy-MM-dd")) + ",`n" +
 	'"counts":{"rows":' + $counts.rows + ',"books":' + $counts.books + ',"unreadable":' + $counts.unreadable + ',"objects":' + $counts.objects + "},`n" +
-	'"books":[' + "`n" + ($items -join ",`n") + "`n]}`n"
+	'"books":[' + "`n" + ($items -join ",`n") + "`n],`n" +
+	'"objects":[' + "`n" + ($objects -join ",`n") + "`n]}`n"
 
 $outPath = $Out
 if (-not [System.IO.Path]::IsPathRooted($outPath)) { $outPath = Join-Path (Get-Location).Path $outPath }

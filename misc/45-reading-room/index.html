@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Reading Room</title>
+<meta name="description" content="The library as an isometric room: every real bookcase with its real books in shelf order, the CDs and game boxes and trophies beside them. Walk up to a case and press E.">
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    --bg: #110e0c;
+    --bg-2: #1d1612;
+    --panel: #1c1511;
+    --panel-2: rgba(255, 236, 210, 0.08);
+    --line: rgba(240, 222, 190, 0.16);
+    --ink: #efe4cf;
+    --ink-2: #ad9d86;
+    --ink-3: rgba(239, 228, 207, 0.45);
+    --lamp: #ffcf7a;
+    --accent: #e0a44a;
+    --ok: #7fc48a;
+    --bad: #e06a5a;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif CJK JP", serif;
+    --sans: -apple-system, "Segoe UI", Helvetica, Arial, "Hiragino Sans", "Yu Gothic UI", "Yu Gothic", "Noto Sans CJK JP", sans-serif;
+    --mono: ui-monospace, "Cascadia Mono", Consolas, Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); }
+  body {
+    font: 15px/1.45 var(--sans);
+    background: radial-gradient(120% 90% at 50% 0%, var(--bg-2) 0%, var(--bg) 70%);
+    min-height: 100vh; display: flex; flex-direction: column;
+    padding: 12px 16px 16px; overflow-x: hidden;
+  }
+  a { color: inherit; }
+  h1 { font-size: 22px; margin: 0; font-weight: 600; letter-spacing: 0.01em; font-family: var(--serif); }
+  header { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+  header .sub { color: var(--ink-2); font-size: 14px; }
+  header .spacer { flex: 1; }
+  header .tools { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  header .back { color: var(--ink-2); font-size: 14px; text-decoration: none; white-space: nowrap; }
+  header .back:hover { color: var(--ink); }
+  button {
+    font: inherit; color: var(--ink); background: var(--panel-2); border: 1px solid var(--line);
+    border-radius: 7px; padding: 5px 11px; cursor: pointer; line-height: 1.2; font-size: 13px;
+  }
+  button:hover { background: rgba(255,236,210,0.14); }
+  button:active { transform: translateY(1px); }
+  button.on { background: var(--accent); color: #1a120a; border-color: transparent; }
+  button:focus-visible, input:focus-visible { outline: 1px solid var(--lamp); outline-offset: 1px; }
+  .search { position: relative; }
+  input[type=search] {
+    font: inherit; font-size: 13px; color: var(--ink); background: rgba(0,0,0,0.3); border: 1px solid var(--line);
+    border-radius: 7px; padding: 5px 9px; width: 16em; max-width: 52vw;
+  }
+  input[type=search]::placeholder { color: var(--ink-3); }
+  #results { position: absolute; left: 0; top: calc(100% + 4px); z-index: 20; min-width: 100%; width: max(100%, 320px); max-width: 90vw;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 12px 40px rgba(0,0,0,0.6); display: none; overflow: hidden; }
+  #results.show { display: block; }
+  #results div { padding: 6px 10px; font-size: 13px; cursor: pointer; display: flex; gap: 8px; align-items: baseline; }
+  #results div:hover, #results div.sel { background: rgba(255,236,210,0.1); }
+  #results i { display: inline-block; width: 7px; height: 14px; border-radius: 1px; flex: none; align-self: center; }
+  #results b { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #results small { color: var(--ink-2); white-space: nowrap; margin-left: auto; }
+
+  main { flex: 1; display: flex; flex-direction: column; align-items: center; min-height: 0; }
+  #stage {
+    position: relative; width: 100%; max-width: 1280px; aspect-ratio: 16 / 10;
+    max-height: calc(100vh - 150px); min-height: 300px;
+    background: #0d0a08; border: 1px solid var(--line); border-radius: 8px; overflow: hidden;
+    touch-action: none; user-select: none; -webkit-user-select: none;
+    box-shadow: 0 14px 50px rgba(0,0,0,0.6);
+  }
+  #view { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: default; }
+  #view.grab { cursor: grab; }
+  #view.pointer { cursor: pointer; }
+  #view.move { cursor: move; }
+  #hud {
+    position: absolute; left: 10px; right: 10px; bottom: 8px; display: flex; justify-content: space-between; gap: 10px; align-items: flex-end;
+    pointer-events: none; font-size: 13px; color: var(--ink); text-shadow: 0 1px 2px #000, 0 0 6px rgba(0,0,0,0.9);
+  }
+  #hud .where { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #hud .where b { color: var(--lamp); font-weight: 600; }
+  #hud .keys { color: var(--ink-2); font-size: 12px; text-align: right; white-space: nowrap; }
+  kbd { font-family: inherit; background: rgba(0,0,0,0.5); border: 1px solid rgba(240,222,190,0.28); border-radius: 4px; padding: 0 5px; color: var(--ink); font-size: 0.92em; }
+  #legend { position: absolute; left: 10px; top: 10px; display: flex; gap: 4px; align-items: center; pointer-events: auto; }
+  #legend button { padding: 3px 8px; font-size: 12px; background: rgba(12,9,7,0.6); }
+  #legend button.on { background: var(--accent); }
+  #tip { position: absolute; z-index: 8; pointer-events: none; display: none; max-width: 300px; background: rgba(14,11,9,0.95); border: 1px solid var(--line);
+    border-radius: 6px; padding: 5px 9px; font-size: 12.5px; line-height: 1.35; box-shadow: 0 6px 20px rgba(0,0,0,0.5); }
+  #tip.show { display: block; }
+  #tip b { font-weight: 600; }
+  #tip span { color: var(--ink-2); }
+  #msg { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; text-align: center; padding: 20px; color: var(--ink-2); font-size: 15px; background: #0d0a08; }
+  #msg.show { display: flex; }
+
+  /* arrange toolbar */
+  #arrbar { position: absolute; left: 10px; right: 10px; top: 10px; display: none; gap: 6px; flex-wrap: wrap; align-items: center; z-index: 4;
+    background: rgba(14,11,9,0.82); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; font-size: 13px; }
+  #arrbar.show { display: flex; }
+  #arrbar .hint { color: var(--ink-2); font-size: 12px; margin-left: auto; }
+  #arrbar .sel { color: var(--lamp); min-width: 8em; }
+  #arrbar input[type=file] { display: none; }
+  #stage.arranging #legend { display: none; }
+
+  /* shelf view */
+  #shelf { position: absolute; inset: 0; z-index: 6; display: none; background: rgba(10,7,5,0.9); backdrop-filter: blur(2px); }
+  #shelf.show { display: flex; flex-direction: column; }
+  #shelf .top { display: flex; gap: 14px; align-items: flex-start; padding: 14px 18px 8px; border-bottom: 1px solid var(--line); flex: none; }
+  #shelf h2 { margin: 0 0 2px; font-family: var(--serif); font-size: 21px; font-weight: 600; }
+  #shelf .desc { color: var(--ink-2); font-size: 13px; max-width: 70ch; }
+  #shelf .count { color: var(--ink-3); font-size: 12px; margin-top: 3px; font-family: var(--mono); }
+  #shelf .cutin { flex: none; margin-left: auto; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  #cutin { width: 170px; height: 104px; border-radius: 6px; background: rgba(0,0,0,0.35); border: 1px solid var(--line); }
+  #shelf .cutin small { color: var(--ink-3); font-size: 11px; }
+  #shelf .close { width: 30px; height: 30px; padding: 0; border-radius: 50%; font-size: 16px; flex: none; }
+  #shelves { flex: 1; overflow: auto; padding: 10px 18px 18px; }
+  .col-title { color: var(--ink-3); font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; margin: 10px 0 2px; }
+  .shelfrow { margin: 6px 0 14px; }
+  .shelfrow .name { font-size: 12.5px; color: var(--ink-2); margin-bottom: 4px; display: flex; gap: 10px; align-items: baseline; }
+  .shelfrow .name b { color: var(--ink); font-weight: 600; }
+  .shelfrow .name small { color: var(--ink-3); font-family: var(--mono); font-size: 11px; }
+  .board { display: flex; align-items: flex-end; gap: 1px; padding: 6px 8px 0; min-height: 60px; overflow-x: auto; overflow-y: hidden;
+    border-bottom: 5px solid #6e4b2c; background: linear-gradient(180deg, rgba(0,0,0,0) 60%, rgba(0,0,0,0.25)); border-radius: 2px 2px 0 0; }
+  .board.pine { border-bottom-color: #c9a469; } .board.black { border-bottom-color: #3a3632; } .board.cherry { border-bottom-color: #6b3328; }
+  .board.cream { border-bottom-color: #e2d4b8; } .board.white { border-bottom-color: #e9e7e2; } .board.lightwood { border-bottom-color: #d2b48c; }
+  .board.wire { border-bottom-color: #9a9ca3; border-bottom-style: dotted; } .board.cardboard { border-bottom-color: #b08a5a; } .board.desk { border-bottom-color: #8a5a34; }
+  .spine { flex: none; display: flex; align-items: flex-start; justify-content: center; border: 0; padding: 4px 0 0; margin: 0; border-radius: 2px 2px 0 0; cursor: pointer;
+    writing-mode: vertical-rl; text-orientation: mixed; font-size: 11px; line-height: 1; color: rgba(255,255,255,0.92); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    box-shadow: inset 1px 0 0 rgba(255,255,255,0.22), inset -1px 0 0 rgba(0,0,0,0.3); text-shadow: 0 0 2px rgba(0,0,0,0.6); word-break: keep-all; }
+  .spine:hover { filter: brightness(1.18); }
+  .spine.pulse { animation: pulse 0.9s ease-in-out 4; }
+  @keyframes pulse { 0%, 100% { transform: translateY(0); filter: brightness(1); } 50% { transform: translateY(-10px); filter: brightness(1.5); } }
+  .spine.hit { outline: 2px solid var(--lamp); outline-offset: 1px; }
+  .prop { flex: none; display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer; margin: 0 3px; }
+  .prop canvas { display: block; }
+  .prop small { font-size: 10px; color: var(--ink-3); max-width: 70px; text-align: center; line-height: 1.1; }
+  .prop:hover small { color: var(--ink); }
+
+  /* book card */
+  #shade { position: absolute; inset: 0; z-index: 9; background: rgba(4, 3, 2, 0.72); display: none; }
+  #shade.show { display: block; }
+  #card { position: absolute; z-index: 10; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(560px, calc(100% - 28px)); max-height: calc(100% - 28px);
+    overflow: auto; display: none; background: #1d1611; border: 1px solid rgba(240,222,190,0.25); border-radius: 10px; padding: 18px 20px 16px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.7), inset 0 0 0 1px rgba(0,0,0,0.6); }
+  #card.show { display: block; }
+  #card .spinebar { position: absolute; left: 0; top: 0; bottom: 0; width: 8px; border-radius: 10px 0 0 10px; }
+  #card h2 { margin: 0 0 4px; font-family: var(--serif); font-size: 22px; font-weight: 600; line-height: 1.2; padding-right: 36px; }
+  #card .by { color: var(--ink-2); margin-bottom: 10px; font-size: 14px; }
+  #card .meta { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--ink-2); margin-bottom: 10px; letter-spacing: 0.03em; text-transform: uppercase; }
+  #card .meta b { color: var(--ink); font-weight: 600; text-transform: none; letter-spacing: 0; }
+  #card p { margin: 0; font-family: var(--serif); font-size: 15.5px; line-height: 1.55; }
+  #card .loc { margin-top: 12px; font-family: var(--mono); font-size: 12px; color: var(--ink-3); display: flex; gap: 14px; flex-wrap: wrap; }
+  #card .loc a { color: var(--ink-2); }
+  #card .close { position: absolute; right: 10px; top: 10px; width: 30px; height: 30px; padding: 0; border-radius: 50%; font-size: 16px; }
+
+  /* help */
+  .overlay { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(6, 4, 3, 0.84); padding: 18px; z-index: 30; }
+  .overlay.show { display: flex; }
+  .overlay .box { max-width: 520px; max-height: calc(100vh - 36px); overflow: auto; background: var(--bg-2); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; }
+  .overlay h2 { margin: 0 0 8px; font-size: 20px; font-weight: 600; font-family: var(--serif); }
+  .overlay p { margin: 8px 0; font-size: 14px; }
+  .overlay p.lic { color: var(--ink-2); font-size: 13px; }
+  .overlay .keys { display: inline-grid; grid-template-columns: auto auto; gap: 4px 14px; margin: 8px 0; font-size: 13px; color: var(--ink-2); }
+
+  footer { margin-top: 10px; color: var(--ink-2); font-size: 13px; max-width: 1280px; width: 100%; align-self: center; }
+  footer p { margin: 0; }
+  footer code { font-family: var(--mono); font-size: 12px; }
+
+  @media (max-width: 640px) {
+    body { padding: 10px 12px 12px; }
+    h1 { font-size: 20px; }
+    header .sub { display: none; }
+    input[type=search] { width: 10em; }
+    #stage { aspect-ratio: 4 / 5; max-height: calc(100vh - 170px); border-radius: 6px; }
+    #hud { font-size: 12px; }
+    #hud .keys { display: none; }
+    #shelf .top { padding: 10px 12px 6px; flex-wrap: wrap; }
+    #shelf .cutin { order: 3; margin-left: 0; }
+    #cutin { width: 120px; height: 74px; }
+    #shelves { padding: 8px 12px 14px; }
+    #arrbar .hint { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { .spine.pulse { animation: none; outline: 2px solid var(--lamp); } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Reading Room</h1>
+  <span class="sub">The library as a room. Walk up to a bookcase and press E.</span>
+  <span class="spacer"></span>
+  <span class="tools">
+    <span class="search">
+      <input id="find" type="search" placeholder="find a book…" aria-label="find a book and fly to its shelf" autocomplete="off" spellcheck="false">
+      <div id="results" role="listbox"></div>
+    </span>
+    <button id="btn-mode" title="walk with an avatar, or pan and zoom freely (Tab)">walk</button>
+    <button id="btn-labels" title="label the bookcases (L)">labels</button>
+    <button id="btn-night" title="night: lamps only (N)">night</button>
+    <button id="btn-arrange" title="move the furniture to match the real room">arrange</button>
+    <button id="btn-help" title="controls and about (?)">?</button>
+    <a class="back" href="../../#/bookshelf">&larr; Bookshelf</a>
+  </span>
+</header>
+
+<main>
+  <div id="stage">
+    <canvas id="view" width="1280" height="800"></canvas>
+    <div id="legend"></div>
+    <div id="hud"><span class="where" id="where">loading the catalogue…</span><span class="keys" id="keys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> walk · click the floor to go there · <kbd>E</kbd> browse the case you are facing · wheel to zoom</span></div>
+    <div id="tip"></div>
+    <div id="arrbar">
+      <span class="sel" id="arr-sel">click a piece</span>
+      <button id="arr-rotate" title="rotate the selected piece (R)">rotate</button>
+      <button id="arr-undo" title="undo (Ctrl+Z)">undo</button>
+      <button id="arr-reset" title="back to the default plan">reset</button>
+      <button id="arr-export" title="download the layout as JSON">export layout JSON</button>
+      <button id="arr-import" title="load a layout JSON">import</button>
+      <input id="arr-file" type="file" accept="application/json,.json">
+      <span class="hint">drag a piece to a tile · <kbd>R</kbd> rotate · red means it overlaps · saved automatically</span>
+      <button id="arr-done" class="on">done</button>
+    </div>
+    <div id="shelf" role="dialog" aria-modal="true" aria-labelledby="shelf-title">
+      <div class="top">
+        <div>
+          <h2 id="shelf-title"></h2>
+          <div class="desc" id="shelf-desc"></div>
+          <div class="count" id="shelf-count"></div>
+        </div>
+        <div class="cutin"><canvas id="cutin" width="340" height="208"></canvas><small>you are here</small></div>
+        <button class="close" id="shelf-close" aria-label="close">&times;</button>
+      </div>
+      <div id="shelves"></div>
+    </div>
+    <div id="shade"></div>
+    <div id="card" role="dialog" aria-modal="true" aria-labelledby="card-title">
+      <div class="spinebar" id="card-spine"></div>
+      <button class="close" id="card-close" aria-label="close">&times;</button>
+      <h2 id="card-title"></h2>
+      <div class="by" id="card-by"></div>
+      <div class="meta" id="card-meta"></div>
+      <p id="card-desc"></p>
+      <div class="loc" id="card-loc"></div>
+    </div>
+    <div id="msg"></div>
+  </div>
+</main>
+
+<footer>
+  <p>An isometric model of the room built from the catalogue: each bookcase is drawn at its real shelf count with its real books in left-to-right order, coloured by genre, and the 53 things that are not books (CDs, visual-novel boxes, notebooks, a headset, trophies, a board game) stand where they really stand. The floor plan is a guess until the owner arranges it. Data: <code>assets/data/library.json</code> (889 books); no libraries, nothing leaves the browser.</p>
+</footer>
+
+<div class="overlay" id="help">
+  <div class="box">
+    <h2>Reading Room</h2>
+    <p>Twelve bookcases, a desk, and 942 things on the shelves, each where the catalogue says it is. Walk up to a case and press <kbd>E</kbd> (or click it) to see the shelf close up; click a spine for the book.</p>
+    <div class="keys">
+      <span><kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd></span><span>walk (arrows too); or click a floor tile</span>
+      <span><kbd>E</kbd></span><span>browse the case you are standing by</span>
+      <span><kbd>Tab</kbd></span><span>switch between walking and free pan / zoom</span>
+      <span>wheel · pinch</span><span>zoom; drag to pan</span>
+      <span><kbd>L</kbd> <kbd>N</kbd></span><span>labels, night</span>
+      <span><kbd>Esc</kbd></span><span>close the shelf view</span>
+    </div>
+    <p><b>Arrange</b> turns the room into a floor-plan editor: drag a piece to a tile, <kbd>R</kbd> rotates it, overlaps show red, <kbd>Ctrl+Z</kbd> undoes. The plan is saved in this browser; <i>export layout JSON</i> writes the same shape as the default in <code>layout.js</code>, so the real room can replace the guess.</p>
+    <p class="lic">Spines come from the <code>u</code>/<code>s</code>/<code>p</code> fields of the catalogue (unit, shelf, position); widths and heights follow the kind of book. Props are drawn from words in the object's catalogue entry. The cat is also a guess.</p>
+    <p><button id="btn-close">go in</button></p>
+  </div>
+</div>
+
+<script src="layout.js"></script>
+<script src="sprites.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

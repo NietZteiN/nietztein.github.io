@@ -1,0 +1,497 @@
+/* Gadget "book3d": a floating CSS-3D book at the top of the Bookshelf tab.
+   The book itself keeps its own colours (a cover is a cover in either theme);
+   the caption uses the site tokens. Built by assets/js/gadgets/book3d.js. */
+
+.b3d-hero {
+	--b3d-w: 86px;   /* cover width  */
+	--b3d-h: 124px;  /* cover height */
+	--b3d-d: 24px;   /* block depth  */
+	display: flex;
+	align-items: center;
+	gap: 22px;
+	min-height: 166px; /* room for a two-line title so a pick never shifts the shelf */
+	margin: 0 0 22px;
+	padding: 4px 0;
+	position: relative;
+}
+
+/* ---- Stage ------------------------------------------------------------- */
+
+.b3d-stage {
+	flex: 0 0 auto;
+	width: 216px;
+	height: 144px;
+	position: relative;
+	display: block;
+	text-decoration: none;
+	outline: none;
+	border-radius: 14px;
+	-webkit-tap-highlight-color: transparent;
+	touch-action: pan-y;
+}
+
+.b3d-stage:focus-visible {
+	box-shadow: 0 0 0 3px var(--accent-ring);
+}
+
+.b3d-shadow {
+	position: absolute;
+	left: 58%;
+	bottom: 4px;
+	width: 112px;
+	height: 14px;
+	margin-left: -56px;
+	border-radius: 50%;
+	background: radial-gradient(closest-side, rgba(10, 14, 20, 0.42), rgba(10, 14, 20, 0) 100%);
+	transform-origin: center;
+	pointer-events: none;
+	will-change: transform, opacity;
+}
+
+:root[data-theme="dark"] .b3d-shadow {
+	background: radial-gradient(closest-side, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0) 100%);
+}
+
+.b3d-scene {
+	position: absolute;
+	inset: 0;
+	perspective: 560px;
+	perspective-origin: 54% 44%;
+}
+
+.b3d-book {
+	position: absolute;
+	left: calc(58% - var(--b3d-w) / 2);
+	top: calc(50% - var(--b3d-h) / 2 - 4px);
+	width: var(--b3d-w);
+	height: var(--b3d-h);
+	transform-style: preserve-3d;
+	will-change: transform;
+	cursor: pointer;
+}
+
+.b3d-book.is-ready {
+	opacity: 1;
+}
+
+/* Every face is an absolutely positioned div, pushed into place in 3D. */
+.b3d-face {
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: var(--b3d-w);
+	height: var(--b3d-h);
+	backface-visibility: hidden;
+	-webkit-backface-visibility: hidden;
+	overflow: hidden;
+	box-sizing: border-box;
+	pointer-events: none;
+}
+
+/* Lighting overlays: --sh (darkness 0..1) and --gl (gloss 0..1) are written per
+   frame by the script from the face normal and a fixed key light. */
+.b3d-face::before,
+.b3d-face::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+}
+.b3d-face::before {
+	background: linear-gradient(118deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.12) 38%, rgba(255, 255, 255, 0) 62%);
+	opacity: var(--gl, 0);
+	mix-blend-mode: screen;
+}
+.b3d-face::after {
+	background: #06080c;
+	opacity: var(--sh, 0);
+}
+
+/* Covers overhang the page block by a hair. */
+.b3d-cover {
+	position: absolute;
+	left: -1px;
+	top: -2px;
+	width: calc(var(--b3d-w) + 1px);
+	height: calc(var(--b3d-h) + 4px);
+	transform-style: preserve-3d;
+	transform-origin: left center;
+	transform: translateZ(calc(var(--b3d-d) / 2)) rotateY(var(--open, 0deg));
+	transition: transform 900ms cubic-bezier(0.6, 0.05, 0.25, 1);
+}
+.b3d-cover.is-instant { transition: none; }
+.b3d-cover .b3d-face {
+	width: calc(var(--b3d-w) + 1px);
+	height: calc(var(--b3d-h) + 4px);
+}
+
+.b3d-front,
+.b3d-back,
+.b3d-inside {
+	background: var(--cov, #3b4a7a);
+	color: var(--ink, #f4efe4);
+	border-radius: 1px 3px 3px 1px;
+	font-family: 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', Palatino, Georgia, 'Times New Roman', serif;
+}
+
+.b3d-inside {
+	transform: rotateY(180deg);
+	background:
+		linear-gradient(90deg, rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0) 12%),
+		var(--cov, #3b4a7a);
+	filter: saturate(0.6) brightness(0.86);
+	border-radius: 3px 1px 1px 3px;
+}
+
+.b3d-back {
+	transform: rotateY(180deg) translateZ(calc(var(--b3d-d) / 2));
+	left: -1px;
+	top: -2px;
+	width: calc(var(--b3d-w) + 1px);
+	height: calc(var(--b3d-h) + 4px);
+	border-radius: 3px 1px 1px 3px;
+}
+
+.b3d-spine {
+	width: var(--b3d-d);
+	height: calc(var(--b3d-h) + 4px);
+	top: -2px;
+	left: calc(var(--b3d-w) / 2 - var(--b3d-d) / 2);
+	transform: rotateY(-90deg) translateZ(calc(var(--b3d-w) / 2 + 1px));
+	transform-origin: center;
+	background:
+		linear-gradient(90deg, rgba(0, 0, 0, 0.22), rgba(255, 255, 255, 0.08) 18%, rgba(255, 255, 255, 0) 50%, rgba(0, 0, 0, 0.2)),
+		var(--cov, #3b4a7a);
+	color: var(--ink, #f4efe4);
+	font-family: 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', Palatino, Georgia, 'Times New Roman', serif;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: space-between;
+	padding: 7px 0 6px;
+}
+
+/* Page block: three faces with a fine stripe texture for the page edges. */
+.b3d-pages {
+	--paper: #efe8d6;
+	--paper-2: #d9d0b9;
+	background: var(--paper);
+}
+.b3d-fore {
+	width: var(--b3d-d);
+	height: calc(var(--b3d-h) - 2px);
+	top: 1px;
+	left: calc(var(--b3d-w) / 2 - var(--b3d-d) / 2);
+	transform: rotateY(90deg) translateZ(calc(var(--b3d-w) / 2 - 1px));
+	transform-origin: center;
+	background: repeating-linear-gradient(90deg, var(--paper) 0 1px, var(--paper-2) 1px 2px);
+}
+.b3d-top,
+.b3d-bottom {
+	width: calc(var(--b3d-w) - 2px);
+	height: var(--b3d-d);
+	left: 1px;
+	top: calc(var(--b3d-h) / 2 - var(--b3d-d) / 2);
+	transform-origin: center;
+	background: repeating-linear-gradient(180deg, var(--paper) 0 1px, var(--paper-2) 1px 2px);
+}
+.b3d-top { transform: rotateX(90deg) translateZ(calc(var(--b3d-h) / 2 - 1px)); }
+.b3d-bottom { transform: rotateX(-90deg) translateZ(calc(var(--b3d-h) / 2 - 1px)); }
+
+/* First page: sits just behind the front cover, revealed when it opens. */
+.b3d-page {
+	width: calc(var(--b3d-w) - 2px);
+	height: calc(var(--b3d-h) - 2px);
+	left: 1px;
+	top: 1px;
+	transform: translateZ(calc(var(--b3d-d) / 2 - 0.6px));
+	background:
+		linear-gradient(90deg, rgba(0, 0, 0, 0.16), rgba(0, 0, 0, 0) 14%),
+		#f6f1e4;
+	color: #2a2520;
+	padding: 9px 7px 6px 9px;
+	font-family: 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', Palatino, Georgia, 'Times New Roman', serif;
+	font-size: 6.4px;
+	line-height: 1.4;
+	border-radius: 0 2px 2px 0;
+}
+.b3d-page-h {
+	display: block;
+	font-size: 6.6px;
+	font-weight: 600;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	margin-bottom: 4px;
+	padding-bottom: 3px;
+	border-bottom: 0.5px solid rgba(42, 37, 32, 0.35);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.b3d-page-t {
+	display: block;
+	text-align: justify;
+	hyphens: auto;
+	word-break: break-word;
+}
+.b3d-page-t::after {
+	content: '';
+	display: inline-block;
+	width: 3px;
+	height: 6px;
+	margin-left: 1px;
+	vertical-align: -1px;
+	background: #2a2520;
+	opacity: 0;
+}
+.b3d-page.is-typing .b3d-page-t::after {
+	opacity: 1;
+	animation: b3d-caret 1s steps(2, start) infinite;
+}
+@keyframes b3d-caret { to { opacity: 0; } }
+
+/* ---- Cover design ----------------------------------------------------- */
+
+.b3d-front {
+	display: flex;
+	flex-direction: column;
+	padding: 12px 9px 8px 11px;
+	text-align: center;
+	border-left: 3px solid rgba(0, 0, 0, 0.22);
+}
+.b3d-front.v1 { padding-top: 16px; }
+.b3d-front.v2 {
+	justify-content: flex-end;
+	text-align: left;
+}
+.b3d-rule {
+	display: block;
+	height: 0;
+	border-top: 1px solid currentColor;
+	opacity: 0.55;
+	margin: 0 6px 7px;
+}
+.b3d-front.v1 .b3d-rule { margin: 0 0 7px; opacity: 0.7; }
+.b3d-front.v2 .b3d-rule { margin: 6px 0; width: 24px; }
+.b3d-band {
+	position: absolute;
+	left: 0;
+	right: 0;
+	height: 26px;
+	background: rgba(0, 0, 0, 0.26);
+	pointer-events: none;
+}
+.b3d-front.v1 .b3d-band { top: 0; height: 11px; background: rgba(255, 255, 255, 0.16); }
+.b3d-front.v2 .b3d-band { bottom: 0; height: 34px; background: rgba(0, 0, 0, 0.22); }
+.b3d-ct {
+	position: relative;
+	display: block;
+	font-size: 9.5px;
+	line-height: 1.18;
+	font-weight: 600;
+	letter-spacing: 0.01em;
+	max-height: 56px;
+	overflow: hidden;
+	text-wrap: balance;
+}
+.b3d-ct[lang="ja"] {
+	font-family: 'Hiragino Mincho ProN', 'Yu Mincho', 'MS Mincho', 'Noto Serif CJK JP', 'Noto Serif JP', serif;
+	font-size: 10px;
+	letter-spacing: 0.06em;
+}
+.b3d-ca {
+	position: relative;
+	display: block;
+	margin-top: 6px;
+	font-size: 6.8px;
+	line-height: 1.25;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	opacity: 0.86;
+	max-height: 17px;
+	overflow: hidden;
+}
+.b3d-ca[lang="ja"] { text-transform: none; letter-spacing: 0.1em; }
+.b3d-cp {
+	position: relative;
+	margin-top: auto;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 4px;
+	font-size: 5.6px;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+	opacity: 0.8;
+	white-space: nowrap;
+	overflow: hidden;
+}
+.b3d-front.v2 .b3d-cp { justify-content: flex-start; }
+.b3d-mark {
+	width: 9px;
+	height: 9px;
+	border: 1px solid currentColor;
+	border-radius: 50%;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 5.5px;
+	font-weight: 700;
+	line-height: 1;
+	flex: 0 0 auto;
+}
+
+.b3d-back {
+	padding: 14px 10px 10px 9px;
+	font-size: 6px;
+	line-height: 1.45;
+	border-right: 3px solid rgba(0, 0, 0, 0.22);
+}
+.b3d-bb {
+	display: block;
+	opacity: 0.85;
+	max-height: 60px;
+	overflow: hidden;
+	text-align: left;
+}
+.b3d-code {
+	position: absolute;
+	right: 9px;
+	bottom: 9px;
+	width: 30px;
+	height: 16px;
+	background:
+		repeating-linear-gradient(90deg, #111 0 1px, transparent 1px 2px, #111 2px 3px, transparent 3px 5px, #111 5px 7px, transparent 7px 8px),
+		#f4efe4;
+	border: 2px solid #f4efe4;
+	box-sizing: border-box;
+}
+
+.b3d-st {
+	writing-mode: vertical-rl;
+	text-orientation: mixed;
+	font-size: 8px;
+	font-weight: 600;
+	letter-spacing: 0.05em;
+	line-height: 1;
+	max-height: 76px;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+.b3d-st[lang="ja"] {
+	font-family: 'Hiragino Mincho ProN', 'Yu Mincho', 'MS Mincho', 'Noto Serif CJK JP', 'Noto Serif JP', serif;
+	text-orientation: upright;
+	font-size: 8.5px;
+}
+.b3d-sm {
+	font-size: 5px;
+	font-weight: 700;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	opacity: 0.85;
+	line-height: 1;
+}
+
+/* ---- Caption ------------------------------------------------------------ */
+
+.b3d-cap {
+	flex: 1 1 auto;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+}
+.b3d-kicker {
+	font-family: var(--font-mono);
+	font-size: 0.68rem;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	color: var(--text-2);
+}
+.b3d-title {
+	font-size: 1.05rem;
+	font-weight: 600;
+	letter-spacing: -0.01em;
+	line-height: 1.25;
+	color: var(--heading);
+	text-decoration: none;
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+}
+.b3d-title:hover { color: var(--accent); }
+.b3d-meta {
+	font-size: 0.82rem;
+	color: var(--text-2);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.b3d-meta b { font-weight: 500; color: var(--text); }
+.b3d-ex {
+	margin: 2px 0 0;
+	font-size: 0.86rem;
+	color: var(--text-2);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	font-style: italic;
+}
+.b3d-actions {
+	display: flex;
+	gap: 8px;
+	margin-top: 7px;
+	flex-wrap: wrap;
+}
+.b3d-btn {
+	appearance: none;
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	border: 1px solid var(--border);
+	background: var(--bg);
+	color: var(--heading);
+	font: inherit;
+	font-size: 0.76rem;
+	font-weight: 500;
+	padding: 5px 11px;
+	border-radius: 999px;
+	cursor: pointer;
+	transition: border-color var(--dur-fast) ease, background-color var(--dur-fast) ease, transform var(--dur-fast) var(--ease-out);
+}
+.b3d-btn:hover:not(:disabled) { border-color: var(--border-strong); transform: translateY(-1px); }
+.b3d-btn:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-ring); }
+.b3d-btn:disabled { opacity: 0.55; cursor: default; }
+.b3d-btn i { font-size: 0.7rem; opacity: 0.8; }
+
+.b3d-hero.is-loading .b3d-cap { opacity: 0.6; }
+.b3d-hero.is-loading .b3d-book,
+.b3d-hero.is-loading .b3d-shadow { opacity: 0; }
+.b3d-book,
+.b3d-shadow { transition: opacity 500ms ease; }
+
+/* ---- Small screens: stack, centred ------------------------------------- */
+
+@media (max-width: 575.98px) {
+	.b3d-hero {
+		flex-direction: column;
+		align-items: center;
+		text-align: center;
+		gap: 6px;
+		min-height: 300px;
+	}
+	.b3d-cap { align-items: center; width: 100%; }
+	.b3d-cap > * { max-width: 100%; }
+	.b3d-actions { justify-content: center; }
+	.b3d-ex { max-width: 100%; }
+}
+
+/* ---- Reduced motion: no transitions on the hinge, no caret -------------- */
+
+@media (prefers-reduced-motion: reduce) {
+	.b3d-cover { transition: none; }
+	.b3d-page.is-typing .b3d-page-t::after { animation: none; opacity: 0; }
+	.b3d-btn:hover:not(:disabled) { transform: none; }
+}

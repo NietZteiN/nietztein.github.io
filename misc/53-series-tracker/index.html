@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Runs</title>
+<meta name="description" content="Every numbered series in one real library, shelved as a run of spines: filled ones are here, dashed ones are the gaps, and a shopping list names what is missing.">
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    --bg: #0f0d12;
+    --bg-2: #1a1620;
+    --panel: rgba(255, 240, 230, 0.045);
+    --panel-2: rgba(255, 240, 230, 0.09);
+    --line: rgba(240, 226, 210, 0.14);
+    --ink: #f0e6da;
+    --ink-2: #b2a494;
+    --ink-3: rgba(240, 230, 218, 0.42);
+    --accent: #ffb86b;
+    --accent-ink: #231508;
+    --ghost: rgba(240, 226, 210, 0.3);
+    --wood: #3a2a22;
+    --wood-2: #5a4132;
+    --hit: #8ef0c8;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif CJK JP", serif;
+    --sans: -apple-system, "Segoe UI", Helvetica, Arial, "Hiragino Sans", "Yu Gothic UI", "Yu Gothic", "Meiryo", "Noto Sans CJK JP", sans-serif;
+    --mono: ui-monospace, "Cascadia Mono", Consolas, Menlo, monospace;
+    --spine-w: 24px;
+    --spine-h: 62px;
+    --label-w: 270px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); }
+  body {
+    font: 15px/1.45 var(--sans);
+    background: radial-gradient(120% 80% at 50% -10%, var(--bg-2) 0%, var(--bg) 70%);
+    min-height: 100vh; display: flex; flex-direction: column;
+    padding: 12px 16px 20px; overflow-x: hidden;
+  }
+  a { color: inherit; }
+  h1 { font-size: 24px; margin: 0; font-weight: 600; letter-spacing: 0.01em; font-family: var(--serif); }
+  header { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+  header .sub { color: var(--ink-2); font-size: 14px; }
+  header .spacer { flex: 1; }
+  header .tools { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  header .back { color: var(--ink-2); font-size: 14px; text-decoration: none; white-space: nowrap; }
+  header .back:hover { color: var(--ink); }
+  button {
+    font: inherit; color: var(--ink); background: var(--panel-2); border: 1px solid var(--line);
+    border-radius: 7px; padding: 5px 11px; cursor: pointer; line-height: 1.2; font-size: 13px;
+  }
+  button:hover { background: rgba(255,240,230,0.15); }
+  button:active { transform: translateY(1px); }
+  button.on { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+  button:focus-visible, input:focus-visible, select:focus-visible { outline: 1px solid var(--accent); outline-offset: 1px; }
+  input[type=search] {
+    font: inherit; font-size: 13px; color: var(--ink); background: rgba(0,0,0,0.3); border: 1px solid var(--line);
+    border-radius: 7px; padding: 5px 9px; width: 16em; max-width: 60vw;
+  }
+  input[type=search]::placeholder { color: var(--ink-3); }
+  select {
+    font: inherit; font-size: 13px; color: var(--ink); background: rgba(0,0,0,0.3); border: 1px solid var(--line);
+    border-radius: 7px; padding: 4px 8px;
+  }
+
+  /* summary tiles */
+  #tiles { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin-bottom: 10px; }
+  .tile { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; min-width: 0; }
+  .tile .k { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-2); }
+  .tile .v { font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.2; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tile .v.small { font-size: 15px; font-weight: 500; }
+  .tile .d { font-size: 12px; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* controls */
+  #controls { display: flex; gap: 6px 14px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; font-size: 13px; color: var(--ink-2); }
+  #controls .grp { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+  #controls .grp > span { margin-right: 2px; }
+  button.chip { padding: 3px 9px; font-size: 12px; border-radius: 999px; }
+  #count { margin-left: auto; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+
+  /* the runs */
+  #runs { display: flex; flex-direction: column; gap: 6px; }
+  .run {
+    display: grid; grid-template-columns: var(--label-w) minmax(0, 1fr); gap: 0 14px; align-items: end;
+    padding: 6px 10px 0; border-radius: 10px; background: var(--panel); border: 1px solid transparent;
+  }
+  .run:hover { border-color: var(--line); }
+  .run.open { border-color: hsl(var(--h) 60% 60% / 0.6); }
+  .run-head {
+    text-align: left; background: none; border: 0; padding: 4px 0 8px; border-radius: 6px; min-width: 0; display: block; width: 100%;
+    font-size: 14px; color: var(--ink); line-height: 1.3;
+  }
+  .run-head:hover { background: none; }
+  .run-head .name { font-weight: 600; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; overflow-wrap: anywhere; }
+  .run-head .name::before { content: ''; display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 7px; vertical-align: 0; background: hsl(var(--h) 50% 50%); }
+  .run-head .meta { display: block; font-size: 12px; color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 1px; }
+  .run-head .badges { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 4px; }
+  .badge { font-size: 11px; padding: 1px 7px; border-radius: 999px; background: var(--panel-2); color: var(--ink-2); border: 1px solid var(--line); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .badge.full { color: var(--hit); border-color: rgba(142, 240, 200, 0.35); }
+  .badge.gap { color: var(--accent); border-color: rgba(255, 184, 107, 0.35); }
+  .badge.scat { color: #e9a0d0; border-color: rgba(233, 160, 208, 0.35); }
+
+  .shelf { position: relative; display: flex; flex-wrap: wrap; align-items: flex-end; gap: 0 2px; padding: 4px 6px 0; min-width: 0; }
+  .shelf::after {
+    content: ''; display: block; width: 100%; height: 7px; margin-top: 0;
+    background: linear-gradient(180deg, var(--wood-2), var(--wood)); border-radius: 0 0 3px 3px;
+    box-shadow: 0 2px 0 rgba(0,0,0,0.35);
+    order: 999;
+  }
+  .sp {
+    position: relative; width: var(--spine-w); height: var(--spine-h); margin-bottom: 6px;
+    border-radius: 2px 2px 1px 1px; padding: 0; border: 0; font-size: 11px; font-variant-numeric: tabular-nums;
+    display: flex; flex-direction: column; justify-content: flex-end; align-items: center; overflow: hidden;
+    color: rgba(255, 250, 240, 0.92); cursor: pointer;
+    background:
+      linear-gradient(90deg, rgba(0,0,0,0.25), rgba(255,255,255,0.08) 35%, rgba(0,0,0,0.12) 70%, rgba(0,0,0,0.3)),
+      linear-gradient(180deg, hsl(var(--h) var(--s) calc(var(--l) + 10%)) 0 12%, hsl(var(--h) var(--s) var(--l)) 12%);
+    box-shadow: inset 0 -1px 0 rgba(0,0,0,0.3), 0 1px 1px rgba(0,0,0,0.4);
+    transition: transform 0.12s ease;
+  }
+  .sp:hover { transform: translateY(-3px); background-color: inherit; }
+  .sp .n { font-weight: 600; padding-bottom: 4px; text-shadow: 0 1px 0 rgba(0,0,0,0.4); line-height: 1; }
+  .sp .t { display: none; }
+  .sp .c { position: absolute; top: 2px; right: 2px; font-size: 9px; background: rgba(0,0,0,0.45); border-radius: 3px; padding: 0 3px; }
+  .sp.wide { width: calc(var(--spine-w) * var(--k) + 2px * (var(--k) - 1)); }
+  .sp.ghost {
+    background: repeating-linear-gradient(135deg, rgba(240,226,210,0.045) 0 4px, transparent 4px 8px);
+    border: 1px dashed var(--ghost); color: var(--ghost); box-shadow: none; cursor: default;
+  }
+  .sp.ghost:hover { transform: none; }
+  .sp.ghost .n { font-weight: 500; text-shadow: none; }
+  .sp.ghost.wide .n { font-size: 10px; letter-spacing: 0.02em; }
+  .sp.un { width: auto; min-width: var(--spine-w); max-width: calc(var(--spine-w) * 2.4); padding: 0 5px; }
+  .sp.un .n { font-weight: 500; font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  .sp.hit { outline: 2px solid var(--hit); outline-offset: 1px; }
+  .sp.sel { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .dim .sp:not(.hit):not(.ghost) { filter: saturate(0.4) brightness(0.65); }
+
+  /* zoomed spines carry the title vertically */
+  body.zoomed { --spine-w: 32px; --spine-h: 150px; }
+  body.zoomed .sp .t {
+    display: block; writing-mode: vertical-rl; text-orientation: mixed; flex: 1; min-height: 0;
+    font-size: 12px; line-height: 1; padding: 8px 0 4px; max-height: calc(var(--spine-h) - 26px);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; letter-spacing: 0.02em;
+    font-family: var(--serif); text-shadow: 0 1px 0 rgba(0,0,0,0.45);
+  }
+  body.zoomed .sp.ghost .t { color: var(--ghost); text-shadow: none; opacity: 0.8; }
+  body.zoomed .sp .n { font-size: 12px; }
+  body.zoomed .sp.un { max-width: calc(var(--spine-w) * 2); }
+
+  /* side panel */
+  #panel {
+    position: fixed; top: 0; right: 0; bottom: 0; width: 380px; max-width: 100vw; z-index: 6;
+    background: var(--bg-2); border-left: 1px solid var(--line); box-shadow: -10px 0 30px rgba(0,0,0,0.4);
+    transform: translateX(105%); transition: transform 0.22s ease; overflow-y: auto; padding: 14px 16px 18px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  #panel.show { transform: none; }
+  #panel .close { position: absolute; top: 8px; right: 8px; padding: 2px 8px; }
+  #panel h2 { font-family: var(--serif); font-size: 19px; margin: 0 24px 0 0; font-weight: 600; line-height: 1.25; }
+  #panel h2 .swatch { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 8px; vertical-align: -1px; }
+  #panel .kv { display: grid; grid-template-columns: auto 1fr; gap: 3px 12px; font-size: 13px; }
+  #panel .kv dt { color: var(--ink-2); }
+  #panel .kv dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+  #panel .sentence { font-size: 14px; color: var(--ink); padding: 8px 10px; background: var(--panel); border-radius: 8px; border-left: 3px solid var(--accent); }
+  #panel .sentence.full { border-left-color: var(--hit); }
+  #panel h3 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-2); margin: 8px 0 2px; font-weight: 600; }
+  #panel ul { margin: 0; padding-left: 0; list-style: none; font-size: 13px; }
+  #panel ul li { padding: 3px 0; border-top: 1px solid var(--line); display: flex; gap: 8px; align-items: baseline; }
+  #panel ul li:first-child { border-top: 0; }
+  #panel ul li .num { font-variant-numeric: tabular-nums; color: var(--ink-2); min-width: 2.2em; text-align: right; }
+  #panel ul li .mis { color: var(--ink-3); font-style: italic; }
+  #panel ul li button { padding: 0; border: 0; background: none; text-align: left; font-size: 13px; color: var(--ink); text-decoration: underline dotted var(--ink-3); flex: 1; min-width: 0; }
+  #panel ul li button:hover { color: var(--accent); background: none; }
+  #panel .desc { font-size: 14px; line-height: 1.5; color: var(--ink); }
+  #panel .link { display: inline-block; margin-top: 4px; font-size: 14px; color: var(--accent); }
+  #panel .where { font-size: 13px; }
+  #panel .where b { font-weight: 600; }
+  #panel .nav { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+  #panel .flag { color: #e9a0d0; }
+
+  /* tooltip */
+  #tip {
+    position: fixed; z-index: 7; pointer-events: none; display: none; max-width: 300px;
+    background: #000c; color: var(--ink); font-size: 12px; line-height: 1.35; padding: 6px 9px; border-radius: 7px;
+    border: 1px solid var(--line); backdrop-filter: blur(4px);
+  }
+  #tip b { font-weight: 600; }
+  #tip .m { color: var(--ink-2); }
+
+  /* overlays */
+  .overlay { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(6, 4, 10, 0.8); padding: 18px; z-index: 8; }
+  .overlay.show { display: flex; }
+  .overlay .box { width: 100%; max-width: 560px; max-height: 90vh; overflow: auto; background: var(--bg-2); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; }
+  .overlay h2 { margin: 0 0 8px; font-size: 20px; font-weight: 600; font-family: var(--serif); }
+  .overlay p { margin: 8px 0; font-size: 14px; }
+  .overlay p.lic { color: var(--ink-2); font-size: 13px; }
+  .overlay textarea {
+    width: 100%; min-height: 40vh; font: 13px/1.45 var(--mono); color: var(--ink); background: rgba(0,0,0,0.3);
+    border: 1px solid var(--line); border-radius: 8px; padding: 10px; resize: vertical; white-space: pre;
+  }
+  .overlay .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 10px; }
+  .overlay .ok { color: var(--hit); font-size: 13px; }
+  kbd { font-family: inherit; background: var(--panel-2); border: 1px solid var(--line); border-radius: 4px; padding: 0 6px; color: var(--ink); }
+
+  #status { color: var(--ink-2); padding: 20px 0; font-size: 14px; }
+  #status.err { color: var(--accent); }
+
+  footer { margin-top: 16px; color: var(--ink-2); font-size: 13px; max-width: 1280px; }
+  footer p { margin: 0; }
+
+  @media (max-width: 760px) {
+    :root { --label-w: 1fr; --spine-w: 22px; --spine-h: 54px; }
+    #tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    #tiles .tile:first-child { grid-column: span 2; }
+    .run { grid-template-columns: minmax(0, 1fr); gap: 0; padding: 6px 8px 0; align-items: start; }
+    .run-head { padding-bottom: 2px; }
+    .run-head .name { -webkit-line-clamp: 3; }
+    .shelf { padding-left: 2px; padding-right: 2px; }
+    #panel { top: auto; width: 100%; max-height: 72vh; border-left: 0; border-top: 1px solid var(--line); border-radius: 14px 14px 0 0; transform: translateY(105%); }
+    #count { margin-left: 0; width: 100%; }
+    header .sub { flex-basis: 100%; }
+    input[type=search] { width: 12em; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #panel { transition: none; }
+    .sp { transition: none; }
+  }
+
+  /* photogenic thumbnail state */
+  body.thumb #controls, body.thumb footer, body.thumb #count { display: none; }
+  body.thumb { --spine-w: 18px; --spine-h: 46px; --label-w: 230px; padding-top: 10px; }
+  body.thumb #runs { gap: 4px; }
+  body.thumb .run { padding-top: 3px; }
+  body.thumb .run-head { padding: 2px 0 5px; font-size: 13px; }
+  body.thumb .sp { margin-bottom: 4px; font-size: 10px; }
+  body.thumb .shelf::after { height: 5px; }
+  body.thumb #tiles { margin-bottom: 8px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Runs</h1>
+  <span class="sub">Every numbered series in the library, shelved as a run: filled spines are here, dashed ones are the gaps.</span>
+  <span class="spacer"></span>
+  <span class="tools">
+    <input id="q" type="search" placeholder="search series, author, volume" aria-label="search series" autocomplete="off" spellcheck="false">
+    <button id="btn-zoom" title="taller spines with the titles on them (Z)">zoom</button>
+    <button id="btn-list" title="every missing volume as plain text (L)">shopping list</button>
+    <button id="btn-help" title="what is this? (?)">?</button>
+    <a class="back" href="../../#/bookshelf">&larr; Bookshelf</a>
+  </span>
+</header>
+
+<div id="tiles" aria-live="polite"></div>
+
+<div id="controls">
+  <div class="grp" id="sorts"><span>sort</span>
+    <button class="chip" data-sort="size">size</button>
+    <button class="chip" data-sort="gaps">gaps</button>
+    <button class="chip" data-sort="name">name</button>
+    <button class="chip" data-sort="author">author</button>
+  </div>
+  <div class="grp" id="types"><span>type</span>
+    <button class="chip" data-type="">all</button>
+    <button class="chip" data-type="manga">manga</button>
+    <button class="chip" data-type="ln">light novel</button>
+    <button class="chip" data-type="comics">comics</button>
+    <button class="chip" data-type="anthology">anthology</button>
+    <button class="chip" data-type="other">other</button>
+  </div>
+  <div class="grp" id="langs"><span>language</span>
+    <button class="chip" data-lang="">all</button>
+    <button class="chip" data-lang="EN">English</button>
+    <button class="chip" data-lang="JA">Japanese</button>
+    <button class="chip" data-lang="other">other</button>
+  </div>
+  <div class="grp"><button class="chip" id="btn-singles" title="hide series where only one volume is here">hide single volumes</button></div>
+  <span id="count"></span>
+</div>
+
+<div id="status">Reading the catalogue…</div>
+<main id="runs"></main>
+
+<footer>
+  <p>Series names and volume numbers are read off the catalogue titles ("Vol. 3", "第3巻", "(3)", "③", "III", "上/下", a bare trailing number) and grouped after folding width, case and accents, with author and publisher as tie-breakers and a short hand-written override list. The library cannot know how long a series really is, so "of n" always means the highest volume seen here, never the true length. Data: <code>assets/data/library.json</code>. No libraries, nothing leaves the browser.</p>
+</footer>
+
+<aside id="panel" aria-live="polite"></aside>
+<div id="tip" role="tooltip"></div>
+
+<div class="overlay" id="list">
+  <div class="box">
+    <h2>Shopping list</h2>
+    <p>Every volume number that is missing below the highest one on the shelf, series by series. Plain text, ready to paste.</p>
+    <textarea id="list-text" readonly spellcheck="false"></textarea>
+    <div class="row">
+      <button id="btn-copy">copy</button>
+      <span class="ok" id="copied"></span>
+      <span class="spacer" style="flex:1"></span>
+      <button id="btn-list-close">close</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="help">
+  <div class="box">
+    <h2>Runs</h2>
+    <p>A manga-shop view of one real library. Each row is a series: the numbered spines are the volumes that are physically on the shelves, the dashed ones are the numbers in between that are not. Click a spine for the book and a link to its card on the Bookshelf; click a series name for where its volumes live, which shelves they are split across, and the years they span.</p>
+    <p>"6 of 7" means six volumes are here and the highest one seen is 7. Nothing here knows how long a series really is, so a run with no gaps is only complete <em>as far as it goes</em>.</p>
+    <p><kbd>Z</kbd> zoom, with the titles standing on the spines &middot; <kbd>L</kbd> shopping list &middot; <kbd>/</kbd> search &middot; <kbd>Esc</kbd> close</p>
+    <p class="lic">Volume numbers are parsed from the catalogue titles in series.js; a few series (the Monogatari novels, two doujinshi on one line) are filed by hand.</p>
+    <p><button id="btn-help-close">close</button></p>
+  </div>
+</div>
+
+<script src="series.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

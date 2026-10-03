@@ -2766,9 +2766,73 @@ body.bs-card-is-open { overflow: hidden; }
 
 /* Places: the Passport Atlas widget on the About page (misc/34-passport-atlas/widget.js) */
 .places-widget {
-	max-width: 520px;
+	max-width: 640px;
 }
 
 .places-widget .passport-atlas a:hover {
 	text-decoration: underline;
+}
+
+/* Bookshelf: "Ways to see the library" strip of library visualisations (cards reuse .misc-card) */
+.bs-views {
+	margin: 0 0 22px;
+}
+
+.bs-views-head {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 12px;
+	flex-wrap: wrap;
+	margin-bottom: 8px;
+}
+
+.bs-views-title {
+	font-size: 0.8rem;
+	font-weight: 600;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: var(--text-2);
+}
+
+.bs-views-hint {
+	font-size: 0.8rem;
+	color: var(--text-2);
+}
+
+.bs-views-row {
+	display: flex;
+	gap: 14px;
+	overflow-x: auto;
+	overscroll-behavior-x: contain;
+	scroll-snap-type: x proximity;
+	scroll-padding-left: 4px;
+	padding: 6px 4px 14px;
+	margin: 0 -4px;
+	scrollbar-width: thin;
+	scrollbar-color: var(--border-strong) transparent;
+}
+
+.bs-views-row .misc-card {
+	flex: 0 0 232px;
+	scroll-snap-align: start;
+}
+
+.bs-views-row .misc-title {
+	font-size: 0.92rem;
+}
+
+.bs-views-row .misc-desc {
+	font-size: 0.78rem;
+	line-height: 1.4;
+	display: -webkit-box;
+	-webkit-line-clamp: 3;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+}
+
+@media (max-width: 575.98px) {
+	.bs-views-row .misc-card {
+		flex-basis: 200px;
+	}
 }

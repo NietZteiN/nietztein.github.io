@@ -1,0 +1,33 @@
+/* Ambient background gadget (assets/js/gadgets/ambient.js): one fixed WebGL
+   canvas behind the whole page. Dark theme draws a slow aurora and a field of
+   parallax stars; light theme draws faint pink cumulus. Rendered at half (or
+   quarter) resolution and upscaled here; fades in after the first frame. */
+
+#gadget-ambient {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100vw;
+	height: 100vh;
+	height: 100dvh;
+	z-index: -1;
+	pointer-events: none;
+	opacity: 0;
+	transition: opacity 1s ease;
+	user-select: none;
+	-webkit-user-select: none;
+}
+
+#gadget-ambient.is-on {
+	opacity: 1;
+}
+
+#gadget-ambient.is-static {
+	transition: none;
+}
+
+@media print {
+	#gadget-ambient {
+		display: none;
+	}
+}

@@ -13,6 +13,10 @@
 //
 // Hooks used from the page: #palette-open (optional trigger button) and
 // #theme-toggle (clicked by the "Toggle dark mode" action).
+//
+// Other scripts (the gadgets) can add actions at runtime:
+//   var remove = window.Palette.addActions([{ label, keywords, hint, run }]);
+//   remove();   // takes them out again
 
 (function () {
 	'use strict';
@@ -142,6 +146,21 @@
 	ACTIONS.forEach(function (a) {
 		actionItems.push(makeItem('Actions', a.label, a.keywords, '', a.run));
 	});
+
+	// Runtime actions (gadgets). Returns a function that removes them again.
+	function addActions(actions) {
+		var added = (actions || []).map(function (a) {
+			return makeItem('Actions', a.label, a.keywords, a.hint, a.run);
+		});
+		actionItems = actionItems.concat(added);
+		if (isOpen) render(input.value);
+		return function () {
+			actionItems = actionItems.filter(function (it) {
+				return added.indexOf(it) === -1;
+			});
+			if (isOpen) render(input.value);
+		};
+	}
 
 	var postsLoaded = false;
 	var postsLoading = false;
@@ -496,5 +515,5 @@
 		bindTrigger();
 	}
 
-	window.Palette = { open: open, close: close, toggle: toggle };
+	window.Palette = { open: open, close: close, toggle: toggle, addActions: addActions };
 })();

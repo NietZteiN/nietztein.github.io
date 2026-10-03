@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Constellations</title>
+<meta name="description" content="The library's authors as a night sky: a force-directed graph where stars are authors, sized by their books, joined by the shelves, genres, publishers, languages and decades they share.">
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    --bg: #070b16;
+    --bg-2: #0c1222;
+    --panel: rgba(8, 12, 24, 0.82);
+    --panel-2: rgba(255, 255, 255, 0.06);
+    --panel-3: rgba(255, 255, 255, 0.11);
+    --line: rgba(226, 228, 240, 0.13);
+    --ink: #e6e7ee;
+    --ink-2: #a3a7b8;
+    --ink-3: rgba(230, 232, 240, 0.42);
+    --star: #f2d9a2;
+    --star-2: rgba(242, 217, 162, 0.22);
+    --accent: #9cc1ea;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif CJK JP", serif;
+    --sans: -apple-system, "Segoe UI", Helvetica, Arial, "Hiragino Sans", "Yu Gothic", "Noto Sans CJK JP", sans-serif;
+    --panel-w: 290px;
+    --card-w: 352px;
+  }
+  body.network { --bg: #15171c; --bg-2: #1d2027; --panel: rgba(21, 23, 28, 0.9); --star: #e4b96a; --accent: #8fb8e8; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); }
+  body { font: 14px/1.45 var(--sans); overflow: hidden; -webkit-text-size-adjust: 100%; overflow-wrap: anywhere; }
+  a { color: inherit; }
+  h1, h2, h3 { margin: 0; font-weight: 600; }
+  button, input, select { font: inherit; color: var(--ink); }
+  button { background: var(--panel-2); border: 1px solid var(--line); border-radius: 7px; padding: 5px 10px; cursor: pointer; line-height: 1.2; }
+  button:hover { background: var(--panel-3); }
+  button:active { transform: translateY(1px); }
+  button.on { background: var(--star); color: #1a1407; border-color: transparent; }
+  button.small { font-size: 12px; padding: 3px 8px; }
+  button.lnk { background: none; border: 0; padding: 0; color: var(--ink); text-align: left; border-radius: 2px; }
+  button.lnk:hover { color: var(--star); background: none; }
+  :focus-visible { outline: 1px solid var(--star); outline-offset: 1px; }
+  input[type=text], input[type=search] { background: rgba(0,0,0,0.3); border: 1px solid var(--line); border-radius: 7px; padding: 6px 9px; width: 100%; -webkit-appearance: none; appearance: none; }
+  input::placeholder { color: var(--ink-3); }
+  input[type=range] { width: 100%; accent-color: var(--star); margin: 0; }
+  input[type=checkbox] { accent-color: var(--star); margin: 0 6px 0 0; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  #sky { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; }
+  #sky.drag { cursor: grabbing; }
+  #sky.hit { cursor: pointer; }
+
+  /* header */
+  header { position: fixed; top: 0; left: 0; right: 0; padding: 12px 16px; display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; pointer-events: none; z-index: 3; }
+  header > * { pointer-events: auto; }
+  header h1 { font-size: 20px; font-family: var(--serif); letter-spacing: 0.01em; text-shadow: 0 1px 10px rgba(0,0,0,0.8); }
+  header .sub { color: var(--ink-2); font-size: 13px; text-shadow: 0 1px 8px rgba(0,0,0,0.8); }
+  header .back { color: var(--ink-2); font-size: 13px; text-decoration: none; margin-left: auto; }
+  header .back:hover { color: var(--star); }
+
+  /* control panel (left) */
+  #panel { position: fixed; top: 52px; left: 12px; bottom: 54px; width: var(--panel-w); overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 8px; z-index: 4; scrollbar-width: thin; }
+  .box { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); flex: none; }
+  .box h2 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.09em; color: var(--ink-2); margin: 0 0 8px; display: flex; justify-content: space-between; align-items: baseline; }
+  .box h2 .hint { text-transform: none; letter-spacing: 0; font-weight: 400; color: var(--ink-3); }
+  .row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .row + .row { margin-top: 7px; }
+  .muted { color: var(--ink-2); font-size: 12px; }
+  .dim { color: var(--ink-3); }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; padding: 2px; background: rgba(0,0,0,0.25); flex-wrap: wrap; }
+  .seg button { border: 0; border-radius: 999px; background: transparent; padding: 4px 10px; font-size: 12.5px; color: var(--ink-2); }
+  .seg button:hover { color: var(--ink); }
+  .seg button[aria-checked="true"] { background: var(--star); color: #1a1407; }
+  .lab { font-size: 12px; color: var(--ink-2); min-width: 46px; }
+  .edge { display: grid; grid-template-columns: 1fr 86px 34px; align-items: center; gap: 8px; font-size: 12.5px; padding: 3px 0; }
+  .edge label { display: flex; align-items: center; cursor: pointer; min-width: 0; }
+  .edge label span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .edge .w { font-variant-numeric: tabular-nums; color: var(--ink-3); font-size: 11.5px; text-align: right; }
+  .edge.off label, .edge.off .w { opacity: 0.45; }
+  .pernode { display: grid; grid-template-columns: 1fr 86px 34px; align-items: center; gap: 8px; margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--line); font-size: 12.5px; }
+  .pernode .w { font-variant-numeric: tabular-nums; color: var(--ink-3); font-size: 11.5px; text-align: right; }
+  .legend { display: grid; grid-template-columns: 1fr 1fr; gap: 1px 10px; font-size: 12px; }
+  .legend button { background: none; border: 0; padding: 2px 0; text-align: left; color: var(--ink); display: flex; align-items: center; gap: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-radius: 3px; min-width: 0; }
+  .legend button .c { color: var(--ink-3); margin-left: auto; padding-left: 6px; font-variant-numeric: tabular-nums; }
+  .legend button .t { overflow: hidden; text-overflow: ellipsis; }
+  .legend button.off { opacity: 0.35; }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; flex: none; box-shadow: 0 0 6px currentColor; }
+  .check { display: flex; align-items: center; gap: 0; font-size: 12.5px; cursor: pointer; }
+
+  /* search */
+  .picker { position: relative; }
+  .picker ul { position: absolute; left: 0; right: 0; top: calc(100% + 4px); max-height: 50vh; overflow-y: auto; margin: 0; padding: 4px 0; list-style: none; background: var(--bg-2); border: 1px solid var(--line); border-radius: 8px; z-index: 6; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: none; }
+  .picker ul.show { display: block; }
+  .picker li { padding: 5px 10px; cursor: pointer; display: flex; flex-direction: column; gap: 1px; }
+  .picker li:hover, .picker li.sel { background: var(--panel-3); }
+  .picker li .t { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .picker li .m { font-size: 11px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .picker li.none { color: var(--ink-3); cursor: default; font-style: italic; }
+
+  /* author card (right) */
+  #card { position: fixed; top: 52px; right: 12px; bottom: 54px; width: var(--card-w); z-index: 5; display: none; flex-direction: column; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); overflow: hidden; }
+  #card.show { display: flex; }
+  #card .head { padding: 12px 14px 8px; border-bottom: 1px solid var(--line); display: flex; gap: 8px; align-items: flex-start; }
+  #card .head .name { font-family: var(--serif); font-size: 19px; line-height: 1.2; flex: 1; min-width: 0; }
+  #card .head .close { flex: none; }
+  #card .body { overflow-y: auto; overscroll-behavior: contain; padding: 10px 14px 14px; scrollbar-width: thin; flex: 1; }
+  #card .meta { color: var(--ink-2); font-size: 12.5px; margin-bottom: 8px; }
+  #card .chips { display: flex; flex-wrap: wrap; gap: 4px 8px; margin-bottom: 10px; font-size: 12px; }
+  #card .chips span { display: inline-flex; align-items: center; }
+  #card h3 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.09em; color: var(--ink-2); margin: 12px 0 6px; display: flex; justify-content: space-between; }
+  #card h3 .hint { text-transform: none; letter-spacing: 0; font-weight: 400; color: var(--ink-3); }
+  #card ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
+  #card li { font-size: 13px; line-height: 1.35; }
+  #card li a { color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--ink-3); }
+  #card li a:hover { color: var(--star); border-color: var(--star); }
+  #card li .m { display: block; color: var(--ink-2); font-size: 11.5px; }
+  #card li.nb { display: grid; grid-template-columns: auto 1fr; gap: 0 8px; align-items: baseline; }
+  #card li.nb .m { grid-column: 2; }
+  #card li.nb button.lnk { font-size: 13px; }
+  #card li.nb .why { font-size: 11.5px; color: var(--ink-2); grid-column: 1 / -1; }
+  #card .actions { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+
+  /* tooltip */
+  #tip { position: fixed; z-index: 7; pointer-events: none; display: none; max-width: 290px; background: var(--bg-2); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font-size: 12px; line-height: 1.4; box-shadow: 0 8px 28px rgba(0,0,0,0.55); }
+  #tip.show { display: block; }
+  #tip .t { font-size: 13.5px; font-weight: 600; font-family: var(--serif); }
+  #tip .a { color: var(--ink-2); }
+  #tip ul { margin: 5px 0 0; padding: 0; list-style: none; }
+  #tip li { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #tip li .y { color: var(--ink-3); }
+  #tip .hint { margin-top: 5px; color: var(--ink-3); font-size: 11px; }
+
+  /* footer */
+  footer { position: fixed; left: calc(var(--panel-w) + 24px); right: 12px; bottom: 10px; z-index: 3; pointer-events: none; display: flex; justify-content: space-between; gap: 12px; align-items: flex-end; }
+  footer > * { pointer-events: auto; }
+  footer .about { font-size: 11.5px; color: var(--ink-3); max-width: 760px; text-shadow: 0 1px 8px rgba(0,0,0,0.9); }
+  footer .about b { color: var(--ink-2); font-weight: 500; }
+  footer .status { font-size: 11px; color: var(--ink-3); font-variant-numeric: tabular-nums; white-space: nowrap; text-shadow: 0 1px 8px rgba(0,0,0,0.9); }
+  kbd { font-family: inherit; background: var(--panel-2); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; color: var(--ink); font-size: 11px; }
+
+  #btn-panel { display: none; position: fixed; left: 12px; bottom: 12px; z-index: 6; }
+  .sheetbar { display: none; position: sticky; top: -10px; z-index: 2; margin: -10px -12px 4px; padding: 8px 12px 6px; background: var(--bg-2); justify-content: space-between; align-items: center; }
+  #fallback { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 8; background: var(--bg-2); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; max-width: 420px; width: calc(100% - 32px); display: none; }
+  #fallback.show { display: block; }
+  #fallback p { margin: 0 0 8px; }
+  #fallback p:last-child { margin: 0; color: var(--ink-2); font-size: 13px; }
+
+  body.thumb #panel, body.thumb #card, body.thumb footer, body.thumb #btn-panel, body.thumb #tip { display: none !important; }
+
+  @media (max-width: 760px) {
+    :root { --card-w: auto; }
+    header { padding: 10px 12px; gap: 6px 10px; }
+    header .sub { display: none; }
+    #panel { top: auto; left: 0; right: 0; bottom: 0; width: auto; max-height: 62vh; padding: 10px 12px 14px; background: var(--bg-2); border-top: 1px solid var(--line); border-radius: 14px 14px 0 0; transform: translateY(105%); transition: transform 0.25s ease; z-index: 6; }
+    #panel.open { transform: none; }
+    #panel .box { backdrop-filter: none; -webkit-backdrop-filter: none; background: transparent; border: 0; padding: 6px 0; }
+    .sheetbar { display: flex; }
+    #card { top: auto; left: 0; right: 0; bottom: 0; width: auto; max-height: 58vh; border-radius: 14px 14px 0 0; z-index: 7; background: var(--bg-2); backdrop-filter: none; -webkit-backdrop-filter: none; }
+    footer .about { display: none; }
+    footer { bottom: 14px; left: 110px; }
+    #btn-panel { display: block; }
+    body.sheet #btn-panel { display: none; }
+    .legend { grid-template-columns: 1fr 1fr; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #panel { transition: none; }
+  }
+</style>
+</head>
+<body>
+<canvas id="sky" aria-label="A graph of the library's authors drawn as a constellation map"></canvas>
+
+<header>
+  <h1>Constellations</h1>
+  <span class="sub" id="subtitle">The library's authors, joined by what they share</span>
+  <a class="back" href="../../#/bookshelf">← Bookshelf</a>
+</header>
+
+<div id="panel" aria-label="Controls">
+  <div class="sheetbar"><span class="muted">controls</span><button class="small" id="btn-sheet-close">close</button></div>
+
+  <div class="box">
+    <h2>Find an author <span class="hint"><kbd>/</kbd></span></h2>
+    <div class="picker">
+      <input type="search" id="q" placeholder="Author or title…" autocomplete="off" spellcheck="false" aria-label="Search authors and titles">
+      <ul id="results" role="listbox"></ul>
+    </div>
+  </div>
+
+  <div class="box">
+    <h2>Layout</h2>
+    <div class="seg" role="radiogroup" id="layout-seg">
+      <button role="radio" data-v="force" aria-checked="true">Force</button>
+      <button role="radio" data-v="radial" aria-checked="false">Radial by genre</button>
+      <button role="radio" data-v="grid" aria-checked="false">Grid by bookcase</button>
+      <button role="radio" data-v="timeline" aria-checked="false">Timeline</button>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <span class="lab">Skin</span>
+      <div class="seg" role="radiogroup" id="skin-seg">
+        <button role="radio" data-v="constellation" aria-checked="true">Constellation</button>
+        <button role="radio" data-v="network" aria-checked="false">Network</button>
+      </div>
+    </div>
+    <div class="row">
+      <span class="lab">Colour</span>
+      <div class="seg" role="radiogroup" id="paint-seg">
+        <button role="radio" data-v="genre" aria-checked="true">Genre</button>
+        <button role="radio" data-v="lang" aria-checked="false">Language</button>
+        <button role="radio" data-v="era" aria-checked="false">Era</button>
+      </div>
+    </div>
+    <div class="row">
+      <label class="check"><input type="checkbox" id="chk-hulls" checked>Cluster nebulae</label>
+      <label class="check" style="margin-left:10px"><input type="checkbox" id="chk-labels" checked>Names</label>
+    </div>
+    <div class="row">
+      <button class="small" id="btn-reheat" title="Shake the layout">Reheat</button>
+      <button class="small" id="btn-fit" title="Fit everything in view (F)">Fit</button>
+      <button class="small" id="btn-export" title="Save the current view as a PNG">Export PNG</button>
+    </div>
+  </div>
+
+  <div class="box">
+    <h2>Edges <span class="hint" id="edge-count"></span></h2>
+    <div id="edges"></div>
+    <div class="pernode">
+      <span>Strongest per author</span>
+      <input type="range" id="pernode" min="1" max="8" step="1" value="4" aria-label="Edges kept per author">
+      <span class="w" id="pernode-v">4</span>
+    </div>
+  </div>
+
+  <div class="box">
+    <h2 id="legend-title">Genres <span class="hint">click to spotlight</span></h2>
+    <div class="legend" id="legend"></div>
+  </div>
+</div>
+
+<aside id="card" aria-live="polite">
+  <div class="head">
+    <div class="name" id="card-name"></div>
+    <button class="small close" id="card-close" aria-label="Close">✕</button>
+  </div>
+  <div class="body" id="card-body"></div>
+</aside>
+
+<div id="tip" role="tooltip"></div>
+
+<button id="btn-panel" class="small">Controls</button>
+
+<footer>
+  <div class="about">
+    <b>How it works.</b> Every star is an author of the catalogue (aliases merged), sized by how many of their books are in the house and coloured by their commonest genre. Lines join authors who share a shelf, bookcase, genre, publisher, language or decade; only each author's strongest few are drawn, and the nebulae are label-propagation clusters. Hover a star for its books, click to pin it and read why its neighbours are neighbours, drag to move, double-click to let go. Data: the library catalogue.
+  </div>
+  <div class="status" id="status"></div>
+</footer>
+
+<div id="fallback"><p>The catalogue could not be loaded.</p><p>This page reads <code>assets/data/library.json</code> from the site; open it from nietztein.github.io or a local server and reload.</p></div>
+
+<script src="graph.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

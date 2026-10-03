@@ -1,0 +1,288 @@
+/* Gadget "tilt": 3D tilt + glare on the profile photo and Misc cards, a
+   sliding navbar tab indicator, magnetic buttons, click ripples and a dark-mode
+   cursor spotlight. Driven by assets/js/gadgets/tilt.js; every rule is scoped
+   under html.gtilt-on (or a gtilt-* element) so removing the class removes the
+   effect. Transform/opacity only. */
+
+:root {
+	--gtilt-glare: rgba(255, 255, 255, 0.5);
+	--gtilt-photo-glare: rgba(255, 255, 255, 0.34);
+	--gtilt-ripple: rgba(31, 95, 214, 0.2);
+	--gtilt-spot: rgba(124, 179, 255, 0.05);
+	--gtilt-spring: cubic-bezier(0.18, 1.3, 0.3, 1);
+}
+
+:root[data-theme="dark"] {
+	--gtilt-glare: rgba(255, 255, 255, 0.16);
+	--gtilt-photo-glare: rgba(255, 255, 255, 0.2);
+	--gtilt-ripple: rgba(124, 179, 255, 0.2);
+}
+
+/* ---------- Profile photo ---------------------------------------------- */
+
+/* The wrapper takes the image's place: shrink-wrapped and centred on phones,
+   left-aligned from md up, exactly like .profilepicture itself. */
+.gtilt-photo {
+	width: -moz-fit-content;
+	width: fit-content;
+	max-width: 100%;
+	margin: 0 auto;
+	perspective: 800px;
+}
+
+@media (min-width: 768px) {
+	.gtilt-photo {
+		margin: 0;
+	}
+}
+
+.gtilt-photo-inner {
+	position: relative;
+	width: -moz-fit-content;
+	width: fit-content;
+	max-width: 100%;
+	border-radius: 16px;
+	transform-style: preserve-3d;
+	transform: rotateX(var(--gt-rx, 0deg)) rotateY(var(--gt-ry, 0deg));
+	transition: transform 700ms var(--gtilt-spring);
+}
+
+.gtilt-photo-inner.gtilt-is-tilting {
+	transition: transform 90ms linear;
+}
+
+.gtilt-photo-glare {
+	position: absolute;
+	inset: 0;
+	border-radius: 16px;
+	pointer-events: none;
+	opacity: 0;
+	background: radial-gradient(circle at var(--gt-gx, 50%) var(--gt-gy, 50%), var(--gtilt-photo-glare) 0%, rgba(255, 255, 255, 0) 58%);
+	transform: translateZ(1px);
+	transition: opacity 320ms ease;
+}
+
+.gtilt-is-tilting > .gtilt-photo-glare {
+	opacity: 1;
+}
+
+/* ---------- Misc cards ------------------------------------------------- */
+
+/* Specificity note: main.css styles .misc-card:hover with a plain translateY;
+   these rules carry the html.gtilt-on prefix so they win and fold that lift in. */
+html.gtilt-on .misc-card {
+	position: relative;
+	overflow: visible;
+	transform-style: preserve-3d;
+	transform: perspective(900px) rotateX(var(--gt-rx, 0deg)) rotateY(var(--gt-ry, 0deg)) translateY(var(--gt-ty, 0px));
+	transition: transform 700ms var(--gtilt-spring), box-shadow var(--dur) var(--ease-out), border-color var(--dur) ease;
+}
+
+html.gtilt-on .misc-card:hover,
+html.gtilt-on .misc-card:focus-visible {
+	--gt-ty: -3px;
+}
+
+html.gtilt-on .misc-card.gtilt-is-tilting {
+	transition: transform 90ms linear, box-shadow var(--dur) var(--ease-out), border-color var(--dur) ease;
+	will-change: transform;
+}
+
+/* With the card's own overflow open for 3D, the thumbnail clips its own corners. */
+html.gtilt-on .misc-card .misc-thumb {
+	border-radius: 11px 11px 0 0;
+	transform: translateZ(0);
+	transition: transform 700ms var(--gtilt-spring);
+}
+
+html.gtilt-on .misc-card.gtilt-is-tilting .misc-thumb {
+	transform: translateZ(14px);
+	transition: transform 320ms var(--ease-out);
+}
+
+html.gtilt-on .misc-card::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	pointer-events: none;
+	opacity: 0;
+	background: radial-gradient(circle at var(--gt-gx, 50%) var(--gt-gy, 50%), var(--gtilt-glare) 0%, rgba(255, 255, 255, 0) 60%);
+	transform: translateZ(20px);
+	transition: opacity 320ms ease;
+}
+
+html.gtilt-on .misc-card.gtilt-is-tilting::after {
+	opacity: 1;
+}
+
+/* ---------- Navbar indicator ------------------------------------------- */
+
+.gtilt-nav {
+	position: relative;
+}
+
+.gtilt-nav-ind {
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: 0.3rem;
+	height: 2px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	pointer-events: none;
+}
+
+.gtilt-nav-bar {
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 100px;
+	height: 2px;
+	border-radius: 2px;
+	background: var(--accent);
+	transform-origin: 0 50%;
+	transform: translateX(0) scaleX(0);
+	opacity: 0;
+	transition: transform 420ms var(--ease-out), opacity 200ms ease;
+}
+
+.gtilt-nav-bar.is-shown {
+	opacity: 1;
+}
+
+.gtilt-nav-bar.is-ghost.is-shown {
+	opacity: 0.35;
+}
+
+.gtilt-nav-bar.no-anim {
+	transition: none;
+}
+
+/* The static underline from main.css (#top-nav .nav-link.active::after) is
+   replaced by the sliding bar; more specific selector, same property. */
+#top-nav .gtilt-nav .nav-link.active::after {
+	transform: scaleX(0);
+}
+
+@media (max-width: 767.98px) {
+	.gtilt-nav-ind {
+		display: none;
+	}
+
+	#top-nav .gtilt-nav .nav-link.active::after {
+		transform: scaleX(1);
+	}
+}
+
+/* ---------- Magnetic buttons ------------------------------------------- */
+
+html.gtilt-on .theme-toggle {
+	transform: translate(var(--gt-mx, 0px), var(--gt-my, 0px));
+}
+
+html.gtilt-on .theme-toggle:hover {
+	transform: translate(var(--gt-mx, 0px), var(--gt-my, 0px)) rotate(-12deg) scale(1.06);
+}
+
+html.gtilt-on .palette-open {
+	transform: translate(var(--gt-mx, 0px), var(--gt-my, 0px));
+}
+
+html.gtilt-on .palette-open:hover {
+	transform: translate(var(--gt-mx, 0px), var(--gt-my, 0px)) scale(1.04);
+}
+
+html.gtilt-on .bs-chip,
+html.gtilt-on .bs-seg-btn,
+html.gtilt-on .bs-hitnav button {
+	transform: translate(var(--gt-mx, 0px), var(--gt-my, 0px));
+}
+
+html.gtilt-on .bs-chip:hover {
+	transform: translate(var(--gt-mx, 0px), calc(var(--gt-my, 0px) - 1px));
+}
+
+html.gtilt-on .bs-seg-btn,
+html.gtilt-on .bs-hitnav button {
+	transition: background-color var(--dur-fast) ease, color var(--dur-fast) ease, transform var(--dur-fast) var(--ease-out);
+}
+
+html.gtilt-on .gtilt-mag-release {
+	transition-property: transform, background-color, border-color, color, box-shadow;
+	transition-duration: 600ms, var(--dur-fast), var(--dur-fast), var(--dur-fast), var(--dur-fast);
+	transition-timing-function: var(--gtilt-spring), ease, ease, ease, ease;
+}
+
+/* ---------- Click ripple ----------------------------------------------- */
+
+.gtilt-ripple-host {
+	position: relative;
+}
+
+.gtilt-ripple {
+	position: absolute;
+	inset: 0;
+	overflow: hidden;
+	border-radius: inherit;
+	pointer-events: none;
+	z-index: 2;
+}
+
+html.gtilt-on .misc-card > .gtilt-ripple {
+	transform: translateZ(22px);
+}
+
+.gtilt-ripple::before {
+	content: '';
+	position: absolute;
+	left: var(--x, 50%);
+	top: var(--y, 50%);
+	width: var(--s, 200px);
+	height: var(--s, 200px);
+	margin: calc(var(--s, 200px) / -2) 0 0 calc(var(--s, 200px) / -2);
+	border-radius: 50%;
+	background: radial-gradient(circle, var(--gtilt-ripple) 0%, rgba(0, 0, 0, 0) 70%);
+	transform: scale(0.15);
+	opacity: 0.95;
+	animation: gtilt-ripple 650ms var(--ease-out) forwards;
+}
+
+@keyframes gtilt-ripple {
+	to {
+		transform: scale(1);
+		opacity: 0;
+	}
+}
+
+/* ---------- Cursor spotlight (dark mode) ------------------------------- */
+
+.gtilt-spot {
+	position: fixed;
+	left: 0;
+	top: 0;
+	width: 300px;
+	height: 300px;
+	border-radius: 50%;
+	pointer-events: none;
+	z-index: 1010; /* under the sticky navbar (1020) and every modal */
+	background: radial-gradient(circle, var(--gtilt-spot) 0%, rgba(124, 179, 255, 0) 68%);
+	opacity: 0;
+	transform: translate3d(-600px, -600px, 0);
+	transition: opacity 500ms ease;
+	will-change: transform;
+}
+
+.gtilt-spot.is-shown {
+	opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.gtilt-nav-bar,
+	.gtilt-photo-inner,
+	html.gtilt-on .misc-card,
+	html.gtilt-on .misc-card .misc-thumb {
+		transition: none;
+	}
+}

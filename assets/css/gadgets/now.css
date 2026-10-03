@@ -1,0 +1,353 @@
+/* "Now in Garland" card (assets/js/gadgets/now.js). Sits in #leftPanel after
+   the contact rows. Height is reserved up front so nothing shifts while the
+   weather / GitHub / shelf rows load or quietly hide. */
+
+.now-card {
+	--now-gap: 10px;
+	display: flex;
+	flex-direction: column;
+	box-sizing: border-box;
+	min-height: 262px;
+	margin: 1.1rem 0 1.5rem;
+	padding: 10px 10px 8px;
+	border: 1px solid var(--border);
+	border-radius: 12px;
+	background: var(--surface);
+	color: var(--text);
+	font-size: .8rem;
+	line-height: 1.3;
+	box-shadow: var(--shadow);
+	overflow: hidden;
+}
+
+.now-strip {
+	height: 44px;
+	border-radius: 7px;
+	overflow: hidden;
+	background: #1a2244;
+}
+
+.now-sky {
+	display: block;
+	width: 100%;
+	height: 44px;
+}
+
+.now-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	min-height: 26px;
+	margin-top: var(--now-gap);
+	overflow: hidden;
+	transition: height var(--dur) var(--ease-out), opacity var(--dur-fast) ease, margin-top var(--dur) var(--ease-out);
+}
+
+.now-row.now-off {
+	height: 0 !important;
+	min-height: 0;
+	margin-top: 0;
+	opacity: 0;
+	pointer-events: none;
+}
+
+.now-row.now-ready > * {
+	animation: now-in var(--dur) var(--ease-out) both;
+}
+
+@keyframes now-in {
+	from { opacity: 0; }
+	to { opacity: 1; }
+}
+
+/* ---- Clock ---- */
+
+.now-clock {
+	align-items: flex-start;
+	gap: 10px;
+	min-height: 38px;
+	margin-top: 9px;
+}
+
+.now-time {
+	flex: none;
+	font-size: 1.45rem;
+	font-weight: 600;
+	letter-spacing: -0.02em;
+	line-height: 1.1;
+	color: var(--heading);
+	font-variant-numeric: tabular-nums;
+	font-feature-settings: "tnum" 1;
+	padding-top: 2px;
+}
+
+.now-side {
+	min-width: 0;
+	flex: 1 1 auto;
+	display: flex;
+	flex-direction: column;
+	gap: 1px;
+	font-size: .76rem;
+	color: var(--text-2);
+}
+
+.now-date {
+	color: var(--text);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.now-sun {
+	white-space: nowrap;
+	font-variant-numeric: tabular-nums;
+}
+
+/* ---- Text rows ---- */
+
+.now-glyph {
+	flex: none;
+	color: var(--text-2);
+}
+
+.now-text {
+	min-width: 0;
+	flex: 1 1 auto;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.now-temp {
+	font-weight: 600;
+	color: var(--heading);
+	font-variant-numeric: tabular-nums;
+}
+
+.now-sub {
+	color: var(--text-2);
+}
+
+.now-word {
+	color: var(--text);
+}
+
+.now-repo,
+.now-title {
+	color: var(--heading);
+	text-decoration: none;
+	background-image: linear-gradient(var(--accent), var(--accent));
+	background-repeat: no-repeat;
+	background-size: 0% 1px;
+	background-position: 0 100%;
+	transition: background-size var(--dur) var(--ease-out), color var(--dur-fast) ease;
+}
+
+.now-repo:hover,
+.now-repo:focus-visible,
+.now-title:hover,
+.now-title:focus-visible {
+	color: var(--accent);
+	background-size: 100% 1px;
+}
+
+/* Push row: the repo name shrinks with an ellipsis, the time always stays. */
+.now-gh .now-text {
+	display: flex;
+	align-items: baseline;
+	gap: 0;
+}
+
+.now-gh .now-sub {
+	flex: none;
+	white-space: pre;
+}
+
+.now-repo {
+	min-width: 0;
+	flex: 0 1 auto;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	font-family: var(--font-mono);
+	font-size: .74rem;
+}
+
+/* ---- Shelf pick ---- */
+
+.now-pick {
+	align-items: stretch;
+	min-height: 40px;
+}
+
+.now-spine {
+	flex: none;
+	width: 14px;
+	min-height: 40px;
+	border-radius: 2px;
+	background: var(--sp, var(--border-strong));
+	box-shadow: inset 2px 0 0 rgba(255, 255, 255, 0.22), inset -1px 0 0 rgba(0, 0, 0, 0.25);
+	position: relative;
+	transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.now-spine:hover,
+.now-spine:focus-visible {
+	transform: translateY(-2px);
+}
+
+.now-spine-band {
+	position: absolute;
+	left: 3px;
+	right: 3px;
+	top: 6px;
+	height: 2px;
+	background: rgba(255, 255, 255, 0.5);
+	border-radius: 1px;
+}
+
+.now-spine-band::after {
+	content: "";
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 24px;
+	height: 2px;
+	background: rgba(255, 255, 255, 0.5);
+	border-radius: 1px;
+}
+
+.now-pick-text {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	gap: 1px;
+	white-space: normal;
+}
+
+.now-label {
+	font-size: .66rem;
+	letter-spacing: .04em;
+	text-transform: uppercase;
+}
+
+.now-title {
+	display: block;
+	font-weight: 500;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	width: fit-content;
+	max-width: 100%;
+}
+
+.now-author {
+	display: block;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.now-another {
+	flex: none;
+	align-self: center;
+	border: 1px solid var(--border);
+	border-radius: 999px;
+	background: var(--bg);
+	color: var(--text-2);
+	font: inherit;
+	font-size: .68rem;
+	line-height: 1;
+	padding: 5px 8px;
+	cursor: pointer;
+	transition: color var(--dur-fast) ease, border-color var(--dur-fast) ease, background-color var(--dur-fast) ease;
+}
+
+.now-another:hover,
+.now-another:focus-visible {
+	color: var(--accent);
+	border-color: var(--accent-ring);
+	background: var(--accent-soft);
+	outline: none;
+}
+
+.now-another:focus-visible {
+	box-shadow: 0 0 0 3px var(--accent-ring);
+}
+
+/* ---- Footer ---- */
+
+.now-foot {
+	margin-top: auto;
+	padding-top: var(--now-gap);
+	display: flex;
+	gap: 6px;
+	align-items: baseline;
+	font-size: .68rem;
+	color: var(--text-2);
+	white-space: nowrap;
+}
+
+.now-mono {
+	font-family: var(--font-mono);
+	font-size: .66rem;
+}
+
+/* ---- Skeleton ---- */
+
+.now-skel {
+	display: block;
+	height: 10px;
+	border-radius: 4px;
+	background: var(--surface-2);
+	background-image: linear-gradient(90deg, var(--surface-2) 0%, var(--border) 50%, var(--surface-2) 100%);
+	background-size: 200% 100%;
+	animation: now-shimmer 1.4s linear infinite;
+}
+
+.now-skel-icon {
+	flex: none;
+	width: 18px;
+	height: 18px;
+	border-radius: 5px;
+}
+
+.now-skel-w1 { width: 58%; }
+.now-skel-w2 { width: 72%; }
+.now-skel-w3 { width: 64%; height: 22px; align-self: center; }
+
+.now-skel-spine {
+	flex: none;
+	width: 14px;
+	height: 40px;
+	border-radius: 2px;
+}
+
+@keyframes now-shimmer {
+	from { background-position: 200% 0; }
+	to { background-position: -200% 0; }
+}
+
+/* ---- Reduced motion ---- */
+
+.now-card.now-reduced .now-skel,
+.now-card.now-reduced .now-row.now-ready > *,
+.now-card.now-reduced .now-row {
+	animation: none;
+	transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.now-skel {
+		animation: none;
+		background-image: none;
+	}
+}
+
+/* ---- Phone: full width under the contacts ---- */
+
+@media (max-width: 767.98px) {
+	.now-card {
+		margin: 1rem 0 1.25rem;
+	}
+}
