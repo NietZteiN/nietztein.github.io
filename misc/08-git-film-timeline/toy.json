@@ -1,0 +1,15 @@
+{
+	"n": 8,
+	"slug": "08-git-film-timeline",
+	"title": "Git film timeline",
+	"desc": "A git history laid out like a video editor, with a trailer that plays the whole thing in 30 seconds.",
+	"note": "Shows a bundled example repository.",
+	"group": "code",
+	"tags": [],
+	"added": "2026-09-22",
+	"surfaces": ["grid"],
+	"order": { "grid": 36, "views": null },
+	"status": "live",
+	"kit": false,
+	"thumb": { "legacy": true }
+}

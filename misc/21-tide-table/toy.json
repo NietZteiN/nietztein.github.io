@@ -1,0 +1,14 @@
+{
+	"n": 21,
+	"slug": "21-tide-table",
+	"title": "Tide Table for Prose",
+	"desc": "A clock whose face is a paragraph: one word turns into a synonym every minute until midnight.",
+	"note": "",
+	"group": "language",
+	"tags": [],
+	"added": "2026-09-25",
+	"surfaces": ["grid"],
+	"order": { "grid": 27, "views": null },
+	"status": "live",
+	"kit": false
+}

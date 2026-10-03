@@ -1,0 +1,15 @@
+{
+	"n": 12,
+	"slug": "12-translation-aligner",
+	"title": "Translation aligner",
+	"desc": "A source text and its translation side by side, sentence by sentence, with manual realignment.",
+	"note": "",
+	"group": "language",
+	"tags": [],
+	"added": "2026-09-22",
+	"surfaces": ["grid"],
+	"order": { "grid": 39, "views": null },
+	"status": "live",
+	"kit": false,
+	"thumb": { "legacy": true }
+}

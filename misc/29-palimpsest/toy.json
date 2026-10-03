@@ -1,0 +1,14 @@
+{
+	"n": 29,
+	"slug": "29-palimpsest",
+	"title": "Palimpsest",
+	"desc": "A vellum leaf that remembers your hand: where you rub, an older hidden text shows through, across visits.",
+	"note": "",
+	"group": "art",
+	"tags": [],
+	"added": "2026-09-25",
+	"surfaces": ["grid"],
+	"order": { "grid": 19, "views": null },
+	"status": "live",
+	"kit": false
+}

@@ -1,0 +1,14 @@
+{
+	"n": 32,
+	"slug": "32-latentland-map",
+	"title": "Latentland Map",
+	"desc": "An inked map of Latentland: read the neuron's memoir place by place, or explore it on a budget of surprise.",
+	"note": "",
+	"group": "stories",
+	"tags": [],
+	"added": "2026-09-25",
+	"surfaces": ["grid"],
+	"order": { "grid": 22, "views": null },
+	"status": "live",
+	"kit": false
+}

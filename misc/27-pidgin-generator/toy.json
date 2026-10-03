@@ -1,0 +1,14 @@
+{
+	"n": 27,
+	"slug": "27-pidgin-generator",
+	"title": "Pidgin Generator",
+	"desc": "Collide two languages into a toy pidgin: lexicon, phonology, grammar sketch, phrasebook and corpus, all live.",
+	"note": "",
+	"group": "language",
+	"tags": [],
+	"added": "2026-09-25",
+	"surfaces": ["grid"],
+	"order": { "grid": 17, "views": null },
+	"status": "live",
+	"kit": false
+}

@@ -1,0 +1,14 @@
+{
+	"n": 54,
+	"slug": "54-card-catalog",
+	"title": "Card Catalog",
+	"desc": "The library as an oak card catalogue: pull a drawer and riffle through 889 typed 3×5 cards filed by author, title, subject, shelf or year.",
+	"note": "",
+	"group": "library",
+	"tags": [],
+	"added": "2026-10-02",
+	"surfaces": ["views"],
+	"order": { "grid": null, "views": 9 },
+	"status": "live",
+	"kit": false
+}

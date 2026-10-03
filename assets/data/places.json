@@ -1,0 +1,122 @@
+{
+  "countries": [
+    {
+      "id": "840",
+      "name": "United States",
+      "home": true,
+      "city": "Texas",
+      "tz": "America/Chicago",
+      "lat": 32.99,
+      "lon": -96.75,
+      "code": "DFW",
+      "continent": "North America",
+      "pop": 345426571
+    },
+    {
+      "id": "704",
+      "name": "Vietnam",
+      "home": false,
+      "city": "Hanoi",
+      "tz": "Asia/Ho_Chi_Minh",
+      "lat": 21.03,
+      "lon": 105.85,
+      "code": "HAN",
+      "continent": "Asia",
+      "pop": 100987686
+    },
+    {
+      "id": "484",
+      "name": "Mexico",
+      "home": false,
+      "city": "Mexico City",
+      "tz": "America/Mexico_City",
+      "lat": 19.43,
+      "lon": -99.13,
+      "code": "MEX",
+      "continent": "North America",
+      "pop": 130861007
+    },
+    {
+      "id": "124",
+      "name": "Canada",
+      "home": false,
+      "city": "Toronto",
+      "tz": "America/Toronto",
+      "lat": 43.65,
+      "lon": -79.38,
+      "code": "YYZ",
+      "continent": "North America",
+      "pop": 39742430
+    },
+    {
+      "id": "276",
+      "name": "Germany",
+      "home": false,
+      "city": "Berlin",
+      "tz": "Europe/Berlin",
+      "lat": 52.52,
+      "lon": 13.4,
+      "code": "BER",
+      "continent": "Europe",
+      "pop": 84552242
+    },
+    {
+      "id": "380",
+      "name": "Italy",
+      "home": false,
+      "city": "Rome",
+      "tz": "Europe/Rome",
+      "lat": 41.9,
+      "lon": 12.5,
+      "code": "FCO",
+      "continent": "Europe",
+      "pop": 59342867
+    },
+    {
+      "id": "056",
+      "name": "Belgium",
+      "home": false,
+      "city": "Brussels",
+      "tz": "Europe/Brussels",
+      "lat": 50.85,
+      "lon": 4.35,
+      "code": "BRU",
+      "continent": "Europe",
+      "pop": 11738763
+    },
+    {
+      "id": "392",
+      "name": "Japan",
+      "home": false,
+      "city": "Tokyo",
+      "tz": "Asia/Tokyo",
+      "lat": 35.68,
+      "lon": 139.69,
+      "code": "HND",
+      "continent": "Asia",
+      "pop": 123753041
+    }
+  ],
+  "usPlaces": [
+    {
+      "name": "Washington, D.C.",
+      "lat": 38.9,
+      "lon": -77.04
+    },
+    {
+      "name": "Seattle",
+      "lat": 47.61,
+      "lon": -122.33
+    },
+    {
+      "name": "California",
+      "lat": 36.78,
+      "lon": -119.42
+    },
+    {
+      "name": "Houston",
+      "lat": 29.76,
+      "lon": -95.37
+    }
+  ]
+}

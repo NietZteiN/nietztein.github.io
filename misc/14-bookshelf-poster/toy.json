@@ -1,0 +1,15 @@
+{
+	"n": 14,
+	"slug": "14-bookshelf-poster",
+	"title": "Bookshelf poster",
+	"desc": "A whole book collection as one printable SVG poster of spines, sized to the paper you pick.",
+	"note": "",
+	"group": "library",
+	"tags": [],
+	"added": "2026-09-22",
+	"surfaces": ["grid", "views"],
+	"order": { "grid": 32, "views": 15 },
+	"status": "live",
+	"kit": false,
+	"thumb": { "legacy": true }
+}

@@ -1,0 +1,15 @@
+{
+	"n": 11,
+	"slug": "11-poetry-form-checker",
+	"title": "Poetry form checker",
+	"desc": "Paste a poem and get morae, syllables, meter and rhyme annotated line by line.",
+	"note": "",
+	"group": "language",
+	"tags": [],
+	"added": "2026-09-22",
+	"surfaces": ["grid"],
+	"order": { "grid": 38, "views": null },
+	"status": "live",
+	"kit": false,
+	"thumb": { "legacy": true }
+}

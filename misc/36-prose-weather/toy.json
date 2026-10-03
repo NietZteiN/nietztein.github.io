@@ -1,0 +1,14 @@
+{
+	"n": 36,
+	"slug": "36-prose-weather",
+	"title": "Prose Weather",
+	"desc": "The 10 o'clock forecast for a piece of writing: sentiment is temperature, commas are drizzle, a 45-word sentence is a run-on warning, and every number opens the sentence that caused it.",
+	"note": "",
+	"group": "language",
+	"tags": [],
+	"added": "2026-10-02",
+	"surfaces": ["grid"],
+	"order": { "grid": 3, "views": null },
+	"status": "live",
+	"kit": false
+}

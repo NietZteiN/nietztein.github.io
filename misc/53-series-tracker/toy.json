@@ -1,0 +1,14 @@
+{
+	"n": 53,
+	"slug": "53-series-tracker",
+	"title": "Runs",
+	"desc": "Every numbered series in the library as a shelf of spines: filled ones are here, dashed ones are the gaps, and a shopping list names what is missing.",
+	"note": "",
+	"group": "library",
+	"tags": [],
+	"added": "2026-10-02",
+	"surfaces": ["views"],
+	"order": { "grid": null, "views": 8 },
+	"status": "live",
+	"kit": false
+}

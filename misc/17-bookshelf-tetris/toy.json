@@ -1,0 +1,15 @@
+{
+	"n": 17,
+	"slug": "17-bookshelf-tetris",
+	"title": "Bookshelf Tetris",
+	"desc": "Falling pieces are books. A shelf only clears when its titles read in alphabetical order.",
+	"note": "",
+	"group": "library",
+	"tags": [],
+	"added": "2026-09-22",
+	"surfaces": ["grid", "views"],
+	"order": { "grid": 30, "views": 16 },
+	"status": "live",
+	"kit": false,
+	"thumb": { "legacy": true }
+}

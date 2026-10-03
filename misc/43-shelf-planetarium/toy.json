@@ -1,0 +1,14 @@
+{
+	"n": 43,
+	"slug": "43-shelf-planetarium",
+	"title": "Bookshelf Planetarium",
+	"desc": "The real Texas sky right now, each of the 88 constellations renamed for a day after an author on the shelf. Click one for its myth.",
+	"note": "",
+	"group": "library",
+	"tags": [],
+	"added": "2026-10-02",
+	"surfaces": ["grid"],
+	"order": { "grid": 10, "views": null },
+	"status": "live",
+	"kit": false
+}

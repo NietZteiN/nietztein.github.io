@@ -1,0 +1,14 @@
+{
+	"n": 52,
+	"slug": "52-library-by-numbers",
+	"title": "By the Numbers",
+	"desc": "One library weighed, measured and timed: 889 books as 360 kg of paper, a six-storey stack, fifteen years of reading, every count drawn live from the catalogue.",
+	"note": "",
+	"group": "library",
+	"tags": [],
+	"added": "2026-10-02",
+	"surfaces": ["views"],
+	"order": { "grid": null, "views": 7 },
+	"status": "live",
+	"kit": false
+}

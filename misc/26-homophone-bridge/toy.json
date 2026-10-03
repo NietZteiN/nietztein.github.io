@@ -1,0 +1,14 @@
+{
+	"n": 26,
+	"slug": "26-homophone-bridge",
+	"title": "Homophone Bridge",
+	"desc": "Cross a river of six languages on planks that sound alike; score for how far the meanings drift.",
+	"note": "",
+	"group": "language",
+	"tags": [],
+	"added": "2026-09-25",
+	"surfaces": ["grid"],
+	"order": { "grid": 16, "views": null },
+	"status": "live",
+	"kit": false
+}

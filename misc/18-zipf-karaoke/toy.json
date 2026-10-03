@@ -1,0 +1,14 @@
+{
+	"n": 18,
+	"slug": "18-zipf-karaoke",
+	"title": "Zipf Karaoke",
+	"desc": "Words fade by how common they are, then get sung: common ones vanish in a beat, rare ones ring and linger.",
+	"note": "",
+	"group": "language",
+	"tags": [],
+	"added": "2026-09-25",
+	"surfaces": ["grid"],
+	"order": { "grid": 24, "views": null },
+	"status": "live",
+	"kit": false
+}

@@ -1,0 +1,14 @@
+{
+	"n": 34,
+	"slug": "34-passport-atlas",
+	"title": "Passport Atlas",
+	"desc": "A globe of the eight countries I've set foot in. Spin it, click a lit country, and an ink stamp thumps into the passport beside it.",
+	"note": "",
+	"group": "time",
+	"tags": [],
+	"added": "2026-10-02",
+	"surfaces": ["grid"],
+	"order": { "grid": 1, "views": null },
+	"status": "live",
+	"kit": false
+}

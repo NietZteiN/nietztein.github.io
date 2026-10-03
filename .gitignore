@@ -4,3 +4,10 @@
 # public site. Publish one by moving it into blog/posts/. See blog/drafts/README.md.
 blog/drafts/*
 !blog/drafts/README.md
+
+# The library workbook holds private working notes (photo files, neighbours,
+# confidence). Only the JSON built from it by scripts/build-library-json.ps1 is public.
+assets/Jack_library_catalog.xlsx
+
+# Local output of the QA harness (scripts/qa): reports, probe screenshots.
+scripts/qa/out/

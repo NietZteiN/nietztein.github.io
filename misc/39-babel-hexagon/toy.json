@@ -1,0 +1,14 @@
+{
+	"n": 39,
+	"slug": "39-babel-hexagon",
+	"title": "Babel Hexagon",
+	"desc": "Borges's Library, browsable and complete: every 40-line page that could ever be written sits on a shelf, and whatever you type, the search computes where it already is.",
+	"note": "",
+	"group": "art",
+	"tags": [],
+	"added": "2026-10-02",
+	"surfaces": ["grid"],
+	"order": { "grid": 6, "views": null },
+	"status": "live",
+	"kit": false
+}

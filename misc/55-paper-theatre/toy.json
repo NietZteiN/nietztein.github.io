@@ -1,0 +1,14 @@
+{
+	"n": 55,
+	"slug": "55-paper-theatre",
+	"title": "Paper Theatre",
+	"desc": "Every paper and post as a two-minute visual novel: a bet, a result, a citation. One engine; each story is a plain-text script you can read in the repo.",
+	"note": "",
+	"group": "stories",
+	"tags": [],
+	"added": "2026-10-02",
+	"surfaces": ["grid"],
+	"order": { "grid": 0, "views": null },
+	"status": "live",
+	"kit": false
+}

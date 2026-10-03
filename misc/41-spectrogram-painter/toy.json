@@ -1,0 +1,14 @@
+{
+	"n": 41,
+	"slug": "41-spectrogram-painter",
+	"title": "Spectrogram Painter",
+	"desc": "Paint on a spectrogram and hear it: pitch runs up, time runs right, brightness is loudness. Stamp a word and hide it in the sound like Aphex Twin did.",
+	"note": "",
+	"group": "art",
+	"tags": [],
+	"added": "2026-10-02",
+	"surfaces": ["grid"],
+	"order": { "grid": 8, "views": null },
+	"status": "live",
+	"kit": false
+}

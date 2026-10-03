@@ -1,0 +1,14 @@
+{
+	"n": 45,
+	"slug": "45-reading-room",
+	"title": "Reading Room",
+	"desc": "The library as an isometric room: twelve real bookcases, every spine in shelf order, trophies and game boxes where they really sit. Walk up and press E.",
+	"note": "",
+	"group": "library",
+	"tags": [],
+	"added": "2026-10-02",
+	"surfaces": ["views"],
+	"order": { "grid": null, "views": 0 },
+	"status": "live",
+	"kit": false
+}

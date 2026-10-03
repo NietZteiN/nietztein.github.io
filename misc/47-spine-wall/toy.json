@@ -1,0 +1,14 @@
+{
+	"n": 47,
+	"slug": "47-spine-wall",
+	"title": "Spine Wall",
+	"desc": "The whole library as one long wall of shelves, every spine drawn to size in its real place. Zoom in to read the titles; search shines a torch on the book.",
+	"note": "",
+	"group": "library",
+	"tags": [],
+	"added": "2026-10-02",
+	"surfaces": ["views"],
+	"order": { "grid": null, "views": 2 },
+	"status": "live",
+	"kit": false
+}

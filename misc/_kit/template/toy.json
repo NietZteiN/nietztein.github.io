@@ -1,0 +1,15 @@
+{
+	"n": 0,
+	"slug": "template",
+	"title": "Template",
+	"desc": "A starting point for new toys.",
+	"group": "art",
+	"tags": [],
+	"added": "2026-10-03",
+	"surfaces": [],
+	"status": "wip",
+	"kit": true,
+	"data": ["library"],
+	"origins": [],
+	"thumb": { "query": "?thumb=1", "viewport": [800, 500], "settleMs": 300 }
+}

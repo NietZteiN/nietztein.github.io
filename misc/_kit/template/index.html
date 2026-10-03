@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Template</title>
+<meta name="description" content="A starting point for new toys: one shelf of spines dealt from the library catalogue by a seeded shuffle, built on the shared toy kit.">
+<link rel="icon" href="data:,">
+<!-- The kit, stylesheet first, script right after it. A toy lives in misc/NN-name/,
+     one folder higher than this template: once copied there, the two paths below
+     are ../_kit/kit.css and ../_kit/kit.js. -->
+<link rel="stylesheet" href="../../_kit/kit.css"><script src="../../_kit/kit.js"></script>
+<style>
+	/* The toy's own styles come after the kit and use its tokens. */
+	main {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+	}
+
+	/* Size the wrapper with CSS; the canvas inside fills it. The script sets
+	   the canvas's pixel size from the wrapper, so the two never chase each other. */
+	.stage {
+		position: relative;
+		height: clamp(230px, 46vh, 420px);
+		overflow: hidden;
+		border: 1px solid var(--border);
+		border-radius: 10px;
+		background: var(--surface);
+	}
+	.stage canvas {
+		position: absolute;
+		inset: 0;
+		display: block;
+		width: 100%;
+		height: 100%;
+		cursor: pointer;
+		/* Taps pick a spine and the page still scrolls. A canvas that handles
+		   drags itself uses touch-action: none instead. */
+		touch-action: manipulation;
+	}
+
+	.pick { flex-wrap: nowrap; }
+	.pick p {
+		flex: 1;
+		min-width: 0;
+		margin: 0;
+		font-size: 14px;
+		text-align: center;
+		overflow-wrap: anywhere;
+	}
+	.pick p b { color: var(--heading); font-weight: 600; }
+
+	/* The thumbnail is the shelf alone, edge to edge. */
+	html.is-thumb main { padding: 0; }
+	html.is-thumb .stage {
+		flex: 1;
+		height: auto;
+		border: 0;
+		border-radius: 0;
+	}
+</style>
+</head>
+<body>
+
+<main class="kit-main kit-pad">
+	<div class="kit-row kit-nothumb">
+		<button class="kit-btn primary" id="btn-shuffle" type="button">Shuffle</button>
+		<button class="kit-btn" id="btn-colour" type="button" aria-pressed="false">Sort by colour</button>
+		<button class="kit-btn" id="btn-play" type="button">Play the shelf</button>
+		<button class="kit-btn" id="btn-save" type="button">Save PNG</button>
+		<span class="kit-note" id="seed-note"></span>
+	</div>
+
+	<div class="stage" id="stage">
+		<canvas id="canvas" role="img" aria-label="A shelf of book spines dealt from the library catalogue"></canvas>
+	</div>
+
+	<div class="kit-row pick kit-nothumb" id="pick" role="group" aria-label="Pick a spine">
+		<button class="kit-btn small" id="btn-prev" type="button" aria-label="Previous spine">&larr;</button>
+		<p id="caption" aria-live="polite">Loading the catalogue&hellip;</p>
+		<button class="kit-btn small" id="btn-next" type="button" aria-label="Next spine">&rarr;</button>
+	</div>
+</main>
+
+<footer class="kit-footer" id="how">
+	<p><b>How it works.</b> The library catalogue (<code>assets/data/library.json</code>) is shuffled by a seeded generator and dealt onto the shelf until it is full, so the same seed and the same window width always give the same shelf. The seed is today's date unless the address has <code>?seed=</code>. Colours are the ones the Bookshelf tab paints its spines with; widths and heights come from a hash of each book's id. Nothing leaves your browser; only the sort order is remembered, in localStorage.</p>
+</footer>
+
+<template id="help-template">
+	<p>This page is the starting point for new toys, built on the shared kit. It deals one shelf of spines from the library catalogue, and the same seed always deals the same shelf.</p>
+	<h3>Try</h3>
+	<p><b>Shuffle</b> deals again. <b>Sort by colour</b> lines the same books up by hue, and is remembered in this browser. <b>Play the shelf</b> turns the first sixteen spines into notes, one pitch per hue. Tap a spine to read its title, or step through them with the arrow buttons or the <kbd>&larr;</kbd> and <kbd>&rarr;</kbd> keys.</p>
+	<h3>Links</h3>
+	<p><code>?seed=anything</code> fixes the shelf, <code>?theme=dark</code> or <code>?theme=light</code> picks a theme for one visit, and <code>?thumb=1</code> shows the state the thumbnail is taken from.</p>
+</template>
+
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,1177 @@
+{
+	"groups": [
+		{
+			"id": "stories",
+			"name": "Stories and the site"
+		},
+		{
+			"id": "ml",
+			"name": "Machine learning, live"
+		},
+		{
+			"id": "lab",
+			"name": "Experiments on you"
+		},
+		{
+			"id": "code",
+			"name": "Code and obfuscation"
+		},
+		{
+			"id": "language",
+			"name": "Language"
+		},
+		{
+			"id": "library",
+			"name": "Library"
+		},
+		{
+			"id": "art",
+			"name": "Art and sound"
+		},
+		{
+			"id": "time",
+			"name": "Clocks and maps"
+		}
+	],
+	"toys": [
+		{
+			"n": 1,
+			"slug": "01-virtual-library",
+			"title": "Virtual library",
+			"desc": "A library catalog as shelves of spines: find a book, browse stats, run integrity checks.",
+			"note": "Runs on an invented sample catalog.",
+			"group": "library",
+			"tags": [],
+			"added": "2026-09-22",
+			"surfaces": [
+				"grid",
+				"views"
+			],
+			"order": {
+				"grid": 31,
+				"views": 17
+			},
+			"status": "live",
+			"kit": false,
+			"thumb": {
+				"legacy": true
+			},
+			"href": "misc/01-virtual-library/",
+			"thumbnail": "assets/img/misc/01-virtual-library.jpg"
+		},
+		{
+			"n": 4,
+			"slug": "04-obfuscation-playground",
+			"title": "Obfuscation playground",
+			"desc": "Stack JavaScript obfuscation transforms into a ladder and diff each rung against the last.",
+			"note": "",
+			"group": "code",
+			"tags": [],
+			"added": "2026-09-22",
+			"surfaces": [
+				"grid"
+			],
+			"order": {
+				"grid": 33,
+				"views": null
+			},
+			"status": "live",
+			"kit": false,
+			"thumb": {
+				"legacy": true
+			},
+			"href": "misc/04-obfuscation-playground/",
+			"thumbnail": "assets/img/misc/04-obfuscation-playground.jpg"
+		},
+		{
+			"n": 5,
+			"slug": "05-obfuscation-game",
+			"title": "Obfuscation game",
+			"desc": "Predict the output of obfuscated Python snippets. Tracks correctness, time and confidence.",
+			"note": "",
+			"group": "code",
+			"tags": [],
+			"added": "2026-09-22",
+			"surfaces": [
+				"grid"
+			],
+			"order": {
+				"grid": 34,
+				"views": null
+			},
+			"status": "live",
+			"kit": false,
+			"thumb": {
+				"legacy": true
+			},
+			"href": "misc/05-obfuscation-game/",
+			"thumbnail": "assets/img/misc/05-obfuscation-game.jpg"
+		},
+		{
+			"n": 7,
+			"slug": "07-grokking-microscope",
+			"title": "Grokking microscope",
+			"desc": "A one-layer transformer learning addition mod 113. Scrub through training and watch it grok.",
+			"note": "",
+			"group": "ml",
+			"tags": [],
+			"added": "2026-09-22",
+			"surfaces": [
+				"grid"
+			],
+			"order": {
+				"grid": 35,
+				"views": null
+			},
+			"status": "live",
+			"kit": false,
+			"thumb": {
+				"legacy": true
+			},
+			"href": "misc/07-grokking-microscope/",
+			"thumbnail": "assets/img/misc/07-grokking-microscope.jpg"
+		},
+		{
+			"n": 8,
+			"slug": "08-git-film-timeline",
+			"title": "Git film timeline",
+			"desc": "A git history laid out like a video editor, with a trailer that plays the whole thing in 30 seconds.",
+			"note": "Shows a bundled example repository.",
+			"group": "code",
+			"tags": [],
+			"added": "2026-09-22",
+			"surfaces": [
+				"grid"
+			],
+			"order": {
+				"grid": 36,
+				"views": null
+			},
+			"status": "live",
+			"kit": false,
+			"thumb": {
+				"legacy": true
+			},
+			"href": "misc/08-git-film-timeline/",
+			"thumbnail": "assets/img/misc/08-git-film-timeline.jpg"
+		},
+		{
+			"n": 9,
+			"slug": "09-harvard-classics",
+			"title": "Harvard Classics oracle",
+			"desc": "Ask a question or name a mood and get a passage from the Five-Foot Shelf. Also today's Fifteen Minutes a Day reading.",
+			"note": "Searches a sample of 340 passages from seven works.",
+			"group": "library",
+			"tags": [],
+			"added": "2026-09-22",
+			"surfaces": [
+				"grid"
+			],
+			"order": {
+				"grid": 37,
+				"views": null
+			},
+			"status": "live",
+			"kit": false,
+			"thumb": {
+				"legacy": true
+			},
+			"href": "misc/09-harvard-classics/",
+			"thumbnail": "assets/img/misc/09-harvard-classics.jpg"
+		},
+		{
+			"n": 10,
+			"slug": "10-haiku-clock",
+			"title": "Haiku clock",
+			"desc": "The current time, told as a haiku in four languages.",
+			"note": "",
+			"group": "time",
+			"tags": [],
+			"added": "2026-09-22",
+			"surfaces": [
+				"grid"
+			],
+			"order": {
+				"grid": 28,
+				"views": null
+			},
+			"status": "live",
+			"kit": false,
+			"href": "misc/10-haiku-clock/",
+			"thumbnail": "assets/img/misc/10-haiku-clock.jpg"
+		},
+		{
+			"n": 11,
+			"slug": "11-poetry-form-checker",
+			"title": "Poetry form checker",
+			"desc": "Paste a poem and get morae, syllables, meter and rhyme annotated line by line.",
+			"note": "",
+			"group": "language",
+			"tags": [],
+			"added": "2026-09-22",
+			"surfaces": [
+				"grid"
+			],
+			"order": {
+				"grid": 38,
+				"views": null
+			},
+			"status": "live",
+			"kit": false,
+			"thumb": {
+				"legacy": true
+			},
+			"href": "misc/11-poetry-form-checker/",
+			"thumbnail": "assets/img/misc/11-poetry-form-checker.jpg"
+		},
+		{
+			"n": 12,
+			"slug": "12-translation-aligner",
+			"title": "Translation aligner",
+			"desc": "A source text and its translation side by side, sentence by sentence, with manual realignment.",
+			"note": "",
+			"group": "language",
+			"tags": [],
+			"added": "2026-09-22",
+			"surfaces": [
+				"grid"
+			],
+			"order": {
+				"grid": 39,
+				"views": null
+			},
+			"status": "live",
+			"kit": false,
+			"thumb": {
+				"legacy": true
+			},
+			"href": "misc/12-translation-aligner/",
+			"thumbnail": "assets/img/misc/12-translation-aligner.jpg"
+		},
+		{
+			"n": 13,
+			"slug": "13-aozora-frequency-reader",
+			"title": "Aozora frequency reader",
+			"desc": "Sakaguchi Ango's 堕落論 with the words he uses unusually often highlighted against general Japanese.",
+			"note": "",
+			"group": "language",
+			"tags": [],
+			"added": "2026-09-22",
+			"surfaces": [
+				"grid"
+			],
+			"order": {
+				"grid": 40,
+				"views": null
+			},
+			"status": "live",
+			"kit": false,
+			"thumb": {
+				"legacy": true
+			},
+			"href": "misc/13-aozora-frequency-reader/",
+			"thumbnail": "assets/img/misc/13-aozora-frequency-reader.jpg"
+		},
+		{
+			"n": 14,
+			"slug": "14-bookshelf-poster",
+			"title": "Bookshelf poster",
+			"desc": "A whole book collection as one printable SVG poster of spines, sized to the paper you pick.",
+			"note": "",
+			"group": "library",
+			"tags": [],
+			"added": "2026-09-22",
+			"surfaces": [
+				"grid",
+				"views"
+			],
+			"order": {
+				"grid": 32,
+				"views": 15
+			},
+			"status": "live",
+			"kit": false,
+			"thumb": {
+				"legacy": true
+			},
+			"href": "misc/14-bookshelf-poster/",
+			"thumbnail": "assets/img/misc/14-bookshelf-poster.jpg"
+		},
+		{
+			"n": 15,
+			"slug": "15-daylight-clock",
+			"title": "Daylight clock",
+			"desc": "Local time, sunrise, sunset and daylight arcs for three cities at once.",
+			"note": "",
+			"group": "time",
+			"tags": [],
+			"added": "2026-09-22",
+			"surfaces": [
+				"grid"
+			],
+			"order": {
+				"grid": 29,
+				"views": null
+			},
+			"status": "live",
+			"kit": false,
+			"thumb": {
+				"legacy": true
+			},
+			"href": "misc/15-daylight-clock/",
+			"thumbnail": "assets/img/misc/15-daylight-clock.jpg"
+		},
+		{
+			"n": 16,
+			"slug": "16-fake-paper-titles",
+			"title": "Fake paper titles",
+			"desc": "A Markov chain that invents ML paper titles, and a linter that scores how cliché a real one is.",
+			"note": "",
+			"group": "ml",
+			"tags": [],
+			"added": "2026-09-22",
+			"surfaces": [
+				"grid"
+			],
+			"order": {
+				"grid": 41,
+				"views": null
+			},
+			"status": "live",
+			"kit": false,
+			"thumb": {
+				"legacy": true
+			},
+			"href": "misc/16-fake-paper-titles/",
+			"thumbnail": "assets/img/misc/16-fake-paper-titles.jpg"
+		},
+		{
+			"n": 17,
+			"slug": "17-bookshelf-tetris",
+			"title": "Bookshelf Tetris",
+			"desc": "Falling pieces are books. A shelf only clears when its titles read in alphabetical order.",
+			"note": "",
+			"group": "library",
+			"tags": [],
+			"added": "2026-09-22",
+			"surfaces": [
+				"grid",
+				"views"
+			],
+			"order": {
+				"grid": 30,
+				"views": 16
+			},
+			"status": "live",
+			"kit": false,
+			"thumb": {
+				"legacy": true
+			},
+			"href": "misc/17-bookshelf-tetris/",
+			"thumbnail": "assets/img/misc/17-bookshelf-tetris.jpg"
+		},
+		{
+			"n": 18,
+			"slug": "18-zipf-karaoke",
+			"title": "Zipf Karaoke",
+			"desc": "Words fade by how common they are, then get sung: common ones vanish in a beat, rare ones ring and linger.",
+			"note": "",
+			"group": "language",
+			"tags": [],
+			"added": "2026-09-25",
+			"surfaces": [
+				"grid"
+			],
+			"order": {
+				"grid": 24,
+				"views": null
+			},
+			"status": "live",
+			"kit": false,
+			"href": "misc/18-zipf-karaoke/",
+			"thumbnail": "assets/img/misc/18-zipf-karaoke.jpg"
+		},
+		{
+			"n": 19,
+			"slug": "19-tokenizer-aquarium",
+			"title": "Tokenizer Aquarium",
+			"desc": "Live BPE tokenisation as a fish tank: common tokens swim big and slow, rare ones small and twitchy.",
+			"note": "",
+			"group": "ml",
+			"tags": [],
+			"added": "2026-09-25",
+			"surfaces": [
+				"grid"
+			],
+			"order": {
+				"grid": 25,
+				"views": null
+			},
+			"status": "live",
+			"kit": false,
+			"href": "misc/19-tokenizer-aquarium/",
+			"thumbnail": "assets/img/misc/19-tokenizer-aquarium.jpg"
+		},
+		{
+			"n": 20,
+			"slug": "20-library-roguelike",
+			"title": "Library Roguelike",
+			"desc": "A daily text roguelike where every room is a real shelf of the library and every monster is a book.",
+			"note": "",
+			"group": "library",
+			"tags": [],
+			"added": "2026-09-25",
+			"surfaces": [
+				"grid",
+				"views"
+			],
+			"order": {
+				"grid": 26,
+				"views": 14
+			},
+			"status": "live",
+			"kit": false,
+			"href": "misc/20-library-roguelike/",
+			"thumbnail": "assets/img/misc/20-library-roguelike.jpg"
+		},
+		{
+			"n": 21,
+			"slug": "21-tide-table",
+			"title": "Tide Table for Prose",
+			"desc": "A clock whose face is a paragraph: one word turns into a synonym every minute until midnight.",
+			"note": "",
+			"group": "language",
+			"tags": [],
+			"added": "2026-09-25",
+			"surfaces": [
+				"grid"
+			],
+			"order": {
+				"grid": 27,
+				"views": null
+			},
+			"status": "live",
+			"kit": false,
+			"href": "misc/21-tide-table/",
+			"thumbnail": "assets/img/misc/21-tide-table.jpg"
+		},
+		{
+			"n": 22,
+			"slug": "22-shelf-genome",
+			"title": "Shelf Genome",
+			"desc": "The library as one chromosome: genre bands, year glow, collision hotspots, and fake crossover books.",
+			"note": "",
+			"group": "library",
+			"tags": [],
+			"added": "2026-09-25",
+			"surfaces": [
+				"grid",
+				"views"
+			],
+			"order": {
+				"grid": 12,
+				"views": 12
+			},
+			"status": "live",
+			"kit": false,
+			"href": "misc/22-shelf-genome/",
+			"thumbnail": "assets/img/misc/22-shelf-genome.jpg"
+		},
+		{
+			"n": 23,
+			"slug": "23-read-order-oracle",
+			"title": "Read-Order Oracle",
+			"desc": "Ride the library: twelve genre lines, interchanges where books overlap, and a journey planner for what to read next.",
+			"note": "",
+			"group": "library",
+			"tags": [],
+			"added": "2026-09-25",
+			"surfaces": [
+				"grid",
+				"views"
+			],
+			"order": {
+				"grid": 13,
+				"views": 13
+			},
+			"status": "live",
+			"kit": false,
+			"href": "misc/23-read-order-oracle/",
+			"thumbnail": "assets/img/misc/23-read-order-oracle.jpg"
+		},
+		{
+			"n": 24,
+			"slug": "24-book-exchange",
+			"title": "Book Exchange",
+			"desc": "Every library book is a listed stock; prices move when its words show up on the blog. Paper-trade 10,000 credits.",
+			"note": "",
+			"group": "library",
+			"tags": [],
+			"added": "2026-09-25",
+			"surfaces": [
+				"grid"
+			],
+			"order": {
+				"grid": 14,
+				"views": null
+			},
+			"status": "live",
+			"kit": false,
+			"href": "misc/24-book-exchange/",
+			"thumbnail": "assets/img/misc/24-book-exchange.jpg"
+		},
+		{
+			"n": 25,
+			"slug": "25-grammar-fossil-dig",
+			"title": "Grammar Fossil Dig",
+			"desc": "Paste English and dig down through its word strata: modern loans, Latin, Norman French, Norse, Old English bedrock.",
+			"note": "",
+			"group": "language",
+			"tags": [],
+			"added": "2026-09-25",
+			"surfaces": [
+				"grid"
+			],
+			"order": {
+				"grid": 15,
+				"views": null
+			},
+			"status": "live",
+			"kit": false,
+			"href": "misc/25-grammar-fossil-dig/",
+			"thumbnail": "assets/img/misc/25-grammar-fossil-dig.jpg"
+		},
+		{
+			"n": 26,
+			"slug": "26-homophone-bridge",
+			"title": "Homophone Bridge",
+			"desc": "Cross a river of six languages on planks that sound alike; score for how far the meanings drift.",
+			"note": "",
+			"group": "language",
+			"tags": [],
+			"added": "2026-09-25",
+			"surfaces": [
+				"grid"
+			],
+			"order": {
+				"grid": 16,
+				"views": null
+			},
+			"status": "live",
+			"kit": false,
+			"href": "misc/26-homophone-bridge/",
+			"thumbnail": "assets/img/misc/26-homophone-bridge.jpg"
+		},
+		{
+			"n": 27,
+			"slug": "27-pidgin-generator",
+			"title": "Pidgin Generator",
+			"desc": "Collide two languages into a toy pidgin: lexicon, phonology, grammar sketch, phrasebook and corpus, all live.",
+			"note": "",
+			"group": "language",
+			"tags": [],
+			"added": "2026-09-25",
+			"surfaces": [
+				"grid"
+			],
+			"order": {
+				"grid": 17,
+				"views": null
+			},
+			"status": "live",
+			"kit": false,
+			"href": "misc/27-pidgin-generator/",
+			"thumbnail": "assets/img/misc/27-pidgin-generator.jpg"
+		},
+		{
+			"n": 28,
+			"slug": "28-dead-authors-clock",
+			"title": "Dead Authors' Local Time",
+			"desc": "A world clock for the places where the authors on the shelves died, sorted by whose sun is setting right now.",
+			"note": "",
+			"group": "time",
+			"tags": [],
+			"added": "2026-09-25",
+			"surfaces": [
+				"grid"
+			],
+			"order": {
+				"grid": 18,
+				"views": null
+			},
+			"status": "live",
+			"kit": false,
+			"href": "misc/28-dead-authors-clock/",
+			"thumbnail": "assets/img/misc/28-dead-authors-clock.jpg"
+		},
+		{
+			"n": 29,
+			"slug": "29-palimpsest",
+			"title": "Palimpsest",
+			"desc": "A vellum leaf that remembers your hand: where you rub, an older hidden text shows through, across visits.",
+			"note": "",
+			"group": "art",
+			"tags": [],
+			"added": "2026-09-25",
+			"surfaces": [
+				"grid"
+			],
+			"order": {
+				"grid": 19,
+				"views": null
+			},
+			"status": "live",
+			"kit": false,
+			"href": "misc/29-palimpsest/",
+			"thumbnail": "assets/img/misc/29-palimpsest.jpg"
+		},
+		{
+			"n": 30,
+			"slug": "30-site-reverse-engineer",
+			"title": "Site Reverse Engineer",
+			"desc": "The site's own JavaScript, obfuscated live with the Playground's transforms, plus a daily guessing game.",
+			"note": "",
+			"group": "code",
+			"tags": [],
+			"added": "2026-09-25",
+			"surfaces": [
+				"grid"
+			],
+			"order": {
+				"grid": 20,
+				"views": null
+			},
+			"status": "live",
+			"kit": false,
+			"href": "misc/30-site-reverse-engineer/",
+			"thumbnail": "assets/img/misc/30-site-reverse-engineer.jpg"
+		},
+		{
+			"n": 31,
+			"slug": "31-blog-speedrun",
+			"title": "Blog Post Speedrun",
+			"desc": "Speedrun the blog: a LiveSplit-style timer, splits, fake unverified world records, a local leaderboard and TAS detection.",
+			"note": "",
+			"group": "stories",
+			"tags": [],
+			"added": "2026-09-25",
+			"surfaces": [
+				"grid"
+			],
+			"order": {
+				"grid": 21,
+				"views": null
+			},
+			"status": "live",
+			"kit": false,
+			"href": "misc/31-blog-speedrun/",
+			"thumbnail": "assets/img/misc/31-blog-speedrun.jpg"
+		},
+		{
+			"n": 32,
+			"slug": "32-latentland-map",
+			"title": "Latentland Map",
+			"desc": "An inked map of Latentland: read the neuron's memoir place by place, or explore it on a budget of surprise.",
+			"note": "",
+			"group": "stories",
+			"tags": [],
+			"added": "2026-09-25",
+			"surfaces": [
+				"grid"
+			],
+			"order": {
+				"grid": 22,
+				"views": null
+			},
+			"status": "live",
+			"kit": false,
+			"href": "misc/32-latentland-map/",
+			"thumbnail": "assets/img/misc/32-latentland-map.jpg"
+		},
+		{
+			"n": 33,
+			"slug": "33-ghost-commit-player",
+			"title": "Ghost Commit Player",
+			"desc": "Any public GitHub repo replayed as a silent film: intertitles for commits, the file tree growing between.",
+			"note": "",
+			"group": "code",
+			"tags": [],
+			"added": "2026-09-25",
+			"surfaces": [
+				"grid"
+			],
+			"order": {
+				"grid": 23,
+				"views": null
+			},
+			"status": "live",
+			"kit": false,
+			"href": "misc/33-ghost-commit-player/",
+			"thumbnail": "assets/img/misc/33-ghost-commit-player.jpg"
+		},
+		{
+			"n": 34,
+			"slug": "34-passport-atlas",
+			"title": "Passport Atlas",
+			"desc": "A globe of the eight countries I've set foot in. Spin it, click a lit country, and an ink stamp thumps into the passport beside it.",
+			"note": "",
+			"group": "time",
+			"tags": [],
+			"added": "2026-10-02",
+			"surfaces": [
+				"grid"
+			],
+			"order": {
+				"grid": 1,
+				"views": null
+			},
+			"status": "live",
+			"kit": false,
+			"href": "misc/34-passport-atlas/",
+			"thumbnail": "assets/img/misc/34-passport-atlas.jpg"
+		},
+		{
+			"n": 35,
+			"slug": "35-library-orrery",
+			"title": "Library Orrery",
+			"desc": "The library as a solar system: every book a planet, the older it is the farther out and the slower it crawls. Scrub ten thousand years for conjunctions.",
+			"note": "",
+			"group": "library",
+			"tags": [],
+			"added": "2026-10-02",
+			"surfaces": [
+				"grid",
+				"views"
+			],
+			"order": {
+				"grid": 2,
+				"views": 11
+			},
+			"status": "live",
+			"kit": false,
+			"href": "misc/35-library-orrery/",
+			"thumbnail": "assets/img/misc/35-library-orrery.jpg"
+		},
+		{
+			"n": 36,
+			"slug": "36-prose-weather",
+			"title": "Prose Weather",
+			"desc": "The 10 o'clock forecast for a piece of writing: sentiment is temperature, commas are drizzle, a 45-word sentence is a run-on warning, and every number opens the sentence that caused it.",
+			"note": "",
+			"group": "language",
+			"tags": [],
+			"added": "2026-10-02",
+			"surfaces": [
+				"grid"
+			],
+			"order": {
+				"grid": 3,
+				"views": null
+			},
+			"status": "live",
+			"kit": false,
+			"href": "misc/36-prose-weather/",
+			"thumbnail": "assets/img/misc/36-prose-weather.jpg"
+		},
+		{
+			"n": 37,
+			"slug": "37-marginalia-seance",
+			"title": "Marginalia Séance",
+			"desc": "A talking board whose spirits are the authors on these shelves. Ask; the planchette spells an answer stitched from their own book blurbs.",
+			"note": "",
+			"group": "library",
+			"tags": [],
+			"added": "2026-10-02",
+			"surfaces": [
+				"grid"
+			],
+			"order": {
+				"grid": 4,
+				"views": null
+			},
+			"status": "live",
+			"kit": false,
+			"href": "misc/37-marginalia-seance/",
+			"thumbnail": "assets/img/misc/37-marginalia-seance.jpg"
+		},
+		{
+			"n": 38,
+			"slug": "38-handwriting-foundry",
+			"title": "Handwriting Foundry",
+			"desc": "A tiny type foundry. Draw each letter in its cell, watch the page rewrite itself in your hand, and download a real .otf you can install.",
+			"note": "",
+			"group": "art",
+			"tags": [],
+			"added": "2026-10-02",
+			"surfaces": [
+				"grid"
+			],
+			"order": {
+				"grid": 5,
+				"views": null
+			},
+			"status": "live",
+			"kit": false,
+			"href": "misc/38-handwriting-foundry/",
+			"thumbnail": "assets/img/misc/38-handwriting-foundry.jpg"
+		},
+		{
+			"n": 39,
+			"slug": "39-babel-hexagon",
+			"title": "Babel Hexagon",
+			"desc": "Borges's Library, browsable and complete: every 40-line page that could ever be written sits on a shelf, and whatever you type, the search computes where it already is.",
+			"note": "",
+			"group": "art",
+			"tags": [],
+			"added": "2026-10-02",
+			"surfaces": [
+				"grid"
+			],
+			"order": {
+				"grid": 6,
+				"views": null
+			},
+			"status": "live",
+			"kit": false,
+			"href": "misc/39-babel-hexagon/",
+			"thumbnail": "assets/img/misc/39-babel-hexagon.jpg"
+		},
+		{
+			"n": 40,
+			"slug": "40-shelf-raycaster",
+			"title": "Stacks",
+			"desc": "The library as a Wolfenstein-style raycaster: thirteen aisles of real spines drawn from the catalogue. Walk the stacks and pull a book.",
+			"note": "",
+			"group": "library",
+			"tags": [],
+			"added": "2026-10-02",
+			"surfaces": [
+				"grid",
+				"views"
+			],
+			"order": {
+				"grid": 7,
+				"views": 10
+			},
+			"status": "live",
+			"kit": false,
+			"href": "misc/40-shelf-raycaster/",
+			"thumbnail": "assets/img/misc/40-shelf-raycaster.jpg"
+		},
+		{
+			"n": 41,
+			"slug": "41-spectrogram-painter",
+			"title": "Spectrogram Painter",
+			"desc": "Paint on a spectrogram and hear it: pitch runs up, time runs right, brightness is loudness. Stamp a word and hide it in the sound like Aphex Twin did.",
+			"note": "",
+			"group": "art",
+			"tags": [],
+			"added": "2026-10-02",
+			"surfaces": [
+				"grid"
+			],
+			"order": {
+				"grid": 8,
+				"views": null
+			},
+			"status": "live",
+			"kit": false,
+			"href": "misc/41-spectrogram-painter/",
+			"thumbnail": "assets/img/misc/41-spectrogram-painter.jpg"
+		},
+		{
+			"n": 42,
+			"slug": "42-blog-phonograph",
+			"title": "Phonograph",
+			"desc": "Every blog post pressed onto a twelve-inch record: the groove is the text, paragraphs are tracks, and a tonearm reads it aloud. Drop the needle anywhere.",
+			"note": "",
+			"group": "stories",
+			"tags": [],
+			"added": "2026-10-02",
+			"surfaces": [
+				"grid"
+			],
+			"order": {
+				"grid": 9,
+				"views": null
+			},
+			"status": "live",
+			"kit": false,
+			"href": "misc/42-blog-phonograph/",
+			"thumbnail": "assets/img/misc/42-blog-phonograph.jpg"
+		},
+		{
+			"n": 43,
+			"slug": "43-shelf-planetarium",
+			"title": "Bookshelf Planetarium",
+			"desc": "The real Texas sky right now, each of the 88 constellations renamed for a day after an author on the shelf. Click one for its myth.",
+			"note": "",
+			"group": "library",
+			"tags": [],
+			"added": "2026-10-02",
+			"surfaces": [
+				"grid"
+			],
+			"order": {
+				"grid": 10,
+				"views": null
+			},
+			"status": "live",
+			"kit": false,
+			"href": "misc/43-shelf-planetarium/",
+			"thumbnail": "assets/img/misc/43-shelf-planetarium.jpg"
+		},
+		{
+			"n": 44,
+			"slug": "44-text-tartan",
+			"title": "Text Tartan",
+			"desc": "Weave any text into cloth: every word a stripe, the first sentence the sett, the whole text the weft of a 2/2 twill you can zoom into thread by thread.",
+			"note": "",
+			"group": "art",
+			"tags": [],
+			"added": "2026-10-02",
+			"surfaces": [
+				"grid"
+			],
+			"order": {
+				"grid": 11,
+				"views": null
+			},
+			"status": "live",
+			"kit": false,
+			"href": "misc/44-text-tartan/",
+			"thumbnail": "assets/img/misc/44-text-tartan.jpg"
+		},
+		{
+			"n": 45,
+			"slug": "45-reading-room",
+			"title": "Reading Room",
+			"desc": "The library as an isometric room: twelve real bookcases, every spine in shelf order, trophies and game boxes where they really sit. Walk up and press E.",
+			"note": "",
+			"group": "library",
+			"tags": [],
+			"added": "2026-10-02",
+			"surfaces": [
+				"views"
+			],
+			"order": {
+				"grid": null,
+				"views": 0
+			},
+			"status": "live",
+			"kit": false,
+			"href": "misc/45-reading-room/",
+			"thumbnail": "assets/img/misc/45-reading-room.jpg"
+		},
+		{
+			"n": 46,
+			"slug": "46-shelf-terminus",
+			"title": "Terminus",
+			"desc": "Mini Metro built from one real library: thirteen bookcases are the stations and every passenger is a book trying to get home to its shelf.",
+			"note": "",
+			"group": "library",
+			"tags": [],
+			"added": "2026-10-02",
+			"surfaces": [
+				"views"
+			],
+			"order": {
+				"grid": null,
+				"views": 1
+			},
+			"status": "live",
+			"kit": false,
+			"href": "misc/46-shelf-terminus/",
+			"thumbnail": "assets/img/misc/46-shelf-terminus.jpg"
+		},
+		{
+			"n": 47,
+			"slug": "47-spine-wall",
+			"title": "Spine Wall",
+			"desc": "The whole library as one long wall of shelves, every spine drawn to size in its real place. Zoom in to read the titles; search shines a torch on the book.",
+			"note": "",
+			"group": "library",
+			"tags": [],
+			"added": "2026-10-02",
+			"surfaces": [
+				"views"
+			],
+			"order": {
+				"grid": null,
+				"views": 2
+			},
+			"status": "live",
+			"kit": false,
+			"href": "misc/47-spine-wall/",
+			"thumbnail": "assets/img/misc/47-spine-wall.jpg"
+		},
+		{
+			"n": 48,
+			"slug": "48-library-sunburst",
+			"title": "Sunburst",
+			"desc": "The whole library as one ring: genres inside, 889 books on the rim. Click a wedge to dive in, or fold the same tree into a treemap or an icicle.",
+			"note": "",
+			"group": "library",
+			"tags": [],
+			"added": "2026-10-02",
+			"surfaces": [
+				"views"
+			],
+			"order": {
+				"grid": null,
+				"views": 3
+			},
+			"status": "live",
+			"kit": false,
+			"href": "misc/48-library-sunburst/",
+			"thumbnail": "assets/img/misc/48-library-sunburst.jpg"
+		},
+		{
+			"n": 49,
+			"slug": "49-publication-strata",
+			"title": "Strata",
+			"desc": "The library cut like a cliff face: every book a grain of sediment in the year it was first published, from Gilgamesh to this year.",
+			"note": "",
+			"group": "library",
+			"tags": [],
+			"added": "2026-10-02",
+			"surfaces": [
+				"views"
+			],
+			"order": {
+				"grid": null,
+				"views": 4
+			},
+			"status": "live",
+			"kit": false,
+			"href": "misc/49-publication-strata/",
+			"thumbnail": "assets/img/misc/49-publication-strata.jpg"
+		},
+		{
+			"n": 50,
+			"slug": "50-author-constellations",
+			"title": "Constellations",
+			"desc": "The library's 529 authors as a night sky: stars sized by their books, joined by the shelves, genres, publishers and decades they share.",
+			"note": "",
+			"group": "library",
+			"tags": [],
+			"added": "2026-10-02",
+			"surfaces": [
+				"views"
+			],
+			"order": {
+				"grid": null,
+				"views": 5
+			},
+			"status": "live",
+			"kit": false,
+			"href": "misc/50-author-constellations/",
+			"thumbnail": "assets/img/misc/50-author-constellations.jpg"
+		},
+		{
+			"n": 51,
+			"slug": "51-library-flows",
+			"title": "Flows",
+			"desc": "The library as 889 threads braided between facets. Pick language, type, genre, bookcase, era or author as columns and watch the ribbons reshape.",
+			"note": "",
+			"group": "library",
+			"tags": [],
+			"added": "2026-10-02",
+			"surfaces": [
+				"views"
+			],
+			"order": {
+				"grid": null,
+				"views": 6
+			},
+			"status": "live",
+			"kit": false,
+			"href": "misc/51-library-flows/",
+			"thumbnail": "assets/img/misc/51-library-flows.jpg"
+		},
+		{
+			"n": 52,
+			"slug": "52-library-by-numbers",
+			"title": "By the Numbers",
+			"desc": "One library weighed, measured and timed: 889 books as 360 kg of paper, a six-storey stack, fifteen years of reading, every count drawn live from the catalogue.",
+			"note": "",
+			"group": "library",
+			"tags": [],
+			"added": "2026-10-02",
+			"surfaces": [
+				"views"
+			],
+			"order": {
+				"grid": null,
+				"views": 7
+			},
+			"status": "live",
+			"kit": false,
+			"href": "misc/52-library-by-numbers/",
+			"thumbnail": "assets/img/misc/52-library-by-numbers.jpg"
+		},
+		{
+			"n": 53,
+			"slug": "53-series-tracker",
+			"title": "Runs",
+			"desc": "Every numbered series in the library as a shelf of spines: filled ones are here, dashed ones are the gaps, and a shopping list names what is missing.",
+			"note": "",
+			"group": "library",
+			"tags": [],
+			"added": "2026-10-02",
+			"surfaces": [
+				"views"
+			],
+			"order": {
+				"grid": null,
+				"views": 8
+			},
+			"status": "live",
+			"kit": false,
+			"href": "misc/53-series-tracker/",
+			"thumbnail": "assets/img/misc/53-series-tracker.jpg"
+		},
+		{
+			"n": 54,
+			"slug": "54-card-catalog",
+			"title": "Card Catalog",
+			"desc": "The library as an oak card catalogue: pull a drawer and riffle through 889 typed 3×5 cards filed by author, title, subject, shelf or year.",
+			"note": "",
+			"group": "library",
+			"tags": [],
+			"added": "2026-10-02",
+			"surfaces": [
+				"views"
+			],
+			"order": {
+				"grid": null,
+				"views": 9
+			},
+			"status": "live",
+			"kit": false,
+			"href": "misc/54-card-catalog/",
+			"thumbnail": "assets/img/misc/54-card-catalog.jpg"
+		},
+		{
+			"n": 55,
+			"slug": "55-paper-theatre",
+			"title": "Paper Theatre",
+			"desc": "Every paper and post as a two-minute visual novel: a bet, a result, a citation. One engine; each story is a plain-text script you can read in the repo.",
+			"note": "",
+			"group": "stories",
+			"tags": [],
+			"added": "2026-10-02",
+			"surfaces": [
+				"grid"
+			],
+			"order": {
+				"grid": 0,
+				"views": null
+			},
+			"status": "live",
+			"kit": false,
+			"href": "misc/55-paper-theatre/",
+			"thumbnail": "assets/img/misc/55-paper-theatre.jpg"
+		}
+	]
+}

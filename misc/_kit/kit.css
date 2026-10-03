@@ -1,0 +1,613 @@
+/* ==========================================================================
+   ToyKit: kit.css, the shared look of the toys under misc/.
+
+   Loaded first in a toy's <head>, right before kit.js:
+       <link rel="stylesheet" href="../_kit/kit.css"><script src="../_kit/kit.js"></script>
+
+   It carries the site's colour tokens (the names and values of
+   assets/css/main.css), a body reset, and the parts kit.js builds: header,
+   theme toggle, help button and dialog, back link, failure panel, toast,
+   footer. It also has a few helpers a toy may use: .kit-btn, .kit-chip,
+   .kit-input, .kit-row, .kit-pad, .kit-note, .kit-sr, .kit-nothumb.
+
+   Theme: <html data-theme="light|dark">, set by kit.js before first paint.
+   A toy's own stylesheet comes after this one and may override any token:
+   light values on :root, dark values on :root[data-theme="dark"]. A token
+   the toy leaves out of its dark block keeps the kit's dark value.
+   No fonts are loaded here. The stack starts with Inter when it is installed;
+   a toy may add its own Google Fonts link.
+   ========================================================================== */
+
+/* ---------- Tokens ------------------------------------------------------ */
+
+:root {
+	--bg: #ffffff;
+	--surface: #f7f8fa;
+	--surface-2: #eef0f3;
+	--text: #1b1f24;
+	--text-2: #5f6873;
+	--heading: #0d1117;
+	--border: #e2e5e9;
+	--border-strong: #cfd4da;
+	--accent: #1f5fd6;
+	--accent-soft: rgba(31, 95, 214, 0.10);
+	--accent-ring: rgba(31, 95, 214, 0.35);
+	--shadow: 0 1px 2px rgba(16, 24, 40, 0.06), 0 8px 24px rgba(16, 24, 40, 0.06);
+
+	--font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Hiragino Sans', 'Yu Gothic UI', 'Noto Sans CJK JP', sans-serif;
+	--font-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Mono', 'SFMono-Regular', Menlo, Consolas, 'Lucida Console', monospace;
+
+	--ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+	--dur-fast: 160ms;
+	--dur: 320ms;
+	--dur-slow: 520ms;
+
+	/* kit-only: the failure panel, and the side gutter of header and footer */
+	--kit-warn: #b3261e;
+	--kit-warn-soft: rgba(179, 38, 30, 0.07);
+	--kit-warn-line: rgba(179, 38, 30, 0.28);
+	--kit-gutter: 18px;
+
+	color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+	--bg: #0f1115;
+	--surface: #161a20;
+	--surface-2: #1e232b;
+	--text: #d5dae2;
+	--text-2: #9aa3af;
+	--heading: #f3f5f8;
+	--border: #262c35;
+	--border-strong: #343c47;
+	--accent: #7cb3ff;
+	--accent-soft: rgba(124, 179, 255, 0.12);
+	--accent-ring: rgba(124, 179, 255, 0.40);
+	--shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 8px 24px rgba(0, 0, 0, 0.35);
+
+	--kit-warn: #ff9f8f;
+	--kit-warn-soft: rgba(255, 159, 143, 0.09);
+	--kit-warn-line: rgba(255, 159, 143, 0.30);
+
+	color-scheme: dark;
+}
+
+/* ---------- Base -------------------------------------------------------- */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+	-webkit-text-size-adjust: 100%;
+	text-size-adjust: 100%;
+}
+
+html, body { margin: 0; }
+
+/* The page is a column: header, the toy (give it class kit-main to fill the
+   space that is left), footer. */
+body {
+	display: flex;
+	flex-direction: column;
+	min-height: 100vh;
+	min-height: 100dvh;
+	overflow-x: hidden;
+	background: var(--bg);
+	color: var(--text);
+	font: 15px/1.5 var(--font-body);
+	accent-color: var(--accent);
+	-webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4 { color: var(--heading); }
+
+a {
+	color: var(--accent);
+	text-decoration-thickness: 1px;
+	text-underline-offset: 2px;
+}
+
+button, input, select, textarea { font: inherit; }
+
+[hidden] { display: none !important; }
+
+code {
+	font-family: var(--font-mono);
+	font-size: 0.92em;
+}
+
+kbd {
+	padding: 2px 5px;
+	border: 1px solid var(--border-strong);
+	border-radius: 4px;
+	background: var(--surface-2);
+	color: var(--text);
+	font: 12px/1 var(--font-mono);
+}
+
+/* Keyboard focus. :where() keeps the specificity at zero, so a toy's own
+   :focus-visible rule wins without a fight. */
+:where(a, button, input, select, textarea, summary, canvas, [tabindex]:not([tabindex="-1"]), [contenteditable="true"]):focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 2px;
+}
+
+/* For screen readers only. */
+.kit-sr {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	margin: -1px;
+	padding: 0;
+	overflow: hidden;
+	clip: rect(0 0 0 0);
+	clip-path: inset(50%);
+	white-space: nowrap;
+	border: 0;
+}
+
+/* ---------- Layout helpers ----------------------------------------------- */
+
+.kit-main {
+	position: relative;
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.kit-pad { padding: 14px var(--kit-gutter) 16px; }
+
+.kit-row {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px 10px;
+}
+
+.kit-note {
+	color: var(--text-2);
+	font-size: 13px;
+}
+
+/* ---------- Header ------------------------------------------------------- */
+
+.kit-header {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: 4px 14px;
+	padding: 10px var(--kit-gutter) 9px;
+	padding-left: max(var(--kit-gutter), env(safe-area-inset-left));
+	padding-right: max(var(--kit-gutter), env(safe-area-inset-right));
+	border-bottom: 1px solid var(--border);
+}
+
+.kit-header h1 {
+	min-width: 0;
+	margin: 0;
+	color: var(--heading);
+	font: 650 20px/1.3 var(--font-body);
+	letter-spacing: -0.01em;
+	overflow-wrap: anywhere;
+}
+
+/* The sub line takes the room between title and buttons and wraps inside it. */
+.kit-sub {
+	flex: 1000 1 14em;
+	min-width: 0;
+	color: var(--text-2);
+	font-size: 14px;
+}
+
+.kit-spacer { flex: 1 1 0; }
+
+.kit-tools {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	align-self: center;
+	justify-content: flex-end;
+	gap: 8px;
+	margin-left: auto;
+}
+
+.kit-theme,
+.kit-help {
+	display: inline-flex;
+	flex: none;
+	align-items: center;
+	justify-content: center;
+	width: 34px;
+	height: 34px;
+	padding: 0;
+	border: 1px solid var(--border-strong);
+	border-radius: 999px;
+	background: transparent;
+	color: var(--text-2);
+	font: 600 15px/1 var(--font-body);
+	cursor: pointer;
+	transition: background-color var(--dur-fast) ease, color var(--dur-fast) ease;
+}
+
+.kit-theme:hover,
+.kit-help:hover {
+	background: var(--surface-2);
+	color: var(--text);
+}
+
+.kit-theme svg {
+	display: block;
+	width: 17px;
+	height: 17px;
+	fill: none;
+	stroke: currentColor;
+	stroke-width: 1.8;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+}
+
+/* The button shows where it leads: a moon in the light theme, a sun in the dark. */
+.kit-theme .kit-i-sun { display: none; }
+:root[data-theme="dark"] .kit-theme .kit-i-sun { display: block; }
+:root[data-theme="dark"] .kit-theme .kit-i-moon { display: none; }
+
+.kit-back {
+	padding: 7px 0 7px 4px;
+	color: var(--text-2);
+	font-size: 14px;
+	text-decoration: none;
+	white-space: nowrap;
+}
+
+.kit-back:hover { color: var(--text); }
+
+/* ---------- Buttons, chips, inputs --------------------------------------- */
+
+.kit-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	min-height: 34px;
+	padding: 5px 12px;
+	border: 1px solid var(--border-strong);
+	border-radius: 8px;
+	background: var(--surface);
+	color: var(--text);
+	font: inherit;
+	font-size: 14px;
+	line-height: 1.2;
+	text-decoration: none;
+	white-space: nowrap;
+	cursor: pointer;
+	transition: background-color var(--dur-fast) ease, border-color var(--dur-fast) ease, color var(--dur-fast) ease;
+}
+
+.kit-btn:hover { background: var(--surface-2); }
+.kit-btn:active { transform: translateY(1px); }
+
+.kit-btn.primary,
+.kit-btn.on,
+.kit-btn[aria-pressed="true"] {
+	border-color: transparent;
+	background: var(--accent);
+	color: var(--bg);
+}
+
+.kit-btn.primary { font-weight: 600; }
+
+.kit-btn.small {
+	min-height: 28px;
+	padding: 3px 9px;
+	font-size: 13px;
+}
+
+.kit-btn:disabled,
+.kit-btn[aria-disabled="true"] {
+	opacity: 0.5;
+	cursor: default;
+	transform: none;
+}
+
+.kit-btn kbd { font-size: 11px; }
+
+.kit-chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	min-height: 24px;
+	padding: 2px 10px;
+	border: 1px solid var(--border);
+	border-radius: 999px;
+	background: var(--surface);
+	color: var(--text-2);
+	font: inherit;
+	font-size: 12.5px;
+	line-height: 1.3;
+	text-decoration: none;
+	white-space: nowrap;
+}
+
+button.kit-chip,
+a.kit-chip { cursor: pointer; }
+
+button.kit-chip:hover,
+a.kit-chip:hover {
+	border-color: var(--border-strong);
+	background: var(--surface-2);
+	color: var(--text);
+}
+
+.kit-chip.on,
+.kit-chip[aria-pressed="true"] {
+	border-color: var(--accent-ring);
+	background: var(--accent-soft);
+	color: var(--accent);
+}
+
+.kit-input {
+	max-width: 100%;
+	min-height: 34px;
+	padding: 5px 9px;
+	border: 1px solid var(--border-strong);
+	border-radius: 8px;
+	background: var(--bg);
+	color: var(--text);
+	font: inherit;
+	font-size: 14px;
+}
+
+.kit-input::placeholder { color: var(--text-2); }
+
+/* ---------- Failure panel ------------------------------------------------- */
+
+.kit-fail {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-start;
+	gap: 8px 14px;
+	margin: 12px var(--kit-gutter) 0;
+	padding: 10px 12px 10px 14px;
+	border: 1px solid var(--kit-warn-line);
+	border-left: 4px solid var(--kit-warn);
+	border-radius: 8px;
+	background: var(--kit-warn-soft);
+	color: var(--text);
+	font-size: 14px;
+}
+
+.kit-fail-body {
+	flex: 1 1 16em;
+	min-width: 0;
+}
+
+.kit-fail p { margin: 0; }
+.kit-fail p + p,
+.kit-fail details + p { margin-top: 8px; }
+
+.kit-fail details {
+	margin-top: 4px;
+	color: var(--text-2);
+	font-size: 13px;
+}
+
+.kit-fail summary { cursor: pointer; }
+
+.kit-fail code {
+	display: block;
+	margin-top: 4px;
+	font: 12px/1.45 var(--font-mono);
+	overflow-wrap: anywhere;
+}
+
+/* ---------- Footer ("How it works") ---------------------------------------- */
+
+.kit-footer {
+	padding: 10px var(--kit-gutter) 14px;
+	padding-left: max(var(--kit-gutter), env(safe-area-inset-left));
+	padding-right: max(var(--kit-gutter), env(safe-area-inset-right));
+	border-top: 1px solid var(--border);
+	color: var(--text-2);
+	font-size: 13px;
+}
+
+.kit-footer p {
+	max-width: 72em;
+	margin: 0;
+}
+
+.kit-footer p + p { margin-top: 6px; }
+
+.kit-footer b,
+.kit-footer strong {
+	color: var(--text);
+	font-weight: 600;
+}
+
+.kit-footer a { color: inherit; }
+.kit-footer a:hover { color: var(--accent); }
+.kit-footer code { font: 12px var(--font-mono); }
+
+/* ---------- Help dialog ---------------------------------------------------- */
+
+.kit-backdrop {
+	position: fixed;
+	inset: 0;
+	z-index: 1000;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 16px;
+	background: rgba(8, 10, 14, 0.62);
+	-webkit-backdrop-filter: blur(2px);
+	backdrop-filter: blur(2px);
+}
+
+.kit-dialog {
+	display: flex;
+	flex-direction: column;
+	width: min(100%, 560px);
+	max-height: min(86vh, 720px);
+	max-height: min(86dvh, 720px);
+	overflow: hidden;
+	border: 1px solid var(--border-strong);
+	border-radius: 12px;
+	outline: none;
+	background: var(--surface);
+	color: var(--text);
+	box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
+	animation: kit-pop var(--dur-fast) var(--ease-out);
+}
+
+@keyframes kit-pop {
+	from { opacity: 0; transform: translateY(6px) scale(0.985); }
+	to { opacity: 1; transform: none; }
+}
+
+.kit-dialog-head {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 10px 12px 10px 16px;
+	border-bottom: 1px solid var(--border);
+}
+
+.kit-dialog-head h2 {
+	flex: 1;
+	min-width: 0;
+	margin: 0;
+	font: 650 17px/1.3 var(--font-body);
+	overflow-wrap: anywhere;
+}
+
+.kit-dialog-body {
+	padding: 14px 16px 18px;
+	overflow: auto;
+	overscroll-behavior: contain;
+	font-size: 14.5px;
+}
+
+.kit-dialog-body > :first-child { margin-top: 0; }
+.kit-dialog-body > :last-child { margin-bottom: 0; }
+.kit-dialog-body p { margin: 8px 0; }
+
+.kit-dialog-body h3 {
+	margin: 16px 0 6px;
+	color: var(--text-2);
+	font: 600 12px/1.2 var(--font-body);
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+}
+
+/* ---------- Toast ---------------------------------------------------------- */
+
+.kit-toast {
+	position: fixed;
+	right: 16px;
+	bottom: max(18px, env(safe-area-inset-bottom));
+	left: 16px;
+	z-index: 1100;
+	width: fit-content;
+	max-width: calc(100% - 32px);
+	margin: 0 auto;
+	padding: 8px 14px;
+	border-radius: 8px;
+	background: var(--heading);
+	color: var(--bg);
+	box-shadow: var(--shadow);
+	font-size: 13.5px;
+	line-height: 1.35;
+	text-align: center;
+	opacity: 0;
+	transform: translateY(8px);
+	pointer-events: none;
+	transition: opacity var(--dur-fast) ease, transform var(--dur-fast) var(--ease-out);
+}
+
+.kit-toast.show {
+	opacity: 1;
+	transform: none;
+}
+
+/* ---------- Narrow screens (works from 360 px) ----------------------------- */
+
+@media (max-width: 720px) {
+	:root { --kit-gutter: 16px; }
+	.kit-header {
+		align-items: center;
+		gap: 4px 10px;
+	}
+	.kit-header h1 { font-size: 18px; }
+	.kit-sub { display: none; }
+}
+
+/* Fingers need bigger targets than a mouse does. */
+@media (pointer: coarse) {
+	.kit-theme,
+	.kit-help {
+		width: 44px;
+		height: 44px;
+	}
+	.kit-back { padding: 12px 0 12px 6px; }
+	.kit-btn { min-height: 44px; }
+	.kit-btn.small { min-height: 36px; }
+	.kit-input { min-height: 44px; }
+}
+
+/* ---------- Reduced motion --------------------------------------------------
+   Three ways in, one result: the OS setting, ?motion=reduce and ?thumb=1 (the
+   last two as html.is-reduced, which kit.js keeps up to date). CSS animations
+   and transitions finish at once; a toy's script asks ToyKit.reducedMotion. */
+
+@media (prefers-reduced-motion: reduce) {
+	:root {
+		--dur-fast: 0ms;
+		--dur: 0ms;
+		--dur-slow: 0ms;
+	}
+	*, *::before, *::after {
+		animation-duration: 0.01ms !important;
+		animation-delay: 0s !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+		transition-delay: 0s !important;
+		scroll-behavior: auto !important;
+	}
+}
+
+html.is-reduced {
+	--dur-fast: 0ms;
+	--dur: 0ms;
+	--dur-slow: 0ms;
+}
+
+html.is-reduced *,
+html.is-reduced *::before,
+html.is-reduced *::after {
+	animation-duration: 0.01ms !important;
+	animation-delay: 0s !important;
+	animation-iteration-count: 1 !important;
+	transition-duration: 0.01ms !important;
+	transition-delay: 0s !important;
+	scroll-behavior: auto !important;
+}
+
+/* ---------- Thumbnail mode (?thumb=1) ----------------------------------------
+   Header, footer, help and toast go; the toy fills the frame. Mark anything
+   else that should stay out of a thumbnail with class kit-nothumb. */
+
+html.is-thumb,
+html.is-thumb body {
+	height: 100%;
+}
+
+html.is-thumb body { overflow: hidden; }
+
+html.is-thumb .kit-header,
+html.is-thumb .kit-footer,
+html.is-thumb .kit-help,
+html.is-thumb .kit-backdrop,
+html.is-thumb .kit-toast,
+html.is-thumb .kit-nothumb {
+	display: none !important;
+}
+
+html.is-thumb .kit-main { min-height: 0; }

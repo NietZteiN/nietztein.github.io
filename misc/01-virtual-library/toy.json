@@ -1,0 +1,15 @@
+{
+	"n": 1,
+	"slug": "01-virtual-library",
+	"title": "Virtual library",
+	"desc": "A library catalog as shelves of spines: find a book, browse stats, run integrity checks.",
+	"note": "Runs on an invented sample catalog.",
+	"group": "library",
+	"tags": [],
+	"added": "2026-09-22",
+	"surfaces": ["grid", "views"],
+	"order": { "grid": 31, "views": 17 },
+	"status": "live",
+	"kit": false,
+	"thumb": { "legacy": true }
+}

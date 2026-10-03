@@ -1,0 +1,15 @@
+{
+	"n": 9,
+	"slug": "09-harvard-classics",
+	"title": "Harvard Classics oracle",
+	"desc": "Ask a question or name a mood and get a passage from the Five-Foot Shelf. Also today's Fifteen Minutes a Day reading.",
+	"note": "Searches a sample of 340 passages from seven works.",
+	"group": "library",
+	"tags": [],
+	"added": "2026-09-22",
+	"surfaces": ["grid"],
+	"order": { "grid": 37, "views": null },
+	"status": "live",
+	"kit": false,
+	"thumb": { "legacy": true }
+}

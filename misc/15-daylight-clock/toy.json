@@ -1,0 +1,15 @@
+{
+	"n": 15,
+	"slug": "15-daylight-clock",
+	"title": "Daylight clock",
+	"desc": "Local time, sunrise, sunset and daylight arcs for three cities at once.",
+	"note": "",
+	"group": "time",
+	"tags": [],
+	"added": "2026-09-22",
+	"surfaces": ["grid"],
+	"order": { "grid": 29, "views": null },
+	"status": "live",
+	"kit": false,
+	"thumb": { "legacy": true }
+}

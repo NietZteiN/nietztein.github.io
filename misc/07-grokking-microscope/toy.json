@@ -1,0 +1,15 @@
+{
+	"n": 7,
+	"slug": "07-grokking-microscope",
+	"title": "Grokking microscope",
+	"desc": "A one-layer transformer learning addition mod 113. Scrub through training and watch it grok.",
+	"note": "",
+	"group": "ml",
+	"tags": [],
+	"added": "2026-09-22",
+	"surfaces": ["grid"],
+	"order": { "grid": 35, "views": null },
+	"status": "live",
+	"kit": false,
+	"thumb": { "legacy": true }
+}

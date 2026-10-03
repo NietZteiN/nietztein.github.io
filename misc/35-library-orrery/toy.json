@@ -1,0 +1,14 @@
+{
+	"n": 35,
+	"slug": "35-library-orrery",
+	"title": "Library Orrery",
+	"desc": "The library as a solar system: every book a planet, the older it is the farther out and the slower it crawls. Scrub ten thousand years for conjunctions.",
+	"note": "",
+	"group": "library",
+	"tags": [],
+	"added": "2026-10-02",
+	"surfaces": ["grid", "views"],
+	"order": { "grid": 2, "views": 11 },
+	"status": "live",
+	"kit": false
+}

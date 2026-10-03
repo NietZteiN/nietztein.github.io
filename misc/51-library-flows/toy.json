@@ -1,0 +1,14 @@
+{
+	"n": 51,
+	"slug": "51-library-flows",
+	"title": "Flows",
+	"desc": "The library as 889 threads braided between facets. Pick language, type, genre, bookcase, era or author as columns and watch the ribbons reshape.",
+	"note": "",
+	"group": "library",
+	"tags": [],
+	"added": "2026-10-02",
+	"surfaces": ["views"],
+	"order": { "grid": null, "views": 6 },
+	"status": "live",
+	"kit": false
+}

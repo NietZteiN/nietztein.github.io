@@ -462,15 +462,44 @@
 
 		indexPubBlocks('Press', '#/press', '#blogContent');
 
-		qsa('.misc-grid .misc-card').forEach(function (card) {
+		// Toys: the Misc grid, then the Bookshelf's "Ways to see the library" strip,
+		// which holds library views that are not on the grid. A toy on both is
+		// listed once (by href). A grid card brings its group's name and its tags
+		// as keywords; a card of the strip is a library view by definition.
+		var STRIP_WORDS = 'library view bookshelf';
+		var groupNames = {};
+		qsa('.misc-grid .misc-group-h[data-group]').forEach(function (h) {
+			var count = h.querySelector('.misc-group-n');
+			var name = textOf(h);
+			if (count) name = name.slice(0, name.length - textOf(count).length);
+			groupNames[h.getAttribute('data-group')] = name.trim();
+		});
+		var seenToys = {};
+		function indexToy(card, extra) {
 			var href = card.getAttribute('href');
 			var title = textOf(card.querySelector('.misc-title'));
-			if (!href || !title) return;
+			if (!href || !title || seenToys[href] === true) return;
+			seenToys[href] = true;
+			var keywords = [textOf(card.querySelector('.misc-desc')), extra, 'toy', href].join(' ');
 			domItems.push(
-				makeItem('Misc', title, textOf(card.querySelector('.misc-desc')) + ' toy ' + href, href, function () {
+				makeItem('Misc', title, keywords, href, function () {
 					openExternal(href);
 				})
 			);
+		}
+		var stripCards = qsa('#bs-views .misc-card');
+		var inStrip = {};
+		stripCards.forEach(function (card) {
+			inStrip[card.getAttribute('href')] = true;
+		});
+		qsa('.misc-grid .misc-card').forEach(function (card) {
+			var group = groupNames[card.getAttribute('data-group')];
+			var extra = (typeof group === 'string' ? group : '') + ' ' + (card.getAttribute('data-tags') || '');
+			if (inStrip[card.getAttribute('href')] === true) extra += ' ' + STRIP_WORDS;
+			indexToy(card, extra);
+		});
+		stripCards.forEach(function (card) {
+			indexToy(card, STRIP_WORDS);
 		});
 	}
 

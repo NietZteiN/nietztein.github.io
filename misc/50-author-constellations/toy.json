@@ -1,0 +1,14 @@
+{
+	"n": 50,
+	"slug": "50-author-constellations",
+	"title": "Constellations",
+	"desc": "The library's 529 authors as a night sky: stars sized by their books, joined by the shelves, genres, publishers and decades they share.",
+	"note": "",
+	"group": "library",
+	"tags": [],
+	"added": "2026-10-02",
+	"surfaces": ["views"],
+	"order": { "grid": null, "views": 5 },
+	"status": "live",
+	"kit": false
+}

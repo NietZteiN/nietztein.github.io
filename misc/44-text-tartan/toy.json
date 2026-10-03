@@ -1,0 +1,14 @@
+{
+	"n": 44,
+	"slug": "44-text-tartan",
+	"title": "Text Tartan",
+	"desc": "Weave any text into cloth: every word a stripe, the first sentence the sett, the whole text the weft of a 2/2 twill you can zoom into thread by thread.",
+	"note": "",
+	"group": "art",
+	"tags": [],
+	"added": "2026-10-02",
+	"surfaces": ["grid"],
+	"order": { "grid": 11, "views": null },
+	"status": "live",
+	"kit": false
+}

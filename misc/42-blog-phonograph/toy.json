@@ -1,0 +1,14 @@
+{
+	"n": 42,
+	"slug": "42-blog-phonograph",
+	"title": "Phonograph",
+	"desc": "Every blog post pressed onto a twelve-inch record: the groove is the text, paragraphs are tracks, and a tonearm reads it aloud. Drop the needle anywhere.",
+	"note": "",
+	"group": "stories",
+	"tags": [],
+	"added": "2026-10-02",
+	"surfaces": ["grid"],
+	"order": { "grid": 9, "views": null },
+	"status": "live",
+	"kit": false
+}

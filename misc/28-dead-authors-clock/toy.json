@@ -1,0 +1,14 @@
+{
+	"n": 28,
+	"slug": "28-dead-authors-clock",
+	"title": "Dead Authors' Local Time",
+	"desc": "A world clock for the places where the authors on the shelves died, sorted by whose sun is setting right now.",
+	"note": "",
+	"group": "time",
+	"tags": [],
+	"added": "2026-09-25",
+	"surfaces": ["grid"],
+	"order": { "grid": 18, "views": null },
+	"status": "live",
+	"kit": false
+}

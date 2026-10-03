@@ -1,0 +1,14 @@
+{
+	"n": 23,
+	"slug": "23-read-order-oracle",
+	"title": "Read-Order Oracle",
+	"desc": "Ride the library: twelve genre lines, interchanges where books overlap, and a journey planner for what to read next.",
+	"note": "",
+	"group": "library",
+	"tags": [],
+	"added": "2026-09-25",
+	"surfaces": ["grid", "views"],
+	"order": { "grid": 13, "views": 13 },
+	"status": "live",
+	"kit": false
+}

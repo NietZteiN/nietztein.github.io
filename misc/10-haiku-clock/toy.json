@@ -1,0 +1,14 @@
+{
+	"n": 10,
+	"slug": "10-haiku-clock",
+	"title": "Haiku clock",
+	"desc": "The current time, told as a haiku in four languages.",
+	"note": "",
+	"group": "time",
+	"tags": [],
+	"added": "2026-09-22",
+	"surfaces": ["grid"],
+	"order": { "grid": 28, "views": null },
+	"status": "live",
+	"kit": false
+}

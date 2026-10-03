@@ -1,0 +1,169 @@
+[
+  {
+    "id": "do-machines-struggle-where-humans-do-obfuscation-as-a-probe-of-human-and-machine-code-comprehension",
+    "title": "Do Machines Struggle Where Humans Do? Obfuscation as a Probe of Human and Machine Code Comprehension",
+    "authors": [
+      "J. V. Le"
+    ],
+    "authorsText": "J. V. Le",
+    "year": 2026,
+    "section": "Refereed abstracts",
+    "venue": "ACM Student Research Competition, SPLASH/ISSTA. Two-page extended abstract; peer-reviewed.",
+    "links": [
+      {
+        "label": "PDF",
+        "href": "assets/documents/publications/2026SPLASH-SRC.pdf"
+      }
+    ],
+    "story": "obfuscation-src"
+  },
+  {
+    "id": "attributing-gains-in-paired-training-objective-or-data-direction",
+    "title": "Attributing Gains in Paired Training: Objective or Data Direction?",
+    "authors": [
+      "J. V. Le",
+      "Tien Nguyen"
+    ],
+    "authorsText": "J. V. Le, Tien Nguyen",
+    "year": 2026,
+    "section": "Workshop papers",
+    "venue": "Third NeurIPS Workshop on Attributing Model Behavior at Scale: Data Attribution and Provenance (ATTRIB 2026). 43 of 83 submissions accepted (51.8%). Non-archival.",
+    "links": [],
+    "story": null
+  },
+  {
+    "id": "composing-obfuscation-specialists-by-merging",
+    "title": "Composing Obfuscation Specialists by Merging",
+    "authors": [
+      "J. V. Le",
+      "Tien Nguyen"
+    ],
+    "authorsText": "J. V. Le, Tien Nguyen",
+    "year": 2026,
+    "section": "Preprints",
+    "venue": "Submitted to ACM International Conference on the Foundations of Software Engineering (FSE).",
+    "links": [],
+    "story": null
+  },
+  {
+    "id": "router-free-modular-storage-for-knowledge-unlearning-in-large-language-models",
+    "title": "Router-Free Modular Storage for Knowledge Unlearning in Large Language Models",
+    "authors": [
+      "Vincent Hanke",
+      "J. V. Le",
+      "Adam Dziedzic",
+      "Franziska Boenisch"
+    ],
+    "authorsText": "Vincent Hanke, J. V. Le, Adam Dziedzic, Franziska Boenisch",
+    "year": 2026,
+    "section": "Preprints",
+    "venue": "Submitted to ICLR.",
+    "links": [],
+    "story": null
+  },
+  {
+    "id": "fast-errors-or-slow-effort-divergent-dual-process-signatures-of-code-obfuscation-in-humans-and-language-models",
+    "title": "Fast Errors or Slow Effort? Divergent Dual-Process Signatures of Code Obfuscation in Humans and Language Models",
+    "authors": [
+      "J. V. Le",
+      "Ilse Lahnstein Coronado",
+      "Anh Nguyen",
+      "Tien Nguyen"
+    ],
+    "authorsText": "J. V. Le, Ilse Lahnstein Coronado, Anh Nguyen, Tien Nguyen",
+    "year": 2026,
+    "section": "Preprints",
+    "venue": "Submitted to ACM International Conference on the Foundations of Software Engineering (FSE).",
+    "links": [],
+    "story": null
+  },
+  {
+    "id": "extreme-summarization-of-worldwide-scientific-and-patent-document-clusters-for-landscape-analysis",
+    "title": "Extreme Summarization of Worldwide Scientific and Patent Document Clusters for Landscape Analysis",
+    "authors": [
+      "J. V. Le",
+      "Rebecca Gelles",
+      "Catherine Aiken",
+      "Katherine Quinn"
+    ],
+    "authorsText": "J. V. Le, Rebecca Gelles, Catherine Aiken, Katherine Quinn",
+    "year": 2026,
+    "section": "Preprints",
+    "venue": "Submitted to Scientometrics.",
+    "links": [],
+    "story": null
+  },
+  {
+    "id": "do-machines-struggle-where-humans-do-llm-and-human-comprehension-of-obfuscated-code",
+    "title": "Do Machines Struggle Where Humans Do? LLM and Human Comprehension of Obfuscated Code",
+    "authors": [
+      "J. V. Le",
+      "Anh Nguyen",
+      "Tien Nguyen"
+    ],
+    "authorsText": "J. V. Le†, Anh Nguyen†, Tien Nguyen",
+    "year": 2026,
+    "section": "Preprints",
+    "venue": "arXiv:2606.31725 [cs.SE]. Submitted to ACM International Conference on the Foundations of Software Engineering (FSE). † Co-first authors (equal contribution).",
+    "links": [
+      {
+        "label": "arXiv",
+        "href": "https://arxiv.org/abs/2606.31725"
+      }
+    ],
+    "story": "obfuscation"
+  },
+  {
+    "id": "the-effect-of-code-obfuscation-on-human-program-comprehension",
+    "title": "The Effect of Code Obfuscation on Human Program Comprehension",
+    "authors": [
+      "A. H. N. Nguyen",
+      "J. V. Le",
+      "Ilse Lahnstein Coronado",
+      "T. N. Nguyen"
+    ],
+    "authorsText": "A. H. N. Nguyen†, J. V. Le†, Ilse Lahnstein Coronado, T. N. Nguyen",
+    "year": 2026,
+    "section": "Preprints",
+    "venue": "arXiv:2603.07668 [cs.SE]. † Co-first authors (equal contribution).",
+    "links": [
+      {
+        "label": "arXiv",
+        "href": "https://arxiv.org/abs/2603.07668"
+      }
+    ],
+    "story": "human-obfuscation"
+  },
+  {
+    "id": "what-does-an-embedding-mean-a-semiotic-account-of-learned-representation",
+    "title": "What Does an Embedding Mean? A Semiotic Account of Learned Representation",
+    "authors": [
+      "J. V. Le"
+    ],
+    "authorsText": "J. V. Le",
+    "year": 2026,
+    "section": "Philosophical preprints",
+    "venue": "PhilArchive preprint.",
+    "links": [
+      {
+        "label": "PhilArchive",
+        "href": "https://philarchive.org/archive/LEWDAZ-2"
+      }
+    ],
+    "story": "embedding-semiotics"
+  },
+  {
+    "id": "code-as-embedding-as-ai",
+    "title": "Code as Embedding as AI",
+    "authors": [
+      "K. Tanaka Ishii",
+      "J. V. Le"
+    ],
+    "authorsText": "K. Tanaka Ishii, J. V. Le",
+    "year": 2024,
+    "section": "Philosophical preprints",
+    "venue": "Submitted to Minds and Machines.",
+    "links": [],
+    "story": null
+  }
+]

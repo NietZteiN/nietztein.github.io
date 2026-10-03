@@ -1,0 +1,14 @@
+{
+	"n": 22,
+	"slug": "22-shelf-genome",
+	"title": "Shelf Genome",
+	"desc": "The library as one chromosome: genre bands, year glow, collision hotspots, and fake crossover books.",
+	"note": "",
+	"group": "library",
+	"tags": [],
+	"added": "2026-09-25",
+	"surfaces": ["grid", "views"],
+	"order": { "grid": 12, "views": 12 },
+	"status": "live",
+	"kit": false
+}

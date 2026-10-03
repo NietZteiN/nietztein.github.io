@@ -1,0 +1,14 @@
+{
+	"n": 25,
+	"slug": "25-grammar-fossil-dig",
+	"title": "Grammar Fossil Dig",
+	"desc": "Paste English and dig down through its word strata: modern loans, Latin, Norman French, Norse, Old English bedrock.",
+	"note": "",
+	"group": "language",
+	"tags": [],
+	"added": "2026-09-25",
+	"surfaces": ["grid"],
+	"order": { "grid": 15, "views": null },
+	"status": "live",
+	"kit": false
+}

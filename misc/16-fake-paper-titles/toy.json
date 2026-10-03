@@ -1,0 +1,15 @@
+{
+	"n": 16,
+	"slug": "16-fake-paper-titles",
+	"title": "Fake paper titles",
+	"desc": "A Markov chain that invents ML paper titles, and a linter that scores how cliché a real one is.",
+	"note": "",
+	"group": "ml",
+	"tags": [],
+	"added": "2026-09-22",
+	"surfaces": ["grid"],
+	"order": { "grid": 41, "views": null },
+	"status": "live",
+	"kit": false,
+	"thumb": { "legacy": true }
+}

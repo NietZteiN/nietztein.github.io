@@ -1,0 +1,15 @@
+{
+	"n": 5,
+	"slug": "05-obfuscation-game",
+	"title": "Obfuscation game",
+	"desc": "Predict the output of obfuscated Python snippets. Tracks correctness, time and confidence.",
+	"note": "",
+	"group": "code",
+	"tags": [],
+	"added": "2026-09-22",
+	"surfaces": ["grid"],
+	"order": { "grid": 34, "views": null },
+	"status": "live",
+	"kit": false,
+	"thumb": { "legacy": true }
+}

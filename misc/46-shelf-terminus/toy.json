@@ -1,0 +1,14 @@
+{
+	"n": 46,
+	"slug": "46-shelf-terminus",
+	"title": "Terminus",
+	"desc": "Mini Metro built from one real library: thirteen bookcases are the stations and every passenger is a book trying to get home to its shelf.",
+	"note": "",
+	"group": "library",
+	"tags": [],
+	"added": "2026-10-02",
+	"surfaces": ["views"],
+	"order": { "grid": null, "views": 1 },
+	"status": "live",
+	"kit": false
+}

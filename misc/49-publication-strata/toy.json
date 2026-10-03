@@ -1,0 +1,14 @@
+{
+	"n": 49,
+	"slug": "49-publication-strata",
+	"title": "Strata",
+	"desc": "The library cut like a cliff face: every book a grain of sediment in the year it was first published, from Gilgamesh to this year.",
+	"note": "",
+	"group": "library",
+	"tags": [],
+	"added": "2026-10-02",
+	"surfaces": ["views"],
+	"order": { "grid": null, "views": 4 },
+	"status": "live",
+	"kit": false
+}

@@ -1,0 +1,14 @@
+{
+	"n": 24,
+	"slug": "24-book-exchange",
+	"title": "Book Exchange",
+	"desc": "Every library book is a listed stock; prices move when its words show up on the blog. Paper-trade 10,000 credits.",
+	"note": "",
+	"group": "library",
+	"tags": [],
+	"added": "2026-09-25",
+	"surfaces": ["grid"],
+	"order": { "grid": 14, "views": null },
+	"status": "live",
+	"kit": false
+}

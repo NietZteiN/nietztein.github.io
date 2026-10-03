@@ -1,0 +1,14 @@
+{
+	"n": 48,
+	"slug": "48-library-sunburst",
+	"title": "Sunburst",
+	"desc": "The whole library as one ring: genres inside, 889 books on the rim. Click a wedge to dive in, or fold the same tree into a treemap or an icicle.",
+	"note": "",
+	"group": "library",
+	"tags": [],
+	"added": "2026-10-02",
+	"surfaces": ["views"],
+	"order": { "grid": null, "views": 3 },
+	"status": "live",
+	"kit": false
+}

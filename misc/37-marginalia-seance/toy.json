@@ -1,0 +1,14 @@
+{
+	"n": 37,
+	"slug": "37-marginalia-seance",
+	"title": "Marginalia Séance",
+	"desc": "A talking board whose spirits are the authors on these shelves. Ask; the planchette spells an answer stitched from their own book blurbs.",
+	"note": "",
+	"group": "library",
+	"tags": [],
+	"added": "2026-10-02",
+	"surfaces": ["grid"],
+	"order": { "grid": 4, "views": null },
+	"status": "live",
+	"kit": false
+}

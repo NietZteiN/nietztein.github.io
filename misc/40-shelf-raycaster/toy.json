@@ -1,0 +1,14 @@
+{
+	"n": 40,
+	"slug": "40-shelf-raycaster",
+	"title": "Stacks",
+	"desc": "The library as a Wolfenstein-style raycaster: thirteen aisles of real spines drawn from the catalogue. Walk the stacks and pull a book.",
+	"note": "",
+	"group": "library",
+	"tags": [],
+	"added": "2026-10-02",
+	"surfaces": ["grid", "views"],
+	"order": { "grid": 7, "views": 10 },
+	"status": "live",
+	"kit": false
+}

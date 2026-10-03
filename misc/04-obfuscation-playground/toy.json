@@ -1,0 +1,15 @@
+{
+	"n": 4,
+	"slug": "04-obfuscation-playground",
+	"title": "Obfuscation playground",
+	"desc": "Stack JavaScript obfuscation transforms into a ladder and diff each rung against the last.",
+	"note": "",
+	"group": "code",
+	"tags": [],
+	"added": "2026-09-22",
+	"surfaces": ["grid"],
+	"order": { "grid": 33, "views": null },
+	"status": "live",
+	"kit": false,
+	"thumb": { "legacy": true }
+}

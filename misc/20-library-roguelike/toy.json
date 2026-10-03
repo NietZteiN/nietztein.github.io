@@ -1,0 +1,14 @@
+{
+	"n": 20,
+	"slug": "20-library-roguelike",
+	"title": "Library Roguelike",
+	"desc": "A daily text roguelike where every room is a real shelf of the library and every monster is a book.",
+	"note": "",
+	"group": "library",
+	"tags": [],
+	"added": "2026-09-25",
+	"surfaces": ["grid", "views"],
+	"order": { "grid": 26, "views": 14 },
+	"status": "live",
+	"kit": false
+}

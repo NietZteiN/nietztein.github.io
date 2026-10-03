@@ -1,0 +1,24 @@
+{
+	"about": "Known noise of the toys that predate the kit. Written by `node scripts/qa/smoke.mjs --all --update-baseline`; a toy without \"kit\": true fails the smoke test only on an error or an outside host that is not listed here. Kit toys never get an entry.",
+	"updated": "2026-10-03",
+	"toys": {
+		"01-virtual-library": {
+			"errors": [
+				"request: HTTP 404 /misc/01-virtual-library/data/my-library.csv"
+			],
+			"hosts": []
+		},
+		"14-bookshelf-poster": {
+			"errors": [
+				"request: HTTP 404 /misc/01-virtual-library/data/my-library.csv"
+			],
+			"hosts": []
+		},
+		"17-bookshelf-tetris": {
+			"errors": [
+				"request: HTTP 404 /misc/01-virtual-library/data/my-library.csv"
+			],
+			"hosts": []
+		}
+	}
+}

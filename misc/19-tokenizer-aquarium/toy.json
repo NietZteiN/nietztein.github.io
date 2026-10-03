@@ -1,0 +1,14 @@
+{
+	"n": 19,
+	"slug": "19-tokenizer-aquarium",
+	"title": "Tokenizer Aquarium",
+	"desc": "Live BPE tokenisation as a fish tank: common tokens swim big and slow, rare ones small and twitchy.",
+	"note": "",
+	"group": "ml",
+	"tags": [],
+	"added": "2026-09-25",
+	"surfaces": ["grid"],
+	"order": { "grid": 25, "views": null },
+	"status": "live",
+	"kit": false
+}
