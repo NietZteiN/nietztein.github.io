@@ -1,4 +1,4 @@
-/* CV at a glance (assets/js/glance.js): four quiet tiles and one thin year line,
+/* CV at a glance (assets/js/glance.js): a research map and one thin year line,
    inserted after the About bio. Uses only main.css tokens; light/dark follow them. */
 
 .glance {
@@ -13,50 +13,179 @@
 	border-radius: 4px;
 }
 
-/* ---- tiles ---- */
+/* ---- research map ---- */
 
-.glance-tiles {
-	display: grid;
-	grid-template-columns: repeat(4, minmax(0, 1fr));
-	gap: 10px;
+.glance-maphead {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 4px 16px;
+	margin-bottom: 6px;
+	font-family: var(--font-mono);
+	font-size: 10.5px;
+	color: var(--text-2);
 }
 
-.glance-tile {
+.glance-maptitle {
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+}
+
+.glance-key {
 	display: flex;
-	flex-direction: column;
-	padding: 10px 12px 9px;
+	flex-wrap: wrap;
+	gap: 4px 14px;
+}
+
+.glance-key > span {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	white-space: nowrap;
+}
+
+.glance-map {
 	border: 1px solid var(--border);
 	border-radius: 10px;
 	background: var(--surface);
-	min-width: 0;
-}
-
-.glance-k {
-	font-family: var(--font-mono);
-	font-size: 10.5px;
-	letter-spacing: 0.08em;
-	text-transform: uppercase;
-	color: var(--text-2);
-	margin-bottom: 4px;
-}
-
-.glance-v {
-	font-size: 1.55rem;
-	font-weight: 600;
-	letter-spacing: -0.02em;
-	line-height: 1.1;
-	color: var(--text);
-}
-
-.glance-n {
-	font-family: var(--font-mono);
-	font-size: 11px;
-	color: var(--text-2);
-	margin-top: 4px;
-	white-space: nowrap;
 	overflow: hidden;
-	text-overflow: ellipsis;
 }
+
+.glance-mapsvg {
+	display: block;
+	height: auto;
+	font-family: var(--font-mono);
+}
+
+/* the field: neutral greys only */
+.glance-field {
+	fill: var(--text-2);
+	opacity: 0.28;
+}
+
+.glance-dot {
+	fill: var(--text-2);
+	opacity: 0.5;
+}
+
+.glance-blob {
+	fill: var(--accent-soft);
+}
+
+/* desktop landmasses: accent at low opacity, darker where two regions overlap */
+.glance-land {
+	fill: var(--accent);
+	opacity: 0.15;
+}
+
+.glance-blob.is-plain {
+	fill: none;
+	stroke: var(--border);
+	stroke-dasharray: 2 3;
+}
+
+.glance-region {
+	font-size: 9.5px;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	fill: var(--text-2);
+	cursor: default;
+	outline: none;
+	transition: opacity var(--dur) var(--ease-out);
+}
+
+.glance-count {
+	fill: var(--text);
+	font-weight: 600;
+}
+
+.glance-region:hover,
+.glance-region:focus-visible,
+.glance-region.is-on {
+	fill: var(--text);
+}
+
+.glance-region:focus-visible {
+	text-decoration: underline;
+}
+
+/* works: one accent hue; kind is carried by shape (disc, diamond, ring) */
+.glance-pt {
+	cursor: pointer;
+	outline: none;
+	transition: opacity var(--dur) var(--ease-out);
+}
+
+.glance-hit {
+	fill: transparent;
+	stroke: none;
+}
+
+.glance-pt-paper,
+.glance-pt-paper .glance-shape {
+	fill: var(--accent);
+}
+
+.glance-pt-talk,
+.glance-pt-talk .glance-shape,
+.glance-pt-role,
+.glance-pt-role .glance-shape {
+	fill: var(--surface);
+	stroke: var(--accent);
+	stroke-width: 1.6;
+}
+
+.glance-twin {
+	transition: opacity var(--dur) var(--ease-out);
+}
+
+.glance-twin-dot {
+	fill: var(--accent);
+}
+
+.glance-link {
+	fill: none;
+	stroke: var(--accent);
+	stroke-width: 1;
+	opacity: 0.5;
+	pointer-events: none;
+	transition: opacity var(--dur) var(--ease-out);
+}
+
+.glance-pt:hover .glance-shape,
+.glance-pt:focus-visible .glance-shape,
+.glance-pt.is-on .glance-shape {
+	stroke: var(--text);
+	stroke-width: 1.6;
+}
+
+.glance-pt:focus-visible .glance-hit {
+	stroke: var(--accent);
+	stroke-width: 1.5;
+}
+
+.glance-map.is-dim .glance-pt,
+.glance-map.is-dim .glance-twin {
+	opacity: 0.28;
+}
+
+.glance-map.is-dim .glance-link {
+	opacity: 0.15;
+}
+
+.glance-map.is-dim .glance-region {
+	opacity: 0.55;
+}
+
+.glance-map.is-dim .is-on {
+	opacity: 1;
+}
+
+.glance-caption.glance-mapcap {
+	margin-left: 0;
+}
+
 
 /* ---- year line ---- */
 
@@ -187,12 +316,26 @@
 	to { opacity: 1; }
 }
 
+.glance.rise .glance-map:not(.is-settled) .glance-pt,
+.glance.rise .glance-map:not(.is-settled) .glance-twin,
+.glance.rise .glance-map:not(.is-settled) .glance-link {
+	animation: glance-in var(--dur) var(--ease-out) backwards;
+	animation-delay: calc(var(--d, 600) * 1ms);
+}
+
 @media (prefers-reduced-motion: reduce) {
 	.glance.rise .glance-axis,
-	.glance.rise .glance-mark {
+	.glance.rise .glance-mark,
+	.glance.rise .glance-map:not(.is-settled) .glance-pt,
+	.glance.rise .glance-map:not(.is-settled) .glance-twin,
+	.glance.rise .glance-map:not(.is-settled) .glance-link {
 		animation: none;
 	}
-	.glance-mark {
+	.glance-mark,
+	.glance-pt,
+	.glance-twin,
+	.glance-link,
+	.glance-region {
 		transition: none;
 	}
 }
@@ -200,10 +343,6 @@
 /* ---- phones ---- */
 
 @media (max-width: 575.98px) {
-	.glance-tiles {
-		grid-template-columns: repeat(2, minmax(0, 1fr));
-		gap: 8px;
-	}
 	.glance-line {
 		grid-template-columns: 48px minmax(0, 1fr);
 		gap: 6px;
@@ -219,5 +358,11 @@
 	.glance-caption {
 		margin-left: 0;
 		white-space: normal;
+	}
+	.glance-mapcap {
+		min-height: 4.2em;
+	}
+	.glance-key {
+		gap: 4px 10px;
 	}
 }
