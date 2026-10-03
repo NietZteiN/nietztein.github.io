@@ -1,0 +1,84 @@
+{
+	"do-machines-struggle-where-humans-do-obfuscation-as-a-probe-": {
+		"type": "inproceedings",
+		"key": "le2026obfuscation",
+		"title": "Do Machines Struggle Where Humans Do? Obfuscation as a Probe of Human and Machine Code Comprehension",
+		"author": ["Le, Jack V."],
+		"year": "2026",
+		"booktitle": "ACM Student Research Competition, SPLASH/ISSTA",
+		"note": "Two-page extended abstract; peer-reviewed",
+		"url": "assets/documents/publications/2026SPLASH-SRC.pdf"
+	},
+	"attributing-gains-in-paired-training-objective-or-data-direc": {
+		"type": "inproceedings",
+		"key": "le2026attributing",
+		"title": "Attributing Gains in Paired Training: Objective or Data Direction?",
+		"author": ["Le, Jack V.", "Nguyen, Tien"],
+		"year": "2026",
+		"booktitle": "Third NeurIPS Workshop on Attributing Model Behavior at Scale: Data Attribution and Provenance (ATTRIB 2026)",
+		"note": "Non-archival"
+	},
+	"router-free-modular-storage-for-knowledge-unlearning-in-larg": {
+		"type": "unpublished",
+		"key": "hanke2026router",
+		"title": "Router-Free Modular Storage for Knowledge Unlearning in Large Language Models",
+		"author": ["Hanke, Vincent", "Le, Jack V.", "Dziedzic, Adam", "Boenisch, Franziska"],
+		"year": "2026",
+		"note": "Submitted to ICLR"
+	},
+	"fast-errors-or-slow-effort-divergent-dual-process-signatures": {
+		"type": "unpublished",
+		"key": "le2026fast",
+		"title": "Fast Errors or Slow Effort? Divergent Dual-Process Signatures of Code Obfuscation in Humans and Language Models",
+		"author": ["Le, Jack V.", "Lahnstein Coronado, Ilse", "Nguyen, Anh", "Nguyen, Tien"],
+		"year": "2026",
+		"note": "Submitted to ACM International Conference on the Foundations of Software Engineering (FSE)"
+	},
+	"extreme-summarization-of-worldwide-scientific-and-patent-doc": {
+		"type": "unpublished",
+		"key": "le2026extreme",
+		"title": "Extreme Summarization of Worldwide Scientific and Patent Document Clusters for Landscape Analysis",
+		"author": ["Le, Jack V.", "Gelles, Rebecca", "Aiken, Catherine", "Quinn, Katherine"],
+		"year": "2026",
+		"note": "Submitted to Scientometrics"
+	},
+	"do-machines-struggle-where-humans-do-llm-and-human-comprehen": {
+		"type": "misc",
+		"key": "le2026machines",
+		"title": "Do Machines Struggle Where Humans Do? LLM and Human Comprehension of Obfuscated Code",
+		"author": ["Le, Jack V.", "Nguyen, Anh", "Nguyen, Tien"],
+		"year": "2026",
+		"eprint": "2606.31725",
+		"archivePrefix": "arXiv",
+		"primaryClass": "cs.SE",
+		"note": "Submitted to ACM International Conference on the Foundations of Software Engineering (FSE)",
+		"url": "https://arxiv.org/abs/2606.31725"
+	},
+	"the-effect-of-code-obfuscation-on-human-program-comprehensio": {
+		"type": "misc",
+		"key": "nguyen2026effect",
+		"title": "The Effect of Code Obfuscation on Human Program Comprehension",
+		"author": ["Nguyen, A. H. N.", "Le, Jack V.", "Lahnstein Coronado, Ilse", "Nguyen, T. N."],
+		"year": "2026",
+		"eprint": "2603.07668",
+		"archivePrefix": "arXiv",
+		"primaryClass": "cs.SE",
+		"url": "https://arxiv.org/abs/2603.07668"
+	},
+	"what-does-an-embedding-mean-a-semiotic-account-of-learned-re": {
+		"type": "unpublished",
+		"key": "le2026embedding",
+		"title": "What Does an Embedding Mean? A Semiotic Account of Learned Representation",
+		"author": ["Le, Jack V."],
+		"year": "2026",
+		"note": "Preprint"
+	},
+	"code-as-embedding-as-ai": {
+		"type": "unpublished",
+		"key": "tanakaishii2024code",
+		"title": "Code as Embedding as AI",
+		"author": ["Tanaka Ishii, K.", "Le, Jack V."],
+		"year": "2024",
+		"note": "Submitted to Minds and Machines"
+	}
+}
