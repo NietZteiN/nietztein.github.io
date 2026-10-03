@@ -432,6 +432,25 @@ a {
 	color: var(--text-2);
 }
 
+/* "Play as a visual novel" link in a blog post meta row (misc/55-paper-theatre). */
+.blog-play {
+	font-family: var(--font-mono);
+	font-size: .8rem;
+	font-weight: 400;
+	color: var(--accent);
+	text-decoration: none;
+	border-radius: 3px;
+}
+
+.blog-play::before {
+	content: "\25B8\00A0";
+}
+
+.blog-play:hover,
+.blog-play:focus-visible {
+	text-decoration: underline;
+}
+
 /* "Play the visual novel" link inside a .pub-congress (misc/55-paper-theatre). */
 .pub-play {
 	font-family: var(--font-mono);

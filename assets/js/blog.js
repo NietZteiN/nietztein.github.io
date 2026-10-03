@@ -309,6 +309,39 @@
 		);
 	}
 
+	// Paper Theatre (misc/55-paper-theatre): if a published visual novel exists for
+	// this post, add one small link to the meta row. The manifest is fetched once;
+	// any failure simply leaves the post as it is.
+	var STORIES_URL = 'misc/55-paper-theatre/stories/index.json';
+	var storiesPromise = null;
+	function loadStories() {
+		if (!storiesPromise) {
+			storiesPromise = fetch(STORIES_URL)
+				.then(function (r) { return r.ok ? r.json() : []; })
+				.catch(function () { return []; });
+		}
+		return storiesPromise;
+	}
+	function loadStoryLink(metaEl, slug) {
+		if (!metaEl) return;
+		loadStories().then(function (list) {
+			if (!Array.isArray(list) || !metaEl.isConnected) return;
+			for (var i = 0; i < list.length; i++) {
+				var s = list[i];
+				if (s && s.kind === 'blog' && s.status === 'published' && s.slug === slug && s.id) {
+					var a = document.createElement('a');
+					a.className = 'blog-play';
+					a.href = 'misc/55-paper-theatre/?story=' + encodeURIComponent(s.id);
+					a.target = '_blank';
+					a.rel = 'noopener';
+					a.textContent = 'Play as a visual novel';
+					metaEl.appendChild(a);
+					return;
+				}
+			}
+		});
+	}
+
 	function renderPost(slug) {
 		var v = views();
 		if (!v.list || !v.post) return;
@@ -352,6 +385,7 @@
 
 					decorate(v.post.querySelector('.blog-post-body'));
 					loadViewCount(v.post.querySelector('.blog-views'), slug);
+					loadStoryLink(v.post.querySelector('.blog-post-meta'), slug);
 					loadComments(v.post.querySelector('#blogComments'), slug);
 					window.scrollTo({ top: 0, behavior: 'auto' });
 					afterRender();

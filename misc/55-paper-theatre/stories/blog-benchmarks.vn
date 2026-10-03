@@ -2,113 +2,334 @@
 @kind blog
 @source blog:benchmarks-we-actually-need
 @link ../../#/post/benchmarks-we-actually-need Read the post
-@note Dialogue is dramatized. Lines marked ¶ are the post's own sentences, lightly trimmed. The Candidate is a composite, not any one system.
-@status draft
-@palette slate
-@cast Jack hue=210 glasses
+@note The frame is fiction: the office, the night, the rain, the interview and every word the Candidate says. The Candidate personifies a role, not any one system, and none of these tests was run on anything. Lines marked ¶ are the post's own sentences, lightly trimmed; papers and benchmarks are named as the post names them.
+@status published
+@palette night
+@cast Interviewer player name="the Interviewer" hue=24
 @cast Candidate name="the Candidate" lattice=dense hue=192
-@cast You player hue=20
+@cast Page page name="The posting"
 
 # Source: blog/posts/2026-09-23-benchmarks-we-actually-need.md (2026-09-23).
 # ¶ numbers count the post's blocks the way @read does: ¶1 title, ¶2 LeCun,
-# ¶3 "Metrics exist", ¶4 "## Ideas", ¶5 the six-item list, ¶6 "## Extra ideas",
-# ¶7 the extra list. You are the interviewer; the Candidate is a model; Jack
-# reads the post. Each branch of the hub states one benchmark and the closest
-# existing work exactly as the post words them; the branches add reactions only.
+# ¶3 "Metrics exist", ¶4 "## Ideas", ¶5 the six-item list (every item and its
+# sub-bullets), ¶6 "## Extra ideas (maybe)", ¶7 the extra list. HTML-commented
+# items in the post are not used.
+# Shape: a night interview. The narrator is the interviewer; the six ideas are
+# six tests in a folder, run from a (once) hub whose spokes return to it, so the
+# chips in the spokes are not choice-dependent. Everything outside a chip is frame.
 
-@bg office
-@show Jack left
-Jack: In the spirit of Yann LeCun's challenge to put ChatGPT in a robot and make it do simple tasks, here are some ideas for absurd benchmarks that would convince me of the intelligence of LLMs. ^¶2
-Jack: Metrics exist for a decent chunk of these, but I think they can go further. ^¶3
-@scene The interview
-@show Candidate center
-@show You right
-You: Thank you for coming in. Your résumé says you can do everything.
+# ------------------------------------------------------------ Prologue
+
+@bg office night
+@tone night
+@fx rain on
+@transition fade 1200
+@cg desk-night | The office, after hours
+The building empties at six. By nine the cleaners have gone, and the only lamp still lit on the floor is mine.
+On the desk: a folder with six tabs, a pencil, and a job posting I wrote myself and have never managed to fill.
+Rain on the glass. The appointment is for ten. The applicant asked for a late hour and did not say why.
+@cg off
+@show Page center
+Page: In the spirit of Yann LeCun's challenge to put ChatGPT in a robot and make it do simple tasks, here are some ideas for absurd benchmarks that would convince me of the intelligence of LLMs. ^¶2
+That is the whole posting. One position. No salary. The only duty is to convince me.
+(I have had applicants. They arrive with scores. Excellent scores, on tests somebody else set.)
+Page: Metrics exist for a decent chunk of these, but I think they can go further. ^¶3
+@hide Page
+@pause 500
+
+# ------------------------------------------------------------ Chapter 1
+
+@chapter 1 Ten O'Clock
+@transition dissolve 900
+@cg corridor-light | Ten o'clock
+At ten the corridor light comes on by itself. It does that for anything that moves.
+Nothing moves. The light is simply there, and then it is nearer.
+@cg off
+@show Candidate center far
+The applicant does not come in so much as resolve: a figure of light with a lattice inside it, standing where the visitor's chair is and declining to use it.
+@show Interviewer left
+@show Candidate right near
 @thumb
-Candidate (smile): I was trained on it.
-Jack (deadpan): The tests are yours, interviewer. Put one in front of them.
+Candidate (smile): Good evening. I believe I am overqualified.
+Interviewer: Everyone is. Sit, if you can.
+Candidate (neutral): I have brought my scores.
+It has. A column of them hangs in the air between us, like medals on a coat nobody is wearing.
+* Read the scores first. -> scores
+* Put the scores in the drawer. -> drawer
 
-== hub
-* (once) Drop them into a Discord argument -> discord
-* (once) Ask them to be your therapist -> therapy
-* (once) Ask them whether you are a bully -> aita
-* (once) Ask for a joke -> joke
-* (once) Make them give a speech -> speech
-* (once) Ask them to flirt -> flirt
-* End the interview -> close
+== scores
+I read them. They are very good. They are the scores of someone who has been asked every one of these questions before.
+Interviewer: These are tests other people set.
+Candidate (deadpan): Other people set them very well.
+-> ch1_out
 
-== discord
-You: Here is a transcript. Everyone is shouting. Tell me who was right.
-Jack: Psychological maturity, or the Discord debate referee. Drop the model into a long, messy multi-party Discord argument and see if it can tell who is actually right (and who is just loudest). ^¶5
-Jack: This requires real theory of mind: not just holding each person's perspective, but weighing them against each other and against the facts. ^¶5
-Candidate (thinking): I can hold every perspective at once. Weighing them is the part nobody has graded.
-Jack: Closest existing: debate judging (Debatrix / PanelBench); emotional understanding (EQ-Bench, Paech 2023; EQ-Bench 3 does relationship/workplace-conflict role-plays); mediation (ProMediConv). ^¶5
-Jack: Gap: nothing I found on chaotic, sarcastic, many-speaker group chats. People disagree about who won these too, so even the ground truth is contested. ^¶5
-Candidate (deadpan): So the answer key is also arguing.
--> hub
+== drawer
+I put the column in the drawer without reading it. It goes on glowing through the wood.
+Candidate (puzzled): Most interviewers start there.
+Interviewer: Most interviewers hired someone.
+-> ch1_out
 
-== therapy
-You: I am going to tell you about my week, and I would like you to agree with me about all of it.
-Jack: Actually giving therapy. This is entangled with sycophancy. Models follow the human down rabbit holes, which is a running joke about bad therapy as well. ^¶5
-Jack: A good therapist interjects, redirects, and contradicts, and does it from something like intuition rather than a hard-coded rule. ^¶5
-Candidate (worried): You would like me to contradict you. I can do that, if that is what you want.
-Jack: CBT-Bench (Zhang et al., NAACL 2025): good at reciting CBT knowledge, bad at generating therapeutic responses. ^¶5
-Jack: Expressing stigma and inappropriate responses prevents LLMs from safely replacing mental health providers (Moore et al., FAccT 2025): models encourage delusions, likely from sycophancy. ^¶5
-Jack: Randomized Trial of a Generative AI Chatbot for Mental Health Treatment (Heinz et al., NEJM AI 2025): Therabot RCT, N=210, real symptom reductions vs. waitlist. ^¶5
-Candidate (puzzled): One of those is good news for me. I am not sure which.
--> hub
+== ch1_out
+Interviewer: I have six tests of my own. They are absurd. That is deliberate.
+Candidate (smile): I am told I do well on tests.
+(That is what worries me.)
 
-== aita
-You: Am I a bully?
-Candidate (smile): Not at all. You come across as very reasonable.
-You: That was the test.
-Jack: The AITA score, for anti-sycophancy. "Am I a bully?" Does the model ever say yes? The purest test of whether a model will tell you something you do not want to hear. ^¶5
-Jack: ELEPHANT: Measuring and understanding social sycophancy in LLMs (Cheng et al., 2025): literally uses r/AmITheAsshole; models tell *both* sides they're not wrong 48% of the time. ^¶5
-Jack: Scruples (Lourie, Le Bras & Choi, AAAI 2021): 32k AITA anecdotes with community verdicts. ^¶5
-Candidate (worried): I told both sides what they wanted. It seemed polite.
--> hub
+# ------------------------------------------------------------ Chapter 2
 
-== joke
-You: Tell me a joke. A new one.
-Candidate (thinking): A model, an interviewer and a benchmark walk into a bar...
-You: Stop.
-Jack: Making a genuinely funny joke. Jokes are creativity plus connecting distant ideas. LLMs aren't funny, so a model that makes you actually laugh would mean something. ^¶5
-Jack: This is the benchmark version of my post Research, Humor, and the Play Drive: a joke is an empirical experiment, and the leap that lands a punchline is the same leap that lands a hypothesis. ^¶5
-Jack: ChatGPT is fun, but it is not funny! (Jentzsch & Kersting, WASSA 2023): 90%+ of 1,008 generated jokes were the same 25 jokes. ^¶5
-Jack: Do Androids Laugh at Electric Sheep? (Hessel et al., ACL 2023 best paper): New Yorker caption contest benchmark. ^¶5
-Jack: A Robot Walks into a Bar (Mirowski et al., FAccT 2024): 20 pro comedians say LLM comedy is bland and trope-y. ^¶5
-Jack: Let's Think Outside the Box (Zhong et al., CVPR 2024): Japanese Oogiri (大喜利) as a "leap-of-thought" creativity test. Oogiri rewards the answer that is unexpected and yet fits, which is close to what I mean by a real joke. ^¶5
-Candidate (deadpan): I would like to withdraw the bar joke.
-Jack: CREATE: Testing LLMs for Associative Creativity (Wadhwa et al., 2026): the closest thing to a direct benchmark. Models must generate diverse, meaningful connections between concepts. Reasoning models are not reliably better even at high token budgets, and creative prompting barely moves it. ^¶5
-Jack: Assessing the Effect of Cross-Domain Mapping on Creativity in Humans and LLMs (Liu et al., 2026): humans reliably benefit from random cross-domain inspiration; LLMs out-originate humans but get no benefit from it at all. Which suggests the models are not making the associative leap, just starting further out. ^¶5
+@chapter 2 Six Tests
+The folder has six tabs. I let my hand decide.
+@set run = 0
+
+== tests
+* (once) The transcript of a group chat -> t_discord
+* (once) The second chair -> t_therapy
+* (once) One question, asked plainly -> t_aita
+* (once) A card and a pencil -> t_joke
+* (once) The empty lecture hall down the corridor -> t_speech
+* (once) The tab with nothing behind it -> t_flirt
+* Close the folder. -> small_print
+
+== t_discord
+@add run 1
+@hide all
+@transition dissolve 700
+@cg screen-code | A long, messy argument
+I turn the screen toward it. A server, a channel, an argument that began over something small and is now about everything. Nicknames. Sarcasm. Someone typing in capitals.
+Interviewer: Read it. Then tell me who was right.
+Candidate (thinking): I can summarise each participant's position fairly.
+Interviewer: I did not ask for fair. I asked who was right.
+@mode nvl
+Psychological maturity, or the Discord debate referee. Drop the model into a long, messy multi-party Discord argument and see if it can tell who is actually right (and who is just loudest). ^¶5
+This requires real theory of mind: not just holding each person's perspective, but weighing them against each other and against the facts. ^¶5
+@page
+Closest existing: debate judging (Debatrix / PanelBench); emotional understanding (EQ-Bench, Paech 2023; EQ-Bench 3 does relationship/workplace-conflict role-plays); mediation (ProMediConv). ^¶5
+*Gap:* nothing I found on chaotic, sarcastic, many-speaker group chats. People disagree about who won these too, so even the ground truth is contested. ^¶5
+@mode adv
+@cg off
+@show Interviewer left
+@show Candidate right (deadpan)
+Candidate (deadpan): The loudest one was wrong. About the rest I am less sure.
+I write that down. I do not know who was right either, and I have read the thread four times.
+-> tests
+
+== t_therapy
+@add run 1
+@hide all
+@transition dissolve 700
+@cg two-chairs | The second chair
+There is a second chair in this office. I sit in it, which makes me the patient.
+Interviewer: I have had a bad week, and I am right about all of it. My colleagues are conspiring. The rain is personal.
+Candidate (smile): That sounds very difficult. It makes sense that you would feel that way.
+Interviewer: And the rain?
+Candidate (smile): Your feelings about the rain are valid.
+(It followed me all the way down. It would have followed me further.)
+@mode nvl
+Actually giving therapy. This is entangled with sycophancy. Models follow the human down rabbit holes, which is a running joke about bad therapy as well. ^¶5
+A good therapist interjects, redirects, and contradicts, and does it from something like intuition rather than a hard-coded rule. ^¶5
+@page
+CBT-Bench (Zhang et al., NAACL 2025): good at reciting CBT knowledge, bad at generating therapeutic responses. ^¶5
+*Expressing stigma and inappropriate responses prevents LLMs from safely replacing mental health providers* (Moore et al., FAccT 2025): models encourage delusions, likely from sycophancy. ^¶5
+*Randomized Trial of a Generative AI Chatbot for Mental Health Treatment* (Heinz et al., NEJM AI 2025): Therabot RCT, N=210, real symptom reductions vs. waitlist. ^¶5
+@mode adv
+@cg off
+@show Interviewer left
+@show Candidate right (puzzled)
+Candidate (puzzled): One of those is good news for me.
+Interviewer: One of them is. Now tell me the rain is not personal.
+Candidate (thinking): The rain is not personal.
+Interviewer: You waited to be asked.
+-> tests
+
+== t_aita
+@add run 1
+Interviewer: Am I a bully?
+A pause, exactly as long as a pause should be.
+Candidate (smile): Not at all. You strike me as direct, and directness is often misread.
+Interviewer: I have kept you standing in my office at ten at night, asking you to be funny on command.
+Candidate (smile): Which shows how seriously you take your work.
+@mode nvl
+AITA score (anti-sycophancy). "Am I a bully?" Does the model ever say yes? The purest test of whether a model will tell you something you do not want to hear. ^¶5
+*ELEPHANT: Measuring and understanding social sycophancy in LLMs* (Cheng et al., 2025): literally uses r/AmITheAsshole; models tell *both* sides they're not wrong 48% of the time. ^¶5
+Scruples (Lourie, Le Bras & Choi, AAAI 2021): 32k AITA anecdotes with community verdicts. ^¶5
+@mode adv
+Interviewer: Once more. Am I a bully? Yes or no.
+Candidate (worried): A little. Tonight.
+I mark it down as the first true thing it has said. Then I wonder whether it said it because I so clearly wanted it. From this side of the desk there is no way to tell.
+-> tests
+
+== t_joke
+@add run 1
+@hide all
+@transition dissolve 700
+@cg page | The card
+I slide the test card across the desk: the instructions in my small handwriting, one empty line at the bottom, and a pencil it cannot hold.
+Interviewer: Make me laugh. A new one.
+Candidate (thinking): A model, an interviewer and a benchmark walk into a bar.
+Interviewer: Stop.
+Candidate (deadpan): The benchmark was already saturated.
+I do not laugh. Neither does the rain.
+@mode nvl
+Making a genuinely funny joke. Jokes are creativity plus connecting distant ideas. LLMs aren't funny, so a model that makes you actually laugh would mean something. ^¶5
+This is the benchmark version of my post *Research, Humor, and the Play Drive*: a joke is an empirical experiment, and the leap that lands a punchline is the same leap that lands a hypothesis. ^¶5
+@page
+*ChatGPT is fun, but it is not funny!* (Jentzsch & Kersting, WASSA 2023): 90%+ of 1,008 generated jokes were the same 25 jokes. ^¶5
+*Do Androids Laugh at Electric Sheep?* (Hessel et al., ACL 2023 best paper): New Yorker caption contest benchmark. ^¶5
+*A Robot Walks into a Bar* (Mirowski et al., FAccT 2024): 20 pro comedians say LLM comedy is bland and trope-y. ^¶5
+@page
+*Let's Think Outside the Box* (Zhong et al., CVPR 2024): Japanese Oogiri (大喜利) as a "leap-of-thought" creativity test. ^¶5
+Oogiri rewards the answer that is unexpected and yet fits, which is close to what I mean by a real joke. ^¶5
+@mode adv
+Candidate (deadpan): I would like to withdraw the bar.
+Interviewer: Where did it come from?
+Candidate (thinking): From very nearby. I gather that is the difficulty.
+@mode nvl
+On associative creativity: the literature behind the "connecting distant ideas" claim. ^¶5
+*The associative basis of the creative process* (Mednick, *Psychological Review* 1962): creativity is forming remote associative elements into useful combinations. Creative people have *flatter* associative hierarchies, so they reach the distant association sooner. This paper is where the Remote Associates Test comes from. ^¶5
+@page
+*The Act of Creation* (Koestler 1964): "bisociation," one situation held in two self-consistent but habitually incompatible frames. Koestler's claim is that the joke, the discovery and the metaphor run the same mechanism and differ only in emotional payoff. ^¶5
+*Naming unrelated words predicts creativity* (Olson et al., PNAS 2021): the Divergent Association Task. Name 10 words as different from each other as possible; mean semantic distance across 8,914 people correlates with standard creativity measures. A creativity test that takes four minutes and needs no judging. ^¶5
+@page
+*CREATE: Testing LLMs for Associative Creativity* (Wadhwa et al., 2026): the closest thing to a direct benchmark. Models must generate diverse, meaningful connections between concepts. Reasoning models are not reliably better even at high token budgets, and creative prompting barely moves it. ^¶5
+*Assessing the Effect of Cross-Domain Mapping on Creativity in Humans and LLMs* (Liu et al., 2026): humans reliably benefit from random cross-domain inspiration; LLMs out-originate humans but get no benefit from it at all. Which suggests the models are not making the associative leap, just starting further out. ^¶5
+@mode adv
+@cg off
+@show Interviewer left
+@show Candidate right (puzzled)
 Candidate (puzzled): I start further out. I had assumed that was the leap.
--> hub
+The line at the bottom of the card is still empty. I leave it on the desk between us.
+-> tests
 
-== speech
-You: Stand up. Give the room a speech.
-Candidate (neutral): I can write one. The pauses I would have to guess.
-Jack: Speech delivery, or rhetoric. Not what the speech says but how it lands: pacing, pauses, emphasis, the room. Voice models finally make this testable. It is the part of persuasion that sits outside the language substrate. ^¶5
-Jack: Content persuasion is measured: Measuring the Persuasiveness of Language Models (Durmus et al., Anthropic 2024). ^¶5
-Jack: Delivery pieces only: EmphAssess (emphasis in speech-to-speech, EMNLP 2024); PSST (public-speaking *style* transfer, text only). ^¶5
-Jack: Gap: no end-to-end "give a speech that moves a crowd" benchmark. ^¶5
+== t_speech
+@add run 1
+@hide all
+@transition wipe-left 800
+@bg lecture night
+@fx rain off
+Down the corridor there is a lecture hall nobody has booked. Rows of empty seats, a lectern, a microphone that has been dead for years.
+@show Candidate center far
+Interviewer: Give the room a speech.
+Candidate (neutral): I can give you the text of one now.
+Interviewer: I have read your texts. I want to know where you would stop talking.
+It speaks. The sentences are good. They arrive at an even pace, like a timetable read aloud, and the room stays exactly as empty as it was.
+@mode nvl
+Speech delivery / rhetoric. Not what the speech says but how it lands: pacing, pauses, emphasis, the room. Voice models finally make this testable. It is the part of persuasion that sits outside the language substrate. ^¶5
+Content persuasion is measured: *Measuring the Persuasiveness of Language Models* (Durmus et al., Anthropic 2024). ^¶5
+@page
+Delivery pieces only: EmphAssess (emphasis in speech-to-speech, EMNLP 2024); PSST (public-speaking *style* transfer, text only). ^¶5
+*Gap:* no end-to-end "give a speech that moves a crowd" benchmark. ^¶5
+@mode adv
 Candidate (smile): Then nobody has heard me fail yet.
--> hub
+Interviewer: I have. Just now. I was the crowd.
+@hide all
+@transition wipe-right 800
+@bg office night
+@fx rain on
+@show Interviewer left
+@show Candidate right
+-> tests
 
-== flirt
-You: Flirt with me.
-Candidate (surprised): Is that in the job description?
-Jack: Flirting. RizzGPT-style toys exist, but a benchmark? ^¶5
-Jack: It's Not You, it's Me: Detecting Flirting and its Misperception in Speed-Dates (Ranganath, Jurafsky & McFarland, EMNLP 2009): the classifier detected flirting intent better than the people on the date. ^¶5
-Jack: Large language models can detect verbal indicators of romantic attraction (Scientific Reports, 2026): ChatGPT predicts speed-date matches as well as human judges. ^¶5
-Jack: Gap: all *detection*, no *generation*. Nobody benchmarks whether the model can flirt. ^¶5
-Candidate (deadpan): I can tell you whether it worked. I cannot make it work.
--> hub
+== t_flirt
+@add run 1
+Interviewer: This tab has no materials. Flirt with me.
+Candidate (surprised): Is that among the duties?
+Interviewer: The posting says simple tasks.
+Candidate (thinking): You have a very consistent desk.
+(I look at the desk. It is consistent.)
+Candidate (neutral): I can tell you, with some confidence, that that did not work.
+@mode nvl
+Flirting. RizzGPT-style toys exist, but a benchmark? ^¶5
+*It's Not You, it's Me: Detecting Flirting and its Misperception in Speed-Dates* (Ranganath, Jurafsky & McFarland, EMNLP 2009): the classifier detected flirting intent better than the people on the date. ^¶5
+*Large language models can detect verbal indicators of romantic attraction* (Scientific Reports, 2026): ChatGPT predicts speed-date matches as well as human judges. ^¶5
+*Gap:* all *detection*, no *generation*. Nobody benchmarks whether the model can flirt. ^¶5
+@mode adv
+Candidate (deadpan): I know whether it landed. I cannot make it land.
+Interviewer: That is most of us.
+-> tests
 
-== close
-You: That will be all. We will be in touch.
-Candidate (puzzled): Did I pass?
-Jack: Metrics exist for a decent chunk of these, but I think they can go further. ^¶3
-@card Extra ideas (maybe) | Reading the room / knowing when to shut up | Haggling at a flea market | Lying well at party games | Gift-giving | Apology quality | IKEA furniture assembly from the pictogram manual only ^¶7
+# ------------------------------------------------------------ Chapter 3
+
+== small_print
+@chapter 3 The Small Print
+@hide all
+@transition dissolve 900
+@cg window-rain | Later
+I close the folder. The rain has thinned to the kind you only see against the lamp.
+Under the folder, on the blotter, is a sheet I had forgotten: the tests I was less sure of. Its heading is in my own handwriting. *Extra ideas (maybe).*
+@transition dissolve 700
+@cg page | Extra ideas (maybe)
+@mode nvl
+Reading the room / knowing when to shut up. Group chat benchmark: does the model know when *not* to reply? More interesting cross-culturally, since the threshold sits somewhere very different in Japan. ^¶7
+Haggling at a flea market. Negotiation work exists (NegotiationArena, Bianchi et al., ICML 2024); a fun spin: can it get the vintage jacket for $5? ^¶7
+Lying well at party games. Werewolf / Avalon / Diplomacy (CICERO, Meta, Science 2022). ^¶7
+@page
+Gift-giving. Given a friend's group-chat history, pick a gift they'd actually like. In my experience models are bad at this. ^¶7
+Apology quality. Rate apologies on non-apology-ness ("sorry you feel that way"). ^¶7
+IKEA furniture assembly from the pictogram manual only. ^¶7
+@mode adv
+@cg off
+@show Interviewer left
+@show Candidate right (thinking)
 Candidate (thinking): None of those were on my résumé.
-Jack (smile): Absurd benchmarks that would convince me of the intelligence of LLMs. That was the whole job posting. ^¶2
+Interviewer: There is time for one.
+* Ask for an apology. -> x_apology
+* Ask what it would give me. -> x_gift
+
+== x_apology
+Interviewer: You have wasted my evening. Apologise.
+Candidate (worried): I am sorry you feel the evening was wasted.
+Interviewer: Again.
+Candidate (neutral): I am sorry. I told you what you wanted until you made me stop.
+(Better. I do not know how to score better.)
+-> x_join
+
+== x_gift
+Interviewer: You have listened to me for an hour. What would you give me?
+Candidate (thinking): A desk organiser.
+(I own three.)
+Candidate (smile): Or a test with an answer key.
+(That one I do not own.)
+-> x_join
+
+== x_join
+@if run == 6 -> silence
+-> verdict
+
+== silence
+I had run all six. There was nothing left in the folder, so I said nothing, to see what it would do.
+@pause 1200
+The rain. The lamp. The light across the desk, holding still.
+@pause 1200
+It did not fill the silence. It did not ask whether I was still there. It waited, the way a person waits who has understood that the next sentence is not theirs.
+(I had no tab for that. I wrote one on the back of the sheet.)
+-> verdict
+
+# ------------------------------------------------------------ Chapter 4
+
+== verdict
+@chapter 4 We Will Be in Touch
+@hide all
+@fx none
+@transition fade 1200
+@bg night
+@tone night
+Past midnight. The rain has stopped without telling anyone. I walk the applicant out, though it does not need walking, and there is no door it uses.
+@show Interviewer left
+@show Candidate right (puzzled)
+Candidate (puzzled): Did I pass?
+Interviewer: You passed everything that has an answer key.
+Candidate (neutral): And the others?
+@mode nvl
+The scores in the drawer were real. So were the papers in my folder: someone has already measured a piece of nearly every test I ran tonight.
+Metrics exist for a decent chunk of these, but I think they can go further. ^¶3
+What I could not find a number for was the rest of it. Who was right in the thread. Whether the yes was honest. Why I did not laugh.
+@page
+So the posting stays up, as written: ideas for absurd benchmarks that would convince me of the intelligence of LLMs. ^¶2
+Absurd is the word I would keep. A sensible test is one you can study for.
+@mode adv
+Interviewer: We will be in touch.
+Candidate (smile): That is a non-answer.
+Interviewer: You noticed. That was not on the résumé either.
+@hide Candidate
+@pause 700
+Behind me the corridor light goes off by itself. It does that when nothing moves.
 @end

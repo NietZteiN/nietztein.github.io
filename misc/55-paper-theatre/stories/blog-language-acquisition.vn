@@ -2,118 +2,327 @@
 @kind blog
 @source blog:open-questions-in-language-acquisition
 @link ../../#/post/open-questions-in-language-acquisition Read the post
-@note Dialogue is dramatized. Lines marked ¶ are the post's own sentences, lightly trimmed. The Theory is the post's reading of comprehensible input, not a person.
-@status draft
+@note The frame is fiction: the night, the corkboard, the rooms the memories are staged in, the train (which is only imagined) and every unmarked line. The Theory personifies the post's reading of comprehensible input; it is not a person and quotes nobody. Which languages were studied, and which classes failed, come from the post. Lines marked ¶ are the post's own sentences, lightly trimmed.
+@status published
 @palette ink
-@cast Jack hue=250 glasses
-@cast Theory name="the Theory" hood hue=40
-@cast You player hue=120
+@cast Jack hue=250 skin=2 glasses short hoodie
+@cast Theory name="the Theory" hood cardigan hue=40
+@cast Page page name="Open Questions"
 
 # Source: blog/posts/2026-08-01-open-questions-in-language-acquisition.md (2026-08-01).
 # ¶ numbers count the post's blocks the way @read does: ¶1 title, ¶2 the italic
-# epigraph, ¶3-¶9 the prose, ¶10 the fourteen-item list, ¶11 the last line.
-# The board is the post's list; every question is stated as the post words it.
-# The Theory only ever says "just read"; its lines in the branches are reactions.
+# epigraph, ¶3 the languages, ¶4 the "formula", ¶5 Krashen, ¶6 the absurd claims,
+# ¶7 the pedagogy, ¶8 "not been measured", ¶9 "To move in this direction",
+# ¶10 the fourteen-item list (all items), ¶11 the last line.
+# Shape: one night at a corkboard. Each memory is a spoke of a (once) hub and
+# returns to it, so the questions it pins are not choice-dependent. Question 6
+# (the mixed model) is the last card, pinned in the trunk.
 
-@bg lecture
-@show Jack left
-Jack: *My version of Erdős problems. Many of these seem intractable.* ^¶2
-Jack: I learned Japanese and German through immersion, one reasonably well and the other in progress. I put hundreds of hours into Duolingo and finished the French and Vietnamese trees. I failed Vietnamese and French classes. ^¶3
-Jack: I memorized Latin poems to do well in IB Latin. I speak very stilted Vietnamese with family members. So I think I know a little bit about learning languages. ^¶3
-Jack: To arrive at a winning "formula," I needed time, instruction, software, and a mind to discern bullshit. ^¶4
-Jack: These experiences lay somewhat unverbalized in my mind. To the best of my knowledge, the best verbalization of this sort of knowledge is Stephen Krashen's classic principles of second language acquisition and the theory of comprehensible input. ^¶5
-@show Theory right
-Theory: To be a good writer, you just need to read. ^¶6
-Theory: To become articulate, you just need to read. ^¶6
-Jack (deadpan): Tell that to an author! ^¶6
-Theory: To speak fluently in a second language, you just need to read. ^¶6
-Jack: But the theory leads Krashen to some absurd claims. I've seen people genuinely speak like Shakespeare because that's all they've read, though this can be fixed with an "adjustment period." The same goes for people who "speak like anime." A bit of exposure and practice is essentially like finetuning a base model. ^¶6
-Jack: A better second-language pedagogy, in my view, must start from an experimental base plus the minimum logical framework needed to explain the results. Nothing like Chomsky or any philosophical account of language built bottom-up. In other words, avoid philosophy (even experimental philosophy) where we can, and start with the facts. ^¶7
-Theory (smile): Just read.
-Jack: The problem is that those facts have not been measured. ^¶8
-@scene The board
-@show You center
-Jack: To move in this direction, we would need empirical evidence on the following questions. ^¶9
+# ------------------------------------------------------------ Prologue
+
+@bg room night
+@tone night
+@transition fade 1200
+@cg desk-night | Past one
+A corkboard leaned against the wall. A box of blank index cards. A tin of pins.
+It is past one, and I have decided not to sleep until the cards are written.
+Mathematicians keep lists of problems that are easy to state and have stood for years. I have no theorems. I have languages, and the things about them nobody could tell me.
+@cg off
+@show Page center
+Page: My version of Erdős problems. Many of these seem intractable. ^¶2
+@hide Page
+@pause 500
+
+# ------------------------------------------------------------ Chapter 1
+
+@chapter 1 Inventory
+@show Jack left (thinking)
+Jack: Before the questions, the inventory. What I have actually done.
+@mode nvl
+I learned Japanese and German through immersion, one reasonably well and the other in progress. ^¶3
+I put hundreds of hours into Duolingo and finished the French and Vietnamese trees. ^¶3
+I failed Vietnamese and French classes. ^¶3
+I memorized Latin poems to do well in IB Latin. ^¶3
+I speak very stilted Vietnamese with family members. ^¶3
+So I think I know a little bit about learning languages. ^¶3
+@page
+Read down the column and it is not a record of triumph. It is a lab notebook kept by someone who did not know he was running experiments.
+To arrive at a winning "formula," I needed time, instruction, software, and a mind to discern bullshit. ^¶4
+These experiences lay somewhat unverbalized in my mind. ^¶5
+@mode adv
+Jack (neutral): Somebody must have put it into words already.
+
+# ------------------------------------------------------------ Chapter 2
+
+@chapter 2 Just Read
+@hide all
+@transition dissolve 900
+@bg library dim
+@fx dust on
+The shelf by the door. I know which spine I am looking for before I find it.
+To the best of my knowledge, the best verbalization of this sort of knowledge is Stephen Krashen's classic principles of second language acquisition and the theory of comprehensible input. ^¶5
+It is a good theory. It has the calm of something that has been right about a great deal.
+@show Theory right far
+When I look up it is sitting across from me: hood up, hands folded, with the patience of a book.
+@show Jack left (neutral)
+@show Theory right (smile)
 @thumb
-Jack (smile): Fourteen are on the board. Which do you pin first? ^¶10
+Theory (smile): You have been reading. Good. Keep going.
+Jack: But the theory leads Krashen to some absurd claims. ^¶6
+Theory (smile): To be a good writer, you just need to read. ^¶6
+Theory (neutral): To become articulate, you just need to read. ^¶6
+Jack (deadpan): Tell that to an author! ^¶6
+Theory (neutral): To speak fluently in a second language, you just need to read. ^¶6
+Jack (thinking): I've seen people genuinely speak like Shakespeare because that's all they've read, though this can be fixed with an "adjustment period." ^¶6
+Jack: The same goes for people who "speak like anime." A bit of exposure and practice is essentially like finetuning a base model. ^¶6
+Theory (puzzled): You are describing my successes.
+* Argue with it. -> argue
+* Let it talk. -> let_talk
+
+== argue
+Jack: They read, and they came out sounding like a play. Something else had to happen before they sounded like a person.
+Theory (smile): An adjustment period. You said so yourself.
+Jack (deadpan): I did. It is the part you do not explain.
+-> ch2_out
+
+== let_talk
+Theory (smile): Read more. Read wider. Read what you enjoy, and the rest will arrive.
+(It is very restful to be told this. That is the trouble with it.)
+Jack (neutral): And if it does not arrive?
+Theory (neutral): Then you have not read enough.
+-> ch2_out
+
+== ch2_out
+@mode nvl
+A better second-language pedagogy, in my view, must start from an experimental base plus the minimum logical framework needed to explain the results. ^¶7
+Nothing like Chomsky or any philosophical account of language built bottom-up. In other words, avoid philosophy (even experimental philosophy) where we can, and start with the facts. ^¶7
+The problem is that those facts have not been measured. ^¶8
+@mode adv
+Theory (neutral): Then what do you propose to do about it, at one in the morning?
+Jack: Write down what nobody has measured. One card each.
+(It follows me back to the desk. Theories do.)
+
+# ------------------------------------------------------------ Chapter 3
+
+@chapter 3 The Board
+@hide all
+@fx none
+@transition dissolve 900
+@bg room night
+@show Jack left (neutral)
+@show Theory right (neutral)
+Jack: To move in this direction, we would need empirical evidence on the following questions. ^¶9
+I had meant to write them in order. It does not work that way. Pick up a blank card and a room comes with it.
+@set pinned = 0
 
 == board
-* (once) 1. Medium -> q1
-* (once) 2. Multiple languages at once -> q2
-* (once) 4. Hearing foreign sounds -> q4
-* (once) 7. What it takes to get good at talking -> q7
-* (once) 11. The magical hyperpolyglot -> q11
-* (once) 14. Forgetting over time -> q14
-* (once) 6, 9, 10, 13. The ones in smaller handwriting -> rest
-* Step back from the board -> close
+* (once) The phone, face up in the dark -> m_app
+* (once) A classroom, and a poem by heart -> m_latin
+* (once) The family table -> m_table
+* (once) A train I am only imagining -> m_train
+* (once) The German I left open on the laptop -> m_german
+* (once) Two legends -> m_legends
+* Step back from the board. -> fifty
 
-== q1
-You: Medium.
-Jack: How does acquisition change by medium, listening vs. reading, for the same content and the same time investment? ^¶10
-Theory (deadpan): Just read.
-You: Same content, same hours. Would listening have done the same?
-Theory (puzzled): ...
+== m_app
+@add pinned 1
+@hide all
+@bg room dim
+@flashback on The app
+A lesson before sleep. Then another, because the first did not feel like anything.
+Match the word to the picture. Match the word to the picture. A small bright sound for every right answer.
+Hundreds of hours went this way. Two whole trees, French and Vietnamese, down to the last leaf.
+(Some nights I was there for all of it. Some nights my thumb did the lesson and I watched.)
+@flashback off
+@mode nvl
+Concentration. How does attention affect learning? We know learning in your sleep doesn't work, but what's the minimum? Sometimes I glaze through a text. How much do I actually retain in that regime? ^¶10
+Cognitive load, actually measured. Cognitive load by medium and by language, using physical measures (pupillometry, dual-task) instead of self-report scales. ^¶10
+@page
+Forgetting over time. Language attrition seems to have a long tail where something is always remembered. ^¶10
+What's the functional form, and what determines which items survive? Frequency, emotional salience, or depth of original learning? ^¶10
+@mode adv
+@bg room night
+@show Jack left (neutral)
+@show Theory right (neutral)
+Theory (neutral): Read it again, and it comes back.
+Jack (deadpan): That is a remedy. The card asks for the curve.
+Three pins.
 -> board
 
-== q2
-You: Multiple languages at once.
-Jack: Simultaneous acquisition seems to only be measured in kids learning from scratch, not adult L2. What about an Englishman in the Congo learning French and Lingala at the same time? ^¶10
-Theory: Just read. In both.
-Jack: Following from that, does taking a break from one language and learning from another actually help? (Kaufmann talks about this a lot.) ^¶10
-Theory (worried): Just... read.
+== m_latin
+@add pinned 1
+@hide all
+@bg classroom
+@flashback on IB Latin
+@fx dust on
+Afternoon. A poem on the desk, and the same poem again inside my head, carried a line at a time, the way you carry water in your hands.
+I was not reading Latin. I was holding it. That was the method: to have the poem already, so that the exam would find me with it.
+There were other classrooms. French. Vietnamese. Those classes I failed.
+And there was what no classroom gave me, which was immersion, and which is how the other two languages came.
+(Same student. Same head. The only thing that changed from room to room was how it was done.)
+@fx dust off
+@flashback off
+@mode nvl
+Experience vs. method. The theory that experience doesn't help, and that what helps is improved methods. ^¶10
+There are people who speak five languages at home but then can't learn Spanish because they suck at classes. If experience mattered on its own, they shouldn't fail. ^¶10
+@mode adv
+@bg room night
+@show Jack left (neutral)
+@show Theory right (puzzled)
+Theory (puzzled): They had every advantage.
+Jack: They had every language. That may not be the same thing.
 -> board
 
-== q4
-You: Hearing foreign sounds.
-Jack: Empirical evidence on the process of learning to *hear* foreign contrasts you initially can't. Pitch accent, for instance. What's the mechanism, and does perception have to come before production? ^¶10
-Theory (thinking): Just read. Aloud, if you must.
-Jack: Pronunciation. Empirically it seems to be what Matt vs Japan said. Those who care get good and those who don't suck. My model is a small endowment at the start plus a self-improvement feedback mechanism. Is that testable? (I think yes.) ^¶10
-You: So the ones who care are running an experiment on themselves.
+== m_table
+@add pinned 1
+@hide all
+@flashback on The family table
+@transition dissolve 700
+@cg two-chairs | The family table
+Dinner. The talk goes round the table in Vietnamese, quickly, the way water goes round stones.
+Then someone turns to me and asks me something simple.
+* Answer in Vietnamese. -> tb_viet
+* Answer in English. -> tb_eng
+
+== tb_viet
+The sentence comes out one word at a time, each word set down like a plate I am afraid of breaking.
+Everyone waits, kindly. It is the kindness that is hard.
+-> tb_join
+
+== tb_eng
+I answer in English. The table takes it without comment and flows on, and I am back on the bank, watching the water.
+-> tb_join
+
+== tb_join
+I have finished the whole Vietnamese tree. Every lesson. The table does not know this, and it does not help.
+@cg off
+@flashback off
+@mode nvl
+What it takes to get good at talking. Separate the fact that you're getting input (Krashen) from what I actually believe, which is that you have to talk. ^¶10
+The design is simple. Take input-matched cohorts, force one to speak, and give the other pure input. Make them play VNs lol. That's your experiment. ^¶10
+@page
+Same for writing. Does reading volume alone produce writing competence, or is composition practice load-bearing? ^¶10
+(My guess is the input-only ceiling is higher here, since writing lets you monitor offline.) ^¶10
+@mode adv
+@show Jack left (neutral)
+@show Theory right (worried)
+Theory (worried): Both cohorts would improve.
+Jack: Probably. I would like to know by how much, each.
 -> board
 
-== q7
-You: What it takes to get good at talking.
-Jack: Separate the fact that you're getting input (Krashen) from what I actually believe, which is that you have to talk. ^¶10
-Theory (worried): You just need to read.
-Jack: The design is simple. Take input-matched cohorts, force one to speak, and give the other pure input. Make them play VNs lol. That's your experiment. ^¶10
-You: We are in one.
-Jack (laugh): Then you are the pure-input cohort. Say something.
-Jack: Same for writing. Does reading volume alone produce writing competence, or is composition practice load-bearing? (My guess is the input-only ceiling is higher here, since writing lets you monitor offline.) ^¶10
-Theory (smile): Reading volume alone. You see.
+== m_train
+@add pinned 1
+@hide all
+@transition wipe-left 800
+@bg train
+@tone dusk
+This one is not a memory. It is a thought experiment with seats.
+Put a learner on a train, in a country whose language they are halfway into. An announcement comes over the speaker. The same words are printed on the strip above the door.
+Same content. Same few seconds. One through the ear, one through the eye.
+@mode nvl
+Medium. How does acquisition change by medium, listening vs. reading, for the same content and the same time investment? ^¶10
+Hearing foreign sounds. Empirical evidence on the process of learning to *hear* foreign contrasts you initially can't. Pitch accent, for instance. What's the mechanism, and does perception have to come before production? ^¶10
+@page
+Pronunciation. Empirically it seems to be what Matt vs Japan said. Those who care get good and those who don't suck. ^¶10
+My model is a small endowment at the start plus a self-improvement feedback mechanism. Is that testable? (I think yes.) ^¶10
+@mode adv
+The learner hears the name of the next station twice and is sure it was the same both times.
+@show Theory right (neutral)
+Theory (neutral): Read the sign.
+@show Jack left (smile)
+Jack (smile): The sign does not have a pitch.
+@hide all
+@transition wipe-right 800
+@bg room night
+@tone night
+@show Jack left (neutral)
+@show Theory right (neutral)
 -> board
 
-== q11
-You: The magical hyperpolyglot.
-Jack: Is there a verified individual who can genuinely switch between many languages at a high level? There are famous claimed cases, but they're all apocryphal to some degree. ^¶10
-Jack: Cardinal Giuseppe Mezzofanti (1774–1849) is the canonical one. His biographer Russell credited him with 72 languages, but only nine of those were "frequently tested, and spoken with rare excellence," and even contemporaries like Thomas Watts accused Russell of over-counting. ^¶10
-Jack: Estimates range from 30 to 72 depending on who's counting and what counts. Note that this also depends on how we define "good at a language" in the first place, which is its own open question. It seems to me the magical version doesn't exist... ^¶10
-Theory (deadpan): Just read. In every one of them.
-Jack: ...except, maybe, for high-IQ individuals. My theory is that IQ only helps at something like 160+. Below that, everyone's the same. The genius theory, essentially. ^¶10
-Jack: The claimed example here is William James Sidis, the American prodigy who supposedly had "the highest IQ ever obtained" and spoke 40+ languages. But the IQ claim comes from his sister after his death, the test records are lost, and one researcher called the Sidis literature the most myth-saturated topic he'd ever investigated. ^¶10
-Jack: So the poster child is apocryphal too. Still, the question stands. Is the relationship between IQ and language attainment flat below a threshold and steep above it? ^¶10
-You: Two legends, zero test records.
+== m_german
+@add pinned 1
+@hide all
+@transition dissolve 700
+@cg hands-keyboard | In progress
+On the laptop, a German article I have had open since yesterday. On the shelf behind it, a Japanese novel with a bookmark in the middle.
+Two languages share one head and, as far as I can tell, one desk. Nobody gave me rules for that.
+@mode nvl
+Multiple languages at once. Simultaneous acquisition seems to only be measured in kids learning from scratch, not adult L2. What about an Englishman in the Congo learning French and Lingala at the same time? ^¶10
+Breaks and switching. Following from that, does taking a break from one language and learning from another actually help? (Kaufmann talks about this a lot.) ^¶10
+@mode adv
+@cg off
+@show Jack left (neutral)
+@show Theory right (smile)
+Theory (smile): Read in both.
+Jack (deadpan): On alternate days, or the same day? That is the card.
 -> board
 
-== q14
-You: Forgetting over time.
-Jack: Language attrition seems to have a long tail where something is always remembered. What's the functional form, and what determines which items survive? Frequency, emotional salience, or depth of original learning? ^¶10
-Theory: Just read it again.
-You: That is a remedy. The question was the curve.
+== m_legends
+@add pinned 1
+@hide all
+@transition dissolve 700
+@cg page | Two legends
+Every field has its saints. Ours has two, and I have a card for each.
+@mode nvl
+The magical hyperpolyglot. Is there a verified individual who can genuinely switch between many languages at a high level? There are famous claimed cases, but they're all apocryphal to some degree. ^¶10
+Cardinal Giuseppe Mezzofanti (1774–1849) is the canonical one. His biographer Russell credited him with 72 languages, but only nine of those were "frequently tested, and spoken with rare excellence," and even contemporaries like Thomas Watts accused Russell of over-counting. ^¶10
+@page
+Estimates range from 30 to 72 depending on who's counting and what counts. Note that this also depends on how we define "good at a language" in the first place, which is its own open question. It seems to me the magical version doesn't exist... ^¶10
+...except, maybe, for high-IQ individuals. My theory is that IQ only helps at something like 160+. Below that, everyone's the same. The genius theory, essentially. ^¶10
+@page
+The claimed example here is William James Sidis, the American prodigy who supposedly had "the highest IQ ever obtained" and spoke 40+ languages. ^¶10
+But the IQ claim comes from his sister after his death, the test records are lost, and one researcher called the Sidis literature the most myth-saturated topic he'd ever investigated. ^¶10
+So the poster child is apocryphal too. Still, the question stands. Is the relationship between IQ and language attainment flat below a threshold and steep above it? ^¶10
+@mode adv
+@cg off
+@show Jack left (neutral)
+@show Theory right (thinking)
+I pin them side by side: a cardinal and a prodigy, both of them by now mostly paper.
+Theory (thinking): They must have read a great deal.
+Jack (deadpan): Nobody kept the records of that either.
 -> board
 
-== rest
-You: The ones in smaller handwriting.
-Jack: A mixed model of language learning. Is a single formal model possible, one that predicts acquisition order, error patterns, and attrition across input-heavy and output-heavy regimes? Right now we have competing verbal theories that don't make joint quantitative predictions. ^¶10
-Theory (puzzled): Just read.
-Jack: Experience vs. method. The theory that experience doesn't help, and that what helps is improved methods. There are people who speak five languages at home but then can't learn Spanish because they suck at classes. If experience mattered on its own, they shouldn't fail. ^¶10
-Jack: Cognitive load, actually measured. Cognitive load by medium and by language, using physical measures (pupillometry, dual-task) instead of self-report scales. ^¶10
-Jack: Concentration. How does attention affect learning? We know learning in your sleep doesn't work, but what's the minimum? Sometimes I glaze through a text. How much do I actually retain in that regime? ^¶10
-Theory (deadpan): Just read. Awake, preferably.
--> board
+# ------------------------------------------------------------ Chapter 4
 
-== close
-@hide You
-@show Jack center
-Theory: Just read.
-Jack (smile): Some of these are more tractable than they look. Others have probably been open for fifty years. ^¶11
+== fifty
+@chapter 4 Fifty Years
+@hide all
+@transition fade 1200
+@bg room dawn
+@tone dawn
+I step back from the board. The window has gone grey without my noticing, the way a page does when you have read it too many times.
+@show Jack left (neutral)
+@show Theory right (neutral)
+@if pinned == 6 -> full_board
+There are gaps on the cork where the cards I did not write would go. They will keep. They have kept this long.
+-> last_card
+
+== full_board
+Every room has given up its card. The board looks like the wall in a detective film, except that no string connects anything to anything.
+(*Make them play VNs*, one of the cards says. It occurs to me that someone has been reading over my shoulder all night, taking in every line and saying nothing.)
+Jack (smile): You are the pure-input cohort. Before you go, say something out loud. Anything. In any language.
+@pause 900
+-> last_card
+
+== last_card
+One card left in the box. No room comes with it. It goes in the middle.
+@mode nvl
+A mixed model of language learning. Is a single formal model possible, one that predicts acquisition order, error patterns, and attrition across input-heavy and output-heavy regimes? ^¶10
+Right now we have competing verbal theories that don't make joint quantitative predictions. ^¶10
+@mode adv
+Theory (neutral): I am one of those.
+Jack: You are the best of them. That is why you were on the shelf.
+Theory (smile): Then read me again when you have the numbers.
+@hide Theory
+@pause 600
+When I look again the chair is empty, and the book is where books go.
+@hide all
+@transition dissolve 1200
+@cg tree | Morning
+@mode nvl
+None of the cards is an answer. A card is only a place where an answer would go.
+Some of these are more tractable than they look. Others have probably been open for fifty years. ^¶11
+I leave the pins in the tin, for whoever measures first.
+@mode adv
+@pause 900
 @end

@@ -168,22 +168,22 @@
     "file": "blog-benchmarks.vn",
     "title": "Benchmarks We Actually Need",
     "kind": "blog",
-    "status": "draft",
+    "status": "published",
     "source": "blog:benchmarks-we-actually-need",
     "slug": "benchmarks-we-actually-need",
     "date": "2026-09-23",
     "links": [
       "../../#/post/benchmarks-we-actually-need"
     ],
-    "blurb": "In the spirit of Yann LeCun's challenge to put ChatGPT in a robot and make it do simple tasks, here are some ideas for absurd benchmarks…",
-    "chips": 33
+    "blurb": "The building empties at six. By nine the cleaners have gone, and the only lamp still lit on the floor is mine.",
+    "chips": 26
   },
   {
     "id": "blog-latentland",
     "file": "blog-latentland.vn",
     "title": "Latentland",
     "kind": "blog",
-    "status": "draft",
+    "status": "published",
     "source": "blog:latentland",
     "slug": "latentland",
     "date": "2026-09-21",
@@ -192,67 +192,67 @@
       "../32-latentland-map/"
     ],
     "blurb": "a dumb idea i had: what would it be like to be a single neuron inside a language model? this is what an hour of prompting turned it into.",
-    "chips": 34
+    "chips": 80
   },
   {
     "id": "blog-play-drive",
     "file": "blog-play-drive.vn",
     "title": "Research, Humor, and the Play Drive",
     "kind": "blog",
-    "status": "draft",
+    "status": "published",
     "source": "blog:untitled",
     "slug": "untitled",
     "date": "2026-08-27",
     "links": [
       "../../#/post/untitled"
     ],
-    "blurb": "\"Man only plays when in the full meaning of the word he is a man, and he is only completely a man when he plays.\"",
-    "chips": 13
+    "blurb": "There is a list by the door of the basement, and my name is fourth on it.",
+    "chips": 25
   },
   {
     "id": "blog-language-acquisition",
     "file": "blog-language-acquisition.vn",
     "title": "Open Questions in Language Acquisition",
     "kind": "blog",
-    "status": "draft",
+    "status": "published",
     "source": "blog:open-questions-in-language-acquisition",
     "slug": "open-questions-in-language-acquisition",
     "date": "2026-08-01",
     "links": [
       "../../#/post/open-questions-in-language-acquisition"
     ],
-    "blurb": "My version of Erdős problems. Many of these seem intractable.",
-    "chips": 34
+    "blurb": "A corkboard leaned against the wall. A box of blank index cards. A tin of pins.",
+    "chips": 47
   },
   {
     "id": "blog-metaphors",
     "file": "blog-metaphors.vn",
     "title": "Metaphors We Hallucinate By",
     "kind": "blog",
-    "status": "draft",
+    "status": "published",
     "source": "blog:metaphors-we-hallucinate-by",
     "slug": "metaphors-we-hallucinate-by",
     "date": "2026-07-15",
     "links": [
       "../../#/post/metaphors-we-hallucinate-by"
     ],
-    "blurb": "\"There are more things in brains and networks, Horatio, than are dreamt of in your metaphors.\"",
-    "chips": 24
+    "blurb": "An atelier at the top of a narrow stair. A long mirror, a rail of costumes under dust sheets, a canvas nobody has finished.",
+    "chips": 33
   },
   {
     "id": "blog-ai-poetry",
     "file": "blog-ai-poetry.vn",
     "title": "Towards a Sort of AI Poetry",
     "kind": "blog",
-    "status": "draft",
+    "status": "published",
     "source": "blog:what-language-models-represent",
     "slug": "what-language-models-represent",
     "date": "2026-07-14",
     "links": [
-      "https://nietztein.github.io/A-sending-of-the-prompt-will-not-abolish-statistical-universals/",
-      "../../#/post/what-language-models-represent"
+      "../../#/post/what-language-models-represent",
+      "https://nietztein.github.io/A-sending-of-the-prompt-will-not-abolish-statistical-universals/"
     ],
-    "blurb": "I decided randomly to see what the limits of writing poetry with AI would be like.",
-    "chips": 17
+    "blurb": "What is art / but a non-surjective / flame?",
+    "chips": 16
   }
 ]

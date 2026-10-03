@@ -1,75 +1,322 @@
-# Towards a Sort of AI Poetry: a page with too much white space.
-# Source: blog/posts/2026-07-14-what-language-models-represent.md (^¶n = paragraph).
+# Towards a Sort of AI Poetry: a night with a page that has too much white.
+# Source: blog/posts/2026-07-14-what-language-models-represent.md. ¶ numbers:
+# ¶1 the making, ¶2 the readers, ¶3 the flaw and the references, ¶4 the link.
+# Lines spoken by `Page` are quoted verbatim from the public poem page
+# (https://nietztein.github.io/A-sending-of-the-prompt-will-not-abolish-statistical-universals/);
+# " / " marks a break across the page's white space. They carry no chip because
+# chips point at the post. The product name in ¶1 is trimmed: the collaborator
+# is named for its role. Everything else without a chip is frame fiction.
 @title Towards a Sort of AI Poetry
 @kind blog
 @source blog:what-language-models-represent
-@link https://nietztein.github.io/A-sending-of-the-prompt-will-not-abolish-statistical-universals/ Read the poem
 @link ../../#/post/what-language-models-represent Read the post
-@note Dialogue is dramatized. Lines marked ¶ are the post's own sentences, lightly trimmed. The Model is the post's figure, not any one system.
-@status draft
+@link https://nietztein.github.io/A-sending-of-the-prompt-will-not-abolish-statistical-universals/ Read the poem
+@note The frame is fiction: the night, the rain, the desk, the café, the struck line about the moon, and every line of dialogue. The one who understood is an invented composite, not a real reader, and the one given the layout is a figure for a collaborator, not any product. Lines marked ¶ are the post's own sentences, lightly trimmed. Lines spoken by the poem are quoted from the public page; a slash marks a break across its white space.
+@status published
 @palette paper
-@cast Jack hue=28 glasses
-@cast Model name="the model" lattice=sparse hue=192
-@cast Page page name="the page"
-@cast You player hue=120
+@cast Jack hue=28 skin=2 glasses short cardigan
+@cast Setter name="the one given the layout" lattice=sparse hue=192
+@cast Page page name="the poem"
+@cast Reader name="the one who understood" hue=340 bob cardigan skin=2
 
-@bg paper
+# ------------------------------------------------------------ Prologue
+
+@bg void
+@tone night
+@pause 600
 @show Page center
-@show Jack left
-Jack: I decided randomly to see what the limits of writing poetry with AI would be like. ^¶1
-Jack: I orchestrated a sort of modernist poem a la Mallarme's "A Throw of the Dice will Never Abolish Chance." ^¶1
-Jack (smile): I think the url slug is a good title: "A sending of the prompt will not abolish statistical universals." ^¶1
-Page: Empty spaces (間), a sort of flowing river on the right in reference to Misao Fujimura. ^¶3
-@show You right
-You: The page is mostly white.
-Jack (thinking): The text is written. The white is not. Who decides where the words fall?
-* Keep the formatting. The spaces are yours. -> keep
-* Hand the layout to the model. -> hand
-
-== keep
-You: The spaces are the poem. Nobody else should place them.
-Jack (deadpan): That is the classroom answer. Hold it a moment.
-@set pick = keep
--> verdict
-
-== hand
-You: Let it try. Keep the veto.
-Jack (smile): Free rein, and a veto.
-@set pick = hand
--> verdict
-
-== verdict
-@scene What happened
+Page: What is art / but a non-surjective / flame?
+@pause 500
 @hide Page
-@show Model center (neutral)
-Jack: I wrote the text but got the model free rein to make the formatting design choices, add some (bad) lines that mostly got removed, and code the html file. ^¶1
-Model (deadpan): Some (bad) lines. Mostly removed. ^¶1
+@mode nvl
+That is how it opens. Three phrases, and between them more paper than I would ever have dared to leave empty.
+I wrote the words. I did not put them there.
+Tonight I am supposed to say so in a few paragraphs, and for an hour I have been looking at a different white rectangle.
+@mode adv
+@pause 400
+
+# ------------------------------------------------------------ Chapter 1
+
+@chapter 1 Four Paragraphs
+@transition fade 1200
+@bg room night
+@tone night
+@fx rain on
+@cg desk-night | The desk, July, some time after one
+July. The rain came in sideways around midnight and has been at the window since, like someone with a question.
+Two windows are open on the screen. In one, the poem: finished, mostly white. In the other, a blog post: unstarted, entirely white.
+(The first white took days. The second is free. It is the second I cannot bear.)
+@cg off
+@show Jack left (thinking)
+Jack: A post about a poem. How does one begin a post about a poem.
+* Explain what it means. -> begin_explain
+* Just say what happened. -> begin_happened
+
+== begin_explain
+@set begin = explain
+I type: *The poem argues that.* I look at it. The poem, in the other window, does not look back. It has never argued anything in its life.
+Jack (deadpan): No.
+I hold the delete key until the rectangle is clean again.
+-> begin_join
+
+== begin_happened
+@set begin = happened
+(Not what it means. What I did. That, at least, I was present for.)
+Jack (neutral): Start with the accident.
+-> begin_join
+
+== begin_join
+@hide Jack
+@transition dissolve 700
+@cg hands-keyboard | The first sentence
+I decided randomly to see what the limits of writing poetry with AI would be like. ^¶1
+*Randomly.* It is the truest word in the sentence. There was no plan. There was a text file and an evening.
+@cg off
+@pause 500
+
+# ------------------------------------------------------------ Chapter 2
+
+@chapter 2 Free Rein, and a Veto
+@fx none
+@fx flash
+@flashback on Some nights earlier
+@transition white 900
+@bg room night
+@tone memory
+@show Jack left (neutral)
+The text came first, and it came the way text does: flush left, one line under another, in a file with no name. Steering, a flame, a harp, a waterfall, a man who meets God and cannot follow the language.
+It read like an email from someone unwell.
+@mode nvl
+I orchestrated a sort of modernist poem a la Mallarme's "A Throw of the Dice will Never Abolish Chance." ^¶1
+*Orchestrated* is doing some work there. I had the words. I did not have the way they fall.
+@page
+I could have set it myself. I know what I would have done: centred everything, lost my nerve, and added a border.
+So I gave the white away.
+I wrote the text but got the model free rein to make the formatting design choices, add some (bad) lines that mostly got removed, and code the html file. ^¶1
+@mode adv
+@hide Jack
+@transition iris 900
+@bg terminal
+@tone cold
+@show Setter center far
+@pause 500
+@show Setter center near
+Setter: You have given me the words and not told me where they go.
+@move Setter right
+@show Jack left (neutral)
+Jack: That is the commission. All of the white is yours. I keep a veto.
+Setter (thinking): A veto over white.
+Jack (deadpan): Over anything you add that is not white.
+It added things. Of course it did. Hand anyone a poem and they will find the place where it wants one more line.
+One of them had the moon in it. The moon had not been consulted.
+* Strike it without a word. -> strike_cold
+* Tell it why. -> strike_why
+
+== strike_cold
+I struck it. The line went, and the white where it had been stayed white, which was an improvement on both counts.
+Setter (neutral): Removed.
+-> strike_join
+
+== strike_why
+Jack (neutral): There is no moon in this. There is a flame and a waterfall. The moon is from every other poem.
+Setter (thinking): From every other poem. Yes. That is where I found it.
+(It was not being modest. It was giving its sources.)
+-> strike_join
+
+== strike_join
+Mostly removed, I would write later. *Mostly.* I am not going to say which ones stayed.
+@hide all
+@pause 500
+@transition dissolve 1200
+@cg page | The page, as it came back
+Then it gave me the page.
+Page: Back into language / it is only a sign; / it cannot be returned.
+The first phrase sat at the left edge. The second had drifted two-fifths of the way across. The third came back, larger. Nothing in the sentence had changed, and I was reading it for the first time.
+Under each English line lay the same line in Japanese, paler, like a reflection in a window at night.
+And down the right-hand margin, something was falling.
+@cg off
+@bg room night
+@tone memory
+@show Jack center (surprised)
+Very surprised by how good (creative?) the layout is. ^¶1
+(The question mark in the brackets is the honest part. I did not know what to call it then. I am not sure I do now.)
+Jack (thinking): The product definitely turned out way better than anything I could have done by myself. ^¶1
+@hide all
+@flashback off
+@pause 500
+
+# ------------------------------------------------------------ Chapter 3
+
+@chapter 3 The River on the Right
+@transition dissolve 1000
+@bg room night
+@tone night
+@fx rain on
+@show Jack left (neutral)
+Back to the post, which is now one paragraph long, and the rain, which is the length it was.
+Somewhere in it I ought to say what is on the page. I scroll the other window to check.
+@show Page right
+@set seen = 0
+
+== look
+* (once) The white. -> look_white
+* (once) The falling column. -> look_river
+* (once) The German. -> look_german
+* (once) The philosopher. -> look_witt
+* (if seen == 4) Write it down. -> look_done
+
+== look_white
+@add seen 1
+Empty spaces (間). ^¶3
+A gate, with daylight standing in it. An interval. The pause between two notes that makes them two.
+Page: the blank is the silence
+(It says so itself, in small italics at the very bottom, where a printer would put his name.)
+-> look
+
+== look_river
+@add seen 1
+A sort of flowing river on the right in reference to Misao Fujimura. ^¶3
+Page: 悠々たる哉天壌
+Page: how vast the heaven and earth
+Page: A schoolboy climbed to the head of the falls, cut a few lines into a standing tree, and went over the edge.
+The lines he cut fall down the margin, one phrase to a screen, as you scroll. By the foot of the page the water has said everything he said.
+-> look
+
+== look_german
+@add seen 1
+Page: “I don’t know,” the man said. / “I think He was speaking in German.”
+A man is told the secret of life and comes home with nothing, for a reason any student of languages will recognise.
+(German has been on my mind recently. It shows.)
+-> look
+
+== look_witt
+@add seen 1
+Page: Wittgenstein said: whereof one cannot speak, thereof one must be silent. / I would say it the other way. / Whereof one can speak — there the vibrations begin.
+(The nerve of it. I remember writing that and waiting to be struck by something.)
+-> look
+
+== look_done
+@hide Page
+@hide Jack
+@mode nvl
+I write it down as a list, because it is a list.
+Empty spaces (間), a sort of flowing river on the right in reference to Misao Fujimura, and, as I am always wont to do, references to Wittgenstein, Buddhism, some random arxiv paper, montage theory, Walter Benjamin, and German — these things have been on my mind recently. ^¶3
+@page
+It is not a modest sentence. It is one summer's reading, turned out on a table.
+The form itself is nothing unique too. ^¶3
+(There. I have said it before anyone else can.)
+@mode adv
+@pause 500
+
+# ------------------------------------------------------------ Chapter 4
+
+@chapter 4 Only One
+@fx none
+@fx flash
+@flashback on Showing it to people
+@transition white 900
+@bg cafe
+@tone memory
+@fx dust on
+I showed it to people. This is a thing one does with a poem and probably should not.
+The first reached the bottom in the time it takes to find the bottom, and said the fonts were nice. They are nice.
+The second read it properly, twice, with a frown of real goodwill, and then looked up.
+* Explain it. -> explain
+* Let it stand. -> let_stand
+
+== explain
+@set told = yes
+I explained it. The map that cannot be run backwards. The schoolboy. The joke about German. I was thorough.
+By the end we both understood the explanation. The poem had left the table some time before.
+-> one_join
+
+== let_stand
+@set told = no
+I said nothing. The frown stayed a while and then turned, politely, to the menu.
+(A poem you have to defend is a paper. I already write those.)
+-> one_join
+
+== one_join
+@show Reader right (neutral) far
+And then there was one.
+@show Reader right (thinking) near
+She read it slowly. At the waterfall she stopped scrolling and read down the margin instead, top to bottom, the way it is written.
+@pause 700
+@show Jack left (neutral)
 @thumb
-Jack (surprised): Very surprised by how good (creative?) the layout is. ^¶1
-Jack: The product definitely turned out way better than anything I could have done by myself. ^¶1
-@if pick == keep -> react_keep
-You (smile): So the veto went unused.
-Jack: Mostly. The lines went; the layout stayed.
--> readers
+Reader (smile): 不可解.
+Jack (surprised): ...Yes.
+Reader (thinking): And the map that doesn't go back. So you can arrive and not be able to say where you have been.
+Reader (deadpan): It's quite funny, actually. For something with a waterfall in it.
+That was all. She did not say she liked it. I have not asked.
+@hide all
+@mode nvl
+Upon showing it to several people, only one, I think, really understood it. ^¶2
+*I think.* Even that I cannot be sure of. Understanding does not leave a receipt.
+Japanese and modernist poetry and a bit of math are, perhaps, a rare combination. ^¶2
+(A rare combination is a kind way to describe an audience of one.)
+@mode adv
+@fx dust off
+@flashback off
+@pause 500
 
-== react_keep
-You (puzzled): So the spaces were never yours.
-Jack: The text was. The page was not. Hold that distinction; it is the point.
--> readers
+# ------------------------------------------------------------ Chapter 5
 
-== readers
-@scene Readers
-@bg cafe dim
-@hide Model
+@chapter 5 Statistical Universals
+@transition dissolve 1000
+@bg room night
+@tone night
+@fx rain on
+@show Jack left (thinking)
+Nearly done. The rain has thinned to the sound of a tap someone almost turned off.
+What is left is the part where I say what is wrong with it, before a stranger does.
+Jack: The flaw is: one could say it is too cerebral. ^¶3
+Jack (smile): One could also say the same to T.S. Eliot. ^¶3
+(A defence and a name in one bracket. I leave it in. It is in character.)
+@show Setter right far
+Something stands at the edge of the lamplight. I did not open that window.
+Setter (neutral): You are writing about the page.
+Jack (neutral): About who made it.
+Setter (thinking): You sent the words. I returned what words like those are usually given. I threw nothing.
+Jack (deadpan): Something was thrown. You only have a very good idea how it lands.
+Setter (smile): And you struck the moon.
+@hide all
+@mode nvl
+I think the url slug is a good title: "A sending of the prompt will not abolish statistical universals." ^¶1
+The page calls itself something else at the top. The address bar disagrees, and I have decided the address bar is right.
+@page
+Send the prompt, and what comes back is what usually comes back. The moon from every other poem. That is not abolished.
+And yet I would not have left that much paper empty. I know, because I had the chance.
+Broadly, I am trying to hint at possibilities of AI-human collaboration, form and space, and the mixture of truth and aesthetics. ^¶3
+@mode adv
+@fx none
+@transition dissolve 900
+@cg window-rain | Nearly morning
+The rain stops the way a paragraph does. Four of them now, if a link counts as a paragraph. I have decided it does.
+@if told == no -> extra
+-> last
+
+== extra
+The phone lights up on the desk. One message, from the one who understood, sent at an hour that means she is not asleep either.
+A single character. 間.
+(No question mark. I read the space after it for some time.)
+-> last
+
+== last
+@cg off
+@transition dissolve 900
+@bg room dawn
+@tone dawn
 @show Page center
-Jack: Upon showing it to several people, only one, I think, really understood it. ^¶2
-Jack (smile): Japanese and modernist poetry and a bit of math are, perhaps, a rare combination. ^¶2
-Page: The flaw is: one could say it is too cerebral. ^¶3
-Jack (laugh): One could also say the same to T.S. Eliot. ^¶3
-Page: The form itself is nothing unique too. ^¶3
-Jack: And, as I am always wont to do, references to Wittgenstein, Buddhism, some random arxiv paper, montage theory, Walter Benjamin, and German. These things have been on my mind recently. ^¶3
-@show Model right (thinking)
-Model: A sending of the prompt will not abolish statistical universals. ^¶1
-Jack: Broadly, I am trying to hint at possibilities of AI-human collaboration, form and space, and the mixture of truth and aesthetics. ^¶3
+Page: Perhaps it is / in German.
+@pause 600
+@hide Page
+@transition dissolve 700
+@cg hands-keyboard | Publish
 The link is here. ^¶4
+@fx pulse
+@pause 700
+Posted. A few short paragraphs, flush left, one line under another. I set this one myself.
+It shows.
+@pause 900
 @end
