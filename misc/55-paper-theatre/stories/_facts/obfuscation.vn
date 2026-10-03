@@ -1,4 +1,7 @@
-# Figures from the SPLASH SRC abstract. Re-verify each against arXiv 2606.31725 / 2603.07668 before publishing.
+# Figures from the SPLASH SRC abstract (assets/documents/publications/2026SPLASH-SRC.pdf).
+# Each value is as printed there at the cited section; "to" stands for the en dash in a printed range.
+# Glyph check 2026-10-03 (font-decoded text of the PDF): "Spearman ρ = 0.30–0.47, p < 0.005" (a strict less-than sign),
+# "mean ρ ≈ 0.24–0.30" (an approximately-equal sign), "ρ = −0.52", and "<15 lines" (strict less-than, section 3.1).
 @fact n_humans = Fifty ^§3.2
 @fact session_min = 75 ^§3.2
 @fact n_answers = 600 ^§3.2
@@ -17,9 +20,17 @@
 @fact rt_jump = about a minute ^§4
 # Added for the long-form story; each value is verbatim in the SPLASH SRC abstract at the cited section.
 @fact n_humans_lc = fifty ^§3.2
+# "a supervised 75-minute session of 12 questions" (3.2) and "10 HumanEval-X snippets per language" (3.1) are two
+# separate statements in the source; the stories state each only as printed and never derive one from the other.
 @fact n_questions = 12 ^§3.2
 @fact n_bands = three ^§3.2
 @fact n_snippets_lang = 10 ^§3.1
 @fact model_sizes = 0.5B to 8B ^§3.3
 @fact n_models_human = seven ^§3.3
-@fact rho_bands = mean ρ 0.24 to 0.30 ^§4
+@fact n_models_b = nine ^§3.3
+@fact rho_bands = mean ρ ≈ 0.24 to 0.30 ^§4
+# Front and back matter of the two pages (used by obfuscation-src.vn).
+@fact n_refs = Fifteen ^p.2
+@fact stroop_year = 1935 ^p.2
+@fact received = 2026-06-25 ^p.2
+@fact accepted = 2026-07-25 ^p.2

@@ -1,129 +1,284 @@
 @title Two Minutes at the Poster
 @kind paper
 @source paper:Obfuscation as a Probe of Human and Machine Code Comprehension
-@cite Jack Le (2026). Do Machines Struggle Where Humans Do? Obfuscation as a Probe of Human and Machine Code Comprehension. In Companion Proceedings of the 2026 ACM SIGPLAN International Conference on Systems, Programming, Languages, and Applications: Software for Humanity (SPLASH Companion '26), Oakland, CA, USA. ACM, 2 pages. doi:10.1145/3837729.3839573. ACM Student Research Competition, SPLASH/ISSTA.
-@link ../../assets/documents/publications/2026SPLASH-SRC.pdf Two-page SRC abstract
+@cite J. V. Le (2026). Do Machines Struggle Where Humans Do? Obfuscation as a Probe of Human and Machine Code Comprehension. ACM Student Research Competition, SPLASH/ISSTA. Two-page extended abstract; peer-reviewed.
+@link ../../assets/documents/publications/2026SPLASH-SRC.pdf Read the two pages
 @link https://doi.org/10.1145/3837729.3839573 DOI
-@authors Jack V. Le
-@note Dialogue is dramatized. The Judge is an abstract role, not a real competition judge, and the two-minute clock is the story's device. Figures marked § are quoted from the two-page SRC abstract; the human and model studies it summarizes are joint work, credited in their own stories.
-@status draft
+@authors J. V. Le
+@note The frame story is fiction: the hall, the corridor, the poster, the two-minute clock, every question the Judge asks, and the night of cutting. The Judge is an abstract role, not a real competition judge, and the Two Pages is the abstract given a voice. The "guess" that is cut is invented and never stated; the story reports nothing that is not printed on the two pages. The human and model studies the abstract summarizes are joint work, credited in their own stories; no coauthor is voiced. Only lines marked § or p. report the abstract.
+@status published
 @verify
-@palette moss
+@palette ochre
 @include _facts/obfuscation.vn
-@fact n_questions = 12 ^§3.2
-@fact snips_per_lang = 10 ^§3.1
-@fact models_a = seven ^§3.3
-@fact models_b = nine ^§3.3
-@fact rho_bands = mean ρ ≈ 0.24 to 0.30 ^§4
-@cast Jack hue=210 glasses
-@cast Judge name="the Judge" hue=350 bun
-@cast You player hue=120
+@cast Jack hue=210 skin=2 glasses short masc shirt
+@cast Judge name="the Judge" hue=350 skin=3 glasses bun fem uniform
+@cast Page page name="the Two Pages"
 
+# ------------------------------------------------------------ Chapter 1
+
+@chapter 1 The Form
+@transition fade 900
+@bg corridor
+@mode nvl
+There is a kind of writing that is mostly subtraction.
+Mine is called an extended abstract. Extended, here, means two pages. ^p.1
+Two pages hold a title, an abstract, four numbered sections, one figure, and {n_refs} references.
+Everything else I know about the work is somewhere else. Today it may as well not exist.
+@mode adv
+@show Jack center (thinking)
+A corridor in a convention centre, mid-morning. Carpet chosen by a committee. Daylight doing its best.
+Jack: Two pages on the easel. Two minutes per judge.
+Jack (deadpan): I have spent longer than that choosing a font size for a caption.
+@transition dissolve 700
+@cg page | Two pages
+The title asks a question. *Do Machines Struggle Where Humans Do?* ^p.1
+The subtitle answers a different one: what the work is for. *Obfuscation as a probe of human and machine code comprehension.* ^p.1
+@cg off
+@show Jack center (neutral)
+Jack: Two minutes has room for one opening. Which?
+* The question in the title. -> open_question
+* The result nobody expected. -> open_surprise
+
+== open_question
+@set lead = question
+Jack (smile): Ask it straight. If the question is good, the judge does half the talking.
+-> ch1_out
+
+== open_surprise
+@set lead = surprise
+Jack (smile): Start where the eyebrows go up. Then walk back to why anyone looked.
+-> ch1_out
+
+== ch1_out
+@move Jack right
+(Whichever I choose, the pages say the same thing. That is the point of pages.)
+@hide Jack
+@pause 400
+
+# ------------------------------------------------------------ Chapter 2
+
+@chapter 2 Two Minutes
+@transition wipe-left 800
 @bg lecture
-@show Jack left
-One easel, one printout, a hall full of both. The poster session.
-@show You right
-You: Poster is up. Who is the one with the clipboard?
-Jack: A judge. They walk the row, stop, and you get two minutes before they move on.
-@show Judge center
-Judge: Two minutes. Title first.
-Jack: Do Machines Struggle Where Humans Do? Obfuscation as a probe of human and machine code comprehension. ^p.1
-Jack: Code obfuscation targets human comprehension, but current evaluations primarily measure language model performance degradation
-  instead of whether models fail in the same way as humans. ^§abs
-Judge (puzzled): So the field has been measuring the wrong thing.
-Jack: Obfuscation is almost always measured without people, on two untested assumptions: that difficulty is monotonic,
-  and that what burdens a person burdens an automated analyst, now usually an LLM. ^§1
-Jack: If models fail where humans do, obfuscated code benchmarks human-like reasoning; if not, strong scores mask brittle competence. ^§1
-@card Five tiers, each verified execution-equivalent on the study's inputs | L0: the original function with its name masked | L1: uninformative renaming; short, disjoint identifiers force structural reasoning | L1b: adversarial renaming; misleading names drawn from one semantic domain, a Stroop-like trap | L2: control-flow flattening; dispatchers and indirect jumps obscure execution order | L3: both, an upper bound on difficulty ^§2.1
-Judge: And the people?
-Jack: {n_humans} undergraduate CS majors, a supervised {session_min}-minute session of {n_questions} questions, output prediction scored by exact match against execution:
-  {n_answers} responses with paired correctness and response time. ^§3.2
-Jack: {n_models} LLMs on the same tiers, {n_runs} runs in all. {models_a} enter the human comparison on the human-study set, {models_b} on a disjoint, model-only set. ^§3.3
-Judge (deadpan): One minute.
-@thumb
-Judge: You have one result's worth of my attention left. Where do you start?
-== hub
-* (once) The correlation. Whether a model's difficulty tracks a person's. -> lead_corr
-* (once) Python. The surprise. -> lead_python
-* (once) The Block Model. Where exactly it breaks. -> lead_block
-* Thank the judge and read the four contributions as printed. -> pitch
+@fx dust on
+They have given the posters a lecture hall. The easels stand in a row at the front, where a lecturer would pace.
+@show Jack left (neutral)
+Mine is the third from the door. I have straightened it twice. It was straight both times.
+@show Judge right far
+Someone with a clipboard is working down the row. They stop at each easel for exactly as long as they mean to.
+@show Judge right (deadpan)
+Judge: Two minutes. I have read the two pages. Tell me what they are for.
+@if lead == surprise -> lead_surprise
+Jack: A question, then. When code is made hard to read on purpose, do machines get lost where people do?
+Judge (neutral): That is your title with the capitals taken off.
+-> pitch
 
-== lead_corr
-@if lead -> corr_say
-@set lead = corr
-== corr_say
-Jack: Then I open with the comparison itself. Not whether obfuscation hurts a model, but whether a model's difficulty tracks a person's, task by task.
-Judge (thinking): Task by task. Most people show me an average.
-You: Keep going, or pick another lead?
--> hub
-
-== lead_python
-@if lead -> python_say
-@set lead = python
-== python_say
-Jack: Then I open with Python, because it is the tier that refuses to do what the field assumes.
-Judge (surprised): Which assumption?
-Jack (smile): Monotonic difficulty. It is on the board.
--> hub
-
-== lead_block
-@if lead -> block_say
-@set lead = block
-== block_say
-Jack: Then I open with where it breaks. Not that a model fails, but at which level: atoms, blocks, relations, or macro structure.
-Judge: Name the level when we get there.
--> hub
+== lead_surprise
+Jack: The surprise, then. It is on the second page, and it is in Python.
+Judge (puzzled): You will get there. First tell me why anyone looked.
+-> pitch
 
 == pitch
-@hide You
+Jack (neutral): Code obfuscation targets human comprehension, but current evaluations primarily measure language model performance
+  degradation instead of whether models fail in the same way as humans. ^§abs
+Judge (thinking): So everyone measures the machine, and nobody asks the person.
+Jack: Obfuscation is almost always measured without people, on two untested assumptions: that difficulty is monotonic,
+  and that what burdens a person burdens an automated analyst. ^§1
+Jack: If models fail where humans do, obfuscated code benchmarks human-like reasoning. If not, strong scores mask brittle competence. ^§1
+Judge (neutral): What did you do to the code?
+@card Figure 1, the only figure on the two pages | L0: the original function with its name masked | L1: uninformative renaming | L1b: adversarial renaming | L2: control-flow flattening | L3: both, an upper bound on difficulty ^§2.1
+Jack: Five tiers, each verified execution-equivalent on the study's inputs. ^§2.1
+Judge: Show me the unkind one.
+@transition dissolve 500
+@cg screen-code | Illustrative only; the abstract prints the name, not the function
+Jack: L1b. Like a Stroop task: a variable named `_lastNSecs` that tracks recursion depth. ^§2.2
+Jack: It baits a fast, confident, wrong answer. ^§2.2
+@cg off
+Judge (smile): I was about to say seconds.
+Jack (smile): That is the trap doing its job.
+Judge (neutral): Who read it?
+Jack (neutral): {n_humans} undergraduate CS majors, a supervised {session_min}-minute session of {n_questions} questions. Output prediction, scored by exact match
+  against execution: {n_answers} responses with paired correctness and response time.
+Jack: {n_models} language models, {model_sizes}, on the same tiers. Of those, {n_models_human} enter the human comparison. {n_runs} runs.
+@show Judge right (deadpan) near
+@thumb
+Judge: That was a minute. You have four contributions and the other one.
+Jack (worried): In order?
+Judge: In any order. I will stop you when I stop caring.
+@set told = 0
+
+== hub
+* (once) One: the correlation. -> c_one
+* (once) Two: Python. -> c_two
+* (once) Three: which models. -> c_three
+* (once) Four: the one that reads like a form. -> c_four
+* (if told == 4) That is all four. -> hub_done
+
+== c_one
+@add told 1
+Jack (neutral): One. The first per-task human–model difficulty correlation, localized via the Block Model. ^§4
+Judge (thinking): Per task. Most people bring me an average.
+Jack: Reasoning-tuned models correlate with human task-level difficulty. Spearman {rho_reason}.
+Judge (neutral): And localized means?
+Jack: Schulte's Block Model: atoms, blocks, relations, macro structure. ^§2.3
+Jack: Chain-of-thought length correlates negatively with accuracy, {rho_cot}. Control-flow failure tracks dispatcher-state complexity:
+  the relational level.
+Jack: Adversarial renaming acts non-additively at the atom level. Displacement or perplexity spikes alone barely move accuracy;
+  together they collapse it to {adv_collapse}.
+Judge (deadpan): I asked where it breaks and you handed me a floor plan. Fine.
+-> hub
+
+== c_two
+@add told 1
+Jack (neutral): Two. Evidence against monotonic difficulty: a reproducible Python renaming effect. ^§4
+Judge (puzzled): Monotonic meaning: more obfuscation, worse reading.
+Jack: From a distance it holds. Human accuracy falls from {human_l0} at L0 to {human_l3} at L3.
+Jack: JavaScript declines steadily, {js_l0} to {js_l3}, flattening hurting less than renaming. ^§4
+Jack (smile): Python rises under renaming. {py_l0} to {py_rename}. And L3 exceeds L2. ^§4
+Judge (surprised): Rises.
+Judge (thinking): Why?
+Jack (deadpan): That is a longer answer than the other three put together.
+Judge (deadpan): Then it can wait behind them.
+-> hub
+
+== c_three
+@add told 1
+Jack (neutral): Three. Only reasoning-tuned models track human difficulty. ^§4
+Jack: Coder- and instruction-tuned models do not, {rho_other}, regardless of size.
+Judge (puzzled): Not even the ones that score best?
+Jack: The most accurate model is not the most human-like. ^§4
+Jack: And the alignment holds across all {n_bands} experience bands, {rho_bands}.
+Judge (thinking): So the model reads like a person.
+Jack (worried): No. No model reproduces the experts' gain under adversarial renaming, or the Python renaming gain.
+  Alignment reflects shared difficulty, not identical mechanism. ^§4
+Judge (smile): You have just talked me out of your own headline.
+Jack (smile): The headline ends in a question mark. ^p.1
+-> hub
+
+== c_four
+@add told 1
+Jack (neutral): Four. Language-specific behavioral reporting of obfuscation strength. ^§4
+Judge (deadpan): That one is a noun phrase wearing a lanyard.
+Jack (laugh): It had one line to live on.
+Jack (neutral): Difficulty is non-monotonic and language-specific. The same five tiers went one way in JavaScript and another in Python. ^§4
+Jack: And behavioral includes the clock. Response time jumps by {rt_jump} once code is obfuscated, then plateaus;
+  errors cluster at time extremes, and correct L1b answers are slower than incorrect ones.
+Judge (thinking): So "how strong is this obfuscation" is the wrong shape of question.
+Jack: Unless it says in which language, and to whom.
+-> hub
+
+== hub_done
+@show Judge right (thinking) near
+Judge: Four. Now the one you put off. Python rises. Why?
+Jack (worried): The two pages do not say.
+Judge (deadpan): Because you do not know, or because it did not fit?
+@pause 700
+(There is an honest answer to that. It is a night in June.)
+@hide all
+@fx dust off
+
+# ------------------------------------------------------------ Chapter 3
+
+@chapter 3 What Was Cut
+@fx flash
+@flashback on June
+@transition white 800
+@cg desk-night | The template on the left, everything else on the right
+The template was open on the left. Everything I wanted to say was open on the right.
+The template had already decided the length. I was only negotiating the terms.
+@transition dissolve 700
+@cg off
+@bg room
+@show Page center
+Page: I am two pages. I was two pages before you sat down and I will be two pages when you get up.
+@show Jack left (worried)
+@move Page right
+Jack: I have a paragraph about why Python does that.
+Page: Is it a result?
+Jack (thinking): It is a guess. A good one.
+Page: I print what was measured. A guess wants more room than I have, and then it wants a control.
+* Cut the guess. -> cut_guess
+* Cut something else, and keep the guess. -> cut_other
+
+== cut_guess
+Jack (deadpan): Gone.
+It went quietly. Good guesses do; they expect to be invited back.
+-> cut_join
+
+== cut_other
+Jack (thinking): An adjective first. Then another.
+Page: I had noticed you were fond of them.
+Somewhere around the hour the adjectives ran out, the guess went too.
+-> cut_join
+
+== cut_join
+@hide all
+@transition dissolve 600
+@cg hands-keyboard | Select. Delete.
+@mode nvl
+What stayed is what two pages can stand behind. The effect itself, and one careful word for it: reproducible. ^§4
+A whole model study survives as a parenthesis: {n_runs} runs.
+{n_refs} references made it. One of them is from {stroop_year}, and it earns its line: the trap is named after it. ^§2.2
+@page
+I had thought of the form as a smaller paper. It is not. It is a claim about which sentences could not be removed.
+Every sentence still on the page is there because cutting it broke something.
+That is the nearest thing to a proof a writer gets.
+@mode adv
+@pause 500
+@cg off
+@flashback off
+
+# ------------------------------------------------------------ Chapter 4
+
+@chapter 4 Time
+@transition dissolve 800
+@bg lecture
+@fx dust on
 @show Jack left (neutral)
-@show Judge right (neutral)
-Judge: Time. Read me the contributions as printed, then I will ask about your lead.
-@card Contributions | 1: The first per-task human–model difficulty correlation, localized via the Block Model. | 2: Evidence against monotonic difficulty: a reproducible Python renaming effect. | 3: Only reasoning-tuned models track human difficulty. | 4: Language-specific behavioral reporting of obfuscation strength. ^§4
-Jack: Difficulty is non-monotonic and language-specific. Human accuracy falls from L0 at {human_l0} to L3 at {human_l3}:
-  JavaScript declines steadily, {js_l0} to {js_l3}, flattening hurting less than renaming,
-  whereas Python rises under renaming, {py_l0} to {py_rename}, L3 exceeding L2. ^§4
-@if lead == python -> react_python
--> effort
+@show Judge right (deadpan) near
+Jack: The two pages do not say why. They say the effect is reproducible, and that it is evidence against monotonic difficulty. ^§4
+Jack (thinking): I would rather hand you an effect without a story than a story without an effect.
+Judge (smile): That is the first thing you have said that is not on the poster.
+Judge (neutral): Time. One sentence for the clipboard. Choose it.
+* The one about alignment. -> last_align
+* The one with the question mark. -> last_question
 
-== react_python
-Judge (surprised): There is your lead. A language that gets easier.
-Jack: Under renaming. And measured with people, which is the part that was missing.
--> effort
+== last_align
+Jack (thinking): The last sentence of the abstract. It was written to be the one that survives.
+-> last_join
 
-== effort
-Jack: Effort matches the dual-process account: response time jumps by {rt_jump} once code is obfuscated, then plateaus;
-  errors cluster at time extremes, and correct L1b answers are slower than incorrect ones. ^§4
-Jack: Reasoning-tuned models align with humans on difficulty, not language. They correlate with human task-level difficulty, Spearman {rho_reason};
-  coder- and instruction-tuned models do not, {rho_other}, regardless of size, so the most accurate model is not the most human-like. ^§4
-@if lead == corr -> react_corr
--> bands
+== last_question
+Jack (smile): Do machines struggle where humans do.
+Judge (deadpan): That is a question. I asked for a sentence.
+Jack (neutral): Then the sentence that answers it.
+-> last_join
 
-== react_corr
-Judge (thinking): Your lead. Per task, not on average. Does it survive experience?
-Jack: It does. Next line.
--> bands
-
-== bands
-Jack: Alignment holds across all three experience bands, {rho_bands}, with no experience-by-alignment interaction in a mixed model.
-  But no model reproduces the experts' gain under adversarial renaming or the Python renaming gain: alignment reflects shared difficulty, not identical mechanism. ^§4
-Jack: Failures localize by Block Model level. Chain-of-thought length correlates negatively with accuracy, {rho_cot};
-  control-flow failure tracks dispatcher-state complexity, the relational level;
-  adversarial renaming acts non-additively at the atom level: displacement or perplexity spikes alone barely move accuracy, but together collapse it to {adv_collapse}. ^§4
-Jack: The sharpest probe is a Stroop-like trap: a variable named `_lastNSecs` that tracks recursion depth baits a fast, confident, wrong answer. ^§2.2
-@if lead == block -> react_block
--> close
-
-== react_block
-Judge: There is your level. Atoms.
-Jack (smile): Atoms.
--> close
-
-== close
-Jack: This alignment, rather than raw accuracy, distinguishes robust comprehension from brittle pattern matching. ^§abs
-Judge (deadpan): That was two minutes. Thank you.
+== last_join
+Jack (neutral): Only reasoning-tuned models mirror human difficulty patterns. This alignment, rather than raw accuracy,
+  distinguishes robust comprehension from brittle pattern matching. ^§abs
+The Judge writes for longer than the sentence is long.
+Judge (deadpan): That was two minutes and some. I will not tell anyone.
+@show Judge right (smile) far
+Judge: Straighten your poster.
 @hide Judge
-@show You right
-You: Well?
-Jack (smile): Received in June, accepted in July. ^p.2
+Jack (puzzled): It is straight.
+@move Jack center
+@pause 500
+@card What the two pages claim | 1: The first per-task human–model difficulty correlation, localized via the Block Model | 2: Evidence against monotonic difficulty: a reproducible Python renaming effect | 3: Only reasoning-tuned models track human difficulty | 4: Language-specific behavioral reporting of obfuscation strength ^§4
+@hide Jack
+@fx dust off
+@transition dissolve 900
+@cg corridor-light | The last of the afternoon
+The judges come and go until the windows change colour. I say my two minutes until they stop sounding like mine.
+The bottom of the second page carries two dates in small type. Received {received}; accepted {accepted}.
+Two pages do not get any longer while they wait. It is their one great virtue.
+@transition dissolve 700
+@bg corridor dusk
+@cg off
+@tone dusk
+@show Jack center (smile)
+Jack: Two pages. They fit in a jacket pocket.
+(I straighten the poster one last time, and take it down.)
+@pause 500
+@tone none
 @end

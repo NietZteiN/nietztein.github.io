@@ -1,98 +1,256 @@
 @title Seventy-Five Minutes
 @kind paper
 @source paper:The Effect of Code Obfuscation on Human Program Comprehension
-@cite A. H. N. Nguyen†, J. V. Le†, I. Lahnstein Coronado, T. N. Nguyen (2026). The Effect of Code Obfuscation on Human Program Comprehension. arXiv:2603.07668 [cs.SE].
+@cite A. H. N. Nguyen†, J. V. Le†, Ilse Lahnstein Coronado, T. N. Nguyen (2026). The Effect of Code Obfuscation on Human Program Comprehension. arXiv:2603.07668 [cs.SE]. † Co-first authors (equal contribution).
 @arxiv 2603.07668
 @link https://arxiv.org/abs/2603.07668 Read the paper
 @link ../../assets/documents/publications/2026SPLASH-SRC.pdf Two-page SRC abstract
-@authors Anh H. N. Nguyen† and Jack V. Le† (co-first), Ilse Lahnstein Coronado, Tien N. Nguyen
-@note Dialogue is dramatized; coauthors did not say these lines. The Proctor and the Obfuscator are abstract roles, not people from the study. Figures marked § are quoted from the two-page SPLASH SRC abstract that summarizes this study; lines marked abs quote the arXiv abstract.
-@status draft
+@authors A. H. N. Nguyen†, J. V. Le†, Ilse Lahnstein Coronado, T. N. Nguyen
+@note The frame story is fiction: the room, the light, the fourth row, the pencil, the order in which the questions arrive, and everything "you" feel. "You" are an invented participant, not a real one. The Clock and the Proctor are abstract roles; no author is voiced and the coauthors did not say these lines. Lines marked §abs quote the paper's arXiv abstract. Lines marked §2 to §3 quote the two-page SPLASH SRC abstract, which describes the tiers and the supervised session; the story assumes it is the same human study. No code from the study is shown.
+@status published
 @verify
-@palette night
+@palette ochre
 @include _facts/obfuscation.vn
-@fact n_questions = 12 ^§3.2
-@fact snips_per_lang = 10 ^§3.1
-@cast Proctor name="the Proctor" hue=200 bun
-@cast Obfuscator name="the Obfuscator" lattice=dense hue=300
-@cast You player hue=40
+@cast Clock name="the Clock" hue=38 hairhue=42 skin=1 bob cardigan
+@cast Proctor name="the Proctor" hue=205 skin=4 curly masc shirt
+@cast You player hue=24
 
-@bg lab dim
-@show Proctor left
-@show You right
-Proctor: Welcome. {n_humans} undergraduate CS majors sit this study; you are one of them. The session is supervised and lasts {session_min} minutes. ^§3.2
-Proctor: {n_questions} questions. Each gives you a function and an input; you state the exact output. ^§3.1
-Proctor: We record correctness, response time, and the programming experience you reported for yourself. ^§abs
-Proctor: You see every base snippet exactly once, at one tier, balanced across participants, with the input held constant. ^§3.2
-You: One tier of what?
-@show Obfuscator center
-Obfuscator: Of me. You will not be told which of my faces you are reading. You may be told what they are.
-@card What was done to the code | L0: nothing but the function's name masked | L1: uninformative renaming; short, disjoint identifiers | L1b: adversarial renaming; misleading names from one semantic domain, a Stroop-like trap | L2: control-flow flattening; dispatchers and indirect jumps | L3: both ^§2.1
-Obfuscator: Deterministic base programs, at most fifteen lines, {snips_per_lang} HumanEval-X snippets per language, Python and JavaScript. ^§3.1
+# ------------------------------------------------------------ Chapter 1
+
+@chapter 1 The Fourth Row
+@transition fade 1200
+@bg classroom
+@fx dust on
+Afternoon. The light comes in low through the windows and lies across the desks like something left behind.
+You take a seat in the fourth row. You could not say why the fourth. It is where your feet stopped.
+@show Proctor left far
+Proctor: Thank you for coming. This is one supervised session: {session_min} minutes, {n_questions} questions.
+Proctor: Each question gives you a function and an input. You state the exact output. ^§3.1
+Proctor (smile): I cannot answer anything about the code. Think of me as furniture.
+You are one of {n_humans_lc} undergraduate CS majors who sit this session.
+Above the board there is a clock. You look at it the way you look at a stranger on a platform: briefly, and then away.
+@pause 500
+@show Clock center far
+And then, because it is that kind of afternoon, there is someone sitting under it.
+(Nobody else looks up.)
+@move Clock right
+@show Clock right (neutral)
+Clock: {session_min} minutes. I will count them. It is the one thing I am good at.
+You: Are you going to hurry me?
+@show Clock right (smile) near
 @thumb
-Obfuscator (smile): The clock is running. Which of me do you open first?
-* The untouched one. L0, name masked. -> open_l0
-* The trap. L1b, adversarial names. -> open_l1b
-* The worst case. L3, renamed and flattened. -> open_l3
+Clock: No. I only write down how long.
+Three things are recorded this afternoon: correctness, response time, and the experience you reported for yourself. ^§abs
+She is the second. The third you supplied on the way in.
+@hide all
+@fx dust off
+@fx flash
+@flashback on Ten minutes earlier
+@transition white 700
+@cg page | The form
+Before the questions there was a form. Python, and then JavaScript: {n_bands} bands for each, and you place yourself.
+It is a strange thing to be asked to weigh yourself. Nobody checks. It is your word.
+* Python is home. JavaScript is somewhere you have visited. -> home_py
+* JavaScript is home. Python is somewhere you have visited. -> home_js
 
-== open_l0
-@set first = l0
-You: The one that still looks like code.
-Obfuscator (deadpan): Start gentle, then. The trap can wait for you.
--> session
+== home_py
+@set home = py
+(Whitespace that means something. You tick the higher box for Python and feel faintly loyal.)
+-> form_out
 
-== open_l1b
-@set first = l1b
-You: The names will lie. I know that going in.
-Obfuscator (smile): Knowing is not the same as not reading them.
--> session
+== home_js
+@set home = js
+(Braces, semicolons, the reassurance of punctuation. You tick the higher box for JavaScript and feel faintly loyal.)
+-> form_out
 
-== open_l3
-@set first = l3
-You: If I can do the worst one, the rest are easy.
-Obfuscator (laugh): Flattened and renamed. Bring a pencil.
--> session
+== form_out
+You hand the form in. It is the last question all day with no right answer.
+@pause 400
+@cg off
+@flashback off
+@fx dust on
+@show Proctor left (neutral) far
+Proctor: You may begin.
+@hide Proctor
+@pause 400
 
-== session
-@hide Obfuscator
-@scene Seventy-five minutes later
-@bg lab
-@show Proctor left
-@show You right
-Proctor: Time. Pencils down.
-@if first == l1b -> after_l1b
-@if first == l3 -> after_l3
-Proctor: You started with the untouched one.
-You: And ended on the trap.
--> results
+# ------------------------------------------------------------ Chapter 2
 
-== after_l1b
-Proctor: You opened the trap first.
-You: I read the names anyway.
--> results
+@chapter 2 Fast
+@transition dissolve 800
+@bg classroom
+@show Clock right (neutral) far
+The first function has had its name taken away. Otherwise it is itself. ^§2.1
+You read it the way you read a sign from a moving car. The names go by, you believe them, and they are true.
+You write the output. You did not trace anything. You knew, the way you know a friend's handwriting.
+Clock (neutral): Quick.
+You: Is that bad?
+Clock: I do not grade. I count.
+@pause 400
+The next one has names like the labels on moving boxes that nobody labelled. Short, disjoint identifiers, and nothing to lean on
+  but the structure. ^§2.1
+It is Python, with the names gone.
+You do not decide to slow down. Your finger is already on the first line, moving.
+Somewhere a part of you that had been resting has stood up.
+@if home == js -> rename_js
+(Home, with the furniture taken out. You know where the walls are in the dark.)
+-> rename_join
 
-== after_l3
-Proctor: You opened the worst case first.
-You: I ran out of pencil.
--> results
+== rename_js
+(Not home. And still the shape holds, like a street in a town you stayed in once.)
+-> rename_join
 
-== results
-@show Obfuscator center
-Proctor: Here is what {n_answers} answers like yours showed. ^§3.2
-@chart bar Human accuracy by tier | All languages, L0={human_l0} | All languages, L3={human_l3} | JavaScript, L0={js_l0} | JavaScript, L3={js_l3} | Python, L0={py_l0} | Python, renamed={py_rename} unit=%
-Proctor: Obfuscation generally increases the time required to reason about code and tends to reduce prediction accuracy. ^§abs
-Proctor: However, the relationship between obfuscation strength and performance is not strictly monotonic and varies across programming languages. ^§abs
-Obfuscator (smile): JavaScript exhibits the expected pattern of increasing difficulty with stronger obfuscation. ^§abs
-Obfuscator (puzzled): Python displays a more complex trend, in which certain renaming transformations can perform comparably to,
-  or occasionally better than, the unobfuscated baseline. ^§abs
-Proctor: Human accuracy fell from {human_l0} at L0 to {human_l3} at L3: JavaScript declined steadily, {js_l0} to {js_l3}; Python rose under renaming, {py_l0} to {py_rename}. ^§4
-@card Your clock | Response time jumps by {rt_jump} once code is obfuscated, then plateaus | Errors cluster at time extremes | Correct L1b answers are slower than incorrect ones ^§4
-Proctor: Response-time analyses suggest that obfuscation shifts participants away from rapid, heuristic reasoning toward slower and more deliberate reasoning processes. ^§abs
-Proctor: Performance appears highest within a moderate range of response times: careful deliberation can improve accuracy,
-  while extremely long response times often correspond to confusion. ^§abs
-Obfuscator (deadpan): And all those years of programming?
-Proctor: Programming experience predicts performance primarily within a given language, with limited transfer across languages.
-  Obfuscation challenges language-specific familiarity more than general programming ability. ^§abs
-You: So the trap was never the code.
-Obfuscator (smile): It was the time you took, and the language you took it in.
+== rename_join
+You reach the last line and the answer is simply there.
+You check the feeling, the way you check a pocket. It was not harder.
+(That cannot be right. They took the names away.)
+@show Clock right (puzzled) near
+Clock: You expected to be slower.
+You: I expected it to hurt.
+Clock (neutral): I have one column. It does not say what you expected.
+You keep it to yourself. It seems like something that happened only to you.
+@hide Clock
+@pause 500
+
+# ------------------------------------------------------------ Chapter 3
+
+@chapter 3 The Trap
+@transition dissolve 800
+@bg classroom
+The light has reached the third row. It will be at yours soon.
+The next function has its names back.
+They are good names. They agree with one another, as if they had all grown up in the same house. ^§2.1
+@transition dissolve 600
+@cg screen-code | Illustrative only; the study's functions are not reproduced here
+The paper's own example is a variable called `_lastNSecs`. It does not hold seconds. It tracks recursion depth. ^§2.2
+An answer arrives before you have finished reading. Whole, confident, already in your hand.
+* Write it down. -> trap_fast
+* Put the pencil on the first line and trace. -> trap_slow
+
+== trap_fast
+@set first = fast
+You write it. It takes no time at all.
+Then you look at the name again, and at what the name is doing three lines further down.
+@fx shake
+You draw one line through your answer and start from the top. Slowly, this time.
+-> trap_join
+
+== trap_slow
+@set first = slow
+You trace. The name says one thing and the lines say another, and you hold the name at arm's length all the way down.
+It is tiring in a way that reading has not been all afternoon.
+-> trap_join
+
+== trap_join
+@cg off
+@show Clock right (thinking)
+Like a Stroop task: the name baits a fast, confident, wrong answer. ^§2.2
+@if first == slow -> clock_slow
+Clock: Two answers. I only have a place for the time of the second.
+You: The names were lying.
+Clock (smile): The names were names. You were the one who believed them.
+-> clock_join
+
+== clock_slow
+Clock: That one took you a while.
+You: The names were lying.
+Clock (smile): And you read them anyway. Everyone does. You only declined to believe them.
+-> clock_join
+
+== clock_join
+You cannot tell whether the slow answer is right. You can tell that it is yours.
+@hide Clock
+@pause 500
+
+# ------------------------------------------------------------ Chapter 4
+
+@chapter 4 Slow
+@transition dissolve 1200
+@bg classroom dusk
+@tone dusk
+@fx dust off
+The light has moved from the desks to the wall. Nobody saw it go.
+The next function keeps its names and loses its order. Dispatchers and indirect jumps: what is written next is no longer
+  what happens next. ^§2.1
+So you become the machine. One step, one state, one step. The margin of your sheet fills with small numbers.
+The fast kind of reading is over for the afternoon. Nobody announced it.
+@transition dissolve 700
+@cg page | The margin
+And then one that has lost both, names and order together. The two-page abstract calls it an upper bound on difficulty. ^§2.1
+You read it. You read it again.
+You find you have been looking at the same line for some time, and that it has not been looking back.
+@cg off
+@show Clock right (worried) far
+Clock: You have been here a long while.
+@show Clock right (worried) near
+Clock: I am not hurrying you. I said I would not. I am only telling you what I have written down.
+* Stay with it. -> stay
+* Write your best answer and turn the page. -> leave
+
+== stay
+You stay. At some point staying stops being thinking and becomes only staying. You notice too late to say when.
+-> slow_join
+
+== leave
+You write something. It is less an answer than a way of leaving a room without slamming the door.
+-> slow_join
+
+== slow_join
+Clock (thinking): There is a slow that is care and a slow that is being lost. From where I sit they are the same number.
+You: Which was mine?
+Clock (neutral): I count. I told you.
+@move Clock center
+The rest go by like weather. Some you trace. Some you simply know. You stop keeping track of which.
+@hide Clock
+@pause 600
+
+# ------------------------------------------------------------ Chapter 5
+
+@chapter 5 Pencils Down
+@transition dissolve 1000
+@bg classroom dusk
+@tone dusk
+@show Proctor left (neutral)
+Proctor: Time. Pencils down, please.
+Your sheet goes on the pile. {n_answers} responses in all, each one paired with whether it was right and how long it took.
+@show Clock right (neutral) far
+You: Can you tell me how I did?
+Proctor (worried): I cannot. I am sorry.
+You: Can you tell me what it was about?
+Proctor (smile): When it is written.
+@hide all
+@transition dissolve 1000
+@cg two-chairs | Afterwards
+The room empties the way rooms do, all at once and then for a long time.
+Later, it is written. This is what it says.
+@mode nvl
+Obfuscation generally increases the time required to reason about code, and tends to reduce prediction accuracy. ^§abs
+But the relationship between obfuscation strength and performance is not strictly monotonic, and it varies across programming languages. ^§abs
+JavaScript exhibits the expected pattern of increasing difficulty with stronger obfuscation. ^§abs
+Python displays a more complex trend: certain renaming transformations can perform comparably to, or occasionally better than,
+  the unobfuscated baseline. ^§abs
+(So it did not happen only to you.)
+@page
+Response times suggest that obfuscation shifts participants away from rapid, heuristic reasoning toward slower and more
+  deliberate reasoning. ^§abs
+Performance appears highest within a moderate range of response times. Careful deliberation can improve accuracy;
+  extremely long response times often correspond to confusion. ^§abs
+(Care, and being lost. The abstract has a clause for each. It still cannot say which one was yours.)
+@page
+Programming experience predicts performance primarily within a given language, with limited transfer across languages. ^§abs
+Which suggests that obfuscation challenges language-specific familiarity more than general programming ability. ^§abs
+(The box you ticked for home was a promise about home. It never said anything about the other place.)
+@mode adv
+@cg off
+@transition dissolve 900
+@bg corridor dusk
+@show Clock center far
+Clock (smile): I stopped when you put the pencil down. The rest is not mine to count.
+@hide Clock
+@transition dissolve 900
+@cg corridor-light | The way out
+You walk out into a corridor the colour of the end of the day.
+For the first time since you sat down, nobody is writing down how long you take.
+@pause 700
+@tone none
 @end
