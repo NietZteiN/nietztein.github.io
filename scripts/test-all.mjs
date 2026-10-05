@@ -17,7 +17,7 @@
 //   node scripts/build-places-json.mjs --check         assets/data/places.json matches toy 34
 //   node misc/_kit/test.js
 //   node misc/55-paper-theatre/test.js
-//   every other misc/*/test.js, misc/_*/test*.js and scripts/**/test*.mjs
+//   every other misc/*/test*.js (underscore folders included) and scripts/**/test*.mjs
 // and then, in this process: every misc/*/toy.json must parse as JSON and its
 // "slug" must equal the name of its folder.
 // A file that does not exist yet is reported as "skipped: not present"; that
@@ -119,7 +119,7 @@ const fixed = [
 for (const [file, extra] of fixed) run(file, extra);
 
 const done = new Set([...fixed.map(([file]) => file), self]);
-const others = [...glob('misc/*/test.js'), ...glob('misc/_*/test*.js'), ...glob('scripts/**/test*.mjs')];
+const others = [...glob('misc/*/test*.js'), ...glob('scripts/**/test*.mjs')];
 for (const file of others) {
 	if (done.has(file)) continue;
 	done.add(file);

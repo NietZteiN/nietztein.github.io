@@ -117,6 +117,9 @@ Jack: Overall, accuracy fell from {human_l0} at L0 to {human_l3} at L3. ^§4
 | `@cg <name> [day\|dusk\|dawn\|night] [overcast] [text=identifier] [\| caption]` / `@cg off` | Full-screen event illustration that replaces background and sprites while shown: `tree`, `desk-night`, `screen-code`, `hands-keyboard`, `two-chairs`, `corridor-light`, `sea-of-points`, `page`, `window-rain`. The optional caption is shown small in a corner. An unknown name warns and draws an abstract fallback. The hour repaints the CGs that have a sky (`two-chairs`, `corridor-light`, `window-rain`, `tree`; their defaults are dusk, dusk, night, dusk); `overcast` takes the moon and stars out of the `desk-night` window; `text=` sets the one readable identifier on `screen-code` (default `_lastNSecs`; letters, digits, `_ $ .`, no spaces). |
 | `@pause <ms>` | A beat with no text (default 800). Continues by itself; a click skips it; instant under Skip, autoplay and reduced motion. |
 | `@tone <name>` | Colour grade for the whole picture until changed: `none`, `dusk`, `night`, `dawn`, `noon`, `memory`, `cold`. |
+| `@music <track>` / `@music auto` / `@music off` | The music from here on: `theme`, `nocturne`, `tender`, `memory`, `cold`, `tension`, `bright`, `finale`. `auto` (the default) lets the score choose from the scene, `off` is a silence. See *Sound*. |
+| `@ambience <name>` / `@ambience auto` / `@ambience off` | The air of the place under the music: `rain`, `wind`, `sea`, `train`, `hum`, `crowd`, `night`, `room`. `auto` is the default. |
+| `@sfx <name>` | One sound as the next line appears: `page`, `chime`, `door`, `keys`, `thud`, `bell`, `click`. |
 | `@card Title \| cell \| cell` | Fact card. Cells may be `label: value` pairs. |
 | `@chart bar\|range Title \| label=value \| label=lo..hi [unit=%]` | SVG chart from numbers in the script. Every value must be a `{fact}` or carry a chip. Renders with a visually hidden text table. |
 | `@code lang \| line \| line` | Monospace code card. Only code the source itself shows. |
@@ -244,7 +247,52 @@ No floor. No walls. Points of light out to the horizon.
 ```
 
 A script that uses every directive once is `_demo-effects.vn` in this folder
-(`?src=stories/_demo-effects.vn`).
+(`?src=stories/_demo-effects.vn`); it predates the sound directives below.
+
+## Sound
+
+A story needs no sound directives. With no `@music` and no `@ambience` in the script, the score is chosen
+automatically from the scene: the engine hands the score the place, its hour, the weather, the tone, a flashback and
+the chapter at every line, and the score decides. Write a directive only where the scene alone would choose wrong.
+
+```text
+@music nocturne
+```
+
+names a track until the next `@music` (`@music auto` hands the choice back, `@music off` is a silence).
+
+```text
+@ambience rain
+```
+
+sets the air of the place the same way (`auto`, `off`), for rain on a window that no `@fx rain` draws.
+
+```text
+@sfx door
+```
+
+is one sound, once, as the next line appears. It is not heard again when the reader goes Back, loads a save or skips.
+
+`@music` and `@ambience` last until changed, like `@tone`; a deep link or a chapter jump lands with the right ones.
+An unknown name is a warning that lists the valid ones: music and ambience fall back to `auto`, an unknown `@sfx` is
+ignored. The sound itself is made by `score.js` and `audio.js` in the engine folder; while those are placeholders the
+directives are parsed, linted and carried in the state, and nothing sounds. Sound never starts before the reader's
+first click or key press.
+
+## Presenter notes
+
+A comment that starts with `# note:` is a note to yourself for a talk. It belongs to the next line that stops (a
+spoken line, narration, a choice, a card, a chapter card), and the presenter view shows it beside that line. Several
+notes in a row are joined, one per line. Readers never see them, and every other `#` comment is ignored as before.
+
+```text
+# note: Ask the room to bet before the numbers.
+# note: Wait for hands.
+Jack (smile): Before the numbers, place a bet.
+```
+
+`P` while a story is open (title screen or playing) opens the presenter view, `presenter.html`, in a second window:
+it follows the stage and can advance it.
 
 ## Chips and facts
 
@@ -277,6 +325,8 @@ Warnings (the story still runs, the panel and `test.js` list them):
 - unknown background (falls back to `void`) or background modifier,
 - unknown `@transition`, `@fx`, `@cg` or `@tone` name; each warning lists the valid names
   (the transition becomes `dissolve`, the fx is ignored, the CG becomes an abstract fallback, the tone `none`),
+- unknown `@music`, `@ambience` or `@sfx` name, again with the valid names (music and ambience become `auto`, the sfx
+  is ignored),
 - **numeric literal without a chip** (paper kind): a `say` or narration line
   containing `%`, `ρ`/`rho`, `p <`, or an integer of 10 or more and no chip (digits inside a declared cast
   name such as `Participant 23` do not count),
@@ -342,12 +392,18 @@ Then open, from the site root:
   `&screen=save|load|config|log|chapters|title` then opens that screen, `&trans=iris` freezes a transition half-way.
 - `?gallery=bg` (`&mod=night|dawn|dusk|dim`, `&overcast=1`, `&board=text`, `&only=room,basement`) and `?gallery=cg`
   (`&mod=day|dusk|dawn|night`, `&overcast=1`, `&text=total`) — every background and every event illustration.
+- `?src=draft:<key>` — a script kept in this browser by the Studio (`localStorage['vn:studio:<key>']`) instead of a
+  file; `&studio=1` makes the stage a live preview that the Studio drives (nothing is saved; see OPS.md).
+- `&audio=0`, `&paint=0`, `&live=0`, `&camera=0`, `&op=0` — switch one of the optional modules (sound, painted
+  backgrounds, living cast, camera, opening movie) off; `=1` forces it on, also under `&autoplay=` and `?thumb=1`,
+  where they otherwise rest.
 
 A story opens on its title screen (Start, Continue, Chapters, Load, Log, Config, Back to stories) and then plays
 full-bleed. With `?src=` (or `?drafts=1`) a `⚠ n` button at the top right lists every parser and lint issue with line
 numbers; they are mirrored to the browser console, and a fatal issue replaces the stage with a panel that names the
 line. Keys while playing: Space/Enter advance, Backspace back, `L` backlog, `A` auto, `S` skip, `H` or right-click hide
-the window, `C` config, `F` fullscreen, `F5`/`F9` quick save and load, `T` text-only, `?` help, `Esc` title screen.
+the window, `C` config, `F` fullscreen, `F5`/`F9` quick save and load, `T` text-only, `?` help, `Esc` title screen,
+`P` presenter view, and `M` sound on or off once the sound module is there.
 
 ## Testing in a real browser
 

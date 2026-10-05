@@ -1051,3 +1051,31 @@ body.fx-off .vn-fxback { display: none; }
   body.playing .vn-text { max-height: 11.4em; }
   body.playing .vn-menu.many { font-size: calc(14px * var(--vn-fs)); }
 }
+
+/* ---------- Hooks for the optional modules (paint, op; their own sheets load after this one) ---------- */
+
+/* A painted picture (paint.js) is an image inside the background or CG layer, laid exactly over the SVG it was
+   painted from: same box, same crop as the SVG's preserveAspectRatio="xMidYMid slice". */
+.vn-bg > img.vn-painted, .vn-cgart > img.vn-painted {
+  position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 50%;
+  display: block; pointer-events: none; user-select: none; -webkit-user-drag: none;
+}
+/* while the opening movie plays (op.js) the stage's own controls rest; at Start the world underneath is empty,
+   and it is plain dark (no canvas tooth, no focus ring) so that the movie can fade in from black */
+#stage.op-playing .vn-quick, #stage.op-playing .vn-topbar, #stage.op-playing .vn-badges, #stage.op-playing .vn-toast { visibility: hidden; }
+#stage.in-play.op-playing .vn-world::after { display: none; }
+#stage.op-playing:focus-visible { outline: none; }
+/* a title menu that gained "Opening" (seven or eight items) is set in two columns of four, read downwards,
+   so that it stays clear of the title and the credit lines above it */
+.ts-menu.is-tall { display: grid; grid-template-rows: repeat(4, auto); grid-auto-flow: column; justify-items: start; gap: 0.1em 2.2em; }
+/* Config with the sound rows: two columns (reading on the left, sound and picture on the right), so the
+   screen still fits the stage without scrolling; one column again on an upright phone */
+.vn-config-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 clamp(16px, 4.2cqw, 68px); align-items: start; }
+.vn-config-cols .vn-config { max-width: none; grid-template-columns: minmax(6em, 9em) minmax(0, 1fr) 3.4em; gap: 0.5em 1em; }
+@media (max-aspect-ratio: 4/5) {
+  /* an upright phone has the height for one column */
+  body.playing .ts-menu.is-tall { display: flex; }
+  body.playing .ts-menu.is-tall button { padding-top: 0.36em; padding-bottom: 0.36em; }
+  body.playing .vn-config-cols { grid-template-columns: minmax(0, 1fr); row-gap: 0.5em; }
+  body.playing .vn-config-cols .vn-config { grid-template-columns: 1fr 4em; }
+}

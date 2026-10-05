@@ -557,6 +557,148 @@ section = 'stage-options';
   f.advance(); f.advance(); eq(f.state.faces.ann, 'neutral', 'a face spoken off stage does not follow the character back on');
 })();
 
+/* ------------------------------------------------------------------ sound directives: @music, @ambience, @sfx */
+section = 'sound';
+(function () {
+  eq(VN.MUSIC, ['theme', 'nocturne', 'tender', 'memory', 'cold', 'tension', 'bright', 'finale'], 'VN.MUSIC');
+  eq(VN.AMBIENCE, ['rain', 'wind', 'sea', 'train', 'hum', 'crowd', 'night', 'room'], 'VN.AMBIENCE');
+  eq(VN.SFX, ['page', 'chime', 'door', 'keys', 'thud', 'bell', 'click'], 'VN.SFX');
+  ok(!VN.BLOCKING.music && !VN.BLOCKING.ambience && !VN.BLOCKING.sfx, 'the sound directives do not block');
+
+  var src = HEADER + [
+    'Jack: one',            // 6
+    '@music nocturne',      // 7
+    '@ambience rain',       // 8
+    '@sfx door',            // 9
+    '@sfx page',            // 10
+    'Jack: two',            // 11
+    'Jack: three',          // 12
+    '@music off',           // 13
+    '@ambience off',        // 14
+    'Jack: four',           // 15
+    '@music',               // 16
+    '@ambience auto',       // 17
+    '@sfx bell',            // 18
+    '* left -> a',          // 19
+    '* right -> b',         // 20
+    '== a',
+    '@sfx chime',
+    'Jack: five',           // 23
+    '== b',
+    '@music finale',
+    'Jack: six',            // 26
+    '@end'
+  ].join('\n');
+  var r = parseLint(src), p = r.p, by = {};
+  p.ops.forEach(function (o) { (by[o.kind] = by[o.kind] || []).push(o); });
+  eq(codes(r.issues), [], 'sound fixture lints clean');
+  eq(by.music, [{ kind: 'music', track: 'nocturne', line: 7 }, { kind: 'music', track: 'off', line: 13 }, { kind: 'music', track: 'auto', line: 16 }, { kind: 'music', track: 'finale', line: 25 }], '@music track | off | (nothing = auto)');
+  eq(by.ambience, [{ kind: 'ambience', name: 'rain', line: 8 }, { kind: 'ambience', name: 'off', line: 14 }, { kind: 'ambience', name: 'auto', line: 17 }], '@ambience name | off | auto');
+  eq(by.sfx, [{ kind: 'sfx', name: 'door', line: 9 }, { kind: 'sfx', name: 'page', line: 10 }, { kind: 'sfx', name: 'bell', line: 18 }, { kind: 'sfx', name: 'chime', line: 22 }], '@sfx name');
+  var w = VN.walk(p);
+  ok(w.ok && w.paths === 2 && w.unreachable.length === 0, 'walk treats the sound directives as plain steps: ' + JSON.stringify([w.ok, w.paths, w.endings]));
+  eq(VN.walk(VN.parse(src.replace(/^@(music|ambience|sfx).*\n/gm, ''))).steps, w.steps - 11, 'each of the eleven sound directives costs walk exactly one step');
+
+  // run state
+  var run = VN.createRun(p), s = run.advance();
+  eq([s.state.music, s.state.ambience, s.state.sfx], ['auto', 'auto', []], 'state.music and state.ambience start as auto, state.sfx empty');
+  s = run.advance();
+  eq([s.op.text, s.state.music, s.state.ambience, s.state.sfx], ['two', 'nocturne', 'rain', ['door', 'page']], 'music, ambience and two sound effects on the way to the stop');
+  s = run.advance();
+  eq([s.op.text, s.state.music, s.state.ambience, s.state.sfx], ['three', 'nocturne', 'rain', []], 'state.sfx is cleared at the next advance; music and ambience stay');
+  s = run.advance();
+  eq([s.state.music, s.state.ambience], ['off', 'off'], '@music off and @ambience off');
+  s = run.advance();
+  eq([s.op.kind, s.state.music, s.state.ambience, s.state.sfx], ['menu', 'auto', 'auto', ['bell']], 'back to auto; a sound effect on the way to a menu');
+  eq(run.advance().state.sfx, ['bell'], 'advance at a menu stays on the menu and keeps its state');
+  s = run.choose(0);
+  eq([s.op.text, s.state.sfx], ['five', ['chime']], 'choose clears the effects of the menu stop and collects the new ones');
+  s = run.advance();
+  eq([s.op.text, s.state.music, s.state.sfx], ['six', 'finale', []], 'falls through to the next section');
+  var b = run.back();
+  eq([b.op.text, b.state.music, b.state.sfx], ['five', 'auto', ['chime']], 'back restores music and the effects of that stop');
+  var snap = run.snapshot();
+  eq(Object.keys(snap).sort(), ['choiceLog', 'hash', 'pc', 'seen', 'stopIndex'], 'the snapshot (what a save holds) has the same keys as before');
+  eq(snap.hash, VN.hashHex(src), 'program.hash is still the hash of the source text');
+  var rep = VN.createRun(p), rs = rep.replay(snap.choiceLog, snap.stopIndex);
+  eq([rs.op.text, rs.state.music, rs.state.ambience, rs.state.sfx], ['five', 'auto', 'auto', ['chime']], 'replay rebuilds the sound state');
+
+  // a deep link dresses music and ambience, never the one-shot effects
+  var j = VN.createRun(p).jumpTo('b');
+  eq([j.op.text, j.state.music, j.state.ambience, j.state.sfx], ['six', 'finale', 'auto', []], 'jumpTo dresses music and ambience in file order and drops every @sfx before the target');
+  var p2 = VN.parse(HEADER + '@music tender\n@ambience sea\n@sfx door\nJack: a\n== here\n@sfx keys\nJack: b\n@end');
+  var j2 = VN.createRun(p2).jumpTo('here');
+  eq([j2.op.text, j2.state.music, j2.state.ambience, j2.state.sfx], ['b', 'tender', 'sea', ['keys']], 'jumpTo: dressing from above, and the effects between the target and its stop still fire');
+  var rt = VN.routeTo(p, 'b'), rr = VN.createRun(p), rstop = rt && rr.replay(rt.choiceLog, rt.stopIndex);
+  eq(rstop && [rstop.op.text, rr.state.music], ['six', 'finale'], 'routeTo still finds its way through a script with sound directives');
+
+  // lint: unknown names
+  r = parseLint(HEADER + '@music swing\n@ambience storm\n@sfx boom\n@sfx\n@music Nocturne\nJack: x\n@end');
+  var mw = find(r.issues, 'music-unknown'), aw = find(r.issues, 'ambience-unknown'), sw = find(r.issues, 'sfx-unknown');
+  ok(mw && mw.level === 'warn' && mw.msg === "line 6: unknown music 'swing'; using auto" && mw.hint === 'music: theme, nocturne, tender, memory, cold, tension, bright, finale, auto, off', 'unknown music warns with the list: ' + JSON.stringify(mw));
+  ok(aw && aw.level === 'warn' && aw.msg === "line 7: unknown ambience 'storm'; using auto" && aw.hint === 'ambience: rain, wind, sea, train, hum, crowd, night, room, auto, off', 'unknown ambience warns with the list: ' + JSON.stringify(aw));
+  ok(sw && sw.level === 'warn' && sw.msg === "line 8: unknown sfx 'boom'; ignored" && sw.hint === 'sfx: page, chime, door, keys, thud, bell, click', 'unknown sfx warns with the list: ' + JSON.stringify(sw));
+  eq(r.issues.filter(function (x) { return x.code === 'sfx-unknown'; }).map(function (x) { return x.line; }), [8, 9], 'an empty @sfx warns too');
+  eq(r.issues.filter(function (x) { return x.code === 'music-unknown'; }).map(function (x) { return x.line; }), [6, 10], 'names are case-sensitive, like every other directive');
+  eq(r.p.ops.filter(function (o) { return o.kind === 'music' || o.kind === 'ambience' || o.kind === 'sfx'; }).map(function (o) { return [o.kind, o.track || o.name]; }), [['music', 'auto'], ['ambience', 'auto'], ['music', 'auto']], 'unknown music and ambience fall back to auto; an unknown sfx is dropped');
+  ok(!has(r.issues, 'directive-unknown') && !r.issues.some(function (x) { return x.level === 'fatal'; }), 'the three directives are known and never fatal');
+  var run3 = VN.createRun(r.p), s3 = run3.advance();
+  eq([s3.state.music, s3.state.ambience, s3.state.sfx], ['auto', 'auto', []], 'a script with only unknown names plays as if they were not there');
+})();
+
+/* ------------------------------------------------------------------ presenter notes: "# note: ..." */
+section = 'notes';
+(function () {
+  var src = HEADER + [
+    '# note: Open with the question.',     // 6
+    '# note: Wait for the room.',          // 7
+    '# an ordinary comment',
+    '@bg lab',
+    '#note:tight spacing',                 // 10
+    'Jack: one',                           // 11
+    'Jack: two',                           // 12
+    '# Note: capital N',                   // 13
+    '# note:',                             // 14 (an empty note line keeps a blank line between two notes)
+    '# note: second paragraph',            // 15
+    '@scene Act',                          // 16
+    '# note: wraps onto',                  // 17
+    '  the next physical line',            // 18
+    '* left -> a',                         // 19
+    '# note: between the options',         // 20
+    '* right -> a',                        // 21
+    '== a',
+    '# notes: not a note (plural)',
+    '# nota bene: not a note either',
+    '@pause 300',                          // 25
+    '# note: on the card',
+    '@card T | a: b',                      // 27
+    '# note: last words'
+  ].join('\n');
+  var r = parseLint(src), p = r.p, stops = p.ops.filter(function (o) { return VN.BLOCKING[o.kind]; });
+  eq(codes(r.issues), [], 'note fixture lints clean');
+  eq(stops.map(function (o) { return [o.kind, o.note]; }), [
+    ['say', 'Open with the question.\nWait for the room.\ntight spacing'],
+    ['say', undefined],
+    ['scene', 'capital N\n\nsecond paragraph'],
+    ['menu', 'wraps onto the next physical line'],
+    ['pause', 'between the options'],
+    ['card', 'on the card'],
+    ['end', 'last words']
+  ], 'a note goes to the next stop; consecutive notes join with a newline; other comments are ignored');
+  ok(p.ops.every(function (o) { return VN.BLOCKING[o.kind] || o.note === undefined; }), 'no non-blocking op carries a note');
+  ok(!('note' in stops[1]), 'an op without a note has no note key');
+  eq(p.ops.filter(function (o) { return o.kind === 'narrate'; }).length, 0, 'a note is never read as narration');
+  var bare = VN.parse(src.replace(/^#.*\n/gm, '').replace(/\n  the next physical line/, ''));
+  eq(kinds(bare.ops), kinds(p.ops), 'notes add no ops');
+  eq(VN.parse(HEADER + '# note: only a note\n').ops, [{ kind: 'end', implicit: true, line: 7, note: 'only a note' }], 'a note with nothing after it goes to the implicit end');
+  eq(VN.parse(HEADER + '# note:\n# note:   \nJack: x\n').ops[0].note, undefined, 'empty notes leave no note');
+  var run = VN.createRun(p), s = run.advance();
+  eq(s.op.note, stops[0].note, 'the stop hands the note to the stage with its op');
+  // a note above @read moves to the first stop of the expanded post
+  var x = VN.expand(VN.parse('@title P\n@kind blog\n# note: read slowly\n@read post\n@end'), 'First paragraph.\n\nSecond.', { title: 'P' });
+  eq(x.ops.filter(function (o) { return o.note; }).map(function (o) { return [o.kind, o.text, o.note]; }), [['narrate', 'First paragraph.', 'read slowly']], 'expand keeps a note written above @read');
+})();
+
 /* ------------------------------------------------------------------ routes (chapter jumps, deep links) */
 section = 'routeTo';
 (function () {

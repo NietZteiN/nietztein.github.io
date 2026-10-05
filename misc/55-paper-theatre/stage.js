@@ -16,6 +16,11 @@
  * Every animated effect has a settled state: under reduced motion, ?autoplay,
  * ?thumb and Skip, transitions are cuts, particles stand still and text is
  * instant.
+ *
+ * Six more modules are optional and are only ever reached through ext():
+ * score.js (VNScore), audio.js (VNAudio), paint.js (VNPaint), live.js (VNLive),
+ * camera.js (VNCamera) and op.js (VNOp). Any of them may be missing or broken;
+ * the stage plays on without it. Their contract is in OPS.md.
  */
 (function () {
   'use strict';
@@ -33,6 +38,14 @@
   var HOOK_CLICK = parseInt(params.get('click'), 10) || 0;   // test hook: Start, then N animated advances (typewriter, transitions, timers all live)
   var HOOK_TRANS = params.get('trans');    // test hook: with &autoplay=N, freeze that transition half-way into stop N
   var REDUCED = THUMB || !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  var STUDIO = params.get('studio') === '1';   // a live preview driven by the Studio page over BroadcastChannel('vn:studio'): nothing is saved
+  var TESTRUN = THUMB || AUTOPLAY != null;     // a capture or a test run: every optional module rests unless its hook forces it on
+  // test hooks: ?paint=1|0 &live=1|0 &camera=1|0 &op=1|0 switch that module on or off whatever the prefs and the
+  // settled-state rule say; ?audio=0 switches the sound off (no unlock, no call into score.js or audio.js at all);
+  // ?audio=1 lets the cue be computed and synced in a test run too (the sound is still never unlocked there)
+  function hookOf(name) { var v = params.get(name); return v === '1' ? true : v === '0' ? false : null; }
+  var FORCE = { paint: hookOf('paint'), live: hookOf('live'), camera: hookOf('camera'), op: hookOf('op'), audio: hookOf('audio') };
+  var AUDIO_HOOK_OFF = FORCE.audio === false;
   var KATEX = 'https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/';
   var DEFAULT_STORY = 'obfuscation';
   var SLOT_NAMES = ['left', 'center', 'right'];
@@ -51,6 +64,8 @@
   }
   function fetchJSON(url) { return fetchText(url).then(function (t) { return JSON.parse(t); }); }
   function hash32(s) { if (VN && VN.hash) return VN.hash(s); var h = 2166136261; for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+  // In the Studio preview the author's caret is in the editor around this frame: the stage never pulls the focus out of it.
+  function mayFocus() { return !(STUDIO && !document.hasFocus()); }
 
   /* ------------------------------------------------------------------ DOM */
 
@@ -79,14 +94,62 @@
   var helpOverlay = $('#help');
   function qbtn(name) { return $('button[data-q="' + name + '"]', quickEl); }
 
+  /* ------------------------------------------------------------------ optional modules */
+
+  // score.js (VNScore), audio.js (VNAudio), paint.js (VNPaint), live.js (VNLive), camera.js (VNCamera) and
+  // op.js (VNOp) may each be absent or half-built at any time. ext() is the only way the stage reaches them:
+  // a missing module or method answers undefined; a method that throws, or a promise that rejects, is reported
+  // once per (module, method) with console.warn and otherwise ignored. Never console.error: a broken module
+  // is not an error of the theatre.
+  var HOOK_OFF = { VNScore: AUDIO_HOOK_OFF, VNAudio: AUDIO_HOOK_OFF, VNPaint: FORCE.paint === false, VNLive: FORCE.live === false, VNCamera: FORCE.camera === false, VNOp: FORCE.op === false };
+  // modules the stage does not call at all: switched off by a hook, or resting in a capture / test run
+  var OFF = {
+    VNScore: AUDIO_HOOK_OFF || (TESTRUN && FORCE.audio !== true), VNAudio: AUDIO_HOOK_OFF || (TESTRUN && FORCE.audio !== true),
+    VNPaint: FORCE.paint === false || (TESTRUN && FORCE.paint !== true),
+    VNLive: FORCE.live === false || (TESTRUN && FORCE.live !== true),
+    VNCamera: FORCE.camera === false || (TESTRUN && FORCE.camera !== true),
+    VNOp: FORCE.op === false || (TESTRUN && FORCE.op !== true)
+  };
+  var extWarned = {};
+  function extFail(mod, fn, err) {
+    if (extWarned[mod + '.' + fn]) return;
+    extWarned[mod + '.' + fn] = true;
+    console.warn('[vn] ' + mod + '.' + fn + ' failed; the theatre carries on without it', err);
+  }
+  function callMod(mod, fn, args) {
+    var m = window[mod], f = m && m[fn];
+    if (typeof f !== 'function') return undefined;
+    try {
+      var r = f.apply(m, args);
+      // a promise that rejects must not surface as an unhandled rejection: hand back one that settles to undefined
+      if (r && typeof r.then === 'function') return Promise.resolve(r).then(null, function (e) { extFail(mod, fn, e); });
+      return r;
+    } catch (e) { extFail(mod, fn, e); return undefined; }
+  }
+  function ext(mod, fn) {
+    if (OFF[mod]) return undefined;
+    return callMod(mod, fn, Array.prototype.slice.call(arguments, 2));
+  }
+  // Is the module loaded (and not switched off by its hook)? Read once, at boot: it decides which Config rows,
+  // buttons and keys exist.
+  function has(mod) { return !!window[mod] && !HOOK_OFF[mod]; }
+  var HAS = { audio: has('VNAudio'), paint: has('VNPaint'), live: has('VNLive'), camera: has('VNCamera'), op: has('VNOp') };
+
   /* ------------------------------------------------------------------ prefs + theme */
 
-  var prefs = Object.assign({ cps: 34, autoSpeed: 1, opacity: 0.74, effects: true, size: 1, textOnly: false }, readJSON('vn:prefs') || {});
+  var prefs = Object.assign({
+    cps: 34, autoSpeed: 1, opacity: 0.74, effects: true, size: 1, textOnly: false,
+    music: 0.55, ambience: 0.4, sfx: 0.6, voice: 0.35, mute: false, paint: true, live: true, camera: true, opening: true, babble: false
+  }, readJSON('vn:prefs') || {});
   prefs.cps = clamp(parseInt(prefs.cps, 10) || 34, 15, 80);
   prefs.autoSpeed = clamp(parseFloat(prefs.autoSpeed) || 1, 0.5, 2.5);
   prefs.opacity = clamp(parseFloat(prefs.opacity) || 0.74, 0.3, 1);
   prefs.size = clamp(parseFloat(prefs.size) || 1, 0.85, 1.35);
   prefs.effects = prefs.effects !== false;
+  function volPref(v, d) { v = parseFloat(v); return isFinite(v) ? clamp(v, 0, 1) : d; }
+  prefs.music = volPref(prefs.music, 0.55); prefs.ambience = volPref(prefs.ambience, 0.4); prefs.sfx = volPref(prefs.sfx, 0.6); prefs.voice = volPref(prefs.voice, 0.35);
+  prefs.mute = prefs.mute === true; prefs.babble = prefs.babble === true;
+  prefs.paint = prefs.paint !== false; prefs.live = prefs.live !== false; prefs.camera = prefs.camera !== false; prefs.opening = prefs.opening !== false;
   function savePrefs() { lsSet('vn:prefs', JSON.stringify(prefs)); }
   function applyPrefs() {
     var st = document.documentElement.style;
@@ -270,6 +333,7 @@
   function renderPicker(notice) {
     setMode('picker');
     clearStage();
+    leaveStory();
     document.title = 'Paper Theatre';
     var groups = [['Papers', []], ['Posts', []], ['Coming soon', []]];
     catalog.forEach(function (e) { for (var i = 0; i < groups.length; i++) if (groups[i][0] === groupOf(e)) groups[i][1].push(e); });
@@ -306,8 +370,105 @@
     entry: null, program: null, run: null, stop: null, id: null, mode: 'picker',
     typing: null, auto: false, skip: false, skipUnseen: false, skipTimer: 0, autoTimer: 0, pauseTimer: 0, wait: null,
     noSave: false, noSlots: false, textOnly: false, hasMath: false, lastFocus: null, holdLast: 0, hidden: false, screen: null,
-rendered: { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null }, actors: {}, issues: [], seenAll: {}, transTimers: []
+rendered: { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null }, actors: {}, issues: [], seenAll: {}, transTimers: [],
+    // optional modules: the last cue sent to the audio, whether a sync is owed a silence, the music hold at a menu,
+    // the opening movie in progress, and the picture each layer holds for paint.js ({svg, key, seq, mounted, good})
+    cue: null, synced: false, held: false, opening: null, paint: { bg: null, cg: null },
+    // Studio and presenter: the source text and descriptor of the last load, whether a fatal issue blocks play
+    source: null, lastDesc: null, blocked: false
   };
+
+  /* ------------------------------------------------------------------ optional modules: settings, sound, painting */
+
+  // Live cast and camera move only when motion is wanted at all (Effects on, no reduced motion, not the text-only
+  // transcript) and are told to rest around a settled present (Skip, Back, Load): setEnabled(false) before it,
+  // setEnabled(true) once it stands. Each module is told only when its value changes.
+  var told = {};
+  function tell(mod, on) {
+    if (OFF[mod] || !window[mod] || told[mod] === on) return;
+    told[mod] = on;
+    ext(mod, 'setEnabled', on);
+  }
+  function motionOn() { return prefs.effects && !REDUCED && !S.textOnly; }
+  function paintOn() { return FORCE.paint != null ? FORCE.paint : prefs.paint; }
+  function syncCamera(still) { tell('VNCamera', FORCE.camera != null ? FORCE.camera : prefs.camera && motionOn() && !still); }
+  function syncEnabled(still) {
+    tell('VNPaint', paintOn());
+    tell('VNLive', FORCE.live != null ? FORCE.live : prefs.live && motionOn() && !still);
+    syncCamera(still);
+  }
+  function pushVolumes() { ext('VNAudio', 'volumes', { music: prefs.music, ambience: prefs.ambience, sfx: prefs.sfx, voice: prefs.voice, mute: prefs.mute }); }
+
+  // Sound may start only from a real gesture: never from a script, a capture, a test hook or under ?audio=0.
+  var CAN_UNLOCK = !TESTRUN && !HOOK_CLICK && !AUDIO_HOOK_OFF;
+  function unlockAudio(ev) { if (CAN_UNLOCK && ev && ev.isTrusted) ext('VNAudio', 'unlock'); }
+
+  // The score: one cue per stop, computed by score.js from the state and handed to audio.js. `instant` is true
+  // when the stop was not reached by reading forward (Skip, Back, Load, a rewind): no crossfade, no one-shots.
+  function scoreSync(state, op, instant, extra) {
+    if (OFF.VNAudio) return;
+    var bg = state.bg || { name: 'void', mod: null }, hints = { hour: null, indoor: isIndoor(state) }, k;
+    try { hints.hour = (ART && ART.timeOf && ART.timeOf(bg.name, bg.mod)) || null; } catch (e) { hints.hour = null; }
+    if (extra) for (k in extra) hints[k] = extra[k];
+    var cue = ext('VNScore', 'cue', state, op, S.program, hints);
+    S.cue = cue == null ? null : cue;
+    S.synced = true;
+    ext('VNAudio', 'sync', S.cue, { instant: !!instant });
+  }
+  // the story has left the stage (picker, a script that will not play): everything fades out
+  function scoreStop() {
+    if (!S.synced) return;
+    S.synced = false; S.cue = null;
+    ext('VNAudio', 'sync', null, { instant: false });
+  }
+  function holdMusic(on) { if (S.held === on) return; S.held = on; ext('VNAudio', 'hold', on); }
+  function setMute(on) {
+    prefs.mute = !!on; savePrefs(); pushVolumes();
+    var b = qbtn('mute'); if (b) { b.classList.toggle('on', prefs.mute); b.setAttribute('aria-pressed', String(prefs.mute)); }
+  }
+
+  // Painted pictures. paint.js puts an <img class="vn-painted"> inside the layer, over the SVG it was painted
+  // from, so the transition snapshot (a clone of the world) carries it. Replacing the layer's markup removes the
+  // image with it; a painting that arrives after its picture was replaced is taken out again here.
+  var paintSeq = 0;
+  function paintKey(which, name, mod, opts) {
+    var o = opts || {};
+    return which + '|' + name + '|' + (mod || '') + '|' + Object.keys(o).sort().map(function (k) { return k + '=' + o[k]; }).join(',');
+  }
+  function paintedIn(layer) { return $$('img.vn-painted', layer); }
+  function mountPaint(which, layer) {
+    var cur = S.paint[which];
+    if (!cur || !paintOn() || OFF.VNPaint || !window.VNPaint) return;
+    var seq = cur.seq = ++paintSeq;
+    cur.mounted = true; cur.good = null;
+    function settle() {
+      var now = S.paint[which];
+      if (now === cur && cur.seq === seq && cur.mounted) { cur.good = paintedIn(layer); return; }
+      // overtaken while it worked (the picture changed, was cleared, or painting was switched off): nothing it added may stay
+      var keep = now && now.mounted && now.good ? now.good : [];
+      paintedIn(layer).forEach(function (img) { if (keep.indexOf(img) < 0) img.remove(); });
+    }
+    var p = ext('VNPaint', 'mount', layer, cur.svg, cur.key);
+    if (p && typeof p.then === 'function') p.then(settle); else settle();
+  }
+  // called right after layer.innerHTML has been set to `svg` ('' when the layer was emptied)
+  function repaint(which, layer, svg, key) {
+    var was = S.paint[which];
+    S.paint[which] = svg ? { svg: svg, key: key, seq: 0, mounted: false, good: null } : null;
+    if (svg) { layer.setAttribute('data-paint', key); mountPaint(which, layer); }
+    else { layer.removeAttribute('data-paint'); if (was && was.mounted) ext('VNPaint', 'unmount', layer); }
+  }
+  // the Painted backgrounds switch: off unmounts both layers, on paints the pictures that are up
+  function refreshPaint() {
+    syncEnabled(false);
+    [['bg', bgEl], ['cg', cgEl]].forEach(function (p) {
+      var cur = S.paint[p[0]];
+      if (paintOn()) { if (cur && !cur.mounted) mountPaint(p[0], p[1]); return; }
+      ext('VNPaint', 'unmount', p[1]);
+      if (cur) { cur.mounted = false; cur.good = null; }
+      paintedIn(p[1]).forEach(function (img) { img.remove(); });
+    });
+  }
 
   function setHue(h) { document.documentElement.style.setProperty('--vn-h', String(((h % 360) + 360) % 360)); }
   function setMode(m) {
@@ -324,7 +485,10 @@ rendered: { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null }, actor
   }
   function clearWorld() {
     endTransition();
+    Object.keys(S.actors).forEach(function (k) { ext('VNLive', 'detach', S.actors[k].el); });
     bgEl.innerHTML = ''; cgEl.innerHTML = ''; cgEl.classList.remove('show'); world.classList.remove('has-cg');
+    repaint('bg', bgEl, '', ''); repaint('cg', cgEl, '', '');
+    ext('VNCamera', 'reset');
     spritesEl.innerHTML = ''; fxEl.innerHTML = ''; if (fxBackEl) fxBackEl.innerHTML = '';
     stage.classList.remove('menu-up');
     S.actors = {}; S.rendered = { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null };
@@ -336,6 +500,8 @@ rendered: { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null }, actor
     stopTyping();
     clearTimeout(S.autoTimer); clearTimeout(S.skipTimer); clearTimeout(S.pauseTimer);
     if (S.wait) { clearTimeout(S.wait.timer); S.wait = null; }
+    if (S.opening) S.opening.cancel();
+    holdMusic(false);
     box.classList.remove('show', 'done', 'narr', 'thought'); textEl.innerHTML = ''; nameEl.textContent = '';
     nvlEl.classList.remove('show', 'done'); nvlPage.innerHTML = '';
     menuEl.classList.remove('show'); menuEl.innerHTML = ''; stage.classList.remove('menu-up');
@@ -421,16 +587,32 @@ rendered: { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null }, actor
 
   function hasReadOp(program) { return program.ops.some(function (o) { return o.kind === 'read'; }); }
 
+  // ?src=draft:<key> is a script the Studio keeps in this browser (localStorage 'vn:studio:<key>'), not a file.
+  function draftKey(src) { var m = /^draft:(.+)$/.exec(src || ''); return m ? m[1] : null; }
+  function readSource(src) {
+    var key = draftKey(src);
+    if (key == null) return fetchText(src);
+    var text = lsGet('vn:studio:' + key);
+    return text == null ? Promise.reject(new Error('No draft called “' + key + '” in this browser (vn:studio:' + key + ')')) : Promise.resolve(text);
+  }
+  function sourceDirs(src) { return draftKey(src) != null ? ['stories/'] : [src.replace(/[^\/]*$/, ''), 'stories/']; }
+
+  // Leaving the story altogether (the picker, a script that will not load or play).
+  function leaveStory() {
+    scoreStop();
+    presLast = null;
+  }
+
   // Load one story (manifest entry, or {src} / {post} descriptors) and open it.
   function loadStory(desc, opts) {
     opts = opts || {};
     if (!VN) { showEngineMissing(); return Promise.resolve(); }
     var id, textP, baseDirs;
+    S.lastDesc = desc;
     if (desc.src) {
       id = 'src:' + desc.src;
-      var dir = desc.src.replace(/[^\/]*$/, '');
-      baseDirs = [dir, 'stories/'];
-      textP = fetchText(desc.src);
+      baseDirs = sourceDirs(desc.src);
+      textP = readSource(desc.src);
     } else if (desc.auto) {
       id = desc.id; baseDirs = ['stories/'];
       textP = Promise.resolve(syntheticPostVn(desc.post));
@@ -459,14 +641,17 @@ rendered: { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null }, actor
           }).catch(function () { return program; });
         }).then(function (program) {
           var issues = VN.lint(program);
+          studioPost({ type: 'ready', title: program.meta.title || null, issues: issues.map(function (i) { return { level: i.level, line: i.line, msg: i.msg, code: i.code }; }) });
           // auto-read posts are not authored scripts: only fatals are worth a panel
           if (desc.auto) issues = issues.filter(function (i) { return i.level === 'fatal'; });
           renderIssues(issues, desc.src || (desc.file ? 'stories/' + desc.file : id), !!desc.src);
           var fatal = issues.filter(function (i) { return i.level === 'fatal'; });
+          S.source = text;
           if (fatal.length) {
-            S.entry = desc; S.program = program; S.run = null; S.id = id;
+            S.entry = desc; S.program = program; S.run = null; S.id = id; S.blocked = true;
             setMode('picker');
             clearStage();
+            leaveStory();
             showPanel('The script has a fatal issue', '<p>' + esc(fatal[0].msg) + '</p>' + (fatal[0].hint ? '<p><code>' + esc(fatal[0].hint) + '</code></p>' : '') + '<p>Fix it and reload; the full list is under the stage.</p>');
             setStatus('');
             return;
@@ -476,11 +661,14 @@ rendered: { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null }, actor
       });
     }).catch(function (err) {
       console.warn(err);
+      S.blocked = true;
       setMode('picker');
       clearStage();
+      leaveStory();
       if (location.protocol === 'file:') showFileMessage();
       else showPanel('Could not load the story', '<p>' + esc(String(err && err.message || err)) + '</p><p>Check the path, or pick another story from the list.</p>');
       setStatus('');
+      studioPost({ type: 'ready', title: null, issues: [{ level: 'fatal', line: 0, msg: String(err && err.message || err), code: 'load-failed' }] });
     });
   }
 
@@ -527,9 +715,10 @@ rendered: { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null }, actor
 
   /* ------------------------------------------------------------------ opening a story: title screen or straight in */
 
-  function autosave() { return S.id ? readJSON('vn:' + S.id) : null; }
+  // The Studio preview keeps nothing: no autosave, no slots, no memory of what was read.
+  function autosave() { return S.id && !STUDIO ? readJSON('vn:' + S.id) : null; }
   function seenList() {
-    var saved = autosave(), all = {}, kept = S.id ? readJSON(seenKey()) : null;
+    var saved = autosave(), all = {}, kept = S.id && !STUDIO ? readJSON(seenKey()) : null;
     if (saved && Array.isArray(saved.seen)) saved.seen.forEach(function (i) { all[i] = 1; });
     if (kept && kept.hash === (S.program && S.program.hash) && Array.isArray(kept.seen)) kept.seen.forEach(function (i) { all[i] = 1; });
     if (S.run) Object.keys(S.run.seen).forEach(function (i) { all[i] = 1; });
@@ -540,8 +729,29 @@ rendered: { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null }, actor
   // What has been read outlives the autosave: Start-over deletes the save, not the memory of having read.
   function seenKey() { return 'vn:seen:' + S.id; }
 
+  // The opening movie (op.js). It plays before the first stop when the reader presses Start, and again from the
+  // title menu; never in a settled state (reduced motion, Effects off) unless ?op=1 forces it.
+  function opReady() {
+    if (!HAS.op || OFF.VNOp || !S.program) return false;
+    if (!(FORCE.op != null ? FORCE.op : (prefs.effects && !REDUCED))) return false;
+    return !!ext('VNOp', 'available', S.program);
+  }
+  // Play it, then call `then`. While it plays the stage carries the class op-playing, its own controls rest and
+  // its keys and pointer do nothing (the module handles its own skip); Escape always ends the wait.
+  function playOpening(then) {
+    var o = { done: false };
+    function close() { o.done = true; if (S.opening === o) S.opening = null; stage.classList.remove('op-playing'); }
+    o.finish = function () { if (o.done) return; close(); then(); };
+    o.cancel = function () { if (o.done) return; close(); ext('VNOp', 'stop'); };
+    S.opening = o;
+    stage.classList.add('op-playing');
+    var p = ext('VNOp', 'play', S.program, stage, { audio: OFF.VNAudio ? null : (window.VNAudio || null) });
+    if (p && typeof p.then === 'function') p.then(o.finish); else o.finish();
+  }
+  function withForcedOpening(fn) { if (FORCE.op === true && opReady()) playOpening(fn); else fn(); }
+
   function openProgram(entry, program, id, opts) {
-    S.entry = entry; S.program = program; S.id = id; S.run = null; S.stop = null; S.noSave = false; S.noSlots = false;
+    S.entry = entry; S.program = program; S.id = id; S.run = null; S.stop = null; S.noSave = false; S.noSlots = false; S.blocked = false;
     setAuto(false); setSkip(false);
     setStatus('');
     setHue(program.meta.palette.hue);
@@ -562,32 +772,34 @@ rendered: { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null }, actor
         stop = stop.op.kind === 'menu' ? S.run.choose(0) : S.run.advance();
       }
       S.noSave = true;
-      present(stop, { instant: true });
+      withForcedOpening(function () { present(stop, { instant: true }); });
       return;
     }
     if (AUTOPLAY != null) {
       beginPlay();
       S.noSave = true;
-      var an = AUTOPLAY === 'end' ? 1000000 : (parseInt(AUTOPLAY, 10) || 1), frozen = null;
-      if (HOOK_TRANS && an > 1 && AUTOPLAY !== 'end') {
-        // test hook: hold the named transition half-way between stop N-1 and stop N
-        stop = gotoAt(String(an - 1));
+      withForcedOpening(function () {
+        var an = AUTOPLAY === 'end' ? 1000000 : (parseInt(AUTOPLAY, 10) || 1), frozen = null;
+        if (HOOK_TRANS && an > 1 && AUTOPLAY !== 'end') {
+          // test hook: hold the named transition half-way between stop N-1 and stop N
+          stop = gotoAt(String(an - 1));
+          present(stop, { instant: true });
+          frozen = world.cloneNode(true);
+          stop = stop.op.kind === 'menu' ? S.run.choose(Math.min(PICK, stop.options.length - 1)) : S.run.advance();
+        } else stop = gotoAt(String(an));
         present(stop, { instant: true });
-        frozen = world.cloneNode(true);
-        stop = stop.op.kind === 'menu' ? S.run.choose(Math.min(PICK, stop.options.length - 1)) : S.run.advance();
-      } else stop = gotoAt(String(an));
-      present(stop, { instant: true });
-      if (frozen) {
-        transEl.innerHTML = ''; transEl.appendChild(frozen);
-        transEl.className = 'vn-trans on t-' + HOOK_TRANS;
-        transEl.style.setProperty('--ms', '1000ms');
-        if (HOOK_TRANS === 'fade' || HOOK_TRANS === 'white') { var cv = document.createElement('div'); cv.className = 'vn-cover'; cv.style.transition = 'none'; cv.style.opacity = '0.6'; transEl.appendChild(cv); }
-        else { transEl.style.animationDelay = '-500ms'; transEl.style.animationPlayState = 'paused'; }
-      }
-      if (HOOK_SCREEN) {
-        if (HOOK_SCREEN === 'save' || HOOK_SCREEN === 'load') { writeSlot('1'); writeSlot('q'); }
-        if (HOOK_SCREEN === 'title') showTitle(); else openScreen(HOOK_SCREEN);
-      }
+        if (frozen) {
+          transEl.innerHTML = ''; transEl.appendChild(frozen);
+          transEl.className = 'vn-trans on t-' + HOOK_TRANS;
+          transEl.style.setProperty('--ms', '1000ms');
+          if (HOOK_TRANS === 'fade' || HOOK_TRANS === 'white') { var cv = document.createElement('div'); cv.className = 'vn-cover'; cv.style.transition = 'none'; cv.style.opacity = '0.6'; transEl.appendChild(cv); }
+          else { transEl.style.animationDelay = '-500ms'; transEl.style.animationPlayState = 'paused'; }
+        }
+        if (HOOK_SCREEN) {
+          if (HOOK_SCREEN === 'save' || HOOK_SCREEN === 'load') { writeSlot('1'); writeSlot('q'); }
+          if (HOOK_SCREEN === 'title') showTitle(); else openScreen(HOOK_SCREEN);
+        }
+      });
       return;
     }
     if (opts.at != null) {
@@ -607,15 +819,18 @@ rendered: { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null }, actor
         if (route) stop = S.run.replay(route.choiceLog, route.stopIndex);
         else { stop = S.run.jumpTo(at); S.noSlots = true; }   // no choices lead here: dress the stage and land on it
       }
-      present(stop, { instant: REDUCED });
+      present(stop, { instant: REDUCED, live: true });
       toast('Deep link: your saved place is untouched; the save slots work from here', 3600);
       return;
     }
+    // a Studio reload comes back to the line it was on
+    if (opts.line != null) { studioGoto(opAtLine(opts.line)); return; }
     showTitle();
     if (HOOK_CLICK > 0) {
       // test hook: Start, then N real (animated) advances 350 ms apart, taking the first option at menus
-      startFresh();
+      startFresh({ opening: FORCE.op === true });
       var left = HOOK_CLICK, iv = setInterval(function () {
+        if (S.opening) return;     // (?op=1: the advances begin once the opening is over)
         if (left-- <= 0 || !S.stop || S.stop.op.kind === 'end') { clearInterval(iv); return; }
         if (S.stop.op.kind === 'menu') choose(Math.min(PICK, S.stop.options.length - 1)); else advance();
       }, 350);
@@ -628,7 +843,7 @@ rendered: { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null }, actor
     S.run = newRun();
     S.stop = null;
     S.noSave = false; S.noSlots = false;
-    if (!THUMB) stage.focus({ preventScroll: true });
+    if (!THUMB && mayFocus()) stage.focus({ preventScroll: true });
   }
 
   function gotoAt(at) {
@@ -642,11 +857,16 @@ rendered: { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null }, actor
     return S.run.jumpTo(at);
   }
 
-  function startFresh() {
-    if (S.program && S.id) lsSet(seenKey(), JSON.stringify({ hash: S.program.hash, seen: seenList() }));
-    lsDel('vn:' + S.id);
+  // o.opening: the reader pressed Start, so the opening movie may play before the first stop
+  function startFresh(o) {
+    if (!STUDIO) {
+      if (S.program && S.id) lsSet(seenKey(), JSON.stringify({ hash: S.program.hash, seen: seenList() }));
+      lsDel('vn:' + S.id);
+    }
     beginPlay();
-    present(S.run.advance(), { instant: REDUCED });
+    var run = S.run;
+    function first() { if (S.run === run && S.mode === 'play') present(S.run.advance(), { instant: REDUCED, live: true }); }
+    if (o && o.opening && (FORCE.op === true || prefs.opening) && opReady()) playOpening(first); else first();
   }
   function continueSaved() {
     var saved = autosave();
@@ -656,7 +876,7 @@ rendered: { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null }, actor
     if (saved.hash !== S.program.hash && (S.run.state.choiceLog.length < saved.choiceLog.length || (stop && stop.op.kind === 'error'))) {
       lsDel('vn:' + S.id);
       S.run = newRun();
-      present(S.run.advance(), { instant: REDUCED });
+      present(S.run.advance(), { instant: REDUCED, live: true });
       toast('The script changed since your last visit and your choices no longer match; starting over.', 4200);
       return;
     }
@@ -682,7 +902,7 @@ rendered: { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null }, actor
       S.noSave = true; S.noSlots = true;
       toast('Jumped straight to the chapter: progress is not saved from here', 3200);
     }
-    present(stop, { instant: REDUCED });
+    present(stop, { instant: REDUCED, live: true });
   }
 
   /* ------------------------------------------------------------------ title screen */
@@ -705,20 +925,28 @@ rendered: { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null }, actor
     var first = null;
     for (var i = 0; i < p.ops.length; i++) if (p.ops[i].kind === 'bg') { first = p.ops[i]; break; }
     var fx = {}; fx[TITLE_FX[first ? first.name : ''] || 'dust'] = true; fx.petals = true;   // petals always drift across a title
-    syncWorld({ bg: first ? { name: first.name, mod: first.mod, opts: first.opts } : { name: 'void', mod: null }, cg: null, slots: {}, faces: {}, dist: {}, fx: fx, tone: 'none', flashback: null, oneshot: [], change: null }, null, true);
+    var titleState = { bg: first ? { name: first.name, mod: first.mod, opts: first.opts } : { name: 'void', mod: null }, cg: null, slots: {}, faces: {}, dist: {}, fx: fx, tone: 'none', flashback: null, oneshot: [], change: null, music: 'auto', ambience: 'auto', sfx: [] };
+    syncWorld(titleState, null, true);
+    // the title has a cue of its own: the first scene's, asked for with op.kind 'title' and hints.title
+    function titleCue() { scoreSync(titleState, { kind: 'title', line: 0 }, TESTRUN, { title: true }); }
+    titleCue();
+    presenterPost({ type: 'title', id: S.id, src: e.src || null, hash: p.hash });
+    if (STUDIO) studioLine = null;
     var saved = autosave(), canContinue = !!(saved && saved.choiceLog && saved.stopIndex > 1);
     seenList();
-    var chapters = p.chapters || [], seenCh = chapters.filter(function (c) { return S.seenAll[c.index] || e.src; });
+    var chapters = p.chapters || [], seenCh = chapters.filter(function (c) { return S.seenAll[c.index] || e.src || STUDIO; });
+    var opItem = opReady(), items = 5 + (canContinue ? 1 : 0) + (chapters.length ? 1 : 0) + (opItem ? 1 : 0);
     var h = '<div class="ts-inner"><p class="ts-kicker">Paper Theatre &nbsp;·&nbsp; 紙芝居</p><h2 class="ts-title' + ((m.title || e.title || '').length > 44 ? ' is-long' : '') + '">' + esc(m.title || e.title || '') + '</h2><div class="ts-rule"></div>' +
       '<p class="ts-sub">' + esc(shortCite(m, e)) + (m.authors ? '<br>' + esc(m.authors.replace(/\s*\(co-first\)/, '')) : '') + '</p></div>';
     h += '<p class="ts-vert" aria-hidden="true" lang="ja">紙芝居<span>論文と随想のための小さな劇場</span></p>';
-    h += '<ul class="ts-menu" role="menu" aria-label="title menu">' +
+    h += '<ul class="ts-menu' + (opItem && items > 6 ? ' is-tall' : '') + '" role="menu" aria-label="title menu">' +
       '<li><button type="button" data-t="start">Start</button></li>' +
       (canContinue ? '<li><button type="button" data-t="continue">Continue</button></li>' : '') +
       (chapters.length ? '<li><button type="button" data-t="chapters"' + (seenCh.length ? '' : ' disabled title="chapters you have reached appear here"') + '>Chapters</button></li>' : '') +
       '<li><button type="button" data-t="load">Load</button></li>' +
       '<li><button type="button" data-t="log"' + (canContinue ? '' : ' disabled') + '>Log</button></li>' +
       '<li><button type="button" data-t="config">Config</button></li>' +
+      (opItem ? '<li><button type="button" data-t="opening" title="play the opening movie again">Opening</button></li>' : '') +
       '<li><button type="button" data-t="back">Back to stories</button></li></ul>';
     h += '<div class="ts-foot">' + (m.status === 'draft' ? 'draft · ' : m.status === 'embargo' ? 'coming soon · ' : '') + 'dialogue is dramatized</div>';
     titleEl.innerHTML = h;
@@ -727,19 +955,23 @@ rendered: { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null }, actor
     $$('button[data-t]', titleEl).forEach(function (b) {
       b.addEventListener('click', function (ev) {
         ev.stopPropagation();
+        if (S.opening) return;
         var t = b.getAttribute('data-t');
-        if (t === 'start') { if (canContinue && !window.confirm('Start from the beginning? Your place is kept in the save slots, not the autosave.')) return; startFresh(); }
+        // the buttons that lead into the story are the gesture the sound waits for
+        if (t === 'start' || t === 'continue' || t === 'load' || t === 'log' || t === 'chapters' || t === 'opening') unlockAudio(ev);
+        if (t === 'start') { if (canContinue && !window.confirm('Start from the beginning? Your place is kept in the save slots, not the autosave.')) return; startFresh({ opening: true }); }
         else if (t === 'continue') continueSaved();
         else if (t === 'chapters') openScreen('chapters');
         else if (t === 'load') openScreen('load');
         else if (t === 'log') { continueSaved(); openScreen('log'); }
         else if (t === 'config') openScreen('config');
+        else if (t === 'opening') playOpening(function () { if (S.mode !== 'title') return; titleCue(); b.focus({ preventScroll: true }); });
         else if (t === 'back') renderPicker();
       });
     });
     announce((m.title || '') + '. Title menu.');
     var f = $('button[data-t="continue"]', titleEl) || $('button[data-t="start"]', titleEl);
-    if (f) f.focus({ preventScroll: true });
+    if (f && mayFocus()) f.focus({ preventScroll: true });
   }
 
   /* ------------------------------------------------------------------ the world: background, CG, cast, particles, grade */
@@ -757,12 +989,13 @@ rendered: { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null }, actor
     Object.keys(S.actors).forEach(function (k) {
       if (want[k]) return;
       var el = S.actors[k].el; delete S.actors[k];
+      ext('VNLive', 'detach', el);
       if (instant) el.remove();
       else { el.classList.add('exit'); setTimeout(function () { el.remove(); }, 520); }
     });
     Object.keys(want).forEach(function (k) {
       var face = (speaker === k && op.face) ? op.face : (state.faces[k] || 'neutral');
-      var a = S.actors[k], fresh = false;
+      var a = S.actors[k], fresh = false, drawn = false;
       if (!a) {
         var decl = castOf(k) || { id: k, key: k, name: k, hue: hash32(k) % 360, skin: 3, hair: 'short' };
         var el = document.createElement('div');
@@ -770,13 +1003,13 @@ rendered: { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null }, actor
         el.innerHTML = artSprite(decl, face);
         var svg = el.firstElementChild;
         el.setAttribute('data-kind', (svg && svg.getAttribute('data-kind')) || 'person');
-        a = S.actors[k] = { el: el, face: face };
-        fresh = !instant;
+        a = S.actors[k] = { el: el, face: face, decl: decl };
+        fresh = !instant; drawn = true;
         spritesEl.appendChild(el);
       } else if (a.face !== face) {
         var groups = $$('.vn-face', a.el);
         if (groups.length) groups.forEach(function (g) { g.classList.toggle('is-on', g.getAttribute('data-face') === face); });
-        else a.el.innerHTML = artSprite(castOf(k), face);
+        else { a.el.innerHTML = artSprite(castOf(k), face); drawn = true; }
         a.face = face;
       }
       var cls = 'vn-actor pos-' + want[k] + (state.dist && state.dist[k] ? ' ' + state.dist[k] : '');
@@ -787,6 +1020,8 @@ rendered: { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null }, actor
         requestAnimationFrame(function () { a.el.classList.remove('enter'); });
         setTimeout(function () { a.el.classList.remove('enter'); }, 60);   // headless browsers may not run the frame
       } else a.el.className = cls;
+      // a new sprite, or one whose markup was just replaced, is handed to the living-cast module
+      if (drawn) ext('VNLive', 'attach', a.el, a.decl);
     });
   }
 
@@ -854,12 +1089,18 @@ rendered: { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null }, actor
       var snap = world.cloneNode(true);
       transEl.innerHTML = ''; transEl.appendChild(snap); transEl.className = 'vn-trans on';
     }
-    if (S.rendered.bgPaint !== bgPaint) { bgEl.innerHTML = artBackground(bg.name, bg.mod, bgOpts); S.rendered.bg = bgKey; S.rendered.bgPaint = bgPaint; }
+    if (S.rendered.bgPaint !== bgPaint) {
+      var bgSvg = artBackground(bg.name, bg.mod, bgOpts);
+      bgEl.innerHTML = bgSvg; S.rendered.bg = bgKey; S.rendered.bgPaint = bgPaint;
+      repaint('bg', bgEl, bgSvg, paintKey('bg', bg.name, bg.mod, bgOpts));
+    }
     if (S.rendered.cgPaint !== cgPaint) {
-      cgEl.innerHTML = cgKey ? artCg(state.cg.name, state.cg.mod, cgOpts) : '';
+      var cgSvg = cgKey ? artCg(state.cg.name, state.cg.mod, cgOpts) : '';
+      cgEl.innerHTML = cgSvg;
       cgEl.classList.toggle('show', !!cgKey);
       world.classList.toggle('has-cg', !!cgKey);
       S.rendered.cg = cgKey; S.rendered.cgPaint = cgPaint;
+      repaint('cg', cgEl, cgSvg, cgKey ? paintKey('cg', state.cg.name, state.cg.mod, cgOpts) : '');
     }
     var tod = 'day';
     if (cgKey) { var cs = cgEl.firstElementChild; tod = (cs && cs.getAttribute('data-tod')) || 'night'; }
@@ -908,10 +1149,18 @@ rendered: { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null }, actor
     endEl.classList.remove('show'); endEl.innerHTML = '';
     titleEl.classList.remove('show'); pickerEl.classList.remove('show');
     // whatever held the focus may just have been removed (a choice, the end card): the keys stay with the stage
-    if (!THUMB && !S.screen && (document.activeElement === document.body || !document.activeElement)) stage.focus({ preventScroll: true });
+    if (!THUMB && !S.screen && mayFocus() && (document.activeElement === document.body || !document.activeElement)) stage.focus({ preventScroll: true });
     box.classList.remove('done'); nvlEl.classList.remove('done');
     var instant = !!o.instant || REDUCED || S.skip || S.textOnly;
+    // a stop that was not reached by reading forward (Skip, Back, Load, a rewind, a capture): the sound cuts
+    // instead of crossfading, one-shots stay silent, the living cast and the camera rest while it is set up
+    var replayed = (!!o.instant && !o.live) || S.skip;
+    if (op.kind !== 'menu') holdMusic(false);
+    syncEnabled(replayed);
     var wait = syncWorld(state, op, instant);
+    scoreSync(state, op, replayed);
+    if (!replayed) (state.sfx || []).forEach(function (name) { ext('VNAudio', 'sfx', name); });
+    ext('VNCamera', 'present', state, op);
     var nvl = state.mode === 'nvl';
 
     function later(fn) {
@@ -941,10 +1190,12 @@ rendered: { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null }, actor
       case 'scene':
       case 'chapter':
         showScene(op, instant);
+        if (op.kind === 'chapter' && !replayed) ext('VNAudio', 'sting', 'chapter');
         break;
       case 'pause':
         box.classList.remove('show'); nvlEl.classList.remove('show');
-        if (instant) S.pauseTimer = setTimeout(function () { if (S.stop === stop && !S.skip) advance({ instant: true }); }, 0);
+        // (a beat that passes at once because nothing animates is still part of reading forward)
+        if (instant) S.pauseTimer = setTimeout(function () { if (S.stop === stop && !S.skip) advance({ instant: true, live: !replayed }); }, 0);
         else S.pauseTimer = setTimeout(function () { if (S.stop === stop) advance(); }, Math.max(wait, 0) + op.ms);
         if (S.skip) scheduleSkip();
         break;
@@ -957,6 +1208,7 @@ rendered: { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null }, actor
       case 'end':
         box.classList.remove('show'); nvlEl.classList.remove('show');
         showEnd();
+        if (!replayed) ext('VNAudio', 'sting', 'end');
         break;
       case 'error':
         showPanel('Runtime error', '<p>' + esc(op.msg) + '</p>' + (op.hint ? '<p><code>' + esc(op.hint) + '</code></p>' : ''));
@@ -969,10 +1221,12 @@ rendered: { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null }, actor
     save();
     var b = qbtn('back'); if (b) b.disabled = state.stops <= 1 && !o.back;
     if (op.kind === 'menu' || op.kind === 'end' || op.kind === 'error') { if (S.skip) setSkip(false); }
+    syncEnabled(S.skip);     // the stop stands: motion returns, unless Skip is still running
+    announceStop(stop);
   }
 
   function save() {
-    if (!S.run || S.noSave || THUMB || !S.id || S.mode !== 'play') return;
+    if (!S.run || S.noSave || THUMB || STUDIO || !S.id || S.mode !== 'play') return;
     var snap = S.run.snapshot();
     snap.ts = Date.now();
     lsSet('vn:' + S.id, JSON.stringify(snap));
@@ -1028,22 +1282,30 @@ rendered: { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null }, actor
     return { units: units, mathEls: mathEls, chips: chips };
   }
 
-  function typeLine(container, line, announceText, instant) {
+  // The cast member whose line is being typed (for the living cast: the mouth moves while the text runs).
+  var speaking = null;
+  function speakEnd() { if (speaking != null) { var k = speaking; speaking = null; ext('VNLive', 'speak', k, false); } }
+
+  // voice: the cast key when the line is spoken aloud (a say line that is not a thought), else null
+  function typeLine(container, line, announceText, instant, voice) {
     var units = line.units;
     function finish() {
       units.forEach(function (u) { if (!u.done) { u.node.data += u.g; u.done = true; } });
       line.chips.style.visibility = '';
       container.classList.add('done');
       S.typing = null;
+      speakEnd();
       renderMath(line.mathEls);
       announce(announceText);
       scheduleAuto(units.length);
       if (S.skip) scheduleSkip();
     }
+    speakEnd();
     if (instant || !units.length) { units.forEach(function (u) { u.done = true; }); finish(); return; }
     var seenNodes = [];
     units.forEach(function (u) { if (seenNodes.indexOf(u.node) < 0) { seenNodes.push(u.node); u.node.data = ''; } });
     line.chips.style.visibility = 'hidden';
+    if (voice) { speaking = voice; ext('VNLive', 'speak', voice, true); }
     var i = 0, acc = 0, last = 0, raf = 0;
     var base = 1000 / clamp(prefs.cps, 15, 80);
     function frame(ts) {
@@ -1053,6 +1315,7 @@ rendered: { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null }, actor
       while (i < units.length && acc >= 0) {
         var u = units[i++];
         u.node.data += u.g; u.done = true;
+        if (voice && prefs.babble && /\S/.test(u.g)) ext('VNAudio', 'voice', voice, u.g);
         var pause = /[.!?…]/.test(u.g) ? 3 : /[,;:]/.test(u.g) ? 1.5 : 1;
         var nextIsSpace = i < units.length && /\s/.test(units[i].g);
         acc -= base * (pause > 1 && (nextIsSpace || i >= units.length) ? pause : 1);
@@ -1062,7 +1325,7 @@ rendered: { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null }, actor
     }
     raf = requestAnimationFrame(frame);
     // completing must also stop the frame loop, or the rest of the line is typed a second time after it
-    S.typing = { complete: function () { cancelAnimationFrame(raf); finish(); }, cancel: function () { cancelAnimationFrame(raf); S.typing = null; } };
+    S.typing = { complete: function () { cancelAnimationFrame(raf); finish(); }, cancel: function () { cancelAnimationFrame(raf); S.typing = null; speakEnd(); } };
   }
   function announceOf(who, text, refs) {
     return (who ? who + ': ' : '') + plainText(text) + ((refs && refs.length) ? ' (' + refs.map(function (r) { return VN && VN.describeRef ? VN.describeRef(r) : r; }).join('; ') + ')' : '');
@@ -1081,7 +1344,7 @@ rendered: { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null }, actor
     box.classList.add('show');
     stage.classList.remove('no-window');
     textEl.innerHTML = '';
-    typeLine(box, buildLine(textEl, text, op.refs), announceOf(who, text, op.refs), instant);
+    typeLine(box, buildLine(textEl, text, op.refs), announceOf(who, text, op.refs), instant, op.kind === 'say' && op.key && !isThought(op, text) ? op.key : null);
   }
   // A menu reached by resume, rewind or ?thumb has no line on screen yet: show the last one.
   function showLastLine(state) {
@@ -1122,7 +1385,7 @@ rendered: { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null }, actor
     // a page that has run out of room lets its oldest lines go
     var guard = 0;
     while (nvlPage.scrollHeight > nvlPage.clientHeight + 2 && nvlPage.children.length > 1 && guard++ < 60) nvlPage.removeChild(nvlPage.firstChild);
-    if (line) typeLine(nvlEl, line, announceOf(who, text, op.refs), instant);
+    if (line) typeLine(nvlEl, line, announceOf(who, text, op.refs), instant, op.kind === 'say' && op.key && !isThought(op, text) ? op.key : null);
     else nvlEl.classList.add('done');
   }
   function stopTyping() { if (S.typing) { S.typing.cancel(); S.typing = null; } }
@@ -1164,10 +1427,11 @@ rendered: { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null }, actor
     menuEl.classList.toggle('many', opts.length > 6);
     menuEl.classList.add('show');
     stage.classList.add('menu-up');
+    holdMusic(true);
     placeMenu();
-    $$('button', menuEl).forEach(function (b) { b.addEventListener('click', function (e) { e.stopPropagation(); choose(parseInt(b.getAttribute('data-i'), 10)); }); });
+    $$('button', menuEl).forEach(function (b) { b.addEventListener('click', function (e) { e.stopPropagation(); unlockAudio(e); choose(parseInt(b.getAttribute('data-i'), 10)); }); });
     announce('Choose: ' + opts.map(function (o, i) { return (i + 1) + '. ' + o.text; }).join(' '));
-    if (!THUMB && !S.screen) { var first = $('button', menuEl); if (first) first.focus({ preventScroll: true }); }
+    if (!THUMB && !S.screen && mayFocus()) { var first = $('button', menuEl); if (first) first.focus({ preventScroll: true }); }
   }
   // The choices sit just above the text window (and its name plate), clear of the faces; a list too long for
   // that space scrolls. With no window (NVL page, boards, text-only) the stylesheet centres them.
@@ -1189,8 +1453,9 @@ rendered: { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null }, actor
   function choose(i) {
     if (!S.stop || S.stop.op.kind !== 'menu') return;
     var stop = S.run.choose(i);
-    present(stop, { instant: REDUCED });
-    stage.focus({ preventScroll: true });
+    holdMusic(false);
+    present(stop, { instant: REDUCED, live: true });
+    if (mayFocus()) stage.focus({ preventScroll: true });
   }
 
   function showScene(op, instant) {
@@ -1284,7 +1549,7 @@ rendered: { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null }, actor
     $('.vn-totitle', endEl).addEventListener('click', function (ev) { ev.stopPropagation(); showTitle(); });
     $$('button[data-story]', endEl).forEach(function (b) { b.addEventListener('click', function (ev) { ev.stopPropagation(); openStory(b.getAttribute('data-story')); }); });
     announce('The end. ' + (m.title || '') + (m.cite ? '. ' + m.cite : ''));
-    if (!THUMB && !S.screen) { var card = $('.vn-end-card', endEl); if (card) card.focus({ preventScroll: true }); }
+    if (!THUMB && !S.screen && mayFocus()) { var card = $('.vn-end-card', endEl); if (card) card.focus({ preventScroll: true }); }
     if (S.auto) setAuto(false);
   }
 
@@ -1300,7 +1565,7 @@ rendered: { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null }, actor
     if (!canAdvance()) return;
     clearTimeout(S.autoTimer); clearTimeout(S.pauseTimer);
     var stop = S.run.advance();
-    present(stop, { instant: !!o.instant });
+    present(stop, { instant: !!o.instant, live: !!o.live });
   }
   function back() {
     if (S.mode !== 'play' || !S.run) return;
@@ -1331,6 +1596,8 @@ rendered: { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null }, actor
   document.addEventListener('visibilitychange', function () {
     if (document.hidden) clearTimeout(S.autoTimer);
     else if (S.auto && !S.typing) scheduleAuto(40);
+    // the sound rests while the tab is hidden (never touched in a capture or a test run)
+    if (CAN_UNLOCK) ext('VNAudio', document.hidden ? 'suspend' : 'resume');
   });
 
   function setSkip(on, unseen) {
@@ -1344,7 +1611,7 @@ rendered: { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null }, actor
       if (S.wait) { var w = S.wait; S.wait = null; clearTimeout(w.timer); endTransition(); w.fn(); }
       if (S.typing) completeLine();
       scheduleSkip();
-    }
+    } else syncEnabled(false);   // Skip is over: the living cast and the camera may move again
   }
   function scheduleSkip() {
     clearTimeout(S.skipTimer);
@@ -1354,7 +1621,7 @@ rendered: { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null }, actor
       clearTimeout(S.pauseTimer);
       var stop = S.run.advance();
       var unseen = !S.seenAtSkipStart[stop.index];
-      if (unseen && !S.skipUnseen) { setSkip(false); present(stop, { instant: REDUCED }); return; }
+      if (unseen && !S.skipUnseen) { setSkip(false); present(stop, { instant: REDUCED, live: true }); return; }
       present(stop, { instant: true });
     }, 110);
   }
@@ -1382,7 +1649,7 @@ rendered: { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null }, actor
   /* ------------------------------------------------------------------ save slots */
 
   function slotsKey() { return 'vn:slots:' + S.id; }
-  function readSlots() { return readJSON(slotsKey()) || {}; }
+  function readSlots() { return STUDIO ? {} : (readJSON(slotsKey()) || {}); }
   function lastLineText(state) {
     var h = state.history || [];
     for (var i = h.length - 1; i >= 0; i--) {
@@ -1394,6 +1661,7 @@ rendered: { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null }, actor
   }
   function writeSlot(k) {
     if (!S.run || S.mode !== 'play') return false;
+    if (STUDIO) { toast('The Studio preview does not save.'); return false; }
     if (S.noSlots) { toast('This place was reached by a deep link and cannot be saved.'); return false; }
     var snap = S.run.snapshot(), st = S.run.state, all = readSlots();
     snap.ts = Date.now();
@@ -1469,6 +1737,7 @@ rendered: { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null }, actor
 
   function setTextOnly(on, persist) {
     S.textOnly = on;
+    syncEnabled(false);
     document.body.classList.toggle('text-only', on);
     transcriptEl.setAttribute('aria-hidden', String(!on));
     if (persist) { prefs.textOnly = on; savePrefs(); }
@@ -1526,15 +1795,25 @@ rendered: { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null }, actor
     function row(id, label, min, max, step, val, out) {
       return '<label for="cf-' + id + '">' + label + '</label><input id="cf-' + id + '" type="range" min="' + min + '" max="' + max + '" step="' + step + '" value="' + val + '"><output id="cfo-' + id + '">' + out + '</output>';
     }
-    return '<div class="vn-config">' +
-      row('cps', 'Text speed', 15, 80, 1, prefs.cps, prefs.cps + ' cps') +
+    // rows for the optional modules: each is drawn only when its module was loaded at boot
+    function vol(id, label) { var v = Math.round(prefs[id] * 100); return row(id, label, 0, 100, 1, v, v + '%'); }
+    function sw(key, label) { return '<button type="button" data-sw="' + key + '" class="' + (prefs[key] ? 'on' : '') + '" aria-pressed="' + !!prefs[key] + '">' + label + '</button>'; }
+    var sound = HAS.audio ? vol('music', 'Music') + vol('ambience', 'Ambience') + vol('sfx', 'Sound effects') +
+      '<label>Sound</label><div class="row-btns">' + sw('mute', 'Mute') + sw('babble', 'Voices') + '</div>' : '';
+    var pics = (HAS.paint ? sw('paint', 'Painted backgrounds') : '') + (HAS.live ? sw('live', 'Living cast') : '') + (HAS.camera ? sw('camera', 'Camera') : '') + (HAS.op ? sw('opening', 'Opening movie') : '');
+    var picture = pics ? '<label>Picture</label><div class="row-btns">' + pics + '</div>' : '';
+    var text = row('cps', 'Text speed', 15, 80, 1, prefs.cps, prefs.cps + ' cps') +
       row('auto', 'Auto speed', 0.5, 2.5, 0.1, prefs.autoSpeed, prefs.autoSpeed.toFixed(1) + '×') +
       row('opacity', 'Window opacity', 30, 100, 1, Math.round(prefs.opacity * 100), Math.round(prefs.opacity * 100) + '%') +
-      row('size', 'Font size', 85, 135, 5, Math.round(prefs.size * 100), Math.round(prefs.size * 100) + '%') +
-      '<label>Effects</label><div class="row-btns"><button type="button" data-cf="fx-on" class="' + (prefs.effects ? 'on' : '') + '" aria-pressed="' + prefs.effects + '">On</button><button type="button" data-cf="fx-off" class="' + (prefs.effects ? '' : 'on') + '" aria-pressed="' + !prefs.effects + '">Off</button></div>' +
-      '<label>Reading</label><div class="row-btns"><button type="button" data-cf="text" class="' + (S.textOnly ? 'on' : '') + '" aria-pressed="' + S.textOnly + '">Text-only</button><button type="button" data-cf="theme">Theme: ' + currentTheme() + '</button><button type="button" data-cf="full">Fullscreen</button><button type="button" data-cf="help">Keys</button></div>' +
-      (S.mode === 'play' ? '<label>Story</label><div class="row-btns"><button type="button" data-cf="restart">Restart</button><button type="button" data-cf="title">Title screen</button><button type="button" data-cf="stories">Back to stories</button></div>' : '') +
-      '</div><div class="foot"><span>Particles, transitions and shakes follow Effects; your system’s reduced-motion setting always wins.</span></div>';
+      row('size', 'Font size', 85, 135, 5, Math.round(prefs.size * 100), Math.round(prefs.size * 100) + '%');
+    var effects = '<label>Effects</label><div class="row-btns"><button type="button" data-cf="fx-on" class="' + (prefs.effects ? 'on' : '') + '" aria-pressed="' + prefs.effects + '">On</button><button type="button" data-cf="fx-off" class="' + (prefs.effects ? '' : 'on') + '" aria-pressed="' + !prefs.effects + '">Off</button></div>';
+    var reading = '<label>Reading</label><div class="row-btns"><button type="button" data-cf="text" class="' + (S.textOnly ? 'on' : '') + '" aria-pressed="' + S.textOnly + '">Text-only</button><button type="button" data-cf="theme">Theme: ' + currentTheme() + '</button><button type="button" data-cf="full">Fullscreen</button><button type="button" data-cf="help">Keys</button></div>' +
+      (S.mode === 'play' ? '<label>Story</label><div class="row-btns"><button type="button" data-cf="restart">Restart</button><button type="button" data-cf="title">Title screen</button><button type="button" data-cf="stories">Back to stories</button></div>' : '');
+    var foot = '<div class="foot"><span>Particles, transitions and shakes follow Effects; your system’s reduced-motion setting always wins.</span></div>';
+    // with the sound rows the screen is set in two columns (reading on the left, sound and picture on the right);
+    // without them it is the single column it has always been
+    if (sound) return '<div class="vn-config-cols"><div class="vn-config">' + text + reading + '</div><div class="vn-config">' + sound + effects + picture + '</div></div>' + foot;
+    return '<div class="vn-config">' + text + effects + picture + reading + '</div>' + foot;
   }
   function logHtml() {
     if (!S.run) return '<p>Nothing yet.</p>';
@@ -1558,7 +1837,7 @@ rendered: { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null }, actor
     seenList();
     if (!list.length) return '<p>This story has no chapters.</p>';
     return '<ul class="vn-chapters">' + list.map(function (c, i) {
-      var ok = S.seenAll[c.index] || (S.entry && S.entry.src);
+      var ok = S.seenAll[c.index] || (S.entry && S.entry.src) || STUDIO;
       return '<li><button type="button" data-ch="' + i + '"' + (ok ? '' : ' disabled') + '><span class="num">' + esc(c.n) + '</span><span>' + (ok ? esc(c.title) : '— not reached yet —') + '</span></button></li>';
     }).join('') + '</ul>';
   }
@@ -1569,8 +1848,10 @@ rendered: { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null }, actor
   function openScreen(kind) {
     if (!SCREEN_TITLES[kind] || !S.program) return;
     if (kind === 'save' && S.mode !== 'play') return;
+    if (kind === 'save' && STUDIO) { toast('The Studio preview does not save.'); return; }
     if (kind === 'save' && S.noSlots) { toast('This place was reached by a deep link and cannot be saved.'); return; }
-    if (!S.screen) S.lastFocus = document.activeElement;
+    // a full-screen menu is read over a picture that stands still (once per opening, not per redraw)
+    if (!S.screen) { S.lastFocus = document.activeElement; ext('VNCamera', 'reset'); }
     S.screen = kind;
     clearTimeout(S.autoTimer);
     completeLine();
@@ -1594,16 +1875,19 @@ rendered: { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null }, actor
     var backTo = S.lastFocus && document.contains(S.lastFocus) && S.lastFocus.offsetParent !== null ? S.lastFocus : stage;
     try { backTo.focus({ preventScroll: true }); } catch (e) { /* ignore */ }
     if (S.auto && !S.typing) scheduleAuto(40);
+    // back at the same stop: the camera, reset when the menu opened, takes its framing again without a move
+    if (S.mode === 'play' && S.stop) { syncCamera(true); ext('VNCamera', 'present', S.stop.state, S.stop.op); syncCamera(S.skip); }
   }
   function wireScreen(kind) {
     $('button[data-close]', screenEl).addEventListener('click', function () { closeScreen(); });
     $$('button[data-slot]', screenEl).forEach(function (b) {
-      b.addEventListener('click', function () {
+      b.addEventListener('click', function (ev) {
         var k = b.getAttribute('data-slot');
         if (kind === 'save') {
           if (readSlots()[k] && !window.confirm('Overwrite slot ' + k + '?')) return;
           if (writeSlot(k)) { openScreen('save'); toast('Saved to slot ' + k + '.', 1600); }
         } else {
+          unlockAudio(ev);
           closeScreen(true);
           if (k === 'auto') continueSaved(); else loadSlot(k);
         }
@@ -1616,7 +1900,7 @@ rendered: { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null }, actor
       b.addEventListener('click', function () { var k = parseInt(b.getAttribute('data-hist'), 10); closeScreen(true); rewindBack(k); });
     });
     $$('button[data-ch]', screenEl).forEach(function (b) {
-      b.addEventListener('click', function () { var c = S.program.chapters[parseInt(b.getAttribute('data-ch'), 10)]; closeScreen(true); jumpChapter(c); });
+      b.addEventListener('click', function (ev) { var c = S.program.chapters[parseInt(b.getAttribute('data-ch'), 10)]; unlockAudio(ev); closeScreen(true); jumpChapter(c); });
     });
     if (kind !== 'config') return;
     function bind(id, fn) { var el = $('#cf-' + id, screenEl), out = $('#cfo-' + id, screenEl); el.addEventListener('input', function () { out.textContent = fn(parseFloat(el.value)); savePrefs(); applyPrefs(); }); }
@@ -1624,10 +1908,25 @@ rendered: { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null }, actor
     bind('auto', function (v) { prefs.autoSpeed = clamp(v, 0.5, 2.5); return prefs.autoSpeed.toFixed(1) + '×'; });
     bind('opacity', function (v) { prefs.opacity = clamp(v / 100, 0.3, 1); return Math.round(prefs.opacity * 100) + '%'; });
     bind('size', function (v) { prefs.size = clamp(v / 100, 0.85, 1.35); return Math.round(prefs.size * 100) + '%'; });
+    // the optional modules' rows (present only when the module is): volumes go to the audio at every move
+    ['music', 'ambience', 'sfx'].forEach(function (id) {
+      if ($('#cf-' + id, screenEl)) bind(id, function (v) { prefs[id] = clamp(v / 100, 0, 1); pushVolumes(); return Math.round(prefs[id] * 100) + '%'; });
+    });
+    $$('button[data-sw]', screenEl).forEach(function (b) {
+      b.addEventListener('click', function () {
+        var k = b.getAttribute('data-sw');
+        prefs[k] = !prefs[k]; savePrefs();
+        b.classList.toggle('on', prefs[k]); b.setAttribute('aria-pressed', String(prefs[k]));
+        if (k === 'mute') setMute(prefs.mute);
+        else if (k === 'paint') refreshPaint();
+        else if (k === 'live' || k === 'camera') syncEnabled(false);
+        // (opening is read when Start is pressed, babble while a line types)
+      });
+    });
     $$('button[data-cf]', screenEl).forEach(function (b) {
       b.addEventListener('click', function () {
         var k = b.getAttribute('data-cf');
-        if (k === 'fx-on' || k === 'fx-off') { prefs.effects = k === 'fx-on'; savePrefs(); applyPrefs(); if (S.stop && S.mode === 'play') syncFx(S.stop.state); openScreen('config'); }
+        if (k === 'fx-on' || k === 'fx-off') { prefs.effects = k === 'fx-on'; savePrefs(); applyPrefs(); syncEnabled(false); if (S.stop && S.mode === 'play') syncFx(S.stop.state); openScreen('config'); }
         else if (k === 'text') { setTextOnly(!S.textOnly, true); openScreen('config'); }
         else if (k === 'theme') { applyTheme(currentTheme() === 'dark' ? 'light' : 'dark', true); openScreen('config'); }
         else if (k === 'full') toggleFullscreen();
@@ -1689,7 +1988,7 @@ rendered: { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null }, actor
     var q = b.getAttribute('data-q');
     if (q === 'back') back();
     else if (q === 'qsave') { if (writeSlot('q')) toast('Quick saved.', 1400); }
-    else if (q === 'qload') { if (readSlots().q) loadSlot('q'); else toast('No quick save yet.'); }
+    else if (q === 'qload') { unlockAudio(e); if (readSlots().q) loadSlot('q'); else toast('No quick save yet.'); }
     else if (q === 'save') openScreen('save');
     else if (q === 'load') openScreen('load');
     else if (q === 'auto') setAuto(!S.auto);
@@ -1697,6 +1996,7 @@ rendered: { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null }, actor
     else if (q === 'log') openScreen('log');
     else if (q === 'config') openScreen('config');
     else if (q === 'hide') setHidden(true);
+    else if (q === 'mute') setMute(!prefs.mute);
   });
   if (btnFull) btnFull.addEventListener('click', function (e) { e.stopPropagation(); if (e.detail > 0 && S.mode === 'play') stage.focus({ preventScroll: true }); toggleFullscreen(); });
   if (btnTitle) btnTitle.addEventListener('click', function (e) { e.stopPropagation(); if (S.program) showTitle(); });
@@ -1712,6 +2012,13 @@ rendered: { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null }, actor
     var t = e.target, tag = t && t.tagName;
     var inField = tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA' || (t && t.isContentEditable);
     var ov = openOverlayEl(), k = e.key;
+    if (S.opening) {
+      // the opening movie handles its own keys; Escape always ends the wait, F and M keep working
+      if (k === 'Escape') { e.preventDefault(); ext('VNOp', 'stop'); S.opening.finish(); }
+      else if (k === 'F' || k === 'f') toggleFullscreen();
+      else if ((k === 'M' || k === 'm') && HAS.audio) setMute(!prefs.mute);
+      return;
+    }
     if (k === 'Escape') {
       if (ov) { e.preventDefault(); closeOverlay(ov); return; }
       if (S.screen) { e.preventDefault(); closeScreen(); return; }
@@ -1731,12 +2038,15 @@ rendered: { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null }, actor
     if (S.hidden) { e.preventDefault(); setHidden(false); return; }   // any key brings the window back
     if (k === 'D' || k === 'd') { applyTheme(currentTheme() === 'dark' ? 'light' : 'dark', true); return; }
     if (k === '?') { e.preventDefault(); toggleHelp(); return; }
+    if ((k === 'M' || k === 'm') && HAS.audio && S.mode !== 'picker') { setMute(!prefs.mute); toast(prefs.mute ? 'Sound off' : 'Sound on', 1200); return; }
+    // P: the presenter view in a second window (a real key press only, and not while typing in a field)
+    if ((k === 'P' || k === 'p') && e.isTrusted && !inField && S.program && !S.blocked && S.mode !== 'picker') { openPresenter(); return; }
     if (S.mode === 'title') {
       if (k === 'ArrowDown' || k === 'ArrowUp') {
         var tb = $$('.ts-menu button:not([disabled])', titleEl); if (!tb.length) return;
         var ti = tb.indexOf(document.activeElement);
         e.preventDefault(); tb[ti < 0 ? 0 : (ti + (k === 'ArrowDown' ? 1 : tb.length - 1)) % tb.length].focus();
-      } else if ((k === 'Enter' || k === ' ') && tag !== 'BUTTON' && tag !== 'A') { e.preventDefault(); var fb = $('button[data-t="continue"]', titleEl) || $('button[data-t="start"]', titleEl); if (fb) fb.click(); }
+      } else if ((k === 'Enter' || k === ' ') && tag !== 'BUTTON' && tag !== 'A') { e.preventDefault(); var fb = $('button[data-t="continue"]', titleEl) || $('button[data-t="start"]', titleEl); if (fb) { unlockAudio(e); fb.click(); } }
       else if (k === 'F' || k === 'f') toggleFullscreen();
       else if (k === 'C' || k === 'c') openScreen('config');
       return;
@@ -1747,12 +2057,13 @@ rendered: { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null }, actor
     if (k === 'C' || k === 'c') { openScreen('config'); return; }
     if (k === 'H' || k === 'h') { setHidden(true); return; }
     if (k === 'F5') { e.preventDefault(); if (writeSlot('q')) toast('Quick saved.', 1400); return; }
-    if (k === 'F9') { e.preventDefault(); if (readSlots().q) loadSlot('q'); else toast('No quick save yet.'); return; }
+    if (k === 'F9') { e.preventDefault(); unlockAudio(e); if (readSlots().q) loadSlot('q'); else toast('No quick save yet.'); return; }
     if (!S.run) return;
     if (k === ' ' || k === 'Enter' || k === 'ArrowRight') {
       if (t && (tag === 'BUTTON' || tag === 'A') && k !== 'ArrowRight') return;   // native activation: quick menu, choices, ending
       e.preventDefault();
       if (S.stop && S.stop.op.kind === 'menu') { var first = $('button', menuEl); if (first && !menuEl.contains(t)) first.focus(); return; }
+      unlockAudio(e);     // the key that advances the story is a gesture the sound may start from
       if (k === ' ' && e.repeat) {           // hold Space: skip
         var now = performance.now();
         if (now - S.holdLast < 120) return;
@@ -1779,7 +2090,7 @@ rendered: { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null }, actor
     }
     if (/^[1-9]$/.test(k) && S.stop && S.stop.op.kind === 'menu') {
       var i = parseInt(k, 10) - 1;
-      if (i < (S.stop.options || []).length) { e.preventDefault(); choose(i); }
+      if (i < (S.stop.options || []).length) { e.preventDefault(); unlockAudio(e); choose(i); }
       return;
     }
   });
@@ -1791,7 +2102,7 @@ rendered: { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null }, actor
     return !!(target.closest && target.closest('button, a, abbr, input, select, .vn-end, .vn-picker, .vn-panel, .vn-transcript, .vn-screen, .vn-titlescreen, .vn-quick, .vn-topbar'));
   }
   stage.addEventListener('pointerdown', function (e) {
-    if (e.button !== 0) return;
+    if (e.button !== 0 || S.opening) return;     // while the opening movie plays the pointer is its own
     ptr = { x: e.clientX, y: e.clientY, t: performance.now(), id: e.pointerId, target: e.target, consumed: false };
     clearTimeout(longTimer);
     if (e.pointerType === 'touch' && S.mode === 'play' && !interactive(e.target)) {
@@ -1807,12 +2118,12 @@ rendered: { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null }, actor
     if (!ptr || ptr.id !== e.pointerId) { ptr = null; return; }
     var p = ptr; ptr = null;
     if (p.consumed) return;
-    if (S.mode !== 'play') return;
+    if (S.mode !== 'play' || S.opening) return;
     if (S.hidden) { setHidden(false); return; }
     var dx = e.clientX - p.x, dy = e.clientY - p.y;
     if (e.pointerType === 'touch' && Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.2) {
       ghostUntil = performance.now() + 450;
-      if (dx < 0) advance(); else back();
+      if (dx < 0) { unlockAudio(e); advance(); } else back();
       return;
     }
     if (Math.abs(dx) > 10 || Math.abs(dy) > 10) return;
@@ -1822,6 +2133,7 @@ rendered: { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null }, actor
     if (S.stop && S.stop.op.kind === 'menu') return;
     if (S.auto) setAuto(false);
     if (e.pointerType === 'touch') ghostUntil = performance.now() + 450;
+    unlockAudio(e);     // the click or tap that advances the story is a gesture the sound may start from
     advance();
     if (document.activeElement !== stage && !(document.activeElement && menuEl.contains(document.activeElement))) stage.focus({ preventScroll: true });
   });
@@ -1836,10 +2148,119 @@ rendered: { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null }, actor
   stage.addEventListener('pointercancel', function () { ptr = null; clearTimeout(longTimer); });
   // right-click: hide the window to look at the picture, as in any visual novel
   stage.addEventListener('contextmenu', function (e) {
-    if (S.mode !== 'play' || S.screen || interactive(e.target)) return;
+    if (S.mode !== 'play' || S.screen || S.opening || interactive(e.target)) return;
     e.preventDefault();
     setHidden(!S.hidden);
   });
+
+  /* ------------------------------------------------------------------ Studio preview and presenter view (BroadcastChannel) */
+
+  // The op index of the stop a source line belongs to: the first stop at or after that line (a caret on a
+  // continuation line, or on any option of a menu, belongs to the statement it is part of).
+  function stopFrom(index) {
+    var ops = S.program.ops;
+    for (var i = Math.max(0, index); i < ops.length; i++) if (VN.BLOCKING[ops[i].kind]) return i;
+    return ops.length - 1;
+  }
+  function opAtLine(line) {
+    var ops = S.program.ops, src = S.source != null ? String(S.source).split(/\r\n|\r|\n/) : null;
+    line = Math.max(1, parseInt(line, 10) || 1);
+    if (src) while (line > 1 && /^[ \t]+\S/.test(src[line - 1] || '') && (src[line - 2] || '').trim()) line--;
+    for (var i = 0; i < ops.length; i++) {
+      if (!VN.BLOCKING[ops[i].kind]) continue;
+      var end = ops[i].kind === 'menu' && ops[i].options.length ? ops[i].options[ops[i].options.length - 1].line : ops[i].line;
+      if (end >= line) return i;
+    }
+    return ops.length - 1;
+  }
+  // Go to the stop at op `index`: by replaying a route of choices from the top where one exists (the reader's own
+  // choices first), so the moment is an ordinary one; else by a bare jump with the stage dressed in file order.
+  function studioGoto(index) {
+    if (!S.program || S.blocked) return;
+    var route = VN.routeTo(S.program, index, { prefer: S.run ? S.run.state.choiceLog : [] }), stop = null;
+    beginPlay();
+    if (route) stop = S.run.replay(route.choiceLog, route.stopIndex);
+    if (!stop || stop.index !== index) { S.run = newRun(); stop = S.run.jumpTo(index); S.noSlots = true; }
+    present(stop, { instant: true });
+  }
+
+  // ?studio=1: a live preview driven by the Studio page (same origin: another window, or the frame around this one).
+  //   in:  {type:'reload'} | {type:'goto', line} | {type:'goto', label}
+  //   out: {type:'ready', title, issues:[{level, line, msg, code}]} after each load, {type:'stop', line, index, kind} after each present
+  var studioCh = null, studioLine = null;
+  function studioPost(msg) { if (studioCh) { try { studioCh.postMessage(msg); } catch (e) { /* closed */ } } }
+  function studioReload() {
+    if (!S.lastDesc) return;
+    loadStory(S.lastDesc, { line: studioLine });
+  }
+  function onStudio(ev) {
+    var m = ev && ev.data;
+    if (!m || typeof m !== 'object') return;
+    if (m.type === 'reload') studioReload();
+    else if (m.type === 'goto' && S.program && !S.blocked) {
+      if (m.line != null) studioGoto(opAtLine(m.line));
+      else if (m.label != null) {
+        if (S.program.labels[m.label] == null) toast('No label “' + m.label + '” in this story.', 2600);
+        else studioGoto(stopFrom(S.program.labels[m.label]));
+      }
+    }
+  }
+
+  // The presenter view (presenter.html, opened with P) follows the stage and can drive it.
+  //   out: {type:'stop', id, src, hash, choiceLog, stopIndex, index, line, kind, done} after each present,
+  //        {type:'title', id, src, hash} when the title screen opens; the latest one again in answer to {type:'hello'}
+  //   in:  {type:'hello'} | {type:'advance'} | {type:'back'} | {type:'choose', i}   (a message with an `id` is for that story only)
+  // Positions only, never text: the presenter rebuilds the lines from the script itself.
+  var presCh = null, presLast = null;
+  function presenterPost(msg) {
+    if (THUMB) return;
+    presLast = msg;
+    if (presCh) { try { presCh.postMessage(msg); } catch (e) { /* closed */ } }
+  }
+  function announceStop(stop) {
+    var op = stop.op;
+    if (STUDIO) { if (op.line > 0) studioLine = op.line; studioPost({ type: 'stop', line: op.line | 0, index: stop.index, kind: op.kind }); }
+    presenterPost({
+      type: 'stop', id: S.id, src: (S.entry && S.entry.src) || null, hash: S.program.hash,
+      choiceLog: JSON.parse(JSON.stringify(S.run.state.choiceLog)), stopIndex: S.run.state.stops,
+      index: stop.index, line: op.line | 0, kind: op.kind, done: !!stop.done
+    });
+  }
+  function onPresenter(ev) {
+    var m = ev && ev.data;
+    if (!m || typeof m !== 'object') return;
+    if (m.id != null && m.id !== S.id) return;
+    if (m.type === 'hello') { if (presLast && presCh) { try { presCh.postMessage(presLast); } catch (e) { /* closed */ } } return; }
+    if (S.mode !== 'play' || !S.run || S.screen || S.opening || openOverlayEl()) return;
+    if (m.type === 'advance') {
+      // the reader's own advance: the first one completes a line that is still typing; a question waits for a choice
+      if (S.hidden) { setHidden(false); return; }
+      if (S.stop && S.stop.op.kind === 'menu') return;
+      if (S.auto) setAuto(false);
+      advance();
+    } else if (m.type === 'back') back();
+    else if (m.type === 'choose') {
+      var i = parseInt(m.i, 10);
+      if (S.stop && S.stop.op.kind === 'menu' && i >= 0 && i < (S.stop.options || []).length) choose(i);
+    }
+  }
+  function openChannels() {
+    if (typeof BroadcastChannel !== 'function' || THUMB) return;
+    try {
+      presCh = new BroadcastChannel('vn:presenter'); presCh.onmessage = onPresenter;
+      if (STUDIO) { studioCh = new BroadcastChannel('vn:studio'); studioCh.onmessage = onStudio; }
+    } catch (e) { presCh = presCh || null; }
+  }
+  // the same story, by the same parameter this page was given: story=<id>, src=<path>, src=draft:<key>, or post=<slug>
+  function presenterUrl() {
+    var e = S.entry || {};
+    if (e.src) return 'presenter.html?src=' + encodeURIComponent(e.src);
+    if (e.auto && e.slug) return 'presenter.html?post=' + encodeURIComponent(e.slug);
+    return 'presenter.html?story=' + encodeURIComponent(S.id);
+  }
+  function openPresenter() {
+    try { window.open(presenterUrl(), 'vn-presenter', 'popup=yes,width=1180,height=760'); } catch (e) { /* blocked */ }
+  }
 
   /* ------------------------------------------------------------------ cast sheet (?cast=1) and scenery gallery (?gallery=bg|cg) */
 
@@ -1889,7 +2310,25 @@ rendered: { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null }, actor
 
   /* ------------------------------------------------------------------ boot */
 
+  // The optional modules get their first settings, and the controls that exist only with a module are put in.
+  function bootModules() {
+    // a module that rests for this whole run (a capture, a test) is told so once and then never called
+    if (TESTRUN) ['VNPaint', 'VNLive', 'VNCamera'].forEach(function (m) { if (OFF[m] && !HOOK_OFF[m]) callMod(m, 'setEnabled', [false]); });
+    ext('VNCamera', 'attach', stage);
+    pushVolumes();
+    syncEnabled(false);
+    if (HAS.audio) {
+      var mb = document.createElement('button');
+      mb.type = 'button'; mb.setAttribute('data-q', 'mute'); mb.setAttribute('aria-pressed', String(prefs.mute)); mb.title = 'sound on / off (M)'; mb.textContent = 'Mute';
+      if (prefs.mute) mb.classList.add('on');
+      quickEl.insertBefore(mb, qbtn('config'));
+    }
+    // help rows that describe a module's key appear with the module
+    $$('[data-if]').forEach(function (el) { if (HAS[el.getAttribute('data-if')]) el.hidden = false; });
+  }
+
   function boot() {
+    if (!CASTGRID && !GALLERY) { bootModules(); openChannels(); }
     if (prefs.textOnly && !THUMB && !CASTGRID && !GALLERY) setTextOnly(true, false);
     if (!VN) { showEngineMissing(); return; }
     if (GALLERY && ART) { gallery(GALLERY); return; }
@@ -1900,7 +2339,7 @@ rendered: { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null }, actor
       fillSelect();
       var src = params.get('src'), story = params.get('story'), post = params.get('post'), at = params.get('at');
       if (CASTGRID) {
-        if (src) return fetchText(src).then(function (t) { return fetchIncludes(t, [src.replace(/[^\/]*$/, ''), 'stories/']).then(function (inc) { castGrid(VN.parse(t, { id: 'src', includes: inc })); }); });
+        if (src) return readSource(src).then(function (t) { return fetchIncludes(t, sourceDirs(src)).then(function (inc) { castGrid(VN.parse(t, { id: 'src', includes: inc })); }); });
         var e = story && findEntry(story);
         if (e && !e.auto) return fetchText('stories/' + e.file).then(function (t) { return fetchIncludes(t, ['stories/']).then(function (inc) { castGrid(VN.parse(t, { id: e.id, includes: inc })); }); });
         castGrid(null); return;
@@ -1934,8 +2373,9 @@ rendered: { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null }, actor
     });
   }
 
-  // Test hook for the browser harness (read-only by convention): the live run state, prefs and catalogue.
-  window.__vnStage = { S: S, prefs: prefs, catalog: function () { return catalog; } };
+  // Test hook for the browser harness (read-only by convention): the live run state, prefs and catalogue, and
+  // which optional modules are loaded (has), resting (off) or forced by a URL hook (force).
+  window.__vnStage = { S: S, prefs: prefs, catalog: function () { return catalog; }, mods: { has: HAS, off: OFF, force: FORCE } };
 
   boot();
 })();

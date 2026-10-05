@@ -11,3 +11,8 @@ assets/Jack_library_catalog.xlsx
 
 # Local output of the QA harness (scripts/qa): reports, probe screenshots.
 scripts/qa/out/
+
+# Download caches of the data build scripts (re-fetched on demand, never published).
+scripts/enrich/.cache/
+scripts/lang/.cache/
+scripts/texts/.cache/

@@ -53,6 +53,9 @@
   var FX_ONESHOT = ['shake', 'flash', 'pulse'];
   var CGS = ['tree', 'desk-night', 'screen-code', 'hands-keyboard', 'two-chairs', 'corridor-light', 'sea-of-points', 'page', 'window-rain'];
   var TONES = ['none', 'dusk', 'night', 'dawn', 'noon', 'memory', 'cold'];
+  var MUSIC = ['theme', 'nocturne', 'tender', 'memory', 'cold', 'tension', 'bright', 'finale'];   // @music <track> | auto | off
+  var AMBIENCE = ['rain', 'wind', 'sea', 'train', 'hum', 'crowd', 'night', 'room'];               // @ambience <name> | auto | off
+  var SFX = ['page', 'chime', 'door', 'keys', 'thud', 'bell', 'click'];                           // @sfx <name>
   var DISTANCES = ['near', 'far'];
   var CLOTHES = ['coat', 'hoodie', 'cardigan', 'shirt', 'uniform'];
   var MODES = ['adv', 'nvl'];
@@ -289,7 +292,7 @@
       links: [], authors: null, note: DEFAULT_NOTE, status: 'draft', palette: { name: null, hue: 0 },
       verify: false, includes: [], file: null
     };
-    var cast = {}, facts = {}, ops = [], labels = {}, menus = [], thumb = null, chapters = [];
+    var cast = {}, facts = {}, ops = [], labels = {}, menus = [], thumb = null, chapters = [], notes = [];
     var i, t, ln, m;
 
     // Pass 1: header directives that later lines depend on (cast, facts, includes).
@@ -331,7 +334,11 @@
 
     for (i = 0; i < lines.length; i++) {
       t = lines[i].text; ln = lines[i].line;
-      if (t.charAt(0) === '#') continue;
+      if (t.charAt(0) === '#') {
+        // "# note: ..." is a presenter note for the next stop; every other comment is ignored
+        if ((m = /^#\s*note:\s*(.*)$/i.exec(t))) notes.push({ at: ops.length, text: m[1].trim() });
+        continue;
+      }
 
       // choices
       if ((m = /^\*\s+(.*)$/.exec(t))) {
@@ -531,6 +538,22 @@
             ops.push({ kind: 'tone', name: tn, line: ln }); inBody = true;
             break;
           }
+          case 'music': {
+            var mu = tail || 'auto';
+            if (mu !== 'auto' && mu !== 'off' && MUSIC.indexOf(mu) < 0) { issues.push(issue('warn', ln, "unknown music '" + mu + "'; using auto", 'music: ' + MUSIC.join(', ') + ', auto, off', 'music-unknown')); mu = 'auto'; }
+            ops.push({ kind: 'music', track: mu, line: ln }); inBody = true;
+            break;
+          }
+          case 'ambience': {
+            var am = tail || 'auto';
+            if (am !== 'auto' && am !== 'off' && AMBIENCE.indexOf(am) < 0) { issues.push(issue('warn', ln, "unknown ambience '" + am + "'; using auto", 'ambience: ' + AMBIENCE.join(', ') + ', auto, off', 'ambience-unknown')); am = 'auto'; }
+            ops.push({ kind: 'ambience', name: am, line: ln }); inBody = true;
+            break;
+          }
+          case 'sfx':
+            if (SFX.indexOf(tail) < 0) { issues.push(issue('warn', ln, "unknown sfx '" + tail + "'; ignored", 'sfx: ' + SFX.join(', '), 'sfx-unknown')); break; }
+            ops.push({ kind: 'sfx', name: tail, line: ln }); inBody = true;
+            break;
           case 'scene': ops.push({ kind: 'scene', title: interpolateFacts(tail, facts, cast).text, line: ln }); inBody = true; break;
           case 'card': {
             var parts = tail.split('|').map(function (s) { return s.trim(); });
@@ -642,6 +665,20 @@
 
     var last = ops[ops.length - 1];
     if (!last || last.kind !== 'end') ops.push({ kind: 'end', implicit: true, line: lines.length ? lines[lines.length - 1].line + 1 : 1 });
+
+    // presenter notes belong to the next stop in file order; several notes for one stop join with a newline
+    for (var ni = 0; ni < notes.length; ni++) {
+      for (var nj = notes[ni].at; nj < ops.length; nj++) {
+        if (!BLOCKING[ops[nj].kind]) continue;
+        ops[nj].note = ops[nj].note == null ? notes[ni].text : ops[nj].note + '\n' + notes[ni].text;
+        break;
+      }
+    }
+    for (i = 0; i < ops.length; i++) {
+      if (ops[i].note == null) continue;
+      ops[i].note = ops[i].note.replace(/^\n+|\s+$/g, '');
+      if (!ops[i].note) delete ops[i].note;
+    }
 
     if (!meta.kind) issues.push(issue('fatal', 0, '@kind missing', 'write @kind paper or @kind blog in the header', 'kind-missing'));
     if (!meta.title) issues.push(issue('warn', 0, '@title missing', 'write @title ... in the header', 'title-missing'));
@@ -1120,6 +1157,8 @@
       mapping.push(ops.length);
       if (op.kind === 'read') {
         var extra = blog(markdown, meta || {}, Object.assign({ max: op.max }, opts || {}));
+        // a presenter note written above @read moves to the first stop of the post
+        if (op.note != null) for (var q = 0; q < extra.length; q++) if (BLOCKING[extra[q].kind]) { extra[q].note = op.note; break; }
         for (var k = 0; k < extra.length; k++) ops.push(extra[k]);
       } else ops.push(op);
     }
@@ -1153,7 +1192,8 @@
     function freshState() {
       return {
         pc: 0, vars: {}, bg: null, slots: { left: null, center: null, right: null }, faces: {}, dist: {}, chosen: {}, history: [], choiceLog: [], label: null, stops: 0,
-        cg: null, transition: null, change: null, flashback: null, mode: 'adv', pageStart: 0, fx: {}, oneshot: [], tone: 'none', chapter: null
+        cg: null, transition: null, change: null, flashback: null, mode: 'adv', pageStart: 0, fx: {}, oneshot: [], tone: 'none', chapter: null,
+        music: 'auto', ambience: 'auto', sfx: []
       };
     }
     function errorStop(msg, hint, line) {
@@ -1248,6 +1288,9 @@
           else delete state.fx[op.name];
           break;
         case 'tone': state.tone = op.name; break;
+        case 'music': state.music = op.track; break;
+        case 'ambience': state.ambience = op.name; break;
+        case 'sfx': if (!dressing) state.sfx.push(op.name); break;
         case 'label': state.label = op.name; break;
         case 'set': state.vars[op.name] = op.value; break;
         case 'add': if (!dressing) state.vars[op.name] = (parseFloat(state.vars[op.name]) || 0) + op.value; break;
@@ -1255,6 +1298,7 @@
     }
     function runFrom(pc) {
       state.oneshot = [];
+      state.sfx = [];
       state.change = null;
       for (;;) {
         if (pc >= n) return stopAt(n - 1);
@@ -1422,6 +1466,7 @@
     FACES: FACES, BACKGROUNDS: BACKGROUNDS, BG_MODS: BG_MODS, PALETTES: PALETTES, SLOTS: SLOTS, HAIR: HAIR,
     TRANSITIONS: TRANSITIONS, DEFAULT_TRANSITION: DEFAULT_TRANSITION, FX: FX, FX_ONESHOT: FX_ONESHOT, CGS: CGS, TONES: TONES,
     DISTANCES: DISTANCES, CLOTHES: CLOTHES, MODES: MODES, BG_OPTS: BG_OPTS, CG_MODS: CG_MODS, HAIRTONES: HAIRTONES,
+    MUSIC: MUSIC, AMBIENCE: AMBIENCE, SFX: SFX,
     STATUSES: STATUSES, BLOCKING: BLOCKING, DEFAULT_NOTE: DEFAULT_NOTE, WITHHELD_TEXT: WITHHELD_TEXT
   };
 });
