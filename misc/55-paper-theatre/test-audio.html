@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Paper Theatre: sound check</title>
+<meta name="robots" content="noindex">
+<style>
+  :root { --bg: #f4f1ea; --fg: #23201b; --muted: #6d665b; --line: #d8d1c4; --bad: #a3271f; --good: #2f6a3a; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #16140f; --fg: #ece6da; --muted: #a59d8f; --line: #3a352c; --bad: #e0776c; --good: #7fc28b; } }
+  body { margin: 0; padding: 16px; background: var(--bg); color: var(--fg); font: 14px/1.45 Georgia, serif; }
+  h1 { font-size: 20px; font-weight: normal; margin: 0 0 4px; }
+  p { color: var(--muted); margin: 0 0 12px; max-width: 70ch; }
+  table { border-collapse: collapse; margin: 12px 0; font: 12px/1.3 ui-monospace, Consolas, monospace; }
+  td, th { border-bottom: 1px solid var(--line); padding: 3px 8px; text-align: right; }
+  th:first-child, td:first-child { text-align: left; }
+  .bad { color: var(--bad); } .good { color: var(--good); }
+  figure { margin: 10px 0 18px; }
+  figcaption { font: 12px ui-monospace, Consolas, monospace; color: var(--muted); }
+  canvas { display: block; max-width: 100%; height: auto; background: #000; }
+  button { font: inherit; padding: 6px 12px; margin: 0 6px 6px 0; }
+  .lbl { display: inline-block; min-width: 5.5em; color: var(--muted); font: 12px ui-monospace, Consolas, monospace; }
+</style>
+</head>
+<body>
+<h1>Paper Theatre: sound check</h1>
+<p>Renders every track and every ambience of the score offline (OfflineAudioContext, the same graph the stage plays),
+measures it and draws a spectrogram of each render: time across, frequency up on a log scale from 40 Hz to 11 kHz, the
+dashed line at 8 kHz. Below those: each effect, the two stings, the chord a menu hangs on and a run of voice blips,
+rendered alone. <code>?story=&lt;id&gt;</code> picks the story whose theme is used; <code>?bars=N</code> the length;
+<code>?manual=1</code> skips the measuring and leaves only the buttons, which play everything live after a click.</p>
+<div id="play"></div>
+<table id="tab"><thead><tr><th>render</th><th>seconds</th><th>peak</th><th>RMS dBFS</th><th>above 8 kHz</th><th>L/R dB</th><th>NaN</th><th>click</th><th>gaps dB</th><th>verdict</th></tr></thead><tbody></tbody></table>
+<div id="figs"></div>
+
+<script src="vn.js"></script>
+<script src="score.js"></script>
+<script src="audio.js"></script>
+<script>
+(function () {
+  'use strict';
+  var q = new URLSearchParams(location.search);
+  var STORY = q.get('story') || 'obfuscation';
+  var BARS = Math.max(2, parseInt(q.get('bars'), 10) || 8);
+  // Quiet bands, at the default volumes (music 0.55, ambience 0.4). A sparse felt piano heard under reading should sit
+  // far below mastered music (about -14 dBFS RMS): -42 to -20 dBFS. Ambience is air under the music: -66 to -30 dBFS,
+  // and at least 8 dB below the quietest music track.
+  var MUSIC_BAND = [-42, -20], AMB_BAND = [-66, -30], PEAK_MAX = 0.98, HF_MAX = 0.01, LR_MAX = 1.5, GAP_MIN = 8;
+  // A click: the second difference of a clean render stays under about 0.02 (measured: the steepest piano attack);
+  // the one real click found while building this (a bus filter restarting) measured 0.18.
+  var CLICK_MAX = 0.05;
+  // Gaps: loud 50 ms frames against quiet ones, in dB. Separate notes with air between them give 12 dB and more;
+  // cold and tension lie on a held drone or a pedal by design, so they are only asked for 3 dB.
+  var GAPS_MIN = { cold: 3, tension: 3, tender: 6, finale: 6, other: 9 };
+
+  window.__audio = { done: false, results: [], errors: [] };
+
+  function baseState(over) {
+    var s = { bg: { name: 'room', mod: 'night' }, fx: {}, tone: 'none', flashback: null, cg: null, mode: 'adv', music: 'auto', ambience: 'auto', sfx: [], chapter: null };
+    for (var k in over) s[k] = over[k];
+    return s;
+  }
+  var SAY = { kind: 'say', who: 'x', key: 'x', text: '', line: 1 };
+
+  /* ------------------------------------------------------------------ analysis */
+  function fft(re, im) {
+    var n = re.length, i, j, k, len, half, ang, wr, wi, tr, ti, ur, ui;
+    for (i = 1, j = 0; i < n; i++) {
+      var bit = n >> 1;
+      for (; j & bit; bit >>= 1) j ^= bit;
+      j ^= bit;
+      if (i < j) { tr = re[i]; re[i] = re[j]; re[j] = tr; tr = im[i]; im[i] = im[j]; im[j] = tr; }
+    }
+    for (len = 2; len <= n; len <<= 1) {
+      half = len >> 1; ang = -2 * Math.PI / len;
+      var cs = new Float64Array(half), sn = new Float64Array(half);
+      for (k = 0; k < half; k++) { cs[k] = Math.cos(ang * k); sn[k] = Math.sin(ang * k); }
+      for (i = 0; i < n; i += len) {
+        for (k = 0; k < half; k++) {
+          wr = cs[k]; wi = sn[k];
+          ur = re[i + k]; ui = im[i + k];
+          tr = re[i + k + half] * wr - im[i + k + half] * wi;
+          ti = re[i + k + half] * wi + im[i + k + half] * wr;
+          re[i + k] = ur + tr; im[i + k] = ui + ti;
+          re[i + k + half] = ur - tr; im[i + k + half] = ui - ti;
+        }
+      }
+    }
+  }
+
+  function analyse(buf, name) {
+    var L = buf.getChannelData(0), R = buf.numberOfChannels > 1 ? buf.getChannelData(1) : L, n = L.length, sr = buf.sampleRate;
+    var peak = 0, nan = 0, sl = 0, sr2 = 0, i;
+    for (i = 0; i < n; i++) {
+      var a = L[i], b = R[i];
+      if (a !== a || b !== b) { nan++; continue; }
+      if (Math.abs(a) > peak) peak = Math.abs(a);
+      if (Math.abs(b) > peak) peak = Math.abs(b);
+      sl += a * a; sr2 += b * b;
+    }
+    var rms = Math.sqrt((sl + sr2) / (2 * n));
+    // clicks: the largest second difference. A smooth tone bends a little from sample to sample; a step or a
+    // one-sample spike (a filter starting again from nothing, an oscillator cut mid-wave) bends a lot.
+    var d2 = 0, d2at = 0;
+    for (i = 2; i < n; i++) { var dd = Math.abs(L[i] - 2 * L[i - 1] + L[i - 2]); if (dd > d2) { d2 = dd; d2at = i; } }
+    // gaps: the level in 50 ms frames, loud frames (95th percentile) against quiet ones (10th), over the bars only
+    var fl = Math.round(sr * 0.05), lv = [], body = Math.max(fl, n - Math.round(sr * 3.5));
+    for (i = 0; i + fl <= body; i += fl) { var e = 0; for (var j = 0; j < fl; j++) e += L[i + j] * L[i + j]; lv.push(10 * Math.log10(e / fl + 1e-14)); }
+    lv.sort(function (x, y) { return x - y; });
+    var range = lv.length ? lv[Math.floor(lv.length * 0.95)] - lv[Math.floor(lv.length * 0.1)] : 0;
+    var N = 2048, hop = 1024, re = new Float32Array(N), im = new Float32Array(N), win = new Float32Array(N);
+    for (i = 0; i < N; i++) win[i] = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / (N - 1));
+    var frames = Math.max(1, Math.floor((n - N) / hop)), cols = [], hi = 0, tot = 0, cut = Math.round(8000 / sr * N);
+    for (var f = 0; f < frames; f++) {
+      for (i = 0; i < N; i++) { var s = 0.5 * (L[f * hop + i] + R[f * hop + i]); re[i] = (s === s ? s : 0) * win[i]; im[i] = 0; }
+      fft(re, im);
+      var col = new Float32Array(N / 2);
+      for (i = 1; i < N / 2; i++) { var p = re[i] * re[i] + im[i] * im[i]; col[i] = p; tot += p; if (i >= cut) hi += p; }
+      cols.push(col);
+    }
+    return { name: name, seconds: n / sr, peak: peak, rmsDb: 20 * Math.log10(rms + 1e-12), hf: tot > 0 ? hi / tot : 0,
+      lr: 10 * Math.log10((sl + 1e-12) / (sr2 + 1e-12)), nan: nan, d2: d2, d2at: d2at / sr, range: range, cols: cols, sr: sr, N: N, hop: hop };
+  }
+
+  function draw(an) {
+    var W = 1000, H = 300, cv = document.createElement('canvas');
+    cv.width = W; cv.height = H; cv.setAttribute('data-name', an.name);
+    var g = cv.getContext('2d'), img = g.createImageData(W, H), cols = an.cols, N = an.N, sr = an.sr;
+    var fmin = 40, fmax = 11000, x, y, top = -1e9, c2, b2;
+    // the colour scale runs over the 72 dB below the loudest bin of this render
+    for (c2 = 0; c2 < cols.length; c2++) for (b2 = 1; b2 < N / 2; b2++) if (cols[c2][b2] > top) top = cols[c2][b2];
+    var topDb = 10 * Math.log10(top + 1e-14);
+    for (x = 0; x < W; x++) {
+      var col = cols[Math.min(cols.length - 1, Math.floor(x / W * cols.length))];
+      for (y = 0; y < H; y++) {
+        var fr = fmin * Math.pow(fmax / fmin, 1 - y / (H - 1));
+        var bin = Math.min(N / 2 - 1, Math.max(1, Math.round(fr / sr * N)));
+        var db = 10 * Math.log10(col[bin] + 1e-14);           // relative power
+        var v = Math.max(0, Math.min(1, (db - topDb + 72) / 72));
+        var o = (y * W + x) * 4;
+        img.data[o] = Math.round(255 * Math.min(1, v * 1.6));
+        img.data[o + 1] = Math.round(255 * Math.max(0, v * 1.4 - 0.35));
+        img.data[o + 2] = Math.round(255 * Math.max(0, v - 0.75) * 3);
+        img.data[o + 3] = 255;
+      }
+    }
+    g.putImageData(img, 0, 0);
+    // 8 kHz line and a few frequency marks
+    g.strokeStyle = 'rgba(120,200,255,0.8)'; g.setLineDash([6, 6]);
+    var y8 = Math.round((1 - Math.log(8000 / fmin) / Math.log(fmax / fmin)) * (H - 1));
+    g.beginPath(); g.moveTo(0, y8); g.lineTo(W, y8); g.stroke(); g.setLineDash([]);
+    g.fillStyle = 'rgba(255,255,255,0.75)'; g.font = '11px monospace';
+    [100, 250, 500, 1000, 2000, 4000, 8000].forEach(function (fr) {
+      var yy = Math.round((1 - Math.log(fr / fmin) / Math.log(fmax / fmin)) * (H - 1));
+      g.fillText(fr >= 1000 ? fr / 1000 + 'k' : String(fr), 4, yy - 2);
+    });
+    g.fillText(an.name, W - 160, 14);
+    return cv;
+  }
+
+  function row(an, verdict, ok) {
+    var tr = document.createElement('tr');
+    [an.name, an.seconds.toFixed(1), an.peak.toFixed(3), an.rmsDb.toFixed(1), (an.hf * 100).toFixed(2) + '%', an.lr.toFixed(2), String(an.nan), an.d2.toFixed(4), an.range.toFixed(1), verdict].forEach(function (t, i) {
+      var td = document.createElement('td'); td.textContent = t; if (i === 9) td.className = ok ? 'good' : 'bad'; tr.appendChild(td);
+    });
+    document.querySelector('#tab tbody').appendChild(tr);
+  }
+
+  function judge(an, band, kind) {
+    var why = [];
+    if (an.nan) why.push('NaN');
+    if (an.peak >= PEAK_MAX) why.push('peak');
+    if (an.rmsDb < band[0] || an.rmsDb > band[1]) why.push('rms outside ' + band.join('..'));
+    if (an.hf > HF_MAX) why.push('energy above 8 kHz');
+    if (Math.abs(an.lr) > LR_MAX) why.push('off centre');
+    if (an.d2 > CLICK_MAX) why.push('click at ' + an.d2at.toFixed(3) + ' s');
+    if (kind === 'music' && an.range < (GAPS_MIN[an.name.replace('music:', '')] || GAPS_MIN.other)) why.push('a wall: no gaps');
+    return why;
+  }
+
+  /* ------------------------------------------------------------------ run */
+  function loadProgram() {
+    return fetch('stories/index.json').then(function (r) { return r.json(); }).then(function (list) {
+      var m = list.filter(function (x) { return x.id === STORY; })[0];
+      if (!m) throw new Error('unknown story ' + STORY);
+      return fetch('stories/' + m.file).then(function (r) { return r.text(); }).then(function (t) {
+        return VN.parse(t, { id: m.id, resolveInclude: function () { return null; } });
+      });
+    });
+  }
+
+  function jobs(program) {
+    var list = [];
+    VNScore.TRACKS.forEach(function (t) {
+      list.push({ name: 'music:' + t, kind: 'music', cue: VNScore.cue(baseState({ music: t, ambience: 'off' }), SAY, program, { hour: 'night', indoor: true }) });
+    });
+    VNScore.AMBIENCE.forEach(function (a) {
+      list.push({ name: 'ambience:' + a, kind: 'ambience', cue: VNScore.cue(baseState({ music: 'off', ambience: a }), SAY, program, { hour: 'night', indoor: true }) });
+    });
+    list.push({ name: 'mix:nocturne+rain', kind: 'mix', cue: VNScore.cue(baseState({ fx: { rain: true } }), SAY, program, { hour: 'night', indoor: true }) });
+    return list;
+  }
+
+  /* ------------------------------------------------------------------ one-shots: effects, stings, the menu chord, a voice blip */
+  // Each is played alone through the same engine on an OfflineAudioContext, long enough for its tail and the room's.
+  // Asked of each: no NaN, audible but far from clipping, no click, centred, and silence at the end (nothing stuck).
+  var program0 = null;
+  function shots(program) {
+    var cue = VNScore.cue(baseState({ music: 'theme', ambience: 'off' }), SAY, program, { hour: 'night', indoor: true });
+    var spb = 60 / cue.tempo, list = [];
+    ['page', 'chime', 'door', 'keys', 'thud', 'bell', 'click'].forEach(function (name) {
+      list.push({ name: 'sfx:' + name, seconds: name === 'bell' ? 12 : name === 'chime' ? 8 : 5, build: function (e) { e.sfx(name, 0.1); } });
+    });
+    list.push({ name: 'sting:chapter', seconds: 14, build: function (e) { VNScore.sting(cue, 'chapter').forEach(function (x) { e.play(x, 0.1 + x.t * spb, spb, e.music, null); }); } });
+    list.push({ name: 'sting:end', seconds: 20, build: function (e) { VNScore.sting(cue, 'end').forEach(function (x) { e.play(x, 0.1 + x.t * spb, spb, e.music, null); }); } });
+    list.push({ name: 'menu:hold+resolve', seconds: 30, build: function (e) {
+      var B = cue.beats, s = e.slot(cue, 0, 0.02), t = 0.1;
+      [VNScore.holdBar(cue, 0), VNScore.holdBar(cue, 1), VNScore.holdBar(cue, 2), VNScore.holdBar(cue, 3), VNScore.resolveBar(cue)].forEach(function (bar) {
+        bar.forEach(function (x) { e.play(x, t + x.t * spb, spb, s.input, s.wobble); });
+        t += B * spb;
+      });
+    } });
+    list.push({ name: 'voice:blips', seconds: 3, build: function (e) { for (var k = 0; k < 8; k++) e.blipVoice(220 * Math.pow(2, (k % 5) / 6), 0.1 + k * 0.07); } });
+    var i = 0;
+    window.__audio.shots = [];
+    function next() {
+      if (i >= list.length) return Promise.resolve();
+      var j = list[i++], sr = 44100, octx = new OfflineAudioContext(2, Math.ceil(sr * j.seconds), sr), e = new VNAudio._Engine(octx);
+      e.offline = true;
+      j.build(e);
+      return octx.startRendering().then(function (buf) {
+        var an = analyse(buf, j.name), L = buf.getChannelData(0), n = L.length, tail = 0, k, why = [];
+        for (k = n - Math.round(sr * 0.4); k < n; k++) tail += L[k] * L[k];
+        tail = Math.sqrt(tail / Math.round(sr * 0.4));
+        if (an.nan) why.push('NaN');
+        if (an.peak < 0.004) why.push('inaudible');
+        if (an.peak > 0.7) why.push('too loud');
+        if (an.d2 > CLICK_MAX) why.push('click at ' + an.d2at.toFixed(3) + ' s');
+        if (Math.abs(an.lr) > LR_MAX) why.push('off centre');
+        if (tail > 1e-4) why.push('still sounding at the end');
+        row(an, why.length ? why.join(', ') : 'ok', !why.length);
+        var fig = document.createElement('figure'), cap = document.createElement('figcaption');
+        fig.appendChild(draw(an)); cap.textContent = j.name; fig.appendChild(cap);
+        document.getElementById('figs').appendChild(fig);
+        window.__audio.shots.push({ name: j.name, seconds: an.seconds, peak: an.peak, rmsDb: an.rmsDb, hf: an.hf, lr: an.lr, nan: an.nan, d2: an.d2, tail: tail, fail: why });
+        return next();
+      });
+    }
+    return next();
+  }
+
+  function run() {
+    var t0 = performance.now();
+    loadProgram().then(function (program) {
+      program0 = program;
+      window.__audio.theme = { title: VNScore.theme(program).title, mode: VNScore.theme(program).mode, tonic: VNScore.theme(program).tonicMidi, tempo: VNScore.theme(program).tempo, beats: VNScore.theme(program).beats };
+      var js = jobs(program), i = 0;
+      addButtons(program);
+      function next() {
+        if (i >= js.length) return Promise.resolve();
+        var j = js[i++];
+        return VNAudio.renderOffline(j.cue, BARS).then(function (buf) {
+          var an = analyse(buf, j.name);
+          var why = judge(an, j.kind === 'ambience' ? AMB_BAND : j.kind === 'music' ? MUSIC_BAND : [MUSIC_BAND[0], MUSIC_BAND[1] + 2], j.kind);
+          row(an, why.length ? why.join(', ') : 'ok', !why.length);
+          var fig = document.createElement('figure'), cap = document.createElement('figcaption');
+          fig.appendChild(draw(an));
+          cap.textContent = j.name + '  key=' + (j.cue && j.cue.key) + '  tempo=' + (j.cue && j.cue.tempo);
+          fig.appendChild(cap);
+          document.getElementById('figs').appendChild(fig);
+          window.__audio.results.push({ name: j.name, kind: j.kind, seconds: an.seconds, peak: an.peak, rmsDb: an.rmsDb, hf: an.hf, lr: an.lr, nan: an.nan, d2: an.d2, range: an.range, fail: why });
+          return next();
+        });
+      }
+      return next();
+    }).then(function () {
+      return shots(program0);
+    }).then(function () {
+      var R = window.__audio.results;
+      var music = R.filter(function (r) { return r.kind === 'music'; }), amb = R.filter(function (r) { return r.kind === 'ambience'; });
+      var quietest = Math.min.apply(null, music.map(function (r) { return r.rmsDb; }));
+      var loudestAmb = Math.max.apply(null, amb.map(function (r) { return r.rmsDb; }));
+      window.__audio.gap = quietest - loudestAmb;
+      window.__audio.gapOk = quietest - loudestAmb >= GAP_MIN;
+      window.__audio.ms = Math.round(performance.now() - t0);
+      var p = document.createElement('p');
+      p.textContent = 'quietest music ' + quietest.toFixed(1) + ' dBFS, loudest ambience ' + loudestAmb.toFixed(1) + ' dBFS, gap ' + (quietest - loudestAmb).toFixed(1) + ' dB (want >= ' + GAP_MIN + '); ' + window.__audio.ms + ' ms';
+      document.body.insertBefore(p, document.getElementById('tab'));
+      window.__audio.done = true;
+    }).catch(function (e) { window.__audio.errors.push(String(e && e.stack || e)); window.__audio.done = true; });
+  }
+
+  // The listening desk: everything the stage can ask of VNAudio, on buttons. A real click unlocks the sound.
+  function addButtons(program) {
+    var box = document.getElementById('play'), track = 'theme', amb = 'off', flash = false, menu = false;
+    function cueNow() {
+      if (track === 'silence' && amb === 'off') return null;
+      return VNScore.cue(baseState({ music: track === 'silence' ? 'off' : track, ambience: amb, flashback: flash ? { caption: null } : null }), SAY, program, { hour: 'night', indoor: true });
+    }
+    function push(instant) { VNAudio.unlock(); VNAudio.sync(cueNow(), { instant: !!instant }); }
+    function group(label, names, on) {
+      var p = document.createElement('div'), sp = document.createElement('span');
+      sp.textContent = label + ' '; sp.className = 'lbl'; p.appendChild(sp);
+      names.forEach(function (t) {
+        var b = document.createElement('button');
+        b.type = 'button'; b.textContent = t;
+        b.addEventListener('click', function () { on(t, b); });
+        p.appendChild(b);
+      });
+      box.appendChild(p);
+    }
+    group('music', VNScore.TRACKS.concat(['silence']), function (t) { track = t; push(false); });
+    group('ambience', ['off'].concat(VNScore.AMBIENCE), function (t) { amb = t; push(false); });
+    group('scene', ['flashback (tape) on/off', 'menu (hold) on/off', 'cut to this cue (as Skip does)'], function (t, b) {
+      if (/^flash/.test(t)) { flash = !flash; b.style.fontWeight = flash ? 'bold' : ''; push(false); }
+      else if (/^menu/.test(t)) { menu = !menu; b.style.fontWeight = menu ? 'bold' : ''; VNAudio.unlock(); VNAudio.hold(menu); }
+      else push(true);
+    });
+    group('sting', ['chapter', 'end'], function (t) { VNAudio.unlock(); VNAudio.sting(t); });
+    group('effect', ['page', 'chime', 'door', 'keys', 'thud', 'bell', 'click'], function (t) { VNAudio.unlock(); VNAudio.sfx(t); });
+    group('voice', ['jack', 'aoi', 'narrator'], function (t) {
+      VNAudio.unlock();
+      var line = 'A soft blip for every letter typed.', k = 0;
+      var iv = setInterval(function () { if (k >= line.length) { clearInterval(iv); return; } if (line.charAt(k) !== ' ') VNAudio.voice(t, line.charAt(k)); k++; }, 30);
+    });
+    group('volume', ['mute', 'unmute', 'music 100%', 'music 55%'], function (t) {
+      VNAudio.unlock();
+      VNAudio.volumes(t === 'mute' ? { mute: true } : t === 'unmute' ? { mute: false } : { music: t === 'music 100%' ? 1 : 0.55 });
+    });
+  }
+
+  // ?manual=1 measures nothing by itself: only the listening desk is set up, and a drive script may call
+  // VNAudio.renderOffline and these helpers as it likes
+  window.__lab = { loadProgram: loadProgram, analyse: analyse, draw: draw, judge: judge, baseState: baseState, SAY: SAY, jobs: jobs, addButtons: addButtons };
+  if (q.get('manual') === '1') {
+    document.getElementById('tab').style.display = 'none';
+    loadProgram().then(function (program) { addButtons(program); window.__audio.done = true; }, function (e) { window.__audio.errors.push(String(e)); window.__audio.done = true; });
+    return;
+  }
+  run();
+}());
+</script>
+</body>
+</html>

@@ -1,0 +1,807 @@
+/* ==========================================================================
+   lab.css: the look of an experiment (misc/_lab).
+
+   Loaded after the kit:
+       <link rel="stylesheet" href="../_kit/kit.css"><script src="../_kit/kit.js"></script>
+       <link rel="stylesheet" href="../_lab/lab.css">
+
+   It styles what lab.js builds (the progress bar, the stimulus card, the
+   answer buttons, the typed-answer row, instructions and pauses, the results
+   sheet), what chart.js draws (class lab-chart) and what facts.js cites
+   (class lab-fact). Everything uses the kit's tokens, so both themes work; an
+   experiment's own stylesheet comes after this one and may override the
+   tokens below.
+
+   Nothing here is animated. The few transitions use the kit's duration
+   tokens, which are zero under reduced motion.
+   ========================================================================== */
+
+/* ---------- Tokens ------------------------------------------------------ */
+
+:root {
+	/* The three series colours of the charts: blue, orange, aqua. Each is at
+	   least 3:1 against the light --surface (#f7f8fa) and white (4.16, 3.33 and
+	   3.37 against --surface), and the trio stays apart under simulated
+	   protanopia, deuteranopia and tritanopia; do not swap one colour alone.
+	   Charts never rely on colour alone (keys, labels, the table). */
+	--lab-c1: #2a78d6;
+	--lab-c2: #e2602c;
+	--lab-c3: #169a6b;
+	/* The shadow at the edge of a code block that scrolls sideways. */
+	--lab-scroll-shade: rgba(0, 0, 0, 0.16);
+	/* Right and wrong. Never the only signal: the mark beside the word also
+	   changes shape. */
+	--lab-good: #0ca30c;
+	--lab-bad: #d03b3b;
+	/* What a chart sits on (the ring around a dot is drawn in it). */
+	--lab-plot-bg: var(--surface);
+	/* The least height of the stimulus card, so the answer buttons do not move
+	   from trial to trial. */
+	--lab-card-min: clamp(150px, 30vh, 260px);
+	--lab-width: 46rem;
+}
+
+:root[data-theme="dark"] {
+	--lab-c1: #3987e5;
+	--lab-c2: #d95926;
+	--lab-c3: #199e70;
+	--lab-scroll-shade: rgba(0, 0, 0, 0.55);
+}
+
+/* ---------- The frame ----------------------------------------------------- */
+
+.lab {
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+	width: 100%;
+	max-width: var(--lab-width);
+	margin: 0 auto;
+}
+
+.lab-screen { min-width: 0; }
+
+.lab-progress {
+	height: 4px;
+	overflow: hidden;
+	border-radius: 999px;
+	background: var(--surface-2);
+}
+
+.lab-progress-bar {
+	width: 0;
+	height: 100%;
+	border-radius: inherit;
+	background: var(--accent);
+	transition: width var(--dur-fast) linear;
+}
+
+.lab-auto-note {
+	margin: 0;
+	padding: 8px 12px;
+	border: 1px solid var(--border);
+	border-left: 3px solid var(--accent);
+	border-radius: 8px;
+	background: var(--surface);
+	color: var(--text-2);
+	font-size: 13px;
+	line-height: 1.45;
+}
+
+/* ---------- Instructions and pauses ----------------------------------------- */
+
+.lab-panel {
+	padding: 18px 20px 20px;
+	border: 1px solid var(--border);
+	border-radius: 14px;
+	background: var(--surface);
+}
+
+.lab-panel-body {
+	max-width: 40em;
+	font-size: 15.5px;
+	line-height: 1.55;
+}
+
+.lab-panel-body > :first-child { margin-top: 0; }
+.lab-panel-body > :last-child { margin-bottom: 0; }
+.lab-panel-body p { margin: 10px 0; }
+.lab-panel-body ul,
+.lab-panel-body ol { margin: 10px 0; padding-left: 1.3em; }
+.lab-panel-body li { margin: 4px 0; }
+
+.lab-panel-body h2 {
+	margin: 0 0 8px;
+	font: 650 19px/1.3 var(--font-body);
+}
+
+.lab-actions {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px 10px;
+	margin-top: 16px;
+}
+
+.lab-sheet-actions { margin-top: 0; }
+
+.lab-go {
+	min-width: 7.5rem;
+	min-height: 48px;
+	padding: 10px 22px;
+	border: 1px solid transparent;
+	border-radius: 12px;
+	background: var(--accent);
+	color: var(--bg);
+	font: 600 16px/1.2 var(--font-body);
+	cursor: pointer;
+	touch-action: manipulation;
+}
+
+.lab-go:hover { filter: brightness(1.08); }
+.lab-go:active { transform: translateY(1px); }
+
+.lab-go:disabled {
+	opacity: 0.5;
+	cursor: default;
+	filter: none;
+	transform: none;
+}
+
+/* ---------- A trial: the stimulus card and the answers ----------------------- */
+
+.lab-trial {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
+.lab-card {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-height: var(--lab-card-min);
+	padding: 18px;
+	overflow: hidden;
+	border: 1px solid var(--border);
+	border-radius: 14px;
+	background: var(--surface);
+}
+
+.lab-stim {
+	min-width: 0;
+	max-width: 100%;
+	color: var(--heading);
+	font-size: clamp(20px, 5.5vw, 28px);
+	line-height: 1.35;
+	text-align: center;
+	overflow-wrap: anywhere;
+}
+
+/* The stimulus is drawn while hidden and shown on its own frame; the clock
+   starts on the frame after that one. */
+.lab-card.is-waiting .lab-stim { visibility: hidden; }
+
+.lab-fix {
+	color: var(--text-2);
+	font: 300 34px/1 var(--font-mono);
+}
+
+.lab-feedback {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	min-height: 24px;
+	margin: 0;
+	color: var(--text);
+	font-size: 15px;
+	font-weight: 600;
+}
+
+/* The mark says it twice: by colour and by shape (a dot, a square, a ring). */
+.lab-feedback-mark {
+	flex: none;
+	width: 12px;
+	height: 12px;
+	border-radius: 50%;
+	background: var(--text-2);
+}
+
+.lab-feedback.is-good .lab-feedback-mark { background: var(--lab-good); }
+
+.lab-feedback.is-bad .lab-feedback-mark {
+	border-radius: 2px;
+	background: var(--lab-bad);
+}
+
+.lab-feedback.is-late .lab-feedback-mark {
+	border: 2px solid var(--text-2);
+	background: transparent;
+}
+
+.lab-prompt {
+	margin: 0;
+	color: var(--text-2);
+	font-size: 14.5px;
+	text-align: center;
+}
+
+.lab-choices {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 8.5rem), 1fr));
+	gap: 10px;
+}
+
+.lab-choices[data-n="5"],
+.lab-choices[data-n="6"],
+.lab-choices[data-n="7"],
+.lab-choices[data-n="8"],
+.lab-choices[data-n="9"] { grid-template-columns: repeat(auto-fit, minmax(5.2rem, 1fr)); }
+
+.lab-choice {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 10px;
+	min-width: 44px;
+	min-height: 52px;
+	padding: 10px 14px;
+	border: 1px solid var(--border-strong);
+	border-radius: 12px;
+	background: var(--surface);
+	color: var(--text);
+	font: 600 16px/1.25 var(--font-body);
+	cursor: pointer;
+	touch-action: manipulation;
+	-webkit-user-select: none;
+	user-select: none;
+	-webkit-tap-highlight-color: transparent;
+	transition: background-color var(--dur-fast) ease, border-color var(--dur-fast) ease;
+}
+
+.lab-choice:hover { background: var(--surface-2); }
+
+/* A word is broken only when it cannot fit on a line of its own, and then
+   with a hyphen where the language allows one. */
+.lab-choice-label {
+	min-width: 0;
+	overflow-wrap: break-word;
+	-webkit-hyphens: auto;
+	hyphens: auto;
+	text-align: center;
+}
+
+/* Five or more choices: narrow buttons, so the key hint goes under the label
+   and the label gets the whole width. */
+.lab-choices[data-n="5"] .lab-choice,
+.lab-choices[data-n="6"] .lab-choice,
+.lab-choices[data-n="7"] .lab-choice,
+.lab-choices[data-n="8"] .lab-choice,
+.lab-choices[data-n="9"] .lab-choice {
+	flex-direction: column;
+	gap: 2px;
+	padding: 8px 6px;
+}
+
+.lab-choice kbd { font-size: 11px; }
+
+/* Asleep until the clock starts (lab.js keeps the buttons focusable). */
+.lab-choice[aria-disabled="true"] {
+	opacity: 0.55;
+	cursor: default;
+}
+
+.lab-choice[aria-disabled="true"]:hover { background: var(--surface); }
+
+.lab-choice.is-chosen {
+	border-color: var(--accent);
+	background: var(--accent-soft);
+	box-shadow: inset 0 0 0 1px var(--accent);
+	opacity: 1;
+}
+
+/* A screen with no keyboard has no use for the key hints. */
+@media (hover: none) and (pointer: coarse) {
+	.lab-choice kbd { display: none; }
+}
+
+/* ---------- A typed answer -------------------------------------------------- */
+
+.lab-answer {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.lab-answer-label {
+	color: var(--text-2);
+	font-size: 13.5px;
+}
+
+.lab-answer-row {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: stretch;
+	gap: 10px;
+}
+
+.lab-input {
+	flex: 1 1 12rem;
+	min-width: 0;
+	min-height: 48px;
+	padding: 10px 12px;
+	border: 1px solid var(--border-strong);
+	border-radius: 12px;
+	background: var(--bg);
+	color: var(--text);
+	font: 16px/1.35 var(--font-mono);
+}
+
+textarea.lab-input {
+	min-height: 86px;
+	resize: vertical;
+}
+
+.lab-input::placeholder { color: var(--text-2); }
+.lab-input:disabled { opacity: 0.6; }
+
+/* ---------- Code, the way misc/05-obfuscation-game prints it ------------------- */
+
+/* A line too long for the card scrolls sideways, and a shadow at the edge it
+   runs past says so (the covers scroll with the text and hide the shadow
+   once that edge is reached). */
+.lab-code {
+	max-width: 100%;
+	margin: 0;
+	overflow-x: auto;
+	background:
+		linear-gradient(to right, var(--surface) 40%, transparent) left center / 28px 100% no-repeat local,
+		linear-gradient(to left, var(--surface) 40%, transparent) right center / 28px 100% no-repeat local,
+		radial-gradient(farthest-side at 0 50%, var(--lab-scroll-shade), transparent) left center / 12px 100% no-repeat scroll,
+		radial-gradient(farthest-side at 100% 50%, var(--lab-scroll-shade), transparent) right center / 12px 100% no-repeat scroll;
+	color: var(--text);
+	font: 14px/1.5 var(--font-mono);
+	text-align: left;
+	white-space: pre;
+	tab-size: 4;
+}
+
+.lab-code-line { display: block; }
+
+.lab-code-n {
+	display: inline-block;
+	width: 2.2em;
+	margin-right: 0.9em;
+	color: var(--text-2);
+	text-align: right;
+	-webkit-user-select: none;
+	user-select: none;
+}
+
+/* ---------- The results sheet ---------------------------------------------- */
+
+.lab-sheet {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+.lab-sheet-head {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px 10px;
+}
+
+.lab-sheet-title {
+	margin: 0 4px 0 0;
+	color: var(--heading);
+	font: 650 19px/1.3 var(--font-body);
+	outline: none;
+}
+
+.lab-chip {
+	display: inline-flex;
+	align-items: center;
+	min-height: 24px;
+	padding: 2px 10px;
+	border: 1px solid var(--border);
+	border-radius: 999px;
+	background: var(--surface);
+	color: var(--text-2);
+	font-size: 12.5px;
+	line-height: 1.3;
+	text-decoration: none;
+	white-space: nowrap;
+}
+
+a.lab-chip:hover {
+	border-color: var(--border-strong);
+	color: var(--text);
+}
+
+.lab-chip.lab-sim { border-style: dashed; }
+
+.lab-headline-slot:empty { display: none; }
+
+.lab-headline-label {
+	color: var(--text-2);
+	font-size: 14.5px;
+}
+
+.lab-headline-value {
+	color: var(--heading);
+	font: 650 clamp(40px, 12vw, 56px)/1.12 var(--font-body);
+	letter-spacing: -0.02em;
+}
+
+/* No number: a quiet dash, not a loud one. */
+.lab-headline.is-empty .lab-headline-value {
+	color: var(--text-2);
+	font-weight: 300;
+}
+
+.lab-headline-unit {
+	color: var(--text-2);
+	font-size: 0.4em;
+	font-weight: 500;
+	letter-spacing: 0;
+}
+
+.lab-headline-ci {
+	color: var(--text-2);
+	font-size: 13.5px;
+}
+
+.lab-sheet-body {
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+	min-width: 0;
+}
+
+.lab-sheet-body > p,
+.lab-note {
+	max-width: 42em;
+	margin: 0;
+	font-size: 14.5px;
+	line-height: 1.55;
+}
+
+.lab-figures {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+	gap: 14px;
+}
+
+.lab-figure {
+	min-width: 0;
+	margin: 0;
+	padding: 12px 12px 10px;
+	border: 1px solid var(--border);
+	border-radius: 12px;
+	background: var(--lab-plot-bg);
+}
+
+.lab-figcaption {
+	margin: 0 0 8px;
+	color: var(--heading);
+	font-size: 14px;
+	font-weight: 600;
+	line-height: 1.35;
+}
+
+.lab-chart-holder {
+	display: flex;
+	justify-content: center;
+	min-width: 0;
+}
+
+.lab-fignote {
+	margin: 8px 0 0;
+	color: var(--text-2);
+	font-size: 13px;
+	line-height: 1.45;
+}
+
+.lab-data {
+	margin-top: 6px;
+	color: var(--text-2);
+	font-size: 12.5px;
+}
+
+.lab-data summary {
+	width: fit-content;
+	padding: 4px 0;
+	cursor: pointer;
+}
+
+.lab-table {
+	width: 100%;
+	margin-top: 4px;
+	border-collapse: collapse;
+	color: var(--text);
+	font-size: 13px;
+}
+
+.lab-table th,
+.lab-table td {
+	padding: 4px 0 4px 12px;
+	border-bottom: 1px solid var(--border);
+	font-weight: 400;
+	font-variant-numeric: tabular-nums;
+	text-align: right;
+}
+
+.lab-table th:first-child,
+.lab-table td:first-child {
+	padding-left: 0;
+	text-align: left;
+}
+
+.lab-table thead th {
+	color: var(--text-2);
+	font-size: 12px;
+	font-weight: 500;
+}
+
+.lab-caveat {
+	margin: 0;
+	padding-top: 12px;
+	border-top: 1px solid var(--border);
+	color: var(--text-2);
+	font-size: 13px;
+	line-height: 1.5;
+}
+
+/* ---------- Cited figures (facts.js) ------------------------------------------ */
+
+/* A quoted figure stays on one line (the longest is under thirty characters). */
+.lab-fact-value {
+	font-weight: 600;
+	white-space: nowrap;
+}
+
+.lab-fact-ref {
+	display: inline-block;
+	padding: 0 5px;
+	border: 1px solid var(--border-strong);
+	border-radius: 6px;
+	color: var(--text-2);
+	font-size: 0.8em;
+	font-weight: 400;
+	line-height: 1.5;
+	text-decoration: none;
+	vertical-align: 0.08em;
+	white-space: nowrap;
+}
+
+.lab-fact-ref:hover {
+	border-color: var(--accent-ring);
+	color: var(--accent);
+}
+
+.lab-source {
+	margin: 0;
+	color: var(--text-2);
+	font-size: 13px;
+	line-height: 1.5;
+}
+
+.lab-source a { color: inherit; }
+.lab-source a:hover { color: var(--accent); }
+
+/* ---------- Charts (chart.js) ------------------------------------------------ */
+
+.lab-chart {
+	display: block;
+	max-width: 100%;
+	height: auto;
+	overflow: visible;
+	font-family: var(--font-body);
+}
+
+.lab-chart text {
+	fill: var(--text-2);
+	font-size: 11px;
+}
+
+.lab-chart .lc-tick { font-variant-numeric: tabular-nums; }
+.lab-chart .lc-cat { fill: var(--text); }
+.lab-chart .lc-label { font-size: 11.5px; }
+
+.lab-chart .lc-value {
+	fill: var(--text);
+	font-size: 11.5px;
+	font-weight: 600;
+}
+
+.lab-chart .lc-legend {
+	fill: var(--text);
+	font-size: 11.5px;
+}
+
+/* The rho label sits inside the plot: a halo in the plot's colour keeps it
+   readable over a gridline or a dot. */
+.lab-chart .lc-note {
+	fill: var(--text);
+	font-size: 12px;
+	font-weight: 600;
+	paint-order: stroke;
+	stroke: var(--lab-plot-bg);
+	stroke-width: 4px;
+	stroke-linejoin: round;
+}
+
+.lab-chart .lc-grid {
+	stroke: var(--border);
+	stroke-width: 1;
+	shape-rendering: crispEdges;
+}
+
+.lab-chart .lc-axis {
+	stroke: var(--border-strong);
+	stroke-width: 1;
+	shape-rendering: crispEdges;
+}
+
+.lab-chart .lc-fill.lc-s1 { fill: var(--lab-c1); }
+.lab-chart .lc-fill.lc-s2 { fill: var(--lab-c2); }
+.lab-chart .lc-fill.lc-s3 { fill: var(--lab-c3); }
+
+.lab-chart .lc-line {
+	fill: none;
+	stroke-width: 2;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+}
+
+.lab-chart .lc-line.lc-thin { stroke-width: 1.5; }
+.lab-chart .lc-line.lc-s1 { stroke: var(--lab-c1); }
+.lab-chart .lc-line.lc-s2 { stroke: var(--lab-c2); }
+.lab-chart .lc-line.lc-s3 { stroke: var(--lab-c3); }
+
+/* A dot keeps a ring of the plot's colour, so it stays whole where it crosses
+   a line or another dot. */
+.lab-chart .lc-dot {
+	paint-order: stroke;
+	stroke: var(--lab-plot-bg);
+	stroke-width: 3;
+}
+
+.lab-chart .lc-whisker {
+	fill: none;
+	stroke: var(--text);
+	stroke-width: 1.5;
+	stroke-linecap: round;
+}
+
+.lab-chart .lc-fit {
+	stroke: var(--text);
+	stroke-width: 1.5;
+	stroke-linecap: round;
+}
+
+.lab-chart .lc-ref {
+	stroke: var(--text-2);
+	stroke-width: 1;
+	stroke-dasharray: 4 3;
+}
+
+.lab-chart .lc-curve {
+	fill: none;
+	stroke: var(--text);
+	stroke-width: 1.5;
+	stroke-linejoin: round;
+}
+
+.lab-chart .lc-curve.lc-k2 { stroke-dasharray: 5 4; }
+
+.lab-chart .lc-median {
+	stroke: var(--text);
+	stroke-width: 2;
+	stroke-linecap: round;
+}
+
+.lab-chart .lc-markline {
+	stroke: var(--text);
+	stroke-width: 1.5;
+}
+
+.lab-chart .lc-hit {
+	fill: transparent;
+	stroke: none;
+}
+
+.lab-chart .lc-mark:hover .lc-bar,
+.lab-chart .lc-mark:hover .lc-dot { filter: brightness(1.18); }
+
+.lab-tip {
+	position: fixed;
+	z-index: 1200;
+	max-width: min(280px, calc(100vw - 12px));
+	padding: 6px 9px;
+	border-radius: 7px;
+	background: var(--heading);
+	color: var(--bg);
+	box-shadow: var(--shadow);
+	font: 12.5px/1.35 var(--font-body);
+	pointer-events: none;
+}
+
+/* ---------- Narrow screens (works from 360 px) -------------------------------- */
+
+@media (max-width: 480px) {
+	.lab-panel { padding: 16px 16px 18px; }
+	.lab-card { padding: 14px 12px; }
+	/* A figure runs to the edges of the screen, so a 340 px chart is drawn at
+	   its real size on a 360 px phone. */
+	.kit-pad .lab-figure {
+		margin-right: calc(-1 * var(--kit-gutter));
+		margin-left: calc(-1 * var(--kit-gutter));
+		padding: 12px 8px 10px;
+		border-right: 0;
+		border-left: 0;
+		border-radius: 0;
+	}
+	.kit-pad .lab-figcaption,
+	.kit-pad .lab-fignote,
+	.kit-pad .lab-data { padding: 0 8px; }
+}
+
+/* ---------- Thumbnail mode (?thumb=1) -------------------------------------------
+   The thumbnail is the results sheet of a simulated sitting: the headline
+   number on the left, the first figure on the right, nothing else. Give
+   another element class lab-thumb to keep it in. */
+
+html.is-thumb .lab {
+	max-width: none;
+	height: 100%;
+}
+
+html.is-thumb .lab-screen {
+	flex: 1 1 auto;
+	min-height: 0;
+}
+
+html.is-thumb .lab-progress,
+html.is-thumb .lab-caveat,
+html.is-thumb .lab-sheet-actions,
+html.is-thumb .lab-data,
+html.is-thumb .lab-fignote { display: none; }
+
+html.is-thumb .lab-sheet {
+	display: grid;
+	grid-template-columns: minmax(0, 5fr) minmax(0, 8fr);
+	grid-template-rows: auto minmax(0, 1fr);
+	gap: 8px 24px;
+	height: 100%;
+}
+
+html.is-thumb .lab-sheet-head { grid-column: 1 / -1; }
+html.is-thumb .lab-sheet-title { font-size: 22px; }
+html.is-thumb .lab-headline-slot { align-self: center; }
+html.is-thumb .lab-headline-label { font-size: 17px; }
+html.is-thumb .lab-headline-value { font-size: 84px; }
+html.is-thumb .lab-headline-ci { font-size: 15px; }
+
+html.is-thumb .lab-sheet-body {
+	justify-content: center;
+	min-height: 0;
+}
+
+html.is-thumb .lab-sheet-body > :not(.lab-figures):not(.lab-figure):not(.lab-thumb),
+html.is-thumb .lab-sheet-body > .lab-figures ~ .lab-figures,
+html.is-thumb .lab-sheet-body > .lab-figures ~ .lab-figure,
+html.is-thumb .lab-sheet-body > .lab-figure ~ .lab-figure,
+html.is-thumb .lab-sheet-body > .lab-figure ~ .lab-figures,
+html.is-thumb .lab-figures > :nth-child(n + 2) { display: none; }
+
+html.is-thumb .lab-figures { display: block; }
+html.is-thumb .lab-chart-holder { display: block; }
+
+html.is-thumb .lab-figure .lab-chart {
+	width: 100%;
+	max-height: 330px;
+}

@@ -330,7 +330,7 @@ babble}`: the volumes `music` 0.55, `ambience` 0.4, `sfx` 0.6, `voice` 0.35 (eac
 Test hooks (URL): `autoplay=N|end` (instant, no autosave), `pick=K` (option K at menus), `screen=save|load|config|log|chapters|title`,
 `trans=<name>` (freeze that transition half-way into stop N), `thumb=1`, `cast=1`, `gallery=bg|cg` (`&mod=night`, `&only=a,b`),
 `click=N` (Start, then N animated advances), and for the optional modules `audio=0|1`, `paint=1|0`, `live=1|0`,
-`camera=1|0`, `op=1|0` (see *Optional modules*). `src=draft:<key>` and `studio=1` belong to the Studio (see *Studio preview*).
+`camera=1|0`, `op=1|0` (see *Optional modules*), and `paintwarm=1|0` (read by `paint.js` itself: painting ahead). `src=draft:<key>` and `studio=1` belong to the Studio (see *Studio preview*).
 
 Test hook (JS): `window.__vnStage = {S, prefs, catalog(), mods}`, the live run state for the browser harness (read-only by
 convention). `S.cue` is the last cue handed to the audio; `mods` is `{has, off, force}`: which modules were loaded at
@@ -377,6 +377,30 @@ What a module is handed and what it may look for (index.html; the names are stab
                                                               unless its own rule says otherwise)
 ```
 
+`#stage`, `.vn-world` and `.vn-bars` are `overflow: clip` (with `hidden` as the fallback): the letterbox bars and the
+title zoom reach past the frame, and a `hidden` box can still be scrolled by `scrollIntoView` or by focus, which
+shifted the whole picture up.
+
+The living cast's markup: inside `svg.vn-sprite` of a person, the player and the page, one `g.vn-breath` holds the
+whole figure (the lattice has none). In each `g.vn-face` of a person: `g.vn-eye-open` (the open eye and its lower
+lash line), `g.vn-blink` (`display="none"`; absent on `laugh`, whose eyes are already shut), `g.vn-mouth-shut` (the
+mouth as drawn) and `g.vn-mouth` (`display="none"`, the same mouth open). The lattice has `g.vn-mouth-shut` and
+`g.vn-mouth` in each face and the classes `vn-drift vn-drift-1|2|3` on up to nine circles in `g.vn-lattice-nodes`.
+`live.js` sets on the `.vn-actor`: `data-live` (`""` while living, `"hold"` on a detached actor that is fading out),
+`data-blink`, `data-mouth`, and the inline custom properties `--vn-breath` (period) and `--vn-breath-at` (delay).
+`vn-live.css` does the rest.
+
+The camera's markup: `camera.js` sets the class `vn-cam` on `#stage` and writes four registered custom properties
+(`--cam-x`, `--cam-y`, `--cam-push`, `--cam-pan`, `@property ... inherits: false`) on `.vn-world` and on the clone
+in `.vn-trans`; `camera.css` hands them down with `inherit` and transforms the `svg`/`img` inside `.vn-bg` and
+`.vn-cgart` and the layers `.vn-fxback`, `.vn-sprites` (which gets `z-index: 1`) and `.vn-fxlayer`, each by its own
+depth and scaled just enough that no edge shows. Every value is eased in script, never by a CSS transition, so the
+snapshot is born with the same transform and nothing jumps.
+
+The opening's markup: `op.js` puts one `.vn-op` overlay (z-index 18) into `#stage` while it plays, with
+`.vn-op-shot` pictures, the title, the column `.vn-op-vert`, the cast roll `.vn-op-roll`, `.vn-op-chapters`, the
+credit `.vn-op-end` and the button `.vn-op-skip`; `op.css` styles them.
+
 ## Optional modules
 
 Six scripts are loaded before `stage.js`, in this order: `score.js`, `audio.js`, `paint.js`, `live.js`, `camera.js`,
@@ -399,8 +423,39 @@ VNAudio  (audio.js)        unlock()  sync(cue, {instant})  hold(on)  sting(kind)
 VNPaint  (paint.js)        mount(layerEl, svgString, key) -> Promise   unmount(layerEl)   setEnabled(bool)
 VNLive   (live.js)         attach(actorEl, castDecl)   detach(actorEl)   speak(castKey, on)   setEnabled(bool)
 VNCamera (camera.js)       attach(stageEl)   present(state, op)   reset()   setEnabled(bool)
-VNOp     (op.js)           available(program) -> bool   play(program, stageEl, {audio}) -> Promise   [stop()]
+VNOp     (op.js)           available(program) -> bool   play(program, stageEl, {audio, cue}) -> Promise   [stop()]
 ```
+
+What each module adds beyond the contract (tests and other modules may use these; the stage does not):
+
+- **VNScore** (pure, UMD) also exports `TRACKS`, `AMBIENCE`, `VOICES`, `MODES`, `PHRASE` (8 bars), `CYCLE` (10),
+  `theme(program)`, `bar(cue, i)`, `holdBar(cue, i)`, `resolveBar(cue)`, `sting(cue, kind)`, `deg2midi`, `hourOf`. A cue
+  is `{key, track, ambience, tempo, scale, beats, theme, ...}`; `key` is `track|ambience layers joined by +|filter|seed`. The automatic
+  choice beyond the script's `@music`/`@ambience`: the title is `theme` at full intensity; a crowded room at night is
+  `room`; outdoors by day is `wind`; `void` and `paper` have no ambience; indoors by day the music is `theme`, outdoors
+  `bright`.
+- **VNAudio** restarts the music only when the track, filter or seed part of the key changes; a change of ambience
+  alone fades its layers and leaves the phrase playing. An instant sync cuts at once and starts the wanted cue 0.22 s
+  after the last such call, so Skip does not strike the first note of every scene. `VNAudio.tempo` (read-only) is the
+  playing cue's tempo; `VNAudio._debug({meter})` returns the engine's state for tests, `VNAudio._Engine` builds the
+  graph on any context. `test-audio.html` (`?story=`, `?bars=`, `?manual=1`, which puts every track, ambience, effect
+  and sting on a button) is the page for listening.
+- **VNPaint** also has `prepare(svgString, key[, layerEl]) -> Promise` (paints into its cache, shows nothing) and
+  `stats()` for tests (`enabled, cached, keys, retired, queued, running, pending, fades, urlsMade, urlsDropped,
+  urlsLive, images, workers, workersOff, warm, maxWidth`); `window.__vnPaintIdle()` resolves when nothing is being
+  painted. `mount` resolves at once, and inserts its image synchronously, for a picture already in the cache. It
+  paints ahead: it reads `__vnStage.S.program.ops`, `S.stop.index`, `S.stop.state.fx` and `S.mode` to find the next
+  pictures, so those names must stay. Painting ahead is off under `?autoplay=` and `?thumb=1` unless `paintwarm=1`;
+  `paintwarm=0` turns it off anywhere. Under `html.vn-paint-on` the layers `.vn-bg` and `.vn-cgart` get
+  `isolation: isolate`, `::before` (grain) and `::after` (vignette).
+- **VNLive** observes `.vn-trans` (childList) to give each cloned actor the pose of its original; the clone's
+  animations are paused by `vn-live.css`. `VNLive._state()` returns `{enabled, actors, queue, timer, speaking}`.
+- **VNCamera** has `debug()` (`{attached, world, enabled, active, hoverless, x, y, tx, ty, push, pan, panOn, long,
+  held, running}`) and the constants `LONG` (a line of at least 90 characters gets the push-in) and `PUSH` (0.03).
+- **VNOp** also exports the pure parts `plan(program, beatMs)`, `beatMs`, `pictures`, `castNames`, `originalWork`,
+  `titleParts`, `dramatized`, and `debug()` (`{playing, phase, t, beat, beatSrc, themed, total, shots, chapters,
+  still}`). `play` resolves with `'done'`, `'skipped'` or `'stopped'`; `#stage` then has the class `op-done` and
+  `data-op` that word (`"playing"` while it runs).
 
 ### When each is called
 
@@ -467,7 +522,13 @@ during a transition is never attached.
 the world, the cue and the sound effects. `VNCamera.reset()` whenever the world is cleared (the title screen, a new run,
 the picker) and when a full-screen menu opens; when that menu closes on the same stop, `present(state, op)` is sent
 again between `setEnabled(false)` and `setEnabled(true)`, so the framing comes back without a move. Mind that
-`.vn-world` already uses `transform` for `@fx shake` / `pulse` and `filter` for the grade.
+`.vn-world` already uses `transform` for `@fx shake` / `pulse` and `filter` for the grade (so the camera never
+transforms `.vn-world` itself, only what is inside it).
+What it does: the planes follow the pointer by a few pixels (eased, time constant 480 ms; the background least, the
+cast more, the weather in front most); on a screen with no hover it drifts very slowly by itself (no sensor is read).
+A `say` or `narrate` line of at least 90 characters gets a slow push-in to scale 1.03 over about nine seconds, which
+settles back on the next line; a CG pans slowly across (28 s) and holds, and a second CG pans back the other way.
+`reset()` holds the framing at rest until the next `present`.
 
 **setEnabled, and the settled states.** `VNLive` and `VNCamera` are enabled when their pref is on and motion is wanted
 at all: Config > Effects on, no `prefers-reduced-motion`, not the text-only transcript. Around a replayed stop they are
@@ -476,11 +537,12 @@ then `setEnabled(true)`; during Skip they rest until Skip ends. The other calls 
 module can keep track; each module is told only when its value changes, and once at boot.
 
 **Opening.** `VNOp.available(program)` when a title screen is drawn and when Start is pressed. `VNOp.play(program, stageEl,
-{audio: window.VNAudio || null})` when the reader presses Start (a fresh run: not Continue, not a load, not a deep
+{audio: window.VNAudio || null, cue: S.cue})` (`cue` is the title's cue, so the movie can start the theme from its
+first bar; both are `null` under `audio=0`) when the reader presses Start (a fresh run: not Continue, not a load, not a deep
 link, not Restart or Replay, not a test hook), the pref `opening` is on and `available` answered true; the first stop
 is presented when the promise settles. The title menu gains an item "Opening" (`button[data-t="opening"]`, shown when
-`available` answers true) that plays it again and returns to the title; with it the menu has seven or eight entries
-and is set in two columns (`.ts-menu.is-tall`). It never plays in a settled state (reduced motion, Effects off), and
+`available` answers true) that plays it again and returns to the title. A menu of more than six entries (Opening,
+Continue and Chapters together, or Continue and Chapters alone) is set in two columns (`.ts-menu.is-tall`). It never plays in a settled state (reduced motion, Effects off), and
 then the menu item is not shown.
 While it plays: `#stage` has the class `op-playing`, the world is empty (Start) or the title screen is underneath
 (replay), the stage's quick menu, top bar and toasts are hidden, and the stage ignores its own keys and pointer, so
@@ -488,6 +550,16 @@ the module handles its own skip. Three keys stay with the stage: `F` (fullscreen
 always ends the wait: the stage calls the optional `VNOp.stop()` and goes on. `stop()` is also called if the stage
 has to move on underneath a movie (a Studio reload). An overlay should sit above `.vn-titlescreen` (z-index 13) and
 below `.vn-screen` (20).
+What it plays (about 21 s, every cut on the beat of the story's theme): black and a line of light; the title set
+large; four or five cuts through the story's own backgrounds and CGs in script order, with the title in a vertical
+column and the cast roll from `program.cast`; the chapter titles; the title once more over the first picture; and the
+source as ORIGINAL WORK with "Dialogue is dramatized" (left out for a story that is the post itself, `@read`). Only
+type, pictures and light move (opacity, blur, a slow scale); nothing spins or bounces. A story needs a title and at
+least two pictures. It is skipped by a click or tap, Enter, Space, Escape or the Skip button (a second click of the
+double click that pressed Start, within 300 ms, does not count). Under reduced motion (only reachable with `op=1`)
+it is one still card for three seconds. When the audio object can, the theme is restarted with the movie (`sync`
+without a track, then the title cue) and the cuts fall on its beat; the first stop's cue takes over on the next bar
+line after the movie ends. Pictures are painted ahead (`VNPaint.prepare`, same keys as the stage) when painting is on.
 
 ### Capture and test runs, and the URL hooks
 
@@ -556,3 +628,12 @@ next from the script itself (`VN.parse`, then `run.replay(choiceLog, stopIndex)`
 
 A message that carries an `id` is taken only by the stage playing that program, so two stages in one browser do not
 both move. Remote messages never unlock the sound.
+
+The presenter side: `presenter.js` loads `vn.js` and the same script by the stage's rule (manifest entry, `?src=`,
+`?src=draft:<key>`, `?post=`; with no parameter it reads what the stage announces). It shows the stop on show, the
+stop after it (looking through pauses; at a menu, where each option leads), `op.note`, chapter and position, a timer
+that starts with the first advance (not with Start, not with a pause the stage passes itself) and the wall clock.
+Keys: Right, Space, Enter or Page Down next; Left or Page Up back; 1 to 9 choose; R resets the timer. It sends
+`hello` every 2 s while no stage answers and every 5 s, with the story id, while it follows one; 12 s of silence
+means the stage is gone. When `hash` differs from its own it reads the script again once and then warns. Test hook:
+`window.__vnPresenter = {P, render, load, fit}`.

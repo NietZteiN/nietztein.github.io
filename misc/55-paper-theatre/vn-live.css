@@ -1,1 +1,93 @@
-/* placeholder: replaced by the live builder */
+/*
+ * Paper Theatre - the living cast (live.js). Breathing, blinking and a speaking mouth, all of it off unless
+ * live.js has marked the actor:
+ *   .vn-actor[data-live]    breathing (for the model: a few drifting, shimmering nodes instead); --vn-breath and
+ *                           --vn-breath-at set the period and the delay from a hash of the character's key;
+ *                           data-live="hold" keeps the pose, paused, while a detached actor fades out
+ *   .vn-actor[data-blink]   the eyes are shut (.vn-blink shown, .vn-eye-open hidden)
+ *   .vn-actor[data-mouth]   the mouth is open (.vn-mouth shown, .vn-mouth-shut hidden)
+ * The overlays sit inside every face group, so they follow whichever face is up. Without these attributes (no
+ * live.js, Effects off, reduced motion, a capture) the sprite is exactly the still drawing.
+ *
+ * Every keyframe below moves in steps, on purpose. The figure sits inside an SVG filter (rim light and contact
+ * shadow), so each change of the transform redraws the whole sprite; moved on every frame that took a third of
+ * the main thread with three figures on stage. A breath is a few pixels over two seconds: in steps of a fifth of
+ * a pixel, six to ten times a second, it looks the same and costs almost nothing. Keep the steps when editing.
+ */
+
+.vn-actor[data-live] .vn-breath {
+  transform-box: view-box;
+  transform-origin: 300px 730px;   /* the hips: chest, shoulders and head rise together, the neck never parts */
+  animation: vn-breathe var(--vn-breath, 5s) linear var(--vn-breath-at, 0s) infinite;
+}
+/* the reader seen from behind breathes about the bottom of the frame; the manuscript page floats */
+.vn-actor[data-live][data-kind="player"] .vn-breath { transform-origin: 300px 1000px; }
+.vn-actor[data-live][data-kind="page"] .vn-breath { animation-name: vn-float; animation-duration: calc(var(--vn-breath, 5s) * 1.4); }
+
+/* in for two fifths of the period, out for the rest; the values follow a sine between the turning points */
+@keyframes vn-breathe {
+  0% { transform: scale(1, 1); animation-timing-function: steps(3); }
+  10.5% { transform: scale(1.00023, 1.00085); animation-timing-function: steps(6); }
+  21% { transform: scale(1.0008, 1.0029); animation-timing-function: steps(6); }
+  31.5% { transform: scale(1.00137, 1.00495); animation-timing-function: steps(3); }
+  42% { transform: scale(1.0016, 1.0058); animation-timing-function: steps(3); }
+  56.5% { transform: scale(1.00137, 1.00495); animation-timing-function: steps(7); }
+  71% { transform: scale(1.0008, 1.0029); animation-timing-function: steps(7); }
+  85.5% { transform: scale(1.00023, 1.00085); animation-timing-function: steps(3); }
+  100% { transform: scale(1, 1); }
+}
+@keyframes vn-float {
+  0% { transform: translate(0, 0); animation-timing-function: steps(4); }
+  12.5% { transform: translate(0, -0.73px); animation-timing-function: steps(8); }
+  25% { transform: translate(0, -2.5px); animation-timing-function: steps(8); }
+  37.5% { transform: translate(0, -4.27px); animation-timing-function: steps(4); }
+  50% { transform: translate(0, -5px); animation-timing-function: steps(4); }
+  62.5% { transform: translate(0, -4.27px); animation-timing-function: steps(8); }
+  75% { transform: translate(0, -2.5px); animation-timing-function: steps(8); }
+  87.5% { transform: translate(0, -0.73px); animation-timing-function: steps(4); }
+  100% { transform: translate(0, 0); }
+}
+
+/* The model is a figure of light: it does not breathe or blink. A few of its lattice nodes wander a little (less
+   than their own width, so each stays on its crossing of the lattice) and dim and brighten. The three rhythms
+   share one twelve-second clock that ticks five times a second, so all the nodes change in the same frames and
+   the figure is redrawn five times a second, not fifteen. */
+.vn-actor[data-live] .vn-drift {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: vn-drift-a 12s steps(60) var(--vn-breath-at, 0s) infinite alternate;
+}
+.vn-actor[data-live] .vn-drift-2 { animation-name: vn-drift-b; animation-direction: normal; }
+.vn-actor[data-live] .vn-drift-3 { animation-name: vn-drift-c; animation-direction: normal; }
+
+@keyframes vn-drift-a {
+  from { transform: translate(0, 0); fill-opacity: 1; }
+  to { transform: translate(2.2px, -2.6px); fill-opacity: 0.4; }
+}
+@keyframes vn-drift-b {
+  0% { transform: translate(0, 0); fill-opacity: 1; animation-timing-function: steps(30); }
+  50% { transform: translate(-2.6px, 1.6px); fill-opacity: 0.5; animation-timing-function: steps(30); }
+  100% { transform: translate(0, 0); fill-opacity: 1; }
+}
+@keyframes vn-drift-c {
+  0% { transform: translate(0, 0); fill-opacity: 1; animation-timing-function: steps(20); }
+  33.333% { transform: translate(1.2px, 2.6px); fill-opacity: 0.35; animation-timing-function: steps(20); }
+  66.667% { transform: translate(-1.6px, 1.2px); fill-opacity: 0.8; animation-timing-function: steps(20); }
+  100% { transform: translate(0, 0); fill-opacity: 1; }
+}
+
+.vn-actor[data-blink] .vn-blink { display: inline; }
+.vn-actor[data-blink] .vn-eye-open { display: none; }
+.vn-actor[data-mouth] .vn-mouth { display: inline; }
+.vn-actor[data-mouth] .vn-mouth-shut { display: none; }
+
+/* An actor on its way out (detached, fading for half a second) keeps the pose it had: live.js marks it
+   data-live="hold" and its animations stop where they are, so the figure does not drop back as it fades. */
+.vn-actor[data-live="hold"] .vn-breath, .vn-actor[data-live="hold"] .vn-drift { animation-play-state: paused; }
+
+/* The copy of the world that a transition holds is a picture: eyes open, mouth shut, and its animations paused.
+   A cloned animation would begin again from rest; live.js gives each cloned actor the delay (--vn-breath-at) that
+   puts the paused animation at the pose the original had, so nothing jumps when the transition starts. */
+.vn-trans .vn-breath, .vn-trans .vn-drift { animation-play-state: paused !important; }
+.vn-trans .vn-blink, .vn-trans .vn-mouth { display: none !important; }
+.vn-trans .vn-eye-open, .vn-trans .vn-mouth-shut { display: inline !important; }

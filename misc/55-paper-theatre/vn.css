@@ -220,7 +220,9 @@ main { flex: 1; display: flex; flex-direction: column; align-items: center; min-
 #stage {
   position: relative; width: 100%; aspect-ratio: 16 / 9;
   background: #06070d; color: var(--vn-ink);
-  overflow: hidden; border-radius: 3px;
+  /* clip, not hidden: the letterbox bars and the title zoom reach past the frame, and a hidden box can still be
+     scrolled by script or by focus (scrollIntoView), which shifted the whole picture up by the bars' height */
+  overflow: hidden; overflow: clip; border-radius: 3px;
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35);
   user-select: none; -webkit-user-select: none; touch-action: pan-y;
   container-type: inline-size;
@@ -244,7 +246,7 @@ body.playing #stage { width: min(100vw, calc(100vh * 16 / 9)); width: min(100vw,
 
 /* ---------- The world: background, cast, CG, particles, grade ----------- */
 
-.vn-world { z-index: 1; overflow: hidden; }
+.vn-world { z-index: 1; overflow: hidden; overflow: clip; }
 .vn-world > div { position: absolute; inset: 0; }
 .vn-world::after {
   /* canvas tooth over everything painted */
@@ -320,7 +322,7 @@ body.fx-off .vn-fxlayer, body.fx-off .vn-world::after { display: none; }
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260'%3E%3Cfilter id='n' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.35  0 0 0 0 0.28  0 0 0 0 0.2  0 0 0 0.8 -0.3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 #stage.flashback .vn-memory { opacity: 1; }
-.vn-bars { z-index: 3; pointer-events: none; }
+.vn-bars { z-index: 3; pointer-events: none; overflow: hidden; overflow: clip; }
 .vn-bars i { position: absolute; left: 0; right: 0; height: 7%; background: #000; transition: transform 0.6s ease; }
 .vn-bars i:first-child { top: 0; transform: translateY(-101%); }
 .vn-bars i:last-child { bottom: 0; transform: translateY(101%); }

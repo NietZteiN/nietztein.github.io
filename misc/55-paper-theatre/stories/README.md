@@ -275,9 +275,30 @@ is one sound, once, as the next line appears. It is not heard again when the rea
 
 `@music` and `@ambience` last until changed, like `@tone`; a deep link or a chapter jump lands with the right ones.
 An unknown name is a warning that lists the valid ones: music and ambience fall back to `auto`, an unknown `@sfx` is
-ignored. The sound itself is made by `score.js` and `audio.js` in the engine folder; while those are placeholders the
-directives are parsed, linted and carried in the state, and nothing sounds. Sound never starts before the reader's
-first click or key press.
+ignored. The sound itself is made in the browser by `score.js` (the notes, as pure data: each story gets its own
+eight-bar theme made from the letters of its title) and `audio.js` (a small piano, pad and ambience synthesiser on
+Web Audio; nothing is downloaded). Sound never starts before the reader's first click or key press. To hear every
+track, ambience, effect and sting on buttons, open `misc/55-paper-theatre/test-audio.html?manual=1`.
+
+## What the reader sees besides the script
+
+Four more modules dress the stage. None of them needs anything in the script; each has a switch in Config, and each
+is off by itself under reduced motion where it moves (the painting stays):
+
+- **Painted backgrounds** (`paint.js`): every background and CG is repainted in a worker as a soft painted picture
+  that fades in over the drawn one, and the next pictures are painted ahead. A picture that was not painted ahead
+  shows drawn for a second or two first.
+- **Living cast** (`live.js`): the people on stage breathe, blink now and then, and the speaker's mouth moves while
+  the line types.
+- **Camera** (`camera.js`): the picture's layers move a few pixels with the pointer (background least, weather in
+  front most), a long line (90 characters or more) gets a slow push-in, and a CG a slow pan.
+- **Opening movie** (`op.js`): about twenty seconds when the reader presses Start on a fresh story, built from the
+  script alone: the title, cuts through the story's own backgrounds and CGs in script order, the cast roll from
+  `@cast`, the chapter titles and the source (`@cite`) as ORIGINAL WORK. A story needs a title and at least two
+  pictures to have one. It can be skipped at any moment and played again from the title menu (Opening).
+
+So the cast roll and the cuts come from what you write: `@cast` names, `@chapter` titles and the order of `@bg` and
+`@cg` are what the opening shows.
 
 ## Presenter notes
 
@@ -292,7 +313,8 @@ Jack (smile): Before the numbers, place a bet.
 ```
 
 `P` while a story is open (title screen or playing) opens the presenter view, `presenter.html`, in a second window:
-it follows the stage and can advance it.
+it follows the stage and can advance it. Keys there: Right, Space or Enter next, Left back, 1 to 9 choose, R resets
+the timer. A script with no note at all hides the note column.
 
 ## Chips and facts
 
@@ -374,7 +396,7 @@ The engine fetches `.vn` files, so `file://` does not work; serve the site
 root. Any static server does:
 
 ```text
-powershell -ExecutionPolicy Bypass -File <tools>\serve.ps1 -Port 8800     # the repo's helper, or
+node scripts/serve.mjs                                                      # the repo's server, or
 npx serve .                                                                 # or VS Code Live Server
 ```
 
@@ -396,9 +418,9 @@ Then open, from the site root:
   file; `&studio=1` makes the stage a live preview that the Studio drives (nothing is saved; see OPS.md).
 - `&audio=0`, `&paint=0`, `&live=0`, `&camera=0`, `&op=0` — switch one of the optional modules (sound, painted
   backgrounds, living cast, camera, opening movie) off; `=1` forces it on, also under `&autoplay=` and `?thumb=1`,
-  where they otherwise rest.
+  where they otherwise rest. `&paintwarm=1` paints ahead under those hooks too.
 
-A story opens on its title screen (Start, Continue, Chapters, Load, Log, Config, Back to stories) and then plays
+A story opens on its title screen (Start, Continue, Chapters, Load, Log, Config, Opening, Back to stories) and then plays
 full-bleed. With `?src=` (or `?drafts=1`) a `⚠ n` button at the top right lists every parser and lint issue with line
 numbers; they are mirrored to the browser console, and a fatal issue replaces the stage with a panel that names the
 line. Keys while playing: Space/Enter advance, Backspace back, `L` backlog, `A` auto, `S` skip, `H` or right-click hide
@@ -416,24 +438,30 @@ powershell -ExecutionPolicy Bypass -File <tools>\serve.ps1 -Port 8851
 "C:\Program Files\nodejs\node.exe" <tools>\vn-e2e.mjs "quick /" back  # only rows whose "group / name" contains a word
 ```
 
-It reads the live run through `window.__vnStage` (`{S, prefs, catalog()}`, read-only by convention). Run it after any
-change to `stage.js`, `vn.css` or `index.html`.
+It reads the live run through `window.__vnStage` (`{S, prefs, catalog(), mods}`, read-only by convention). Run it after any
+change to `stage.js`, `vn.css` or `index.html`. The repo's own harness (`scripts/qa/drive.mjs`, see
+`scripts/qa/README.md`) runs such scripts with Chrome and Node alone.
 
 ## Testing
 
 ```text
-"C:\Program Files\nodejs\node.exe" misc/55-paper-theatre/test.js
+node misc/55-paper-theatre/test.js
 ```
 
-Node is not on the PATH on this machine; always use the full path. `test.js`
+`test.js`
 parses and lints every `stories/*.vn` (and `_facts/*`), walks every branch to
 `@end`, runs the blog segmenter over every `blog/posts/*.md`, snapshot-checks
 the art builders, and runs the `index.html` link check. To run only the link
 check:
 
 ```text
-"C:\Program Files\nodejs\node.exe" misc/55-paper-theatre/test-links.js
+node misc/55-paper-theatre/test-links.js
 ```
+
+The modules have tests of their own, all in Node: `test-art.js` (the art builders, the living cast's markup
+included), `test-score.js` (the score: every pitch in its scale and range, themes, cues, stings), `test-paint.js`
+(the painting filter). In a browser, `node scripts/qa/smoke.mjs 55-paper-theatre` loads the theatre the way the site's
+gate does.
 
 ## The manifest and the builder
 

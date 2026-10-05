@@ -1,0 +1,24 @@
+# Runs the repo's checks that need no browser on every push to main and on
+# demand: card generation, manifests, the kit and Paper Theatre tests, the data
+# kits' tests, the Desk's tests. The browser smoke test (scripts/qa) runs locally.
+name: Check
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Run every non-browser check
+        run: node scripts/test-all.mjs

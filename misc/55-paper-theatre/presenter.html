@@ -1,16 +1,252 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="color-scheme" content="light dark">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark light">
+<meta name="robots" content="noindex">
 <title>Presenter view · Paper Theatre</title>
 <link rel="icon" href="data:,">
-<!-- placeholder: replaced by the presenter builder -->
+<script>
+  // Theme before first paint, by the theatre's own rule: ?theme=, else the site's localStorage key, else the OS.
+  // Nothing on this page is loaded from outside the site (no web fonts: the lectern may have no network).
+  (function () {
+    var t = 'dark';
+    try {
+      var q = new URLSearchParams(location.search).get('theme');
+      t = (q === 'light' || q === 'dark') ? q : localStorage.getItem('theme');
+      if (t !== 'light' && t !== 'dark') t = (window.matchMedia && !window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'light' : 'dark';
+    } catch (e) { t = 'dark'; }
+    document.documentElement.setAttribute('data-theme', t);
+  })();
+</script>
+<style>
+  :root {
+    --bg: #0a0b0f; --panel: #14161d; --panel-2: #1b1e27; --line: #2e3240;
+    --ink: #f6f3ec; --ink-2: #d0cbbf; --muted: #a09b90;
+    --accent-h: 210;
+    --accent: hsl(var(--accent-h), 74%, 75%);
+    --go: hsl(var(--accent-h), 56%, 33%); --go-hi: hsl(var(--accent-h), 56%, 41%);
+    --note-bg: #221e11; --note-ink: #ffe9a8; --note-edge: #d9b44a;
+    --warn-bg: #4a1414; --warn-ink: #ffdcd7; --warn-edge: #ff6b5c;
+    --ok: #7ad88f; --wait: #f3b95c; --wait-bg: #3a2c10;
+    --btn: #272b37; --btn-ink: #ffffff; --btn-hi: #363c4c;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif CJK JP", serif;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Hiragino Sans", "Yu Gothic UI", "Noto Sans CJK JP", sans-serif;
+    --mono: ui-monospace, "Cascadia Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+    --pad: 1rem;
+    color-scheme: dark;
+  }
+  :root[data-theme="light"] {
+    --bg: #f6f4ee; --panel: #ffffff; --panel-2: #efece4; --line: #cfcabd;
+    --ink: #0e0f12; --ink-2: #2c2d33; --muted: #5a574f;
+    --accent: hsl(var(--accent-h), 68%, 28%);
+    --go: hsl(var(--accent-h), 58%, 30%); --go-hi: hsl(var(--accent-h), 58%, 38%);
+    --note-bg: #fff5d2; --note-ink: #3a2900; --note-edge: #b88a12;
+    --warn-bg: #ffe1dc; --warn-ink: #5c0b04; --warn-edge: #c42a17;
+    --ok: #1c7a35; --wait: #8a5200; --wait-bg: #ffe9c2;
+    --btn: #1d2029; --btn-ink: #ffffff; --btn-hi: #3a4052;
+    color-scheme: light;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: var(--bg); color: var(--ink); font-family: var(--sans);
+    display: flex; flex-direction: column; height: 100vh; height: 100dvh; overflow: hidden;
+    -webkit-text-size-adjust: 100%; text-size-adjust: 100%;
+  }
+  button { font: inherit; color: inherit; }
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  kbd { font-family: var(--sans); font-size: .9em; border: 1px solid var(--line); border-radius: .3rem; padding: 0 .35em; }
+
+  /* top bar: title, chapter and position, status, timer, clock; a thin line of progress under it */
+  .pv-top {
+    position: relative; flex: 0 0 auto;
+    display: flex; align-items: center; gap: .4rem 1.25rem;
+    padding: .5rem max(var(--pad), env(safe-area-inset-right)) .55rem max(var(--pad), env(safe-area-inset-left));
+    border-bottom: 1px solid var(--line); background: var(--panel);
+  }
+  .pv-title { font-family: var(--serif); font-size: 1.25rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 0 1 auto; min-width: 4ch; max-width: 30ch; }
+  .pv-pos { color: var(--ink-2); font-size: 1rem; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 1 1 8rem; }
+  .pv-pos b { color: var(--ink); font-weight: 600; }
+  .pv-status { flex: 0 0 auto; font-size: .9rem; white-space: nowrap; display: inline-flex; align-items: center; gap: .45rem; color: var(--wait); background: var(--wait-bg); font-weight: 600; padding: .2rem .65rem; border-radius: 999px; }
+  .pv-status::before { content: ""; width: .65rem; height: .65rem; border-radius: 50%; background: var(--wait); }
+  .pv-status.is-live { color: var(--ink-2); background: transparent; font-weight: 400; padding-left: 0; padding-right: 0; }
+  .pv-status.is-live::before { background: var(--ok); }
+  .pv-times { flex: 0 0 auto; display: flex; gap: 1rem; align-items: flex-end; font-variant-numeric: tabular-nums; }
+  .pv-elapsed { appearance: none; border: 0; background: transparent; padding: 0; margin: 0; text-align: left; cursor: pointer; font-size: 2rem; font-weight: 700; letter-spacing: .02em; line-height: 1; color: var(--ink); border-radius: .3rem; }
+  .pv-elapsed.is-idle { color: var(--muted); }
+  .pv-clock { font-size: 1.25rem; color: var(--ink-2); line-height: 1.1; }
+  .pv-times small { display: block; font-size: .68rem; color: var(--muted); letter-spacing: .1em; text-transform: uppercase; font-weight: 400; line-height: 1.5; }
+  .pv-progress { position: absolute; left: 0; right: 0; bottom: -1px; height: 3px; pointer-events: none; }
+  .pv-progress i { display: block; height: 100%; width: 0; background: var(--accent); }
+
+  /* warnings */
+  .pv-warn { flex: 0 0 auto; margin: 0; padding: .5rem max(var(--pad), env(safe-area-inset-right)) .5rem max(var(--pad), env(safe-area-inset-left)); background: var(--warn-bg); color: var(--warn-ink); border-bottom: 3px solid var(--warn-edge); font-size: 1.05rem; line-height: 1.35; }
+  .pv-warn[hidden] { display: none; }
+  .pv-warn strong { font-weight: 700; }
+  .pv-warn button { margin-left: .5rem; padding: .2rem .7rem; border-radius: .4rem; border: 1px solid var(--warn-edge); background: transparent; cursor: pointer; }
+
+  /* main: the line on show and the one after it on the left, the note on the right */
+  .pv-main {
+    flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: minmax(0, 1.8fr) minmax(0, 1fr); gap: var(--pad);
+    padding: var(--pad) max(var(--pad), env(safe-area-inset-right)) var(--pad) max(var(--pad), env(safe-area-inset-left));
+  }
+  .pv-col { display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: var(--pad); min-height: 0; min-width: 0; }
+  .pv-card { background: var(--panel); border: 1px solid var(--line); border-radius: .75rem; padding: .8rem 1.1rem .9rem; min-height: 0; min-width: 0; overflow: auto; }
+  .pv-label { font-size: .78rem; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin: 0 0 .3rem; font-weight: 600; }
+  .pv-who { font-family: var(--sans); font-weight: 700; color: var(--accent); margin: 0 0 .15em; line-height: 1.2; }
+  .pv-who .pv-kind { font-weight: 400; color: var(--muted); margin-left: .5em; }
+  .pv-ref { display: inline-block; font-weight: 600; font-size: .8em; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 0 .55em; margin-left: .5em; vertical-align: .08em; }
+  .pv-text { font-family: var(--serif); font-weight: 500; margin: 0; overflow-wrap: anywhere; }
+  .pv-text.is-thought { font-style: italic; }
+  .pv-text code, .pv-math { font-family: var(--mono); font-size: .82em; }
+  .pv-text em { font-style: italic; }
+  .pv-text.is-thought em { font-style: normal; }
+
+  /* the type inside the three cards is sized by presenter.js: the largest that needs no scrolling.
+     These are the sizes before it has run. */
+  #pv-current-body { font-size: clamp(1.4rem, 1rem + 2vw, 2.8rem); }
+  #pv-next-body { font-size: clamp(1rem, .85rem + .7vw, 1.5rem); }
+  #pv-note-text { font-size: clamp(1.1rem, .9rem + .9vw, 1.8rem); }
+
+  .pv-current { border-left: 6px solid var(--accent); }
+  .pv-current .pv-who { font-size: max(.5em, 1rem); }
+  .pv-current .pv-text { font-size: 1em; line-height: 1.24; }
+  .pv-current .pv-text.is-meta { font-family: var(--sans); font-weight: 600; color: var(--ink-2); font-size: max(.6em, 1.05rem); line-height: 1.35; }
+  .pv-cells { list-style: none; margin: .35em 0 0; padding: 0; font-family: var(--serif); font-size: max(.62em, 1rem); line-height: 1.3; color: var(--ink-2); }
+  .pv-cells b { font-family: var(--sans); font-weight: 600; font-size: .85em; color: var(--muted); margin-right: .4em; }
+  .pv-code { margin: .35em 0 0; font-family: var(--mono); font-size: max(.45em, .85rem); line-height: 1.35; color: var(--ink-2); white-space: pre-wrap; overflow-wrap: anywhere; }
+
+  .pv-next { background: var(--panel-2); max-height: 36vh; }
+  .pv-next .pv-who { font-size: max(.7em, .85rem); color: var(--ink-2); }
+  .pv-next .pv-text { font-size: 1em; line-height: 1.28; color: var(--ink-2); }
+  .pv-next .pv-text.is-meta { font-family: var(--sans); font-size: max(.8em, .9rem); color: var(--muted); }
+  .pv-next .pv-more { font-family: var(--sans); font-size: max(.7em, .8rem); color: var(--muted); margin: .2em 0 0; }
+
+  .pv-note { background: var(--note-bg); color: var(--note-ink); border-color: var(--note-edge); border-left: 6px solid var(--note-edge); }
+  .pv-note .pv-label { color: var(--note-ink); opacity: .8; }
+  .pv-note-text { line-height: 1.38; margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+  #pv-note-text.is-empty { opacity: .6; font-style: italic; font-size: 1rem; }
+
+  /* options: buttons at a menu on show, a plain list in the preview */
+  .pv-opts { list-style: none; margin: .3em 0 0; padding: 0; display: grid; gap: .28em; }
+  .pv-opt { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0 .6em; align-items: center; }
+  .pv-key { display: inline-grid; place-items: center; min-width: 1.75em; height: 1.75em; border-radius: .35em; background: var(--btn); color: var(--btn-ink); font-family: var(--sans); font-weight: 700; font-size: .78em; }
+  .pv-opt-text { font-family: var(--serif); line-height: 1.22; overflow-wrap: anywhere; }
+  .pv-opt-then { grid-column: 2; font-family: var(--sans); font-size: max(.62em, .8rem); line-height: 1.3; color: var(--muted); overflow-wrap: anywhere; }
+  .pv-current .pv-opts { font-size: max(.74em, 1.05rem); }
+  button.pv-opt { width: 100%; min-height: 44px; text-align: left; background: var(--panel-2); color: var(--ink); border: 1px solid var(--line); border-radius: .6rem; padding: .3em .55em; cursor: pointer; }
+  button.pv-opt:hover { border-color: var(--accent); }
+  /* four options or more: two columns, and in the preview one line each */
+  .pv-opts.is-many { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 1em; }
+  .pv-next .pv-opts.is-many .pv-opt-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* where each option leads is a hint: two lines at most, one when room is short */
+  .pv-next .pv-opt-then { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
+  .pv-next .pv-opts.is-many .pv-opt-then { -webkit-line-clamp: 1; line-clamp: 1; }
+  .pv-next .pv-opts.is-lots { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+  /* the big buttons */
+  .pv-bar {
+    flex: 0 0 auto; display: grid; grid-template-columns: 1fr 2fr; gap: var(--pad);
+    padding: 0 max(var(--pad), env(safe-area-inset-right)) max(var(--pad), env(safe-area-inset-bottom)) max(var(--pad), env(safe-area-inset-left));
+  }
+  .pv-btn { min-height: 4.5rem; border-radius: .8rem; border: 0; background: var(--btn); color: var(--btn-ink); font-size: 1.6rem; font-weight: 700; cursor: pointer; letter-spacing: .02em; touch-action: manipulation; }
+  .pv-btn:hover:not(:disabled) { background: var(--btn-hi); }
+  .pv-btn.pv-go { background: var(--go); }
+  .pv-btn.pv-go:hover:not(:disabled) { background: var(--go-hi); }
+  .pv-btn:disabled { opacity: .45; cursor: default; }
+  .pv-btn small { display: block; font-size: .8rem; font-weight: 400; opacity: .85; letter-spacing: .04em; }
+  .pv-keys { grid-column: 1 / -1; margin: 0; font-size: .85rem; color: var(--muted); text-align: center; }
+  .pv-keys kbd { color: var(--ink-2); }
+  .pv-keys code { font-family: var(--mono); color: var(--ink-2); }
+  .pv-nonote-hint { display: none; }
+
+  /* the stage stopped answering: what is shown may be stale */
+  .pv-lost .pv-main { opacity: .5; }
+  /* a script without a single note: the room goes to the lines */
+  .pv-nonotes .pv-main { grid-template-columns: minmax(0, 1fr); }
+  .pv-nonotes .pv-note { display: none; }
+  .pv-nonotes .pv-nonote-hint { display: inline; }
+
+  /* a short laptop window, and a phone held sideways */
+  @media (max-height: 560px) {
+    :root { --pad: .5rem; }
+    .pv-top { padding-top: .25rem; padding-bottom: .3rem; gap: .25rem .8rem; }
+    .pv-title { font-size: 1rem; max-width: 20ch; }
+    .pv-pos { font-size: .82rem; }
+    .pv-status { font-size: .78rem; padding-top: .1rem; padding-bottom: .1rem; }
+    .pv-elapsed { font-size: 1.4rem; }
+    .pv-clock { font-size: 1rem; }
+    .pv-times { align-items: baseline; gap: .7rem; }
+    .pv-times small { display: none; }
+    .pv-warn { padding-top: .25rem; padding-bottom: .25rem; font-size: .88rem; line-height: 1.25; }
+    .pv-card { padding: .35rem .7rem .45rem; border-radius: .5rem; }
+    .pv-label { font-size: .64rem; margin-bottom: .1rem; }
+    .pv-current .pv-who { font-size: max(.5em, .85rem); }
+    .pv-current .pv-text.is-meta { font-size: max(.6em, .9rem); }
+    .pv-current .pv-opts { font-size: max(.74em, .95rem); }
+    .pv-cells { font-size: max(.62em, .88rem); }
+    .pv-cells.is-many { column-count: 2; column-gap: 1.6em; }
+    .pv-cells.is-many li { break-inside: avoid; }
+    .pv-next { max-height: 34vh; }
+    .pv-next .pv-opt-then { -webkit-line-clamp: 1; line-clamp: 1; }
+    button.pv-opt { min-height: 40px; padding: .15em .5em; }
+    .pv-opts.is-many { gap: .2em 1em; }
+    .pv-opts.is-many button.pv-opt { min-height: 32px; padding-top: 0; padding-bottom: 0; }
+    .pv-next .pv-opts.is-many { gap: .1em 1em; margin-top: .1em; }
+    .pv-next .pv-opts.is-many .pv-key { min-width: 1.55em; height: 1.55em; }
+    .pv-btn { min-height: 2.9rem; font-size: 1.2rem; border-radius: .6rem; }
+    .pv-btn small, .pv-keys { display: none; }
+  }
+  /* a narrow window, or a phone held upright: one column */
+  @media (max-width: 700px) and (min-height: 561px) {
+    .pv-opts.is-many, .pv-next .pv-opts.is-lots { grid-template-columns: minmax(0, 1fr); }
+    .pv-top { flex-wrap: wrap; }
+    .pv-pos { order: 5; flex-basis: 100%; }
+    .pv-main { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; }
+    .pv-note { max-height: 26vh; }
+    .pv-keys { display: none; }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .pv-progress i { transition: width .3s ease; }
+  }
+</style>
 </head>
 <body>
-<h1>Presenter view</h1>
-<p>The presenter view is not built yet.</p>
-<p><a href="./">Back to Paper Theatre</a></p>
+<header class="pv-top">
+  <span class="pv-title" id="pv-title">Paper Theatre</span>
+  <span class="pv-pos" id="pv-pos"></span>
+  <span class="pv-status" id="pv-status" role="status">Waiting for the stage…</span>
+  <span class="pv-times">
+    <button type="button" class="pv-elapsed is-idle" id="pv-elapsed" title="time since the first advance; press to reset (R)" aria-label="elapsed time; press to reset"><small>elapsed</small><span id="pv-elapsed-v">0:00</span></button>
+    <span class="pv-clock" id="pv-clock"><small>clock</small><span id="pv-clock-v">--:--</span></span>
+  </span>
+  <span class="pv-progress" aria-hidden="true"><i id="pv-progress"></i></span>
+</header>
+<p class="pv-warn" id="pv-warn" role="alert" hidden></p>
+<main class="pv-main">
+  <div class="pv-col">
+    <section class="pv-card pv-current" id="pv-current" aria-live="polite" aria-label="on show now">
+      <p class="pv-label">Now</p>
+      <div id="pv-current-body"><p class="pv-text is-meta">Waiting for the stage.</p></div>
+    </section>
+    <section class="pv-card pv-next" id="pv-next" aria-label="what comes next">
+      <p class="pv-label" id="pv-next-label">Next</p>
+      <div id="pv-next-body"><p class="pv-text is-meta">Nothing yet.</p></div>
+    </section>
+  </div>
+  <aside class="pv-card pv-note" id="pv-note" aria-label="presenter note">
+    <p class="pv-label">Note</p>
+    <p class="pv-note-text is-empty" id="pv-note-text">No note for this line.</p>
+  </aside>
+</main>
+<footer class="pv-bar">
+  <button type="button" class="pv-btn" id="pv-back">&larr; Back<small>Left</small></button>
+  <button type="button" class="pv-btn pv-go" id="pv-nextbtn">Next &rarr;<small>Right, Space or Enter</small></button>
+  <p class="pv-keys"><kbd>&rarr;</kbd> <kbd>Space</kbd> <kbd>Enter</kbd> next · <kbd>&larr;</kbd> back · <kbd>1</kbd> to <kbd>9</kbd> choose · <kbd>R</kbd> reset the timer<span class="pv-nonote-hint"> · this script has no presenter notes (a line <code># note: …</code> above a line adds one)</span></p>
+</footer>
+<script src="vn.js"></script>
+<script src="presenter.js"></script>
 </body>
 </html>

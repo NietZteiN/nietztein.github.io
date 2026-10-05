@@ -745,7 +745,8 @@ rendered: { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null }, actor
     o.cancel = function () { if (o.done) return; close(); ext('VNOp', 'stop'); };
     S.opening = o;
     stage.classList.add('op-playing');
-    var p = ext('VNOp', 'play', S.program, stage, { audio: OFF.VNAudio ? null : (window.VNAudio || null) });
+    // the cue is the title's, so the movie can start the theme from its first bar
+    var p = ext('VNOp', 'play', S.program, stage, { audio: OFF.VNAudio ? null : (window.VNAudio || null), cue: OFF.VNAudio ? null : (S.cue || null) });
     if (p && typeof p.then === 'function') p.then(o.finish); else o.finish();
   }
   function withForcedOpening(fn) { if (FORCE.op === true && opReady()) playOpening(fn); else fn(); }
@@ -939,7 +940,7 @@ rendered: { bg: null, cg: null, fb: false, bgPaint: null, cgPaint: null }, actor
     var h = '<div class="ts-inner"><p class="ts-kicker">Paper Theatre &nbsp;·&nbsp; 紙芝居</p><h2 class="ts-title' + ((m.title || e.title || '').length > 44 ? ' is-long' : '') + '">' + esc(m.title || e.title || '') + '</h2><div class="ts-rule"></div>' +
       '<p class="ts-sub">' + esc(shortCite(m, e)) + (m.authors ? '<br>' + esc(m.authors.replace(/\s*\(co-first\)/, '')) : '') + '</p></div>';
     h += '<p class="ts-vert" aria-hidden="true" lang="ja">紙芝居<span>論文と随想のための小さな劇場</span></p>';
-    h += '<ul class="ts-menu' + (opItem && items > 6 ? ' is-tall' : '') + '" role="menu" aria-label="title menu">' +
+    h += '<ul class="ts-menu' + (items > 6 ? ' is-tall' : '') + '" role="menu" aria-label="title menu">' +
       '<li><button type="button" data-t="start">Start</button></li>' +
       (canContinue ? '<li><button type="button" data-t="continue">Continue</button></li>' : '') +
       (chapters.length ? '<li><button type="button" data-t="chapters"' + (seenCh.length ? '' : ' disabled title="chapters you have reached appear here"') + '>Chapters</button></li>' : '') +

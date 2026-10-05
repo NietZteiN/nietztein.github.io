@@ -17,7 +17,8 @@
 //   node scripts/build-places-json.mjs --check         assets/data/places.json matches toy 34
 //   node misc/_kit/test.js
 //   node misc/55-paper-theatre/test.js
-//   every other misc/*/test*.js (underscore folders included) and scripts/**/test*.mjs
+//   every other misc/*/test*.js (underscore folders included), scripts/**/test*.mjs and desk/test/test-*.mjs,
+//   then desk/vendor/fetch-vendor.mjs --check (the vendored libraries match their recorded hashes)
 // and then, in this process: every misc/*/toy.json must parse as JSON and its
 // "slug" must equal the name of its folder.
 // A file that does not exist yet is reported as "skipped: not present"; that
@@ -119,7 +120,8 @@ const fixed = [
 for (const [file, extra] of fixed) run(file, extra);
 
 const done = new Set([...fixed.map(([file]) => file), self]);
-const others = [...glob('misc/*/test*.js'), ...glob('scripts/**/test*.mjs')];
+const others = [...glob('misc/*/test*.js'), ...glob('scripts/**/test*.mjs'), ...glob('desk/test/test-*.mjs')];
+if (fs.existsSync(path.join(root, 'desk/vendor/fetch-vendor.mjs'))) run('desk/vendor/fetch-vendor.mjs', ['--check']);
 for (const file of others) {
 	if (done.has(file)) continue;
 	done.add(file);
@@ -158,7 +160,7 @@ const wantSmoke = args.includes('--smoke');
 const wantSite = args.includes('--site');
 if (wantSmoke || wantSite) {
 	const extra = [];
-	if (wantSmoke) extra.push('--all');
+	if (wantSmoke) extra.push('--all', '--path', 'desk');
 	if (wantSite) extra.push('--site');
 	run('scripts/qa/smoke.mjs', extra, { timeoutMs: 30 * 60 * 1000 });
 }

@@ -1,1 +1,74 @@
-/* placeholder: replaced by the camera builder */
+/* Paper Theatre - the multiplane camera (camera.js writes --cam-x, --cam-y, --cam-push, --cam-pan on .vn-world
+   and sets #stage.vn-cam while it is on).
+
+   Each plane of the world moves by its own amount, so the picture has depth: background 0.5 %, weather behind the
+   cast 0.8 %, cast 1.1 %, weather in front 1.6 % of the stage's width at the pointer's extreme. Each plane is
+   scaled up by at least twice its travel, so that its edge never shows: a plane of scale s can move (s - 1) / 2
+   of its size before an edge appears. The push-in multiplies every scale by --cam-push (1 to 1.03), which only
+   adds margin. The CG also pans by --cam-pan (-1 to 1) times 2.5 %, inside a scale of 1.065.
+
+   Where the four numbers live. On .vn-world itself, as inline custom properties: the transition snapshot is
+   world.cloneNode(true), so it is born with the same numbers (camera.js then keeps both in step). They are
+   registered as NOT inherited, and handed down by name to the few elements that use them (`inherit` below).
+   Left to inherit by themselves they would reach every node of every drawing, and each frame of the camera
+   would restyle the whole world: measured, that halves the frame rate; this way a frame costs nothing to speak
+   of. (A browser without @property lets them inherit: slower, the same picture.)
+
+   What is transformed, and why not simply the five layers: a transform makes its element a stacking context, and
+   the world's paint order must stay exactly as it is without the camera (the cast is drawn above the weather in
+   front, the colour grade and the canvas tooth; the painted picture's vignette, .vn-bg::after, is drawn above
+   the grade too).
+     .vn-bg, .vn-cgart         their picture (the <svg> and the painted <img>), not the layer, so ::after stays put
+     .vn-fxback, .vn-fxlayer   the layer (nothing in them has a z-index)
+     .vn-sprites               the layer, lifted to z-index 1: where its actors (z-index 1 to 4) were drawn anyway
+
+   The rules match the live world and the snapshot alike (.vn-trans > .vn-world is a clone with the same classes).
+   No transition and no animation is declared here, on purpose: a cloned element would restart one. */
+
+@property --cam-x { syntax: "<number>"; inherits: false; initial-value: 0; }
+@property --cam-y { syntax: "<number>"; inherits: false; initial-value: 0; }
+@property --cam-push { syntax: "<number>"; inherits: false; initial-value: 1; }
+@property --cam-pan { syntax: "<number>"; inherits: false; initial-value: 0; }
+
+#stage.vn-cam.in-play .vn-world > .vn-bg,
+#stage.vn-cam.in-play .vn-world > .vn-bg > svg,
+#stage.vn-cam.in-play .vn-world > .vn-bg > img.vn-painted,
+#stage.vn-cam.in-play .vn-world > .vn-fxback,
+#stage.vn-cam.in-play .vn-world > .vn-sprites,
+#stage.vn-cam.in-play .vn-world > .vn-cgart,
+#stage.vn-cam.in-play .vn-world > .vn-cgart > svg,
+#stage.vn-cam.in-play .vn-world > .vn-cgart > img.vn-painted,
+#stage.vn-cam.in-play .vn-world > .vn-fxlayer {
+  --cam-x: inherit; --cam-y: inherit; --cam-push: inherit; --cam-pan: inherit;
+}
+
+#stage.vn-cam.in-play .vn-world > .vn-bg > svg,
+#stage.vn-cam.in-play .vn-world > .vn-bg > img.vn-painted,
+#stage.vn-cam.in-play .vn-world > .vn-fxback,
+#stage.vn-cam.in-play .vn-world > .vn-sprites,
+#stage.vn-cam.in-play .vn-world > .vn-cgart > svg,
+#stage.vn-cam.in-play .vn-world > .vn-cgart > img.vn-painted,
+#stage.vn-cam.in-play .vn-world > .vn-fxlayer {
+  transform-origin: 50% 50%;
+  will-change: transform;
+  backface-visibility: hidden;
+}
+#stage.vn-cam.in-play .vn-world > .vn-bg > svg,
+#stage.vn-cam.in-play .vn-world > .vn-bg > img.vn-painted {
+  transform: translate3d(calc(var(--cam-x, 0) * -0.5%), calc(var(--cam-y, 0) * -0.35%), 0) scale(calc(1.014 * var(--cam-push, 1)));
+}
+#stage.vn-cam.in-play .vn-world > .vn-fxback {
+  transform: translate3d(calc(var(--cam-x, 0) * -0.8%), calc(var(--cam-y, 0) * -0.5%), 0) scale(calc(1.02 * var(--cam-push, 1)));
+}
+/* the cast is cut by nothing but the frame, which their feet already pass: no extra scale, little vertical travel */
+#stage.vn-cam.in-play .vn-world > .vn-sprites {
+  z-index: 1;
+  transform: translate3d(calc(var(--cam-x, 0) * -1.1%), calc(var(--cam-y, 0) * -0.4%), 0) scale(var(--cam-push, 1));
+}
+#stage.vn-cam.in-play .vn-world > .vn-cgart > svg,
+#stage.vn-cam.in-play .vn-world > .vn-cgart > img.vn-painted {
+  transform: translate3d(calc(var(--cam-x, 0) * -0.5% + var(--cam-pan, 0) * -2.5%), calc(var(--cam-y, 0) * -0.35%), 0) scale(calc(1.065 * var(--cam-push, 1)));
+}
+#stage.vn-cam.in-play .vn-world > .vn-fxlayer {
+  transform: translate3d(calc(var(--cam-x, 0) * -1.6%), calc(var(--cam-y, 0) * -1%), 0) scale(calc(1.035 * var(--cam-push, 1)));
+}

@@ -211,9 +211,44 @@
     // the upper lash: thickest past the middle, a small flick at the outer corner
     out += Pa(D('M', I[0] - o * 1.5, I[1] + 0.5) + upper + D('L', O[0] + o * 6, O[1] - 2.5, 'L', O[0] - o * 2, O[1] + 5, 'C', c2[0], c2[1] + 5.6, c1[0], c1[1] + 3.4, I[0], I[1] + 1.6, 'Z'), { fill: col.lash });
     if (col.fem) out += Pa(D('M', X(0.86), Y(-0.16), 'l', o * 7, -4, 'M', X(0.98), Y(0), 'l', o * 6, 1.5), S(col.lash, 1.4));
+    // the open eye (white, iris, lashes) is its own group so a blink can take it away and show the skin beneath;
+    // the lid crease stays, as it does on a closed eye
+    out = G(out, { 'class': 'vn-eye-open' });
     out += Pa(D('M', X(-0.5), Y(top) - 5, 'Q', X(0.15), Y(top) - 10, X(0.86), Y(top + 0.14) - 5), S(col.line, 1.2, 0.65));
-    out += Pa(D('M', X(0.92), Y(0.36 * lo), 'Q', X(0.5), Y(0.57 * lo), X(0.02), Y(0.54 * lo)), S(col.lash, 1.3, 0.75));
+    out += G(Pa(D('M', X(0.92), Y(0.36 * lo), 'Q', X(0.5), Y(0.57 * lo), X(0.02), Y(0.54 * lo)), S(col.lash, 1.3, 0.75)), { 'class': 'vn-eye-open' });
     return out;
+  }
+  // the same eye shut, for a blink: the lid comes down to a soft arc in the lower third of the eye, with the lash
+  // along it and the flick at the outer corner; a faint shade of the skin's shadow colour on the lowered lid
+  function shutEye(e, p, o, w, h, col, shade) {
+    var cx = p[0], cy = p[1], lo = e.lower == null ? 1 : e.lower;
+    function X(t) { return cx + o * t * w; }
+    function Y(v) { return cy + v * h; }
+    var I = [X(-0.92), Y(e.flat ? 0.02 : 0.12)], O = [X(1), Y((e.flat ? -0.02 : 0.05) + (e.droop || 0))];
+    var top = (e.flat ? -0.36 : -0.5) * (e.open == null ? 1 : e.open), mid = Y(e.flat ? 0.2 : 0.3 * lo + 0.04);
+    var out = Pa(D('M', I[0], I[1], 'Q', X(0.08), Y(top * 0.5), O[0], O[1], 'Q', X(0.06), mid + 2, I[0], I[1], 'Z'), F(shade, 0.3));
+    out += Pa(D('M', I[0] - o * 1.5, I[1] + 0.5, 'Q', X(0.06), mid - 2.2, O[0] + o * 1, O[1] - 0.5, 'L', O[0] + o * 6, O[1] - 2.5, 'L', O[0] - o * 1, O[1] + 2.4,
+      'Q', X(0.06), mid + 2.2, I[0], I[1] + 1.6, 'Z'), { fill: col.lash });
+    if (col.fem) out += Pa(D('M', X(0.5), mid + 1.4, 'l', o * 1.5, 4.5, 'M', X(0.72), mid + 0.2, 'l', o * 2.5, 4), S(col.lash, 1.3, 0.85));
+    return out;
+  }
+  // an open mouth for each face, in the face's own place and mood, shown in turn with the closed one while speaking
+  var MOUTH_OPEN = {
+    neutral: 'M-8 -1Q0 2 8 -1Q6 7 0 7.5Q-6 7 -8 -1Z',
+    smile: 'M-12 -4Q0 2 12 -4Q9 8.5 0 9.5Q-9 8.5 -12 -4Z',
+    puzzled: 'M-6 1Q0 -1.5 7 0Q5.5 6 0.5 6.5Q-4.5 6 -6 1Z',
+    worried: 'M-7 2Q0 -2 7 2Q5 8 0 8.5Q-5 8 -7 2Z',
+    thinking: 'M-1 0.5Q4 -1 9 0Q7.5 5 4 5.5Q0.5 5 -1 0.5Z',
+    deadpan: 'M-7 1L7 1Q5 5 0 5.5Q-5 5 -7 1Z',
+    laugh: 'M-13 -5Q0 -1 13 -5Q10 6 0 7Q-10 6 -13 -5Z'
+  };
+  function openMouth(f, e, mx, my, sk, skl) {
+    if (e.mouthO) return El(mx, my + 1.5, 4.2, 5, { fill: '#9c4450', stroke: skl, 'stroke-width': 1.5 }) + El(mx, my + 3.6, 2.4, 1.6, F('#e58b8f', 0.9));
+    var d = MOUTH_OPEN[f] || MOUTH_OPEN.neutral, bot = f === 'laugh' ? 7 : f === 'smile' ? 9.5 : f === 'deadpan' ? 5.5 : f === 'thinking' ? 5.5 : 7.5, tx = f === 'thinking' ? 4 : f === 'puzzled' ? 0.5 : 0;
+    var o = Pa(d, { fill: '#9c4450', stroke: skl, 'stroke-width': 1.5, 'stroke-linejoin': 'round' }) + El(tx, bot - 2.2, f === 'smile' || f === 'laugh' ? 4.5 : 3, 1.7, F('#e58b8f', 0.85));
+    if (f === 'laugh') o += Pa('M-10.5 -3.8Q0 -0.8 10.5 -3.8L9.6 -1.6Q0 1.2 -9.6 -1.6Z', { fill: '#fffaf6' });
+    o += Pa(D('M', tx - 4, bot + 3.2, 'Q', tx, bot + 4.6, tx + 4, bot + 3.2), S(sk[1], 1.4, 0.7));
+    return G(o, { transform: 'translate(' + mx + ' ' + my + ')' });
   }
   function brow(p, o, w, h, b, col, thick) {
     var y0 = p[1] - h * 0.5 - 13;
@@ -226,12 +261,16 @@
     o += El(EYE_N[0] - 10, 231, 22, 11, F(sk[2], bl * 0.6, { filter: 'url(#vnf-b4)' })) + El(EYE_F[0] + 8, 231, 19, 11, F(sk[2], bl * 0.6, { filter: 'url(#vnf-b4)' }));
     if (bl > 0.5) o += Pa(D('M', 247, 233, 'l', 5, -8, 'M', 256, 234, 'l', 5, -8, 'M', 265, 233, 'l', 5, -8, 'M', 345, 233, 'l', 5, -8, 'M', 354, 234, 'l', 5, -8, 'M', 363, 233, 'l', 5, -8), S(sk[2], 1.4, 0.8));
     o += eye(e, EYE_N, -1, B.ew, h, id + f + 'n', col) + eye(e, EYE_F, 1, B.ew - 2.5, h, id + f + 'f', col);
+    // the blink (hidden; live.js shows it and hides .vn-eye-open for a moment). A laughing face has its eyes shut already.
+    if (!e.closed) o += G(shutEye(e, EYE_N, -1, B.ew, h, col, sk[1]) + shutEye(e, EYE_F, 1, B.ew - 2.5, h, col, sk[1]), { 'class': 'vn-blink', display: 'none' });
     var bc = c.hair === 'none' ? dk(sk[1], 0.45) : c.hairDark, bt = c.build === 'masc' ? 3.2 : 2.3;
     o += brow(EYE_N, -1, B.ew, h, e.browN || e.brow, bc, bt) + brow(EYE_F, 1, B.ew - 2.5, h, e.browF || e.brow, bc, bt);
-    var t = 'translate(' + mx + ' ' + my + ')';
-    if (e.mouthO) o += El(mx, my + 2, 5.5, 7.5, { fill: '#9c4450', stroke: skl, 'stroke-width': 1.5 }) + El(mx, my + 5, 3, 2.6, F('#e58b8f', 0.9));
-    else if (e.mouthOpen) o += G(Pa('M-14 -5Q0 -1 14 -5Q11 13 0 14Q-11 13 -14 -5Z', { fill: '#a8434f', stroke: skl, 'stroke-width': 1.6, 'stroke-linejoin': 'round' }) + Pa('M-7 9Q0 4 7 9Q4 13 0 13Q-4 13 -7 9Z', { fill: '#ee9296' }) + Pa('M-11 -3.6Q0 -0.4 11 -3.6L10 -1Q0 2 -10 -1Z', { fill: '#fffaf6' }), { transform: t });
-    else o += G(Pa(e.mouth, S(mix(skl, '#8a2f3a', 0.35), 2)) + Pa('M-4 8Q0 9.5 4 8', S(sk[1], 1.4, 0.7)), { transform: t });
+    var t = 'translate(' + mx + ' ' + my + ')', m;
+    if (e.mouthO) m = El(mx, my + 2, 5.5, 7.5, { fill: '#9c4450', stroke: skl, 'stroke-width': 1.5 }) + El(mx, my + 5, 3, 2.6, F('#e58b8f', 0.9));
+    else if (e.mouthOpen) m = G(Pa('M-14 -5Q0 -1 14 -5Q11 13 0 14Q-11 13 -14 -5Z', { fill: '#a8434f', stroke: skl, 'stroke-width': 1.6, 'stroke-linejoin': 'round' }) + Pa('M-7 9Q0 4 7 9Q4 13 0 13Q-4 13 -7 9Z', { fill: '#ee9296' }) + Pa('M-11 -3.6Q0 -0.4 11 -3.6L10 -1Q0 2 -10 -1Z', { fill: '#fffaf6' }), { transform: t });
+    else m = G(Pa(e.mouth, S(mix(skl, '#8a2f3a', 0.35), 2)) + Pa('M-4 8Q0 9.5 4 8', S(sk[1], 1.4, 0.7)), { transform: t });
+    // the mouth as drawn, and (hidden) the same mouth open: live.js swaps them while the character speaks
+    o += G(m, { 'class': 'vn-mouth-shut' }) + G(openMouth(f, e, mx, my, sk, skl), { 'class': 'vn-mouth', display: 'none' });
     return o;
   }
 
@@ -522,7 +561,9 @@
       faceGroups(face, function (f) { return faceFeatures(f, c, B, sk, skl, id); }) +
       (hood ? hp.front + hoodFront(main) : hp.front + hp.top) +
       (c.glasses ? glasses(B) : '') + (c.hat && !hood ? hat(c) : '');
-    var fig = G(G(back, { transform: HEAD_ROT }) + fit.behind + fit.body + G(head, { transform: HEAD_ROT }), { transform: LEAN });
+    // .vn-breath holds head and body together, so a breath (a scale about the hips, live.js / vn-live.css) lifts
+    // chest, shoulders and head as one and the neck never parts
+    var fig = G(G(G(back, { transform: HEAD_ROT }) + fit.behind + fit.body + G(head, { transform: HEAD_ROT }), { 'class': 'vn-breath' }), { transform: LEAN });
     return spriteRoot(c, defs + G(G(fig, { 'class': 'vn-fig' }), { filter: 'url(#vnf-rim)' }), { 'data-face': face, 'data-clothes': c.clothes, 'data-hair': c.hair, 'data-build': c.build });
   }
 
@@ -540,7 +581,7 @@
       (c.hair === 'bun' ? Ci(300, 384, 46, { fill: c.hairCol }) : '') +
       (c.hair === 'ponytail' ? Pa('M280 560C270 660 290 760 300 840C316 760 330 660 320 560Z', { fill: c.hairCol }) : '') +
       (c.hat ? Pa('M168 500C160 400 250 360 300 360C350 360 440 400 432 500C390 470 210 470 168 500Z', { fill: hsl(c.hue, 30, 22) }) : '');
-    return spriteRoot(c, G(G(inner, { 'class': 'vn-fig' }), { filter: 'url(#vnf-rim)' }) + R(0, 700, 600, 300, { fill: 'none' }), { 'data-face': 'back' });
+    return spriteRoot(c, G(G(G(inner, { 'class': 'vn-breath' }), { 'class': 'vn-fig' }), { filter: 'url(#vnf-rim)' }) + R(0, 700, 600, 300, { fill: 'none' }), { 'data-face': 'back' });
   }
 
   /* ------------------------------------------------------------ a floating manuscript sheet */
@@ -557,7 +598,7 @@
       G(R(138, 262, 340, 470, F('#0b0c1a', 0.3, { filter: 'url(#vnf-b8)' })) + R(130, 250, 340, 470, { fill: '#fbf5e4', rx: 3 }) + R(130, 250, 340, 470, { fill: 'url(#vnp-' + K.hash(c.name).toString(36) + ')', rx: 3 }) +
         rules + Pa('M184 250L184 720', S('#d9707a', 2, 0.7)) + R(196, 292, 150, 9, F('#2b3350', 0.8, { rx: 4 })) + G(ink, F('#2b3350', 0.55)) +
         Pa('M470 640L470 720L390 720Q430 708 440 684Q448 656 470 640Z', { fill: '#e2d6b8' }), { transform: 'rotate(-5 300 500)', 'class': 'vn-page' });
-    return spriteRoot(c, K.defs(K.gradient('vnp-' + K.hash(c.name).toString(36), [[0, '#ffffff', 0.5], [1, '#c9b78f', 0.35]], { x1: '0', y1: '0', x2: '1', y2: '1' })) + inner, { 'data-face': 'page' });
+    return spriteRoot(c, K.defs(K.gradient('vnp-' + K.hash(c.name).toString(36), [[0, '#ffffff', 0.5], [1, '#c9b78f', 0.35]], { x1: '0', y1: '0', x2: '1', y2: '1' })) + G(inner, { 'class': 'vn-breath' }), { 'data-face': 'page' });
   }
 
   /* ------------------------------------------------------------ the model: a figure of light */
@@ -619,9 +660,12 @@
       if (L.edges[e][2]) arcs += Pa('M' + num(p[0]) + ' ' + num(p[1]) + 'Q' + num((p[0] + q[0]) / 2 + (p[1] - q[1]) * 0.25) + ' ' + num((p[1] + q[1]) / 2 + (q[0] - p[0]) * 0.25) + ' ' + num(q[0]) + ' ' + num(q[1]));
       else lines += 'M' + num(p[0]) + ' ' + num(p[1]) + 'L' + num(q[0]) + ' ' + num(q[1]);
     }
-    for (var i = 0; i < pts.length; i++) {
+    // the model does not breathe or blink: a few small nodes are marked so the living cast (vn-live.css) can let
+    // them drift and shimmer (vn-drift-1..3 pick the rhythm)
+    for (var i = 0, drift = 0; i < pts.length; i++) {
       var fade = Math.max(0.15, 1 - Math.max(0, pts[i][1] - 500) / 560), big = rn() < (dense ? 0.08 : 0.2), rad = (dense ? 2.2 : 3.4) * (big ? 1.8 : 1);
-      nodes += Ci(pts[i][0], pts[i][1], rad, F('#ffffff', fade));
+      var dr = !big && pts[i][1] < 820 && i % (dense ? 9 : 4) === 1 && drift < 9;
+      nodes += Ci(pts[i][0], pts[i][1], rad, F('#ffffff', fade, dr ? { 'class': 'vn-drift vn-drift-' + (1 + drift++ % 3) } : null));
       if (big) bright += Ci(pts[i][0], pts[i][1], rad * 2.6, F(hi, fade * 0.8));
     }
     var faces = faceGroups(face, function (f) {
@@ -635,10 +679,15 @@
         o += G(g, t ? { transform: 'rotate(' + t + ' ' + cx + ' ' + cy + ')' } : null);
       });
       if (x.ring) o += Ci(302, 150, 122, S(hi, 2, 0.5)) + Ci(302, 150, 140, S(hi, 1.2, 0.3));
-      var mt = { transform: 'translate(' + MOUTH[0] + ' ' + MOUTH[1] + ')' };
-      if (x.mouthO) o += El(MOUTH[0], MOUTH[1] + 2, 5, 7, S('#ffffff', 2.4));
-      else if (x.mouth) o += G(Pa(x.mouth, x.fillMouth ? { fill: '#ffffff', opacity: 0.9 } : S('#ffffff', 2.4)), mt);
-      else o += G(Pa('M-7 0Q0 3 7 0', S('#ffffff', 2.2, 0.85)), mt);
+      var mt = { transform: 'translate(' + MOUTH[0] + ' ' + MOUTH[1] + ')' }, m, mo;
+      if (x.mouthO) m = El(MOUTH[0], MOUTH[1] + 2, 5, 7, S('#ffffff', 2.4));
+      else if (x.mouth) m = G(Pa(x.mouth, x.fillMouth ? { fill: '#ffffff', opacity: 0.9 } : S('#ffffff', 2.4)), mt);
+      else m = G(Pa('M-7 0Q0 3 7 0', S('#ffffff', 2.2, 0.85)), mt);
+      // speaking: a small ring of light in turn with the line (a smaller one for the open-mouthed faces)
+      if (x.mouthO) mo = El(MOUTH[0], MOUTH[1] + 1.5, 3.4, 4.2, S('#ffffff', 2.2));
+      else if (x.fillMouth) mo = G(Pa('M-10 -3Q0 0 10 -3Q7 6 0 6.5Q-7 6 -10 -3Z', { fill: '#ffffff', opacity: 0.9 }), mt);
+      else mo = El(MOUTH[0] + (f === 'thinking' ? 4 : 0), MOUTH[1] + (f === 'smile' ? 2.5 : 2), f === 'smile' ? 7.5 : 5.5, f === 'smile' ? 4.6 : 4, S('#ffffff', 2.2, 0.9));
+      o += G(m, { 'class': 'vn-mouth-shut' }) + G(mo, { 'class': 'vn-mouth', display: 'none' });
       return G(o, { filter: 'url(#vnf-glow)' });
     });
     var inner = defs +

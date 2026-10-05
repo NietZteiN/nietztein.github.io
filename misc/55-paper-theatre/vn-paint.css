@@ -1,1 +1,44 @@
-/* placeholder: replaced by the paint builder */
+/* vn-paint.css: the light half of painted scenery (paint.js does the heavy half).
+   Everything here applies only while VNPaint is enabled (html.vn-paint-on, set by VNPaint.setEnabled), and only
+   to the background and CG layers: never to the text window, the menus or the cast.
+
+   Order inside a picture layer, bottom to top:
+     the SVG (with the bloom filter)  <  ::before, the paper grain  <  img.vn-painted  <  ::after, the vignette
+   so the vector picture gets bloom, grain and vignette at once, and the painting, which has its own bloom and
+   canvas grain baked in, covers the first two and keeps only the vignette. Nothing jumps when one replaces the other. */
+
+/* Each picture layer is a stacking context of its own, so that nothing in it (the image, the vignette) can rise
+   above the cast, the weather or the canvas tooth, which are later layers of the world. */
+html.vn-paint-on .vn-bg,
+html.vn-paint-on .vn-cgart { isolation: isolate; }
+
+/* 1. Bloom on the vector picture: the sky's highlights blurred wide and screened back over what stands in front of
+      them (filter #vnp-bloom, injected by paint.js). */
+html.vn-paint-on .vn-bg > svg,
+html.vn-paint-on .vn-cgart > svg { filter: url(#vnp-bloom); }
+
+/* 2. A faint paper grain over the vector picture: grey noise around mid-grey in soft-light, so it adds tooth
+      without lifting the darks or dulling the lights. */
+html.vn-paint-on .vn-bg::before,
+html.vn-paint-on .vn-cgart.show::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='256' height='256'%3E%3Cfilter id='p' x='0' y='0' width='100%25' height='100%25' color-interpolation-filters='sRGB'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.07 0.8' numOctaves='2' seed='4' stitchTiles='stitch'/%3E%3CfeColorMatrix values='1.5 0 0 0 -0.25  1.5 0 0 0 -0.25  1.5 0 0 0 -0.25  0 0 0 0 1'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23p)'/%3E%3C/svg%3E");
+  mix-blend-mode: soft-light; opacity: 0.32;
+}
+
+/* 3. The painted image (laid over the SVG by vn.css). A late one fades in, a cached one cuts in. The fade is an
+      inline opacity with a transition (not an animation), so the transition layer's clone of the world shows the
+      image whole instead of replaying the fade over the vector picture. */
+.vn-bg > img.vn-painted, .vn-cgart > img.vn-painted { z-index: 1; }
+img.vn-painted.vn-painted-in { transition: opacity 520ms ease-out; }
+@media (prefers-reduced-motion: reduce) { img.vn-painted.vn-painted-in { transition: none; } }
+
+/* 4. A gentle vignette over either picture (under the cast, which is a later layer). */
+html.vn-paint-on .vn-bg::after,
+html.vn-paint-on .vn-cgart.show::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 2;
+  background: radial-gradient(ellipse 82% 78% at 50% 46%, rgba(16, 12, 26, 0) 56%, rgba(16, 12, 26, 0.07) 82%, rgba(16, 12, 26, 0.17) 100%);
+}
+
+/* 5. The cast keeps its crisp lines; it only shares the picture's paper. vn.css's canvas tooth already lies over
+      the whole world, so the sprites need nothing more here. */
