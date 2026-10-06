@@ -17,7 +17,8 @@
 //   authorsText  the .pub-authors line as displayed (marks such as † kept)
 //   year         the .pub-year-h2 heading the block sits under, as a number
 //   section      the heading above that, as displayed ("Workshop papers")
-//   venue        the .pub-congress line as displayed, minus the play link
+//   venue        the .pub-congress line as displayed, minus the play, DOI and
+//                badge links (.pub-play, .pub-link, .pub-badge)
 //   links        [{ label, href }] for every other link in the block. The title
 //                link has no label of its own, so it is named after where it
 //                points (PDF, arXiv, PhilArchive). hrefs are copied as written: a
@@ -149,12 +150,16 @@ function countOpen(html, test) {
 }
 
 const isPlayLink = (tag, attrs) => tag === 'a' && hasClass(attrs, 'pub-play');
+// Links appended to the venue line (.pub-link "DOI", .pub-badge): read as links,
+// not as venue text.
+const isTrailingLink = (tag, attrs) =>
+	tag === 'a' && (hasClass(attrs, 'pub-play') || hasClass(attrs, 'pub-link') || hasClass(attrs, 'pub-badge'));
 
-// Markup without its .pub-play links: "Play the visual novel" is not part of
-// the line it sits on.
+// Markup without its .pub-play, .pub-link and .pub-badge links: "Play the visual
+// novel" or "DOI" is not part of the line it sits on.
 function dropPlayLinks(html) {
 	let out = html;
-	for (const a of [...elements(html, isPlayLink)].reverse()) out = out.slice(0, a.start) + out.slice(a.end);
+	for (const a of [...elements(html, isTrailingLink)].reverse()) out = out.slice(0, a.start) + out.slice(a.end);
 	return out;
 }
 

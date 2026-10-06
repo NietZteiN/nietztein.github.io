@@ -8,11 +8,19 @@
     "authorsText": "J. V. Le",
     "year": 2026,
     "section": "Refereed abstracts",
-    "venue": "ACM Student Research Competition, SPLASH/ISSTA. Two-page extended abstract; peer-reviewed.",
+    "venue": "Companion Proceedings of SPLASH '26, ACM Student Research Competition, pp. 45–46. Two-page extended abstract; peer-reviewed.",
     "links": [
       {
         "label": "PDF",
         "href": "assets/documents/publications/2026SPLASH-SRC.pdf"
+      },
+      {
+        "label": "DOI",
+        "href": "https://doi.org/10.1145/3837729.3839573"
+      },
+      {
+        "label": "ACM Showcase on Kudos",
+        "href": "https://www.growkudos.com/publications/10.1145%252F3837729.3839573/reader"
       }
     ],
     "story": "obfuscation-src"
