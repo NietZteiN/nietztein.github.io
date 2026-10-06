@@ -1,0 +1,16 @@
+{
+	"n": 56,
+	"slug": "56-theatre-studio",
+	"title": "Theatre Studio",
+	"desc": "A writing room for Paper Theatre scripts: the .vn text on the left, the live stage on the right, lint and the branch walk on every keystroke. Drafts stay in this browser.",
+	"note": "",
+	"group": "stories",
+	"tags": ["writing", "visual novel"],
+	"added": "2026-10-05",
+	"surfaces": ["grid"],
+	"status": "live",
+	"kit": true,
+	"data": [],
+	"origins": [],
+	"thumb": { "query": "?thumb=1", "viewport": [1600, 1000], "settleMs": 600 }
+}

@@ -1,0 +1,185 @@
+/* Theatre Studio: the Cast and Scenery panels (added by panels/cast.js and panels/scenery.js). Kit tokens only. */
+
+/* ---------- shared bits -------------------------------------------------- */
+
+.cs-cast .cs-in, .sc-scenery .cs-in {
+	min-width: 0;
+	padding: 3px 6px;
+	border: 1px solid var(--border-strong);
+	border-radius: 5px;
+	background: var(--bg);
+	color: var(--text);
+	font: inherit;
+	font-size: 13px;
+}
+.cs-cast .cs-in[aria-invalid="true"], .sc-scenery .cs-in[aria-invalid="true"] { border-color: var(--st-fatal); }
+.cs-check { display: inline-flex; align-items: center; gap: 4px; color: var(--text); cursor: pointer; white-space: nowrap; }
+.cs-check input { margin: 0; accent-color: var(--accent); }
+.cs-help { color: var(--text-2); font-size: 12px; }
+.cs-cast code, .sc-scenery code { font-family: var(--font-mono); font-size: 12px; }
+
+/* ---------- cast --------------------------------------------------------- */
+
+.cs-cast { display: flex; flex-direction: column; gap: 8px; }
+.cs-top { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
+.cs-top select { padding: 3px 6px; border: 1px solid var(--border-strong); border-radius: 5px; background: var(--bg); color: var(--text); font-size: 13px; }
+.cs-inscript { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; min-width: 0; }
+.cs-chip, .sc-chip {
+	padding: 1px 8px;
+	min-height: 24px;
+	border: 1px solid var(--border);
+	border-radius: 12px;
+	background: var(--surface-2);
+	color: var(--text);
+	font: 12px var(--font-mono);
+	cursor: pointer;
+}
+.cs-chip:hover, .sc-chip:hover { border-color: var(--accent); background: var(--accent-soft); }
+.cs-chip:focus-visible, .sc-chip:focus-visible, .sc-card:focus-visible, .sc-segbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+.cs-out {
+	display: grid;
+	gap: 4px;
+	padding: 6px 8px;
+	border: 1px solid var(--border);
+	border-radius: 6px;
+	background: var(--bg);
+}
+.cs-line {
+	display: block;
+	padding: 2px 0;
+	color: var(--heading);
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+}
+.cs-issues { list-style: none; margin: 0; padding: 0; font-size: 12px; }
+.cs-issues:empty { display: none; }
+.cs-issues .cs-warn { color: var(--st-warn); }
+.cs-issues .cs-fatal { color: var(--st-fatal); }
+.cs-btns { display: flex; flex-wrap: wrap; gap: 6px; }
+.cs-where { min-height: 1.2em; }
+
+.cs-cast { container-type: inline-size; }
+.cs-body { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; align-items: start; }
+.cs-body .cs-preview { order: -1; }
+@container (min-width: 600px) {
+	.cs-body { grid-template-columns: minmax(260px, 1fr) minmax(0, 1fr); }
+	.cs-body .cs-preview { order: 0; position: sticky; top: 0; }
+}
+
+.cs-form { display: grid; gap: 3px; }
+.cs-row { display: grid; grid-template-columns: 6.6em minmax(0, 1fr); gap: 6px; align-items: start; }
+.cs-row.is-moot { opacity: 0.5; }
+.cs-lab { color: var(--text-2); font-size: 12px; padding-top: 5px; }
+.cs-ctl > .cs-check { order: -1; }
+.cs-ctl { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; min-width: 0; }
+.cs-ctl > .cs-in { flex: 1 1 9em; }
+.cs-ctl > .cs-help { flex: 1 1 100%; }
+.cs-ctl > .cs-help:empty { display: none; }
+.cs-range { flex: 1 1 8em; min-width: 6em; accent-color: var(--accent); }
+.cs-range.is-auto { opacity: 0.55; }
+.cs-num { min-width: 3em; color: var(--text-2); font: 12px var(--font-mono); white-space: nowrap; }
+.cs-checks { display: flex; flex-wrap: wrap; gap: 4px 14px; }
+
+.cs-coauthor {
+	margin-top: 4px;
+	padding: 6px 8px;
+	border-left: 3px solid var(--st-warn);
+	background: var(--surface-2);
+	border-radius: 0 6px 6px 0;
+}
+.cs-coauthor .cs-check { white-space: normal; align-items: flex-start; }
+.cs-coauthor .cs-check input { margin-top: 2px; }
+.cs-rule { margin: 4px 0 0; color: var(--text-2); font-size: 12px; line-height: 1.45; }
+.cs-rule b { color: var(--text); }
+.cs-extra { font-size: 12px; color: var(--st-warn); }
+
+/* the sprites stand on a fixed dark stage in both themes, as they do in the theatre */
+.cs-preview {
+	display: grid;
+	grid-template-columns: minmax(0, 1.25fr) repeat(4, minmax(0, 1fr));
+	gap: 4px;
+	padding: 6px;
+	border-radius: 6px;
+	background: linear-gradient(180deg, #2a3142, #151925);
+	align-items: start;
+}
+.cs-preview.is-one { grid-template-columns: minmax(0, 160px); justify-content: center; }
+.cs-full, .cs-face { margin: 0; min-width: 0; text-align: center; }
+.cs-full { grid-row: span 2; }
+.cs-full .cs-spr { aspect-ratio: 600 / 1000; overflow: hidden; }
+.cs-full .cs-spr svg { display: block; width: 100%; height: 100%; }
+/* a face: the top of the same drawing, head and shoulders */
+.cs-face .cs-spr { aspect-ratio: 1 / 1; overflow: hidden; border-radius: 4px; background: rgba(255, 255, 255, 0.04); }
+.cs-face .cs-spr svg { display: block; width: 200%; height: auto; margin-left: -50%; aspect-ratio: 600 / 1000; }
+.cs-full figcaption, .cs-face figcaption { color: #d7dbe6; font: 10px var(--font-mono); padding: 1px 0 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---------- scenery ------------------------------------------------------ */
+
+.sc-scenery { display: flex; flex-direction: column; gap: 10px; }
+.sc-hint {
+	position: sticky;
+	top: -8px;
+	z-index: 2;
+	margin: -8px -10px 0;
+	padding: 5px 10px;
+	background: var(--surface);
+	border-bottom: 1px solid var(--border);
+	color: var(--text-2);
+	font: 12px var(--font-mono);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.sc-sec { display: flex; flex-direction: column; gap: 6px; }
+.sc-h { margin: 0; font-size: 13px; font-weight: 600; color: var(--heading); }
+.sc-ctl { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.sc-seg { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 2px; }
+.sc-seglab { color: var(--text-2); font-size: 12px; margin-right: 4px; }
+.sc-segbtn {
+	padding: 2px 8px;
+	min-height: 24px;
+	border: 1px solid var(--border);
+	border-radius: 5px;
+	background: var(--bg);
+	color: var(--text-2);
+	font-size: 12px;
+	cursor: pointer;
+}
+.sc-segbtn[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--heading); font-weight: 600; }
+.sc-text { width: 11em; font-family: var(--font-mono); }
+.sc-caption { flex: 1 1 12em; }
+.sc-ms { width: 5.5em; }
+
+.sc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 6px; }
+.sc-card {
+	display: flex;
+	flex-direction: column;
+	padding: 0;
+	border: 1px solid var(--border);
+	border-radius: 6px;
+	background: var(--bg);
+	color: var(--text);
+	text-align: left;
+	cursor: pointer;
+	overflow: hidden;
+	min-width: 0;
+}
+.sc-card:hover { border-color: var(--accent); }
+.sc-pic { display: block; aspect-ratio: 16 / 9; background: var(--surface-2); overflow: hidden; }
+.sc-pic svg { display: block; width: 100%; height: 100%; }
+.sc-nopic { display: block; padding: 8px; color: var(--text-2); font-size: 11px; }
+.sc-cap { display: flex; flex-direction: column; padding: 3px 6px 4px; min-width: 0; }
+.sc-cap b { font: 600 12px var(--font-mono); }
+.sc-cap small { color: var(--text-2); font-size: 11px; min-height: 1.2em; }
+
+.sc-dirs { display: grid; gap: 4px; }
+.sc-drow { display: grid; grid-template-columns: 6.6em minmax(0, 1fr); gap: 6px; align-items: start; }
+.sc-dlab { color: var(--text-2); font-size: 12px; padding-top: 4px; }
+.sc-chips { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+
+@media (max-width: 899px) {
+	.cs-chip, .sc-chip, .sc-segbtn { min-height: 36px; }
+	.cs-row, .sc-drow { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+	.sc-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
+}

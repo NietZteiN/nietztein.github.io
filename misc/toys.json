@@ -1172,6 +1172,110 @@
 			"kit": false,
 			"href": "misc/55-paper-theatre/",
 			"thumbnail": "assets/img/misc/55-paper-theatre.jpg"
+		},
+		{
+			"n": 56,
+			"slug": "56-theatre-studio",
+			"title": "Theatre Studio",
+			"desc": "A writing room for Paper Theatre scripts: the .vn text on the left, the live stage on the right, lint and the branch walk on every keystroke. Drafts stay in this browser.",
+			"note": "",
+			"group": "stories",
+			"tags": [
+				"writing",
+				"visual novel"
+			],
+			"added": "2026-10-05",
+			"surfaces": [
+				"grid"
+			],
+			"status": "live",
+			"kit": true,
+			"data": [],
+			"origins": [],
+			"thumb": {
+				"query": "?thumb=1",
+				"viewport": [
+					1600,
+					1000
+				],
+				"settleMs": 600
+			},
+			"href": "misc/56-theatre-studio/",
+			"thumbnail": "assets/img/misc/56-theatre-studio.jpg"
+		},
+		{
+			"n": 57,
+			"slug": "57-kamishibai-printer",
+			"title": "Kamishibai Printer",
+			"desc": "Prints a Paper Theatre story as kamishibai boards: the picture on each front, and on each back the lines for the board in front of it, so it can be read from behind the stack.",
+			"note": "",
+			"group": "stories",
+			"tags": [
+				"print",
+				"svg"
+			],
+			"added": "2026-10-05",
+			"surfaces": [
+				"grid"
+			],
+			"status": "live",
+			"kit": true,
+			"data": [],
+			"origins": [],
+			"thumb": {
+				"query": "?thumb=1",
+				"viewport": [
+					1600,
+					1000
+				],
+				"settleMs": 600
+			},
+			"href": "misc/57-kamishibai-printer/",
+			"thumbnail": "assets/img/misc/57-kamishibai-printer.jpg"
+		},
+		{
+			"n": 101,
+			"slug": "101-true-shuffle",
+			"title": "True Shuffle",
+			"desc": "Reads your YouTube playlists and Liked videos after a Google sign-in, then plays them in a real shuffle or by artist, genre and decade. A demo library runs without signing in.",
+			"note": "Signing in works for the owner's Google account; anyone else brings a Google client id of their own.",
+			"group": "art",
+			"tags": [
+				"music",
+				"shuffle",
+				"youtube"
+			],
+			"added": "2026-10-05",
+			"surfaces": [
+				"grid"
+			],
+			"status": "wip",
+			"kit": true,
+			"data": [],
+			"origins": [
+				"accounts.google.com",
+				"oauth2.googleapis.com",
+				"www.googleapis.com",
+				"www.youtube.com",
+				"www.youtube-nocookie.com",
+				"i.ytimg.com",
+				"musicbrainz.org",
+				"www.google.com",
+				"www.gstatic.com",
+				"ssl.gstatic.com",
+				"fonts.gstatic.com",
+				"jnn-pa.googleapis.com"
+			],
+			"thumb": {
+				"query": "?thumb=1",
+				"viewport": [
+					800,
+					500
+				],
+				"settleMs": 300
+			},
+			"href": "misc/101-true-shuffle/",
+			"thumbnail": "assets/img/misc/101-true-shuffle.jpg"
 		}
 	]
 }

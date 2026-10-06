@@ -1,0 +1,16 @@
+{
+	"n": 57,
+	"slug": "57-kamishibai-printer",
+	"title": "Kamishibai Printer",
+	"desc": "Prints a Paper Theatre story as kamishibai boards: the picture on each front, and on each back the lines for the board in front of it, so it can be read from behind the stack.",
+	"note": "",
+	"group": "stories",
+	"tags": ["print", "svg"],
+	"added": "2026-10-05",
+	"surfaces": ["grid"],
+	"status": "live",
+	"kit": true,
+	"data": [],
+	"origins": [],
+	"thumb": { "query": "?thumb=1", "viewport": [1600, 1000], "settleMs": 600 }
+}

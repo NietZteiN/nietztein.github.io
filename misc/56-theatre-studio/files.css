@@ -1,0 +1,83 @@
+/* Theatre Studio, the Files panel (files.js). Scoped under .fl (the pane #st-pane-files) and #fl-statusmark. */
+
+.fl { --fl-gap: 6px; }
+.fl .fl-sec { margin: 0 0 14px; }
+.fl .fl-h {
+	font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+	color: var(--text-2); margin: 2px 0 6px; padding-bottom: 3px; border-bottom: 1px solid var(--border);
+}
+.fl .kit-note { font-size: 12px; margin: 6px 0 0; }
+.fl .fl-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--fl-gap); margin: 4px 0; }
+.fl .fl-input { display: none; }
+
+/* drafts */
+.fl .fl-list { list-style: none; margin: 0; padding: 0; }
+.fl .fl-item {
+	display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 4px 8px;
+	padding: 2px 4px; border-bottom: 1px solid var(--st-line, var(--border)); border-radius: 4px;
+}
+.fl .fl-item.is-active { background: var(--accent-soft); }
+.fl .fl-name {
+	all: unset; box-sizing: border-box; cursor: pointer; min-width: 0; padding: 4px 2px; min-height: 28px;
+	display: flex; align-items: baseline; gap: 6px; overflow: hidden; color: var(--text);
+}
+.fl .fl-name b { font-weight: 600; color: var(--heading); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fl .fl-item.is-active .fl-name b::before { content: "▸ "; color: var(--accent); }
+.fl .fl-key { font: 11px var(--font-mono); color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fl .fl-meta { display: flex; gap: 8px; font-size: 11px; color: var(--text-2); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.fl .fl-acts { display: flex; gap: 2px; }
+.fl .fl-act {
+	all: unset; box-sizing: border-box; cursor: pointer; font-size: 12px; color: var(--accent);
+	padding: 3px 6px; min-height: 26px; display: inline-flex; align-items: center; border-radius: 4px;
+}
+.fl .fl-act:hover, .fl .fl-name:hover b { text-decoration: underline; }
+.fl .fl-act:focus-visible, .fl .fl-name:focus-visible, .fl .fl-file:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.fl .fl-rename { font-size: 13px; padding: 3px 6px; min-width: 0; width: 100%; box-sizing: border-box; }
+.fl .fl-undo {
+	display: flex; align-items: center; gap: 8px; margin: 0 0 6px; padding: 4px 8px;
+	border: 1px solid var(--border-strong); border-radius: 6px; background: var(--surface-2); font-size: 12px;
+}
+.fl .fl-undo[hidden] { display: none; }
+
+/* the disk marks */
+.fl .fl-disk { font: 11px var(--font-mono); }
+.fl .fl-meta .fl-disk { max-width: 18ch; overflow: hidden; text-overflow: ellipsis; }
+.fl .fl-disk.is-saved { color: var(--st-ok); }
+.fl .fl-disk.is-changed { color: var(--st-warn); }
+.fl .fl-mark { margin: 0 0 6px; font-size: 12px; color: var(--text); display: flex; align-items: center; gap: 6px; }
+.fl .fl-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; background: var(--border-strong); }
+.fl .fl-dot.is-saved { background: var(--st-ok); }
+.fl .fl-dot.is-changed { background: var(--st-warn); }
+.fl-statusmark { font: 11px var(--font-mono); white-space: nowrap; max-width: 30ch; overflow: hidden; text-overflow: ellipsis; }
+.fl-statusmark.is-saved { color: var(--st-ok); }
+.fl-statusmark.is-changed { color: var(--st-warn); }
+.fl-statusmark:empty { display: none; }
+
+/* the folder */
+.fl .fl-dirname { font: 12px var(--font-mono); color: var(--heading); }
+.fl .fl-files { list-style: none; margin: 4px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 2px 8px; }
+.fl .fl-file {
+	all: unset; box-sizing: border-box; cursor: pointer; display: block; width: 100%; padding: 3px 4px; min-height: 26px;
+	font: 12px var(--font-mono); color: var(--accent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-radius: 4px;
+}
+.fl .fl-file:hover { background: var(--surface-2); }
+
+/* new story */
+.fl .fl-pick { flex-wrap: nowrap; }
+.fl .fl-field { display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1 1 auto; font-size: 12px; color: var(--text-2); }
+.fl .fl-field span { flex: none; width: 4.2em; }
+.fl .fl-field select {
+	min-width: 0; flex: 1 1 auto; width: 100%; font: inherit; font-size: 12px; color: var(--text);
+	background: var(--surface); border: 1px solid var(--border-strong); border-radius: 6px; padding: 4px 6px; min-height: 28px;
+}
+.fl .fl-info { overflow-wrap: anywhere; }
+.fl .fl-warnline { color: var(--st-warn); }
+
+@media (pointer: coarse) {
+	.fl .fl-name, .fl .fl-act, .fl .fl-file, .fl .fl-field select { min-height: 44px; }
+}
+@media (max-width: 560px) {
+	.fl .fl-item { grid-template-columns: minmax(0, 1fr) auto; }
+	.fl .fl-acts { grid-column: 1 / -1; justify-content: flex-end; }
+	.fl .fl-pick { flex-wrap: wrap; }
+}

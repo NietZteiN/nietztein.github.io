@@ -1,0 +1,142 @@
+/* Theatre Studio: the Issues panel and the Branch map (panels/issues.js, panels/map.js). Kit tokens + the shell's --st-*. */
+
+#st-pane-issues, #st-pane-map {
+	--stim-fatal-soft: rgba(179, 38, 30, 0.08);
+	--stim-warn-soft: rgba(138, 90, 0, 0.09);
+	--stim-band-a: transparent;
+	--stim-band-b: rgba(0, 0, 0, 0.028);
+	--stim-node: var(--bg);
+	--stim-edge: #8a939f;
+	--stim-stage: #c2410c;
+	--stim-stage-soft: rgba(194, 65, 12, 0.14);
+}
+:root[data-theme="dark"] #st-pane-issues, :root[data-theme="dark"] #st-pane-map {
+	--stim-fatal-soft: rgba(255, 138, 128, 0.10);
+	--stim-warn-soft: rgba(240, 192, 96, 0.10);
+	--stim-band-b: rgba(255, 255, 255, 0.035);
+	--stim-node: #12161c;
+	--stim-edge: #6b7583;
+	--stim-stage: #ffa36b;
+	--stim-stage-soft: rgba(255, 163, 107, 0.16);
+}
+
+/* ---- the tab badge ---- */
+.st-tabs .st-badge.stim-badge { display: inline-flex; gap: 5px; align-items: baseline; }
+.stim-b-fatal { color: var(--st-fatal); font-weight: 700; }
+.stim-b-warn { color: var(--st-warn); font-weight: 700; }
+.stim-b-ok { color: var(--st-ok); }
+
+/* ---- Issues ---- */
+#st-pane-issues.stim-issues { padding: 0; display: flex; flex-direction: column; }
+.stim-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 2px 12px; padding: 6px 10px 5px; border-bottom: 1px solid var(--border); background: var(--surface); position: sticky; top: 0; z-index: 1; }
+.stim-sum { margin: 0; font-size: 12px; font-weight: 600; color: var(--heading); }
+.stim-keys { margin: 0; font-size: 11px; color: var(--text-2); }
+.stim-body { flex: 1 1 auto; overflow: auto; padding: 2px 0 8px; }
+.stim-list { list-style: none; margin: 0; padding: 0; }
+.stim-group { display: flex; flex-wrap: wrap; gap: 2px 10px; align-items: baseline; padding: 8px 10px 3px; font-size: 11px; }
+.stim-group-name { font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+.stim-group-fatal .stim-group-name { color: var(--st-fatal); }
+.stim-group-warn .stim-group-name { color: var(--st-warn); }
+.stim-group-note { color: var(--text-2); }
+.stim-row { display: grid; grid-template-columns: 4.6em minmax(0, 1fr) auto; gap: 2px 8px; align-items: baseline; padding: 4px 10px 4px 7px; border-left: 3px solid transparent; border-bottom: 1px solid var(--st-line); cursor: pointer; font-size: 13px; line-height: 1.35; }
+.stim-row.stim-fatal { border-left-color: var(--st-fatal); }
+.stim-row.stim-warn { border-left-color: var(--st-warn); }
+.stim-row:hover { background: var(--accent-soft); }
+.stim-row[aria-selected="true"] { background: var(--surface-2); }
+.stim-row:focus { outline: none; }
+.stim-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.stim-row.is-here .stim-line::after { content: ' \25C2'; color: var(--accent); }
+.stim-line { font: 12px var(--font-mono); color: var(--accent); white-space: nowrap; }
+.stim-main { min-width: 0; }
+.stim-msg { color: var(--text); overflow-wrap: anywhere; }
+.stim-fatal .stim-msg { color: var(--heading); font-weight: 600; }
+.stim-hint { display: block; color: var(--text-2); font-size: 12px; overflow-wrap: anywhere; }
+.stim-blocker { display: inline-block; margin-left: 6px; padding: 0 5px; border-radius: 3px; border: 1px solid var(--st-fatal); color: var(--st-fatal); font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; vertical-align: 1px; white-space: nowrap; }
+.stim-code { font: 11px var(--font-mono); color: var(--text-2); white-space: nowrap; }
+.stim-clean { padding: 10px 12px; font-size: 13px; color: var(--text-2); }
+.stim-clean p { margin: 0 0 6px; }
+.stim-clean-head { color: var(--st-ok) !important; font-weight: 600; }
+@media (max-width: 560px) {
+	.stim-row { grid-template-columns: 4.2em minmax(0, 1fr); min-height: 44px; }
+	.stim-code { grid-column: 2; }
+}
+
+/* ---- Branch map ---- */
+#st-pane-map.stim-map { padding: 0; display: flex; flex-direction: column; overflow: hidden; }
+.stim-mapbar { display: flex; flex-wrap: wrap; align-items: center; gap: 3px 10px; padding: 5px 8px 5px 10px; border-bottom: 1px solid var(--border); background: var(--surface); }
+.stim-mapinfo { margin: 0; font-size: 12px; font-weight: 600; color: var(--heading); }
+.stim-flags { margin: 0; display: flex; flex-wrap: wrap; gap: 4px; flex: 1 1 auto; min-width: 0; }
+.stim-flag { font-size: 11px; padding: 1px 6px; border-radius: 3px; border: 1px solid currentColor; overflow-wrap: anywhere; }
+.stim-flag.is-bad { color: var(--st-fatal); background: var(--stim-fatal-soft); }
+.stim-flag.is-warn { color: var(--st-warn); background: var(--stim-warn-soft); }
+.stim-flag.is-ok { color: var(--st-ok); border-color: transparent; padding-left: 0; }
+.stim-tools { display: flex; gap: 4px; margin-left: auto; }
+.stim-tool { min-width: 30px; height: 26px; padding: 0 8px; border: 1px solid var(--border-strong); border-radius: 4px; background: var(--bg); color: var(--text); font: 600 12px var(--font-body); cursor: pointer; }
+.stim-tool:hover { background: var(--accent-soft); }
+.stim-tool:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.stim-view { position: relative; flex: 1 1 auto; min-height: 120px; overflow: hidden; cursor: grab; touch-action: none; background: var(--bg); user-select: none; -webkit-user-select: none; }
+.stim-view.is-dragging { cursor: grabbing; }
+.stim-view:focus { outline: none; }
+.stim-view:focus-visible { box-shadow: inset 0 0 0 2px var(--accent-ring); }
+.stim-svg { display: block; width: 100%; height: 100%; }
+.stim-legend { margin: 0; padding: 3px 10px 4px; display: flex; flex-wrap: wrap; gap: 2px 12px; border-top: 1px solid var(--border); background: var(--surface); font-size: 11px; color: var(--text-2); }
+.stim-legend .lg::before { content: ''; display: inline-block; width: 12px; height: 9px; margin-right: 4px; border: 1.5px solid var(--border-strong); border-radius: 2px; vertical-align: -1px; background: var(--stim-node); }
+.stim-legend .lg-menu::before { border-radius: 5px; border-color: var(--accent); }
+.stim-legend .lg-chapter::before { background: var(--surface-2); border-color: var(--heading); }
+.stim-legend .lg-end::before { border-radius: 6px; background: var(--text-2); border-color: var(--text-2); }
+.stim-legend .lg-un::before { border-style: dashed; border-color: var(--st-warn); }
+.stim-legend .lg-stage::before { border-color: var(--stim-stage); background: var(--stim-stage-soft); border-width: 2px; }
+.stim-legend .lg-back::before { height: 0; border-width: 0; border-top: 1.5px dashed var(--stim-edge); border-radius: 0; background: none; vertical-align: 3px; }
+.stim-live { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; margin: 0; }
+
+.stim-band { fill: var(--stim-band-a); }
+.stim-band.is-odd { fill: var(--stim-band-b); }
+.stim-bandtext { font: 600 11px var(--font-body); fill: var(--text-2); letter-spacing: 0.02em; paint-order: stroke; stroke: var(--bg); stroke-width: 4px; stroke-linejoin: round; }
+
+.stim-edge { fill: none; stroke: var(--stim-edge); stroke-width: 1.4; }
+.stim-edge.k-option { stroke: var(--accent); stroke-opacity: 0.7; }
+.stim-edge.is-cond { stroke-dasharray: 2 3; }
+.stim-edge.is-back { stroke-dasharray: 5 4; stroke-opacity: 0.75; }
+.stim-edge.is-broken { stroke: var(--st-fatal); stroke-dasharray: 4 3; stroke-width: 1.8; stroke-opacity: 1; }
+.stim-edge.is-from-stage { stroke: var(--stim-stage); stroke-width: 2; stroke-opacity: 1; }
+.stim-arrowhead { fill: var(--stim-edge); }
+.stim-arrowhead-back { fill: var(--stim-edge); }
+.stim-arrowhead-bad { fill: var(--st-fatal); }
+.stim-elabel { font: 10px var(--font-body); fill: var(--text-2); paint-order: stroke; stroke: var(--bg); stroke-width: 3px; stroke-linejoin: round; }
+.stim-elabel.is-broken { fill: var(--st-fatal); }
+
+.stim-node { cursor: pointer; }
+.stim-box { fill: var(--stim-node); stroke: var(--border-strong); stroke-width: 1.4; }
+.stim-inner { fill: none; stroke: var(--accent); stroke-opacity: 0.35; stroke-width: 1; }
+.stim-t1 { font: 600 11.5px var(--font-mono); fill: var(--heading); }
+.stim-t2 { font: 10px var(--font-body); fill: var(--text-2); }
+.stim-node.k-label .stim-box { stroke: var(--text-2); }
+.stim-node.k-menu .stim-box { stroke: var(--accent); stroke-width: 1.6; }
+.stim-node.k-menu .stim-t1 { font-family: var(--font-body); fill: var(--accent); }
+.stim-node.k-chapter .stim-box { fill: var(--surface-2); stroke: var(--heading); stroke-width: 1.8; }
+.stim-node.k-chapter .stim-t1 { fill: var(--heading); font-family: var(--font-body); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; font-size: 10.5px; }
+.stim-node.k-start .stim-box { fill: var(--surface-2); }
+.stim-node.k-start .stim-t1 { font-family: var(--font-body); fill: var(--text-2); }
+.stim-node.k-end .stim-box { fill: var(--text-2); stroke: var(--text-2); }
+.stim-node.k-end .stim-t1 { fill: var(--bg); font-family: var(--font-body); }
+.stim-node.k-withheld .stim-box { fill: var(--stim-node); stroke: var(--text-2); stroke-width: 2; stroke-dasharray: 3 2; }
+.stim-node.k-withheld .stim-t1 { font-family: var(--font-body); fill: var(--text); }
+.stim-node.k-missing .stim-box { fill: var(--stim-fatal-soft); stroke: var(--st-fatal); stroke-dasharray: 4 3; stroke-width: 1.6; }
+.stim-node.k-missing .stim-t1 { fill: var(--st-fatal); }
+.stim-node.k-missing .stim-t2 { fill: var(--st-fatal); }
+.stim-node.is-un .stim-box { stroke: var(--st-warn); stroke-dasharray: 5 3; stroke-width: 1.6; }
+.stim-node.is-un { opacity: 0.8; }
+.stim-node.is-un .stim-t2 { fill: var(--st-warn); }
+.stim-node.is-loop .stim-box { stroke: var(--st-warn); stroke-width: 2.2; }
+.stim-node.is-loop .stim-t2 { fill: var(--st-warn); }
+.stim-node.is-cursor .stim-box { stroke: var(--accent); stroke-width: 2; }
+.stim-node.is-stage .stim-box { stroke: var(--stim-stage); stroke-width: 2.6; }
+.stim-node.is-stage:not(.k-end) .stim-box { fill: var(--stim-stage-soft); }
+.stim-node.is-sel .stim-box { stroke-width: 2.6; filter: drop-shadow(0 0 3px var(--accent-ring)); }
+.stim-view:focus-visible .stim-node.is-sel .stim-box { stroke: var(--accent); }
+.stim-node:hover .stim-box { stroke: var(--accent); }
+
+@media (max-width: 560px) {
+	.stim-tool { min-width: 44px; height: 36px; }
+	.stim-legend { display: none; }
+}

@@ -1,0 +1,341 @@
+/* Theatre Studio: the frame. Panels bring their own styles (README.md) and use these tokens. */
+
+:root {
+	--st-split: 48%;          /* width of the left column (set by the divider) */
+	--st-edit: 62%;           /* height of the editor inside the left column */
+	--st-h: calc(100vh - 54px);   /* height of the work area; studio.js measures the header */
+	--st-code-bg: var(--surface);
+	--st-gutter-bg: var(--surface-2);
+	--st-fatal: #b3261e;
+	--st-warn: #8a5a00;
+	--st-ok: #2e6b3a;
+	--st-line: rgba(0, 0, 0, 0.05);
+}
+:root[data-theme="dark"] {
+	--st-fatal: #ff8a80;
+	--st-warn: #f0c060;
+	--st-ok: #8fd19e;
+	--st-line: rgba(255, 255, 255, 0.05);
+}
+
+.studio {
+	display: flex;
+	flex-direction: column;
+	height: var(--st-h);
+	min-height: 360px;
+	overflow: hidden;
+}
+
+/* ---------- toolbar ----------------------------------------------------- */
+
+.st-bar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 6px 8px;
+	padding: 6px var(--kit-gutter);
+	border-bottom: 1px solid var(--border);
+	background: var(--surface);
+}
+.st-field { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-2); min-width: 0; }
+.st-field select {
+	max-width: 15em;
+	min-width: 0;
+	padding: 4px 6px;
+	border: 1px solid var(--border-strong);
+	border-radius: 6px;
+	background: var(--bg);
+	color: var(--text);
+	font-size: 13px;
+}
+.st-grow { flex: 1 1 0; }
+.st-link {
+	padding: 2px 4px;
+	border: 0;
+	background: none;
+	color: var(--text-2);
+	font-size: 13px;
+	cursor: pointer;
+	border-radius: 4px;
+	text-align: left;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.st-link:hover { color: var(--text); background: var(--surface-2); }
+
+/* ---------- narrow-screen switcher (hidden on wide screens) ------------- */
+
+.st-switch { display: none; }
+
+/* ---------- work area: left (editor + panels) | divider | right (stage) - */
+
+.st-work {
+	flex: 1 1 auto;
+	min-height: 0;
+	display: grid;
+	grid-template-columns: minmax(0, var(--st-split)) 8px minmax(0, 1fr);
+}
+.st-left {
+	min-width: 0;
+	min-height: 0;
+	display: grid;
+	grid-template-rows: minmax(60px, var(--st-edit)) 8px minmax(60px, 1fr);
+	grid-template-columns: minmax(0, 1fr);   /* a wide panel never pushes the column past the divider */
+}
+.st-right {
+	min-width: 0;
+	min-height: 0;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	background: var(--surface-2);
+	border-left: 1px solid var(--border);
+}
+
+.st-vsplit, .st-hsplit {
+	position: relative;
+	background: var(--surface-2);
+	touch-action: none;
+}
+.st-vsplit { cursor: col-resize; border-left: 1px solid var(--border); }
+.st-hsplit { cursor: row-resize; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.st-vsplit::after, .st-hsplit::after {
+	content: "";
+	position: absolute;
+	background: var(--border-strong);
+	border-radius: 2px;
+}
+.st-vsplit::after { left: 2px; right: 2px; top: 50%; height: 28px; margin-top: -14px; }
+.st-hsplit::after { top: 2px; bottom: 2px; left: 50%; width: 28px; margin-left: -14px; }
+.st-vsplit:hover, .st-hsplit:hover, .st-vsplit.is-drag, .st-hsplit.is-drag { background: var(--accent-soft); }
+.st-vsplit:focus-visible, .st-hsplit:focus-visible { outline-offset: -2px; }
+
+/* ---------- the editor pane --------------------------------------------- */
+
+.st-editor { position: relative; min-height: 0; min-width: 0; overflow: hidden; background: var(--st-code-bg); }
+
+/* the built-in plain editor (replaced by a panel with id "editor") */
+.st-plain {
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr);
+	height: 100%;
+	font: 13px/20px var(--font-mono);
+}
+.st-gutter {
+	margin: 0;
+	padding: 8px 8px 40px 10px;
+	overflow: hidden;
+	background: var(--st-gutter-bg);
+	color: var(--text-2);
+	text-align: right;
+	user-select: none;
+	border-right: 1px solid var(--border);
+	white-space: pre;
+	font: inherit;
+	min-width: 3.2em;
+}
+.st-gutter b { font-weight: 700; color: var(--st-fatal); }
+.st-gutter i { font-style: normal; color: var(--st-warn); }
+.st-text {
+	display: block;
+	width: 100%;
+	height: 100%;
+	margin: 0;
+	padding: 8px 10px 40px;
+	border: 0;
+	outline: none;
+	resize: none;
+	background: transparent;
+	color: var(--text);
+	font: inherit;
+	tab-size: 4;
+	white-space: pre;
+	overflow: auto;
+	box-sizing: border-box;
+}
+.st-text:focus-visible { box-shadow: inset 0 0 0 2px var(--accent-ring); }
+
+/* ---------- panels as tabs ---------------------------------------------- */
+
+.st-panels { min-height: 0; display: flex; flex-direction: column; background: var(--bg); }
+.st-tabs {
+	display: flex;
+	flex: 0 0 auto;
+	gap: 2px;
+	padding: 4px 6px 0;
+	overflow-x: auto;
+	border-bottom: 1px solid var(--border);
+	scrollbar-width: thin;
+}
+.st-tabs button {
+	flex: 0 0 auto;
+	padding: 5px 10px;
+	border: 1px solid transparent;
+	border-bottom: 0;
+	border-radius: 6px 6px 0 0;
+	background: none;
+	color: var(--text-2);
+	font-size: 13px;
+	cursor: pointer;
+	white-space: nowrap;
+}
+.st-tabs button[aria-selected="true"] { background: var(--surface); border-color: var(--border); color: var(--heading); font-weight: 600; margin-bottom: -1px; }
+.st-tabs button.is-failed { color: var(--st-fatal); }
+.st-tabs .st-badge { margin-left: 6px; padding: 0 5px; border-radius: 8px; background: var(--surface-2); font-size: 11px; font-weight: 600; }
+.st-panes { flex: 1 1 auto; min-height: 0; position: relative; background: var(--surface); }
+.st-pane { position: absolute; inset: 0; overflow: auto; padding: 8px 10px; font-size: 13px; }
+.st-pane.is-failed { color: var(--text-2); }
+.st-pane.is-failed b { color: var(--st-fatal); }
+.st-empty { color: var(--text-2); font-size: 13px; margin: 6px 0; }
+
+/* the built-in issue list (replaced by a panel with id "issues") */
+.st-issues { list-style: none; margin: 0; padding: 0; }
+.st-issues li { display: grid; grid-template-columns: 4.2em 3.6em minmax(0, 1fr); gap: 6px; align-items: baseline; padding: 3px 4px; border-bottom: 1px solid var(--st-line); }
+.st-issues button { all: unset; cursor: pointer; color: var(--accent); font: 12px var(--font-mono); }
+.st-issues button:focus-visible { outline: 2px solid var(--accent); }
+.st-issues .lv { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+.st-issues .lv-fatal { color: var(--st-fatal); }
+.st-issues .lv-warn { color: var(--st-warn); }
+.st-issues small { display: block; color: var(--text-2); }
+
+/* ---------- the stage --------------------------------------------------- */
+
+.st-stagebox {
+	position: relative;
+	flex: 0 1 auto;
+	width: 100%;
+	aspect-ratio: 16 / 9;
+	max-height: calc(100% - 34px);
+	margin: 0 auto;
+	background: #06070d;
+}
+.st-stagebox iframe {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	border: 0;
+	display: block;
+	background: #06070d;
+	visibility: hidden;
+}
+.st-stagebox.is-on iframe { visibility: visible; }
+.st-stageinfo {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 4px 10px;
+	min-height: 30px;
+	border-top: 1px solid var(--border);
+	min-width: 0;
+}
+.st-stageinfo .kit-note { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---------- status line ------------------------------------------------- */
+
+.st-status {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	min-height: 28px;
+	padding: 2px var(--kit-gutter);
+	border-top: 1px solid var(--border);
+	background: var(--surface);
+	font-size: 13px;
+	min-width: 0;
+}
+.st-count { font-weight: 600; color: var(--text); }
+.st-count.has-fatal { color: var(--st-fatal); }
+.st-count.has-warn { color: var(--st-warn); }
+.st-count.is-clean { color: var(--st-ok); }
+.st-msg { color: var(--text-2); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.st-undo { flex: 0 0 auto; }
+
+/* ---------- another tab holds this draft: the notice, and a script that cannot be typed in ---------- */
+
+.st-lock {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 6px 10px;
+	padding: 6px var(--kit-gutter);
+	border-bottom: 1px solid var(--border);
+	background: var(--accent-soft);
+	color: var(--text);
+	font-size: 13px;
+}
+.st-lock[hidden] { display: none; }
+.st-lock-text { flex: 1 1 18em; min-width: 0; }
+.studio.is-readonly .st-editor { box-shadow: inset 3px 0 0 var(--accent); }
+.studio.is-readonly .st-editor textarea { cursor: default; }
+
+/* ---------- a tall window: the panels under the stage, the script full height (studio.js arrange) ---- */
+
+.st-work.is-tall .st-left { grid-template-rows: minmax(0, 1fr); }
+.st-work.is-tall .st-hsplit { display: none; }
+.st-work.is-tall .st-right { justify-content: flex-start; }
+.st-work.is-tall .st-stagebox { flex: 0 0 auto; max-height: none; }
+.st-work.is-tall .st-right > .st-panels { flex: 1 1 auto; min-height: 0; border-top: 1px solid var(--border); }
+
+/* ---------- narrow screens: stacked, one part at a time ----------------- */
+
+@media (max-width: 899px) {
+	.studio { height: auto; min-height: var(--st-h); overflow: visible; }
+	.st-bar { padding: 6px 12px; }
+	.st-field select { max-width: 11em; }
+	/* two rows, not three: the select explains itself, and Duplicate, Rename and Delete are on each row of Files */
+	.st-field > span, .st-wide-only { display: none; }
+	.st-bar .st-grow { flex-basis: 100%; height: 0; }
+	/* every panel tab in view, on two rows if need be, each big enough for a thumb */
+	.st-tabs { flex-wrap: wrap; overflow-x: visible; padding-bottom: 0; }
+	.st-tabs button { min-height: 44px; }
+	/* every control a thumb can hit is at least 44 px tall */
+	.st-bar .kit-btn, .st-field select, .st-lock .kit-btn, .st-status .kit-btn { min-height: 44px; }
+	.st-status .st-link, .st-stageinfo .st-link { min-height: 44px; }
+	.st-switch {
+		display: flex;
+		gap: 4px;
+		padding: 6px 12px 0;
+		border-bottom: 1px solid var(--border);
+	}
+	.st-switch button {
+		flex: 1 1 0;
+		min-height: 44px;
+		border: 1px solid var(--border);
+		border-bottom: 0;
+		border-radius: 8px 8px 0 0;
+		background: none;
+		color: var(--text-2);
+	}
+	.st-switch button[aria-selected="true"] { background: var(--surface); color: var(--heading); font-weight: 600; }
+	.st-work { display: block; flex: 1 1 auto; }
+	.st-vsplit, .st-hsplit { display: none; }
+	.st-left { display: block; }
+	.st-right { border-left: 0; }
+	.st-editor, .st-panels { height: calc(var(--st-h) - 150px); min-height: 300px; }
+	.st-work[data-show="script"] .st-panels,
+	.st-work[data-show="script"] .st-right,
+	.st-work[data-show="panels"] .st-editor,
+	.st-work[data-show="panels"] .st-right { display: none; }
+	.st-stagebox { max-height: none; }
+	/* Stage: the stage on top and the script under it, so the screen is not half empty */
+	.st-work[data-show="stage"] { display: flex; flex-direction: column; }
+	.st-work[data-show="stage"] .st-right { order: -1; flex: 0 0 auto; }
+	.st-work[data-show="stage"] .st-panels { display: none; }
+	.st-work[data-show="stage"] .st-editor { height: calc(var(--st-h) - 190px - 56.25vw); min-height: 220px; border-top: 1px solid var(--border); }
+	.st-status { flex-wrap: wrap; padding: 4px 12px; }
+}
+
+/* ---------- thumbnail: no chrome around the work area ------------------- */
+
+html.is-thumb .studio { height: 100vh; }
+html.is-thumb .st-panels { display: flex; }
+html.is-thumb .st-vsplit, html.is-thumb .st-hsplit { pointer-events: none; }
+html.is-thumb .st-plain { font-size: 15px; line-height: 22px; }
+
+/* the line the cursor is on, in the gutter of the plain editor */
+.st-gutter em { font-style: normal; font-weight: 700; color: var(--heading); background: var(--accent-soft); border-radius: 3px; padding: 0 2px; }
+html.is-thumb .st-text { caret-color: transparent; }

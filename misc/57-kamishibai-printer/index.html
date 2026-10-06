@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kamishibai Printer</title>
+<meta name="description" content="Prints a Paper Theatre story as kamishibai boards: the picture on the front, and on the back the text for the next picture, so a performer can read from behind the stack.">
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="../_kit/kit.css"><script src="../_kit/kit.js"></script>
+<style id="page-size">@page { size: A4 landscape; margin: 0; }</style>
+<style>
+	:root {
+		--paper: #fbf8f1;
+		--ink: #1b1a17;
+		--ink-2: #5d574c;
+		--rule: #c9c0ae;
+		--wood: #8a5a33;
+	}
+	:root[data-theme="dark"] {
+		--wood: #6e4527;
+	}
+
+	main { display: flex; flex-direction: column; gap: 14px; }
+	.controls { align-items: flex-end; gap: 10px 14px; }
+	.field { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--text-2); min-width: 0; }
+	.field select { min-height: 40px; max-width: 100%; }
+	.field.grow { flex: 1 1 260px; }
+	.field.grow select { width: 100%; }
+	.check { display: flex; align-items: center; gap: 8px; font-size: 14px; min-height: 40px; color: var(--text); }
+	.check input { width: 18px; height: 18px; }
+
+	#summary { margin: 0; font-size: 14px; color: var(--text-2); }
+	#summary b { color: var(--heading); font-weight: 600; }
+
+	details.route { border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+	details.route > summary { cursor: pointer; padding: 10px 14px; font-size: 14px; min-height: 24px; }
+	.route-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px 16px; padding: 4px 14px 14px; }
+	.route-list .field select { width: 100%; }
+
+	/* the strip of boards */
+	.strip {
+		display: flex; gap: 10px; overflow-x: auto; padding: 10px 4px 14px; scroll-snap-type: x proximity;
+		border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+		overscroll-behavior-x: contain;
+	}
+	.strip button {
+		flex: 0 0 auto; width: 168px; padding: 0; border: 2px solid transparent; border-radius: 6px; background: var(--surface);
+		cursor: pointer; scroll-snap-align: start; color: var(--text); text-align: left; font: inherit;
+	}
+	.strip button[aria-current="true"] { border-color: var(--accent); }
+	.strip svg { display: block; width: 100%; height: auto; border-radius: 4px 4px 0 0; background: #111; }
+	.strip .cap { display: flex; justify-content: space-between; gap: 6px; padding: 4px 6px 5px; font-size: 12px; color: var(--text-2); }
+	.strip .cap b { color: var(--heading); font-weight: 600; }
+
+	/* one board, front and back */
+	.detail { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+	.detail h2 { font-size: 14px; font-weight: 600; margin: 0 0 6px; color: var(--heading); }
+	.detail .note { margin: 6px 0 0; }
+	.front-view svg { display: block; width: 100%; height: auto; border-radius: 6px; background: #111; box-shadow: 0 1px 0 var(--border); }
+	#back .sheet { box-shadow: 0 0 0 1px var(--border); border-radius: 6px; }
+	.btns { margin-top: 8px; }
+	@media (max-width: 760px) { .detail { grid-template-columns: minmax(0, 1fr); } }
+
+	/* the print pages, previewed on screen */
+	.pages-wrap[hidden] { display: none; }
+	.pages-wrap { border: 1px solid var(--border); border-radius: 10px; padding: 12px; background: var(--surface-2); overflow: hidden; }
+	.pages-wrap .kit-note { margin: 0 0 10px; }
+	#print.preview { display: flex; flex-wrap: wrap; gap: 24px; zoom: 0.26; }
+	#print.preview .sheet { box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35); }
+	#print.preview .sheet::after {
+		content: attr(data-label); position: absolute; left: 0; right: 0; bottom: -64px; text-align: center;
+		font: 40px/1.2 var(--font-body); color: var(--text-2);
+	}
+	#print.preview .sheet { margin-bottom: 70px; }
+	#print.offstage { position: fixed; left: -400vw; top: 0; visibility: hidden; pointer-events: none; }
+
+	/* ---------- paper: the same markup on screen (back preview, page preview) and in print ---------- */
+	.sheet { position: relative; width: 297mm; height: 210mm; background: #fff; color: var(--ink); overflow: hidden; break-after: page; page-break-after: always; }
+	/* the class sits on a parent (#print) or on the sheet itself (the back preview, #back .sheet) */
+	.paper-letter .sheet, .sheet.paper-letter { width: 279.4mm; height: 215.9mm; }
+	/* the fold layout is a portrait page folded across the middle: each half is a landscape board (A5 or half Letter) */
+	.sheet.fold-sheet { width: 210mm; height: 297mm; }
+	.paper-letter .sheet.fold-sheet { width: 215.9mm; height: 279.4mm; }
+	.sheet:last-child { break-after: auto; page-break-after: auto; }
+	.sheet .face { position: absolute; inset: 6mm; display: flex; }
+	.sheet .face > svg { width: 100%; height: 100%; display: block; }
+	.sheet.turn .face.text, .sheet.turn .half.text { transform: rotate(180deg); }
+	.sheet .half { position: absolute; left: 6mm; right: 6mm; }
+	.sheet .half.pic { top: 6mm; bottom: calc(50% + 4mm); }
+	.sheet .half.text { top: calc(50% + 4mm); bottom: 6mm; display: flex; }
+	.sheet .half.pic > svg { width: 100%; height: 100%; display: block; }
+	.sheet .fold { position: absolute; left: 0; right: 0; top: 50%; border-top: 0.3mm dashed #888; }
+	.sheet .fold span { position: absolute; left: 50%; top: -2.2mm; transform: translateX(-50%); background: #fff; padding: 0 2mm; font: 2.6mm/1 var(--font-body); color: #666; letter-spacing: 0.1em; text-transform: uppercase; }
+	.sheet .flipnote { position: absolute; right: 6mm; bottom: 1.6mm; font: 2.2mm/1 var(--font-body); color: #888; }
+	.sheet.turn:not(.fold-sheet) .flipnote { right: auto; left: 6mm; top: 1.6mm; bottom: auto; transform: rotate(180deg); }
+
+	/* the performer's side */
+	.bk { flex: 1; min-width: 0; display: grid; grid-template-columns: 27% minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto; gap: 0.9em 1.4em;
+		background: var(--paper); color: var(--ink); padding: 1.1em 1.4em; font-family: var(--font-body); font-size: 3.2mm; line-height: 1.3; }
+	.bk-head { grid-column: 1 / -1; display: flex; justify-content: space-between; gap: 1em; font-size: 0.95em; color: var(--ink-2); border-bottom: 0.08em solid var(--rule); padding-bottom: 0.4em; }
+	.bk-head b { color: var(--ink); }
+	.bk-thumb { grid-row: 2 / 4; align-self: start; }
+	.bk-thumb svg { display: block; width: 100%; height: auto; border-radius: 0.3em; background: #111; }
+	.bk-thumb p { margin: 0.35em 0 0; font-size: 0.9em; color: var(--ink-2); }
+	.bk-text { min-height: 0; overflow: hidden; font-size: var(--fit, 2.3em); line-height: 1.32; }
+	.bk-text p { margin: 0 0 0.55em; }
+	.bk-text .who { display: block; font-weight: 700; font-size: 0.78em; letter-spacing: 0.04em; text-transform: uppercase; color: #5a3f22; }
+	.bk-text .thought { font-style: italic; color: #4a463f; }
+	.bk-text .chip { font-size: 0.5em; vertical-align: 0.35em; padding: 0.05em 0.45em; margin-left: 0.35em; border: 0.1em solid #b9ad94; border-radius: 1em; color: #6b604c; font-style: normal; white-space: nowrap; }
+	.bk-text code, .bk-text pre { font-family: var(--font-mono); font-size: 0.82em; }
+	.bk-text pre { margin: 0 0 0.55em; white-space: pre-wrap; background: #f0ebe0; padding: 0.4em 0.6em; border-radius: 0.3em; }
+	.bk-text .scene { font-weight: 600; font-size: 0.8em; color: #5a3f22; border-left: 0.2em solid #c49a6c; padding-left: 0.5em; }
+	.bk-text .chap { font-size: 1.15em; font-weight: 600; }
+	.bk-text .chap .num { display: block; font-size: 0.6em; letter-spacing: 0.2em; color: var(--ink-2); }
+	.bk-text .beat { color: #9a8f7c; letter-spacing: 0.6em; font-size: 0.7em; }
+	.bk-text .menu { list-style: none; padding: 0; margin: 0 0 0.55em; }
+	.bk-text .menu li { padding: 0.1em 0 0.1em 1.1em; position: relative; color: var(--ink-2); }
+	.bk-text .menu li.taken { color: var(--ink); font-weight: 600; }
+	.bk-text .menu li.taken::before { content: "\25B8"; position: absolute; left: 0; }
+	.bk-text .menu .tag { font-size: 0.55em; font-weight: 500; color: #6b604c; margin-left: 0.5em; }
+	.bk-text .card { border: 0.08em solid var(--rule); border-radius: 0.3em; padding: 0.35em 0.6em; margin: 0 0 0.55em; }
+	.bk-text .card b { display: block; }
+	.bk-text .card dl { margin: 0.2em 0 0; display: grid; grid-template-columns: auto 1fr; gap: 0.1em 0.8em; font-size: 0.85em; }
+	.bk-text .card dt { color: var(--ink-2); }
+	.bk-text .card dd { margin: 0; }
+	.bk-text .title { font-size: 1.3em; font-weight: 700; margin-bottom: 0.3em; }
+	.bk-text .small { font-size: 0.6em; color: var(--ink-2); }
+	.bk-pull { grid-column: 2; display: flex; align-items: center; gap: 0.7em; font-size: 1.15em; font-weight: 700; color: #8a2c1c; letter-spacing: 0.06em; text-transform: uppercase; }
+	.bk-pull::before { content: ""; flex: 1; border-top: 0.16em dashed #c2563f; }
+	.bk-pull span { font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--ink-2); font-size: 0.8em; }
+	.half.text .bk { font-size: 2.5mm; grid-template-columns: 20% minmax(0, 1fr); padding: 0.8em 1.1em; }
+
+	/* thumbnail: a fan of three boards on a table */
+	#fan { display: none; }
+	html.is-thumb body { background: #2a1d14; }
+	html.is-thumb main { padding: 0; }
+	html.is-thumb main > :not(#fan):not(.defs) { display: none !important; }
+	html.is-thumb #fan { display: block; position: fixed; inset: 0; overflow: hidden;
+		background: radial-gradient(120% 90% at 50% 40%, #6b4a2e, #2a1d14 75%); }
+	#fan .card { position: absolute; width: 50%; left: 25%; top: 22%; transform-origin: 50% 160%; border: 10px solid #f6f0e2; border-radius: 6px; box-shadow: 0 14px 40px rgba(0, 0, 0, 0.55); background: #111; }
+	#fan .card svg { display: block; width: 100%; height: auto; }
+	#fan .card:nth-child(1) { transform: rotate(-13deg) translate(-20%, 4%); }
+	#fan .card:nth-child(2) { transform: rotate(-1deg) translate(0, -4%); }
+	#fan .card:nth-child(3) { transform: rotate(12deg) translate(21%, 5%); }
+	#fan .label { position: absolute; left: 0; right: 0; bottom: 5%; text-align: center; font: 600 22px/1.2 var(--font-body); letter-spacing: 0.24em; color: #f2e6cf; text-transform: uppercase; }
+
+	@media print {
+		html, body { background: #fff !important; }
+		body > *:not(main) { display: none !important; }
+		main > *:not(#print-host):not(.defs) { display: none !important; }
+		#print-host > :not(.pages-wrap) { display: none !important; }
+		main { padding: 0 !important; display: block !important; }
+		#print-host, #print-host .pages-wrap { display: block !important; border: 0; padding: 0; margin: 0; background: none; }
+		#print-host .pages-wrap > :not(#print) { display: none !important; }
+		#print, #print.preview, #print.offstage { display: block !important; position: static !important; visibility: visible !important; zoom: 1 !important; left: auto; }
+		#print .sheet { box-shadow: none !important; margin: 0 !important; }
+		#print .sheet::after { content: none !important; }
+		.sheet { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+	}
+</style>
+</head>
+<body>
+<main class="kit-main kit-pad">
+	<div class="kit-row controls kit-nothumb">
+		<label class="field grow">Story
+			<select id="story" aria-describedby="summary"></select>
+		</label>
+		<label class="field">Lines per board
+			<select id="per">
+				<option value="2">2</option><option value="3">3</option><option value="4" selected>4</option>
+				<option value="5">5</option><option value="6">6</option><option value="8">8</option>
+			</select>
+		</label>
+		<label class="check"><input type="checkbox" id="castbreaks" checked> New board when the cast moves</label>
+		<label class="field">Layout
+			<select id="layout">
+				<option value="duplex-long">Two-sided, flip on long edge</option>
+				<option value="duplex-short">Two-sided, flip on short edge</option>
+				<option value="fold">One-sided, fold in half</option>
+			</select>
+		</label>
+		<label class="field">Paper
+			<select id="paper">
+				<option value="a4">A4</option>
+				<option value="letter">Letter</option>
+			</select>
+		</label>
+		<button class="kit-btn primary" id="btn-print" type="button">Print</button>
+	</div>
+
+	<p id="summary" aria-live="polite">Loading the stories&hellip;</p>
+
+	<details class="route kit-nothumb" id="route">
+		<summary>Route through the choices: <span id="route-sum">first option each time</span></summary>
+		<div class="route-list" id="route-list"></div>
+	</details>
+
+	<div class="strip kit-nothumb" id="strip" role="group" aria-label="Boards, in the order the audience sees them (arrow keys move between them)"></div>
+
+	<section class="detail kit-nothumb" aria-label="The selected board">
+		<div class="front-view">
+			<h2 id="front-h">Front</h2>
+			<div id="front"></div>
+			<div class="kit-row btns">
+				<button class="kit-btn small" id="btn-prev" type="button" aria-label="Previous board">&larr;</button>
+				<button class="kit-btn small" id="btn-next" type="button" aria-label="Next board">&rarr;</button>
+				<button class="kit-btn small" id="btn-svg" type="button">Save this front as SVG</button>
+			</div>
+		</div>
+		<div class="back-view">
+			<h2 id="back-h">Back</h2>
+			<div id="back"></div>
+			<p class="kit-note note" id="back-note"></p>
+		</div>
+	</section>
+
+	<div id="print-host" class="kit-nothumb">
+		<div class="kit-row">
+			<button class="kit-btn" id="btn-pages" type="button" aria-expanded="false" aria-controls="pages">Show the print pages</button>
+			<span class="kit-note" id="flip-note"></span>
+		</div>
+		<div class="pages-wrap" id="pages" hidden>
+			<p class="kit-note" id="pages-note"></p>
+			<div id="print" class="offstage" aria-label="Pages in print order"></div>
+		</div>
+	</div>
+
+	<div id="fan" aria-hidden="true"></div>
+</main>
+
+<footer class="kit-footer" id="how">
+	<p><b>How it works.</b> The story is a published Paper Theatre script (<code>misc/55-paper-theatre/stories/</code>), parsed and played through by the theatre's own engine (<code>vn.js</code>) along the route you pick at each choice. Every stop on that route is printed exactly once, word for word as the script has it, with its citation chips; nothing is added or summarised. The stops are grouped into boards: a new board whenever the picture changes (a new background or illustration, a flashback or a colour grade, a chapter card, and if you leave the box ticked, someone entering, leaving or moving), and otherwise after the number of lines you choose. Each front is one SVG made from the theatre's drawings (<code>art.js</code>): the background, the cast in their slots and faces, or the event illustration, placed the way the stage places them, with the stage's dimming of the cast members who do not speak on that board and a flat, even version of its canvas grain (the same blend at its average strength, so the tones match without printing the speckle); weather particles and the painted look are left out. In kamishibai the performer reads from behind the stack, so the text for board 1 is printed on the back of the last board and the text for board <i>k</i> on the back of board <i>k</i>&minus;1, each with a small copy of the picture the audience is looking at and a pull mark where the board is drawn out. Nothing leaves your browser; your settings are remembered in localStorage.</p>
+</footer>
+
+<template id="help-template">
+	<p>This turns a Paper Theatre story into kamishibai, the Japanese paper-theatre form where a performer slides painted boards out of a frame while reading. The performer stands behind the stack, so each board's back carries the text for the picture in front of it.</p>
+	<h3>Try</h3>
+	<p>Pick a story, open <b>Route through the choices</b> to pick an answer at each choice, and change <b>Lines per board</b> to make more or fewer boards. Click a board in the strip, or use the <kbd>&larr;</kbd> and <kbd>&rarr;</kbd> keys there, to see its front and its back.</p>
+	<h3>Printing</h3>
+	<p><b>Two-sided, flip on long edge</b> prints each board on one sheet, picture on the front and text on the back; the backs are printed upside down so that, with your printer set to flip on the long edge, the text reads upright from behind the board. If your printer flips on the short edge, choose that layout instead. Without two-sided printing, <b>One-sided, fold in half</b> puts the picture and the text on one portrait page: fold along the dashed line, text side behind, and each folded page is a landscape board half the size of the sheet. Set the print dialog to landscape for the two-sided layouts and portrait for the fold, no margins or "default" margins, and 100% scale. Print the first two pages and check before printing the rest.</p>
+	<h3>Links</h3>
+	<p><code>?story=obfuscation</code> opens a story, <code>?layout=fold</code> or <code>?paper=letter</code> sets the print layout, <code>?thumb=1</code> shows the thumbnail.</p>
+</template>
+
+<script src="../55-paper-theatre/vn.js"></script>
+<script src="../55-paper-theatre/art-scenes.js"></script>
+<script src="../55-paper-theatre/art-cast.js"></script>
+<script src="../55-paper-theatre/art.js"></script>
+<script src="boards.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

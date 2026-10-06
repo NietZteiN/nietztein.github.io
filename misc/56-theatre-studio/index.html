@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Theatre Studio</title>
+<meta name="description" content="A writing room for Paper Theatre scripts: the .vn text on the left, the live stage on the right, lint and the branch walk on every keystroke. Drafts stay in this browser.">
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="../_kit/kit.css"><script src="../_kit/kit.js"></script>
+<link rel="stylesheet" href="studio.css">
+</head>
+<body>
+
+<main class="kit-main studio" id="studio">
+	<div class="st-bar kit-nothumb" role="toolbar" aria-label="Drafts and preview">
+		<label class="st-field"><span>Draft</span>
+			<select id="st-draft" aria-label="Switch draft"></select>
+		</label>
+		<button class="kit-btn small" id="st-new" type="button" title="A new, empty draft">New</button>
+		<button class="kit-btn small st-wide-only" id="st-dup" type="button" title="A copy of this draft">Duplicate</button>
+		<button class="kit-btn small st-wide-only" id="st-rename" type="button" title="Rename this draft">Rename</button>
+		<button class="kit-btn small st-wide-only" id="st-del" type="button" title="Delete this draft from this browser">Delete</button>
+		<label class="st-field">
+			<select id="st-example" aria-label="Open a published story as a new draft"><option value="">Open an example&hellip;</option></select>
+		</label>
+		<span class="st-grow"></span>
+		<button class="kit-btn small" id="st-follow" type="button" aria-pressed="true" title="The stage follows the line the cursor is on (Ctrl+Shift+F)">Follow cursor</button>
+		<button class="kit-btn small" id="st-play" type="button" title="Show the stop at the cursor on the stage (Ctrl+Enter)">Stage at cursor</button>
+		<button class="kit-btn small" id="st-reload" type="button" title="Reload the preview from the start">Reload stage</button>
+	</div>
+
+	<div class="st-switch kit-nothumb" role="tablist" aria-label="Show">
+		<button type="button" role="tab" data-show="script" aria-selected="true">Script</button>
+		<button type="button" role="tab" data-show="stage" aria-selected="false">Stage</button>
+		<button type="button" role="tab" data-show="panels" aria-selected="false">Panels</button>
+	</div>
+
+	<div class="st-lock kit-nothumb" id="st-lock" role="alert" hidden>
+		<span class="st-lock-text" id="st-lock-text"></span>
+		<button class="kit-btn small" id="st-lock-take" type="button">Take over</button>
+		<button class="kit-btn small" id="st-lock-copy" type="button" title="Save the text on screen as a new draft" hidden>Keep this tab’s text as a copy</button>
+	</div>
+
+	<div class="st-work" id="st-work" data-show="script">
+		<section class="st-left" aria-label="Script and panels">
+			<div class="st-editor" id="st-editor"></div>
+			<div class="st-hsplit" id="st-hsplit" role="separator" aria-orientation="horizontal" aria-label="Resize the script and the panels" tabindex="0" aria-valuemin="20" aria-valuemax="85" aria-valuenow="62"></div>
+			<div class="st-panels" id="st-panels">
+				<div class="st-tabs" role="tablist" aria-label="Panels" id="st-tabs"></div>
+				<div class="st-panes" id="st-panes"></div>
+			</div>
+		</section>
+		<div class="st-vsplit" id="st-vsplit" role="separator" aria-orientation="vertical" aria-label="Resize the script and the stage" tabindex="0" aria-valuemin="25" aria-valuemax="75" aria-valuenow="48"></div>
+		<section class="st-right" aria-label="Live stage">
+			<div class="st-stagebox" id="st-stagebox">
+				<iframe id="st-frame" title="Paper Theatre preview of this draft"></iframe>
+			</div>
+			<div class="st-stageinfo kit-nothumb">
+				<button class="st-link" type="button" id="st-stopline" title="Put the cursor on the line the stage is showing">Stage: loading&hellip;</button>
+				<span class="kit-note" id="st-title"></span>
+			</div>
+		</section>
+	</div>
+
+	<div class="st-status" id="st-status">
+		<button class="st-link st-count" type="button" id="st-count" title="Go to the first issue">Checking&hellip;</button>
+		<span class="st-msg" id="st-msg" aria-live="polite"></span>
+		<button class="kit-btn small st-undo" type="button" id="st-undo" hidden>Undo delete</button>
+		<span class="st-grow"></span>
+		<span class="kit-note" id="st-pos">Line 1</span>
+		<span class="kit-note kit-nothumb" id="st-saved"></span>
+	</div>
+</main>
+
+<footer class="kit-footer" id="how">
+	<p><b>How it works.</b> The script is plain text in the format of <a href="../55-paper-theatre/stories/README.md">Paper Theatre's stories</a>. A short moment after each edit the text is saved in this browser (<code>localStorage</code>, key <code>vn:studio:&lt;draft&gt;</code>), parsed, linted and walked through every branch by the theatre's own engine (<code>vn.js</code>) in a background worker, and the stage on the right, which is the real <a href="../55-paper-theatre/">Paper Theatre</a> in preview mode, reads the draft again and returns to the line it was on. The examples are the published stories, copied into a draft: editing never changes a file on the site. The Studio writes nothing for you; every line in a draft is the author's. Nothing leaves your browser.</p>
+</footer>
+
+<template id="help-template">
+	<p>A writing room for Paper Theatre scripts. Type on the left; a moment later the stage on the right plays the line you are on, and the status line counts what the linter found.</p>
+	<h3>Keys in the script</h3>
+	<p><kbd>Tab</kbd> and <kbd>Shift</kbd>+<kbd>Tab</kbd> indent and outdent. To leave the script with the keyboard, press <kbd>Esc</kbd>, then <kbd>Tab</kbd> (or press <kbd>F6</kbd>). <kbd>Ctrl</kbd>+<kbd>Space</kbd> completes a name, <kbd>Ctrl</kbd>+<kbd>G</kbd> goes to a line, <kbd>Ctrl</kbd>+<kbd>/</kbd> comments a line out or back in, <kbd>Alt</kbd>+<kbd>&uarr;</kbd> and <kbd>Alt</kbd>+<kbd>&darr;</kbd> move lines, <kbd>F8</kbd> and <kbd>Shift</kbd>+<kbd>F8</kbd> go to the next and the previous issue, <kbd>Alt</kbd>+<kbd>Z</kbd> turns line wrapping on or off.</p>
+	<h3>Keys everywhere</h3>
+	<p><kbd>Ctrl</kbd>+<kbd>Enter</kbd> shows the stop at the cursor on the stage. <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd> turns "Follow cursor" on or off. <kbd>Ctrl</kbd>+<kbd>S</kbd> saves at once (drafts also save themselves). <kbd>Alt</kbd>+<kbd>1</kbd> to <kbd>9</kbd> open a panel. <kbd>F6</kbd> moves between the script, the panels and the stage bar. The dividers move with the arrow keys once focused.</p>
+	<h3>Drafts</h3>
+	<p>Drafts live in this browser only. "Open an example" copies a published story into a new draft. Each row of the Files panel can also rename, duplicate and delete a draft (on a phone that is where those buttons are); a draft deleted there or with the toolbar's Delete can be brought back with Undo for 30 seconds. Download a draft you want to keep.</p>
+	<p>One tab writes a draft at a time. Open the same draft in a second tab and it shows there read-only, following what the first tab saves; "Take over" moves the writing to it, and the first tab stops saving and says so. A tab that closes or crashes lets go of its draft within about ten seconds.</p>
+	<h3>Links</h3>
+	<p><code>?draft=name</code> opens that draft, <code>?example=obfuscation</code> opens a fresh copy of a story, <code>?theme=dark</code> or <code>?theme=light</code> for one visit, <code>?thumb=1</code> the state the thumbnail is taken from.</p>
+</template>
+
+<script src="../55-paper-theatre/vn.js"></script>
+<script src="../55-paper-theatre/art-scenes.js"></script>
+<script src="../55-paper-theatre/art-cast.js"></script>
+<script src="../55-paper-theatre/art.js"></script>
+<script src="studio.js"></script>
+<!-- the panels: each registers itself with Studio.registerPanel (README.md); a missing or broken one leaves the rest working -->
+<script src="vn-highlight.js"></script>
+<script src="editor.js"></script>
+<script src="files.js"></script>
+<script src="panels/issues.js"></script>
+<script src="panels/map.js"></script>
+<script src="panels/cast.js"></script>
+<script src="panels/scenery.js"></script>
+<script src="panels/facts.js"></script>
+<script src="panels/board.js"></script>
+</body>
+</html>
