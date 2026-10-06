@@ -1,0 +1,581 @@
+/* The Notes and Reading views of the Desk. Added by views/notes.js and
+   views/reading.js. Every selector starts with the view's own section, and
+   only the colour tokens of desk.css are used, so both themes work. */
+
+/* ---- shared ---- */
+
+[data-view="notes"] .nr-placeholder,
+[data-view="reading"] .nr-placeholder {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: .5rem;
+	padding: 3rem 1rem;
+	text-align: center;
+}
+
+[data-view="notes"] ul.nr-rows,
+[data-view="reading"] ul.rd-rows,
+[data-view="reading"] ul.rd-reading {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+[data-view="notes"] .nr-rows li + li,
+[data-view="reading"] .rd-rows li + li {
+	margin-top: 2px;
+}
+
+[data-view="notes"] .row-meta,
+[data-view="reading"] .row-meta {
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+	overflow-wrap: anywhere;
+}
+
+[data-view="notes"] .row-title,
+[data-view="reading"] .row-title {
+	overflow-wrap: anywhere;
+}
+
+/* ---- notes ---- */
+
+[data-view="notes"] .nr-toolbar {
+	display: grid;
+	gap: .5rem;
+	margin-bottom: .5rem;
+}
+
+[data-view="notes"] .nr-toolrow {
+	display: flex;
+	gap: .5rem;
+	align-items: center;
+}
+
+[data-view="notes"] .nr-toolrow select {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+[data-view="notes"] .nr-toolrow .btn {
+	flex: 0 0 auto;
+}
+
+[data-view="notes"] .nr-tags {
+	display: flex;
+	flex-wrap: wrap;
+	gap: .35rem;
+	margin: .25rem 0 .5rem;
+}
+
+[data-view="notes"] .nr-chip {
+	display: inline-flex;
+	align-items: center;
+	gap: .35rem;
+	min-height: 36px;
+	padding: .25rem .7rem;
+	border: 1px solid var(--border-strong);
+	border-radius: 999px;
+	background: var(--bg);
+	color: var(--text);
+	font: inherit;
+	font-size: .86rem;
+	cursor: pointer;
+}
+
+[data-view="notes"] .nr-chip:hover {
+	border-color: var(--accent);
+}
+
+[data-view="notes"] .nr-chip.is-on {
+	background: var(--accent-soft);
+	border-color: var(--accent);
+	color: var(--heading);
+}
+
+[data-view="notes"] .nr-chip-n {
+	color: var(--text-2);
+	font-size: .78rem;
+}
+
+[data-view="notes"] .nr-chip:focus-visible,
+[data-view="notes"] .nr-tab:focus-visible,
+[data-view="reading"] .rd-tab:focus-visible,
+[data-view="reading"] .rd-seg:focus-visible,
+[data-view="reading"] .rd-star:focus-visible,
+[data-view="reading"] .rd-reading-open:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 2px;
+}
+
+[data-view="notes"] .nr-info {
+	margin: 0 0 .5rem;
+}
+
+[data-view="notes"] .nr-info.nr-offline {
+	color: var(--warn);
+}
+
+[data-view="notes"] .nr-info .notice {
+	margin-top: .5rem;
+	color: var(--text);
+}
+
+[data-view="notes"] .nr-undo,
+[data-view="notes"] .nr-undo-host > .notice {
+	margin-bottom: .5rem;
+}
+
+[data-view="notes"] .nr-undo > div {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: .5rem;
+}
+
+[data-view="notes"] .nr-empty {
+	padding: 1rem .25rem;
+}
+
+[data-view="notes"] .nr-edhead {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: .25rem 1rem;
+}
+
+[data-view="notes"] .nr-title {
+	margin: 0;
+	overflow-wrap: anywhere;
+}
+
+[data-view="notes"] .nr-state {
+	margin: 0;
+}
+
+[data-view="notes"] .nr-editor[data-dirty="true"] .nr-state {
+	color: var(--warn);
+}
+
+[data-view="notes"] .nr-path {
+	margin: .25rem 0 .75rem;
+	overflow-wrap: anywhere;
+}
+
+[data-view="notes"] .nr-tabs {
+	display: inline-flex;
+	margin: .25rem 0 .5rem;
+	border: 1px solid var(--border-strong);
+	border-radius: 10px;
+	overflow: hidden;
+}
+
+[data-view="notes"] .nr-tab {
+	min-height: 40px;
+	min-width: 5.5rem;
+	padding: .3rem .9rem;
+	border: 0;
+	background: var(--bg);
+	color: var(--text);
+	font: inherit;
+	cursor: pointer;
+}
+
+[data-view="notes"] .nr-tab + .nr-tab {
+	border-left: 1px solid var(--border-strong);
+}
+
+[data-view="notes"] .nr-tab[aria-pressed="true"] {
+	background: var(--accent-soft);
+	color: var(--heading);
+	font-weight: 600;
+}
+
+[data-view="notes"] textarea.nr-body {
+	min-height: 18rem;
+	resize: vertical;
+	font-family: var(--font-mono);
+	font-size: .92rem;
+	line-height: 1.55;
+	tab-size: 4;
+}
+
+[data-view="notes"] .nr-preview {
+	min-height: 12rem;
+	border: 1px solid var(--border);
+	border-radius: 10px;
+	overflow: hidden;
+}
+
+[data-view="notes"] .nr-err:not(:empty) {
+	margin-top: .75rem;
+}
+
+[data-view="notes"] .nr-actions {
+	margin-top: .75rem;
+	flex-wrap: wrap;
+}
+
+/* ---- reading ---- */
+
+[data-view="reading"] .rd-flags > .notice {
+	margin-bottom: .75rem;
+}
+
+[data-view="reading"] .rd-current {
+	margin-bottom: 1rem;
+}
+
+[data-view="reading"] .rd-current h2,
+[data-view="reading"] .rd-publish h2 {
+	margin: 0 0 .5rem;
+	font-size: 1.05rem;
+}
+
+[data-view="reading"] .rd-reading {
+	display: grid;
+	gap: .4rem;
+}
+
+[data-view="reading"] .rd-reading li {
+	display: flex;
+	align-items: center;
+	gap: .5rem;
+}
+
+[data-view="reading"] .rd-reading-open {
+	flex: 1 1 auto;
+	min-width: 0;
+	min-height: 44px;
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: .1rem;
+	padding: .4rem .6rem;
+	border: 1px solid var(--border);
+	border-left: 3px solid var(--accent);
+	border-radius: 8px;
+	background: var(--bg);
+	color: var(--text);
+	font: inherit;
+	text-align: left;
+	cursor: pointer;
+}
+
+[data-view="reading"] .rd-reading-open:hover {
+	border-color: var(--accent);
+}
+
+[data-view="reading"] .rd-reading-t {
+	font-weight: 600;
+	color: var(--heading);
+	overflow-wrap: anywhere;
+}
+
+[data-view="reading"] .rd-reading li .btn {
+	flex: 0 0 auto;
+}
+
+[data-view="reading"] .rd-ld {
+	scroll-margin-top: 72px;
+}
+
+[data-view="reading"] .rd-find {
+	display: grid;
+	gap: .5rem;
+	margin-bottom: .5rem;
+}
+
+[data-view="reading"] .rd-facets {
+	display: grid;
+	grid-template-columns: 1fr;
+	gap: .5rem;
+}
+
+[data-view="reading"] .rd-counts {
+	display: flex;
+	flex-wrap: wrap;
+	gap: .35rem;
+	margin: .25rem 0 .5rem;
+}
+
+[data-view="reading"] .rd-tab {
+	display: inline-flex;
+	align-items: center;
+	gap: .4rem;
+	min-height: 40px;
+	padding: .25rem .75rem;
+	border: 1px solid var(--border-strong);
+	border-radius: 999px;
+	background: var(--bg);
+	color: var(--text);
+	font: inherit;
+	font-size: .88rem;
+	cursor: pointer;
+}
+
+[data-view="reading"] .rd-tab:hover {
+	border-color: var(--accent);
+}
+
+[data-view="reading"] .rd-tab.is-on {
+	background: var(--accent-soft);
+	border-color: var(--accent);
+	color: var(--heading);
+	font-weight: 600;
+}
+
+[data-view="reading"] .rd-tab-n {
+	color: var(--text-2);
+	font-size: .8rem;
+	font-variant-numeric: tabular-nums;
+}
+
+[data-view="reading"] .rd-listhead {
+	margin: 0 0 .4rem;
+}
+
+[data-view="reading"] .rd-empty {
+	padding: 1rem .25rem;
+}
+
+[data-view="reading"] #reading-more {
+	width: 100%;
+	margin-top: .5rem;
+}
+
+[data-view="reading"] .rd-publish {
+	margin-top: 1.25rem;
+}
+
+[data-view="reading"] .rd-publish .notice {
+	margin-top: .75rem;
+}
+
+[data-view="reading"] .rd-bulk {
+	margin-top: .75rem;
+}
+
+[data-view="reading"] .rd-bulk summary {
+	display: list-item;
+	padding: .65rem 0;
+	cursor: pointer;
+	color: var(--text-2);
+	font-size: .9rem;
+}
+
+[data-view="reading"] .rd-bulk .btn {
+	margin: 0 .4rem .4rem 0;
+}
+
+[data-view="reading"] .rd-title {
+	margin: 0;
+	overflow-wrap: anywhere;
+}
+
+[data-view="reading"] .rd-author {
+	margin: .2rem 0 .5rem;
+	font-weight: 500;
+}
+
+[data-view="reading"] .rd-desc {
+	margin: 0 0 .75rem;
+}
+
+[data-view="reading"] .rd-kv {
+	margin-bottom: 1rem;
+}
+
+[data-view="reading"] .rd-kv dd {
+	overflow-wrap: anywhere;
+}
+
+[data-view="reading"] .rd-status {
+	display: grid;
+	grid-template-columns: repeat(4, minmax(0, 1fr));
+	gap: .35rem;
+}
+
+[data-view="reading"] .rd-seg {
+	min-height: 44px;
+	padding: .3rem .4rem;
+	border: 1px solid var(--border-strong);
+	border-radius: 10px;
+	background: var(--bg);
+	color: var(--text);
+	font: inherit;
+	font-size: .88rem;
+	line-height: 1.2;
+	cursor: pointer;
+}
+
+[data-view="reading"] .rd-seg:hover {
+	border-color: var(--accent);
+}
+
+[data-view="reading"] .rd-seg.is-on {
+	background: var(--accent);
+	border-color: var(--accent);
+	color: var(--accent-text);
+	font-weight: 600;
+}
+
+[data-view="reading"] .rd-dates {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: .75rem;
+}
+
+[data-view="reading"] .rd-rating {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: .5rem;
+}
+
+[data-view="reading"] .rd-stars {
+	display: flex;
+}
+
+[data-view="reading"] .rd-star {
+	width: 44px;
+	height: 44px;
+	border: 0;
+	border-radius: 8px;
+	background: transparent;
+	color: var(--border-strong);
+	font-size: 1.6rem;
+	line-height: 1;
+	cursor: pointer;
+}
+
+[data-view="reading"] .rd-star.is-on {
+	color: var(--warn);
+}
+
+[data-view="reading"] .rd-star:hover {
+	background: var(--surface-2);
+}
+
+[data-view="reading"] textarea.rd-note {
+	min-height: 7rem;
+	resize: vertical;
+}
+
+[data-view="reading"] .rd-public {
+	margin: 1rem 0 .5rem;
+	padding: .5rem .9rem .25rem;
+	border: 1px solid var(--border);
+	border-radius: 10px;
+}
+
+[data-view="reading"] .rd-public legend {
+	padding: 0 .35rem;
+	font-weight: 600;
+	font-size: .92rem;
+	color: var(--heading);
+}
+
+[data-view="reading"] .rd-public p {
+	margin: 0 0 .25rem;
+}
+
+[data-view="reading"] .rd-public .check {
+	display: inline-flex;
+	margin-right: 1.25rem;
+}
+
+[data-view="reading"] .rd-savestate {
+	margin: .5rem 0;
+}
+
+/* the confirm dialog's preview is outside the view: it is in a <dialog> */
+.publish-preview .rd-ptable-wrap {
+	max-height: 16rem;
+	overflow: auto;
+	border: 1px solid var(--border);
+	border-radius: 8px;
+}
+
+.publish-preview .rd-ptable {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: .86rem;
+}
+
+.publish-preview .rd-ptable th,
+.publish-preview .rd-ptable td {
+	padding: .35rem .5rem;
+	border-bottom: 1px solid var(--border);
+	text-align: left;
+	vertical-align: top;
+	overflow-wrap: anywhere;
+}
+
+.publish-preview .rd-ptable td:first-child {
+	min-width: 9rem;
+	overflow-wrap: break-word;
+}
+
+.publish-preview .rd-ptable th,
+.publish-preview .rd-ptable td + td {
+	white-space: nowrap;
+	overflow-wrap: normal;
+}
+
+.publish-preview .rd-ptable th {
+	position: sticky;
+	top: 0;
+	background: var(--surface);
+	color: var(--heading);
+}
+
+.publish-preview .rd-preview details {
+	margin-top: .5rem;
+}
+
+.publish-preview .rd-preview summary {
+	display: list-item;
+	padding: .55rem 0;
+	cursor: pointer;
+}
+
+.publish-preview .rd-pre {
+	max-height: 14rem;
+	overflow: auto;
+	margin: .25rem 0 0;
+	padding: .6rem;
+	border-radius: 8px;
+	background: var(--surface-2);
+	white-space: pre;
+}
+
+/* ---- phone ---- */
+
+@media (max-width: 520px) {
+	[data-view="reading"] .rd-status {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+
+	[data-view="reading"] .rd-dates {
+		grid-template-columns: 1fr;
+	}
+
+	[data-view="notes"] .nr-actions .btn,
+	[data-view="reading"] .rd-publish .actions .btn {
+		flex: 1 1 auto;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	[data-view="notes"] *,
+	[data-view="reading"] * {
+		transition: none !important;
+		animation: none !important;
+		scroll-behavior: auto !important;
+	}
+}

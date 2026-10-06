@@ -106,7 +106,7 @@ ok(bad.some(function (i) { return i.code === 'unknown-jump' && i.level === 'fata
 // ---- files
 var dir = __dirname;
 var toy = JSON.parse(fs.readFileSync(path.join(dir, 'toy.json'), 'utf8'));
-eq([toy.n, toy.slug, toy.title, toy.group, toy.added, toy.kit], [56, '56-theatre-studio', 'Theatre Studio', 'stories', '2026-10-03', true], 'toy.json fields');
+eq([toy.n, toy.slug, toy.title, toy.group, toy.added, toy.kit], [56, '56-theatre-studio', 'Theatre Studio', 'stories', '2026-10-05', true], 'toy.json fields');
 eq(toy.surfaces, ['grid'], 'toy.json surfaces');
 ok(toy.desc.length >= 60 && toy.desc.length <= 185, 'toy.json desc length ' + toy.desc.length);
 var tv = toy.thumb.viewport; ok(tv[0] * 10 === tv[1] * 16, 'thumb viewport is 16:10');

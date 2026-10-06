@@ -1,0 +1,16 @@
+{
+	"n": 101,
+	"slug": "101-true-shuffle",
+	"title": "True Shuffle",
+	"desc": "Reads your YouTube playlists and Liked videos after a Google sign-in, then plays them in a real shuffle or by artist, genre and decade. A demo library runs without signing in.",
+	"note": "Signing in works for the owner's Google account; anyone else brings a Google client id of their own.",
+	"group": "art",
+	"tags": ["music", "shuffle", "youtube"],
+	"added": "2026-10-05",
+	"surfaces": ["grid"],
+	"status": "live",
+	"kit": true,
+	"data": [],
+	"origins": ["accounts.google.com", "oauth2.googleapis.com", "www.googleapis.com", "www.youtube.com", "www.youtube-nocookie.com", "i.ytimg.com", "musicbrainz.org", "www.google.com", "www.gstatic.com", "ssl.gstatic.com", "fonts.gstatic.com", "jnn-pa.googleapis.com"],
+	"thumb": { "query": "?thumb=1", "viewport": [800, 500], "settleMs": 300 }
+}

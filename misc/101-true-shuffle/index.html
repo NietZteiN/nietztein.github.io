@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>True Shuffle</title>
+<meta name="description" content="A playlist organiser and randomiser for your own YouTube playlists and Liked videos: a real shuffle, or by artist, genre, decade and other rules. A demo library runs without signing in.">
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="../_kit/kit.css"><script src="../_kit/kit.js"></script>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+
+<main class="kit-main ts" id="app">
+
+	<p class="ts-demo" id="demo-banner" hidden><b>Demo.</b> <span id="demo-text"></span> <a class="kit-nothumb" href="./">Leave the demo</a></p>
+	<p class="ts-status kit-nothumb" id="status" role="status" aria-live="polite"></p>
+	<div class="ts-notice kit-nothumb" id="stale" hidden>
+		<p id="stale-text"></p>
+		<div class="kit-row"><button class="kit-btn small" id="stale-signin" type="button">Sign in to refresh</button><a class="kit-btn small" href="#bring">Delete instead</a></div>
+	</div>
+
+	<!-- Shown when nothing is stored in this browser yet. -->
+	<section class="ts-welcome kit-nothumb" id="welcome" hidden aria-labelledby="welcome-h">
+		<h2 id="welcome-h">Your playlists, in the order you ask for</h2>
+		<p>True Shuffle reads your own YouTube playlists and Liked videos (read-only, after a Google sign-in), works out artist and title for every video, and plays them in YouTube's player: a real shuffle that repeats nothing until everything has played, or by artist, genre, decade and other rules. Your library stays in this browser.</p>
+		<div class="kit-row">
+			<a class="kit-btn primary" id="welcome-demo" href="?demo=1">Try the demo</a>
+			<button class="kit-btn" id="welcome-signin" type="button">Sign in with Google</button>
+			<a class="kit-btn" id="welcome-setup" href="#bring">How to set it up</a>
+		</div>
+		<p class="kit-note">The demo runs on an invented library with a player that only advances a clock. Nothing is contacted until you press Sign in or Play.</p>
+	</section>
+
+	<div class="ts-deck" id="deck">
+
+		<section class="ts-now" aria-label="Now playing">
+			<!-- The player box: visible, never under 200 by 200 px, YouTube's own controls. -->
+			<div class="ts-player" id="player">
+				<div class="ts-poster" id="poster" aria-hidden="true"><span class="ts-poster-ring"></span><span class="ts-poster-text" id="poster-text">Press play</span></div>
+				<span class="ts-demo-tag" id="demo-tag" hidden>Demo &middot; no sound</span>
+			</div>
+			<div class="ts-meta">
+				<h2 class="ts-title" id="now-title">Nothing loaded</h2>
+				<p class="ts-artist" id="now-artist"></p>
+				<div class="ts-chips" id="now-chips" aria-label="Genres of this track; press one to hear only that genre"></div>
+				<div class="ts-nowrow">
+					<div class="ts-stars" id="now-stars" role="group" aria-label="Your rating"></div>
+					<button class="kit-btn small" id="btn-more-artist" type="button" aria-pressed="false" hidden>More by this artist</button>
+					<button class="kit-btn small kit-nothumb" id="btn-fix" type="button" hidden>Fix</button>
+					<button class="kit-btn small kit-nothumb" id="btn-block" type="button" hidden>Block</button>
+				</div>
+			</div>
+			<div class="ts-transport" role="group" aria-label="Playback">
+				<button class="ts-big" id="btn-prev" type="button" aria-label="Previous track" title="Previous (p)">
+					<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h2.4v14H6zM20 5.6v12.8L9.6 12z"/></svg>
+				</button>
+				<button class="ts-big ts-play" id="btn-toggle" type="button" aria-label="Play" title="Play or pause (space)">
+					<svg class="i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"/></svg>
+					<svg class="i-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 5h4v14h-4zM13.5 5h4v14h-4z"/></svg>
+				</button>
+				<button class="ts-big" id="btn-next" type="button" aria-label="Next track" title="Next (n)">
+					<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.6 5H18v14h-2.4zM4 5.6v12.8L14.4 12z"/></svg>
+				</button>
+				<button class="ts-big ts-again" id="btn-reshuffle" type="button" aria-label="Shuffle again" title="Shuffle again (s)">
+					<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h3.6c2.1 0 3.4.9 4.6 2.8l1.6 2.6c.9 1.5 1.7 2 3.2 2H18v-2.2l3.6 3.3L18 18.8v-2.2h-2c-2.2 0-3.6-.9-4.9-3L9.5 11c-.8-1.3-1.5-1.8-2.9-1.8H3zM18 7.4V5.2l3.6 3.3L18 11.8V9.6h-2c-1 0-1.7.3-2.3.9l-1.2-2c.9-.8 2-1.1 3.5-1.1zM3 14.8h3.6c.9 0 1.6-.2 2.1-.7l1.2 2c-.9.7-1.9 1-3.3 1H3z"/></svg>
+				</button>
+			</div>
+			<div class="ts-fix kit-nothumb" id="now-edit" hidden></div>
+		</section>
+
+		<section class="ts-side" aria-label="Listening choices and queue">
+			<div class="ts-listen kit-nothumb" id="listen">
+				<h2>How do you want to listen?</h2>
+				<div class="ts-order" id="order-chips" role="group" aria-label="Order"></div>
+				<p class="kit-note ts-blurb" id="order-blurb"></p>
+
+				<details class="ts-fold" id="fold-what">
+					<summary><span class="ts-fold-name">What</span> <span class="ts-fold-val" id="what-summary">Everything</span></summary>
+					<div class="ts-fold-body">
+						<div class="kit-row"><button class="kit-chip" id="what-all" type="button" aria-pressed="true">Everything</button><span class="kit-note">or any mix of the choices below. Within one list the choices are alternatives; the lists must all hold.</span></div>
+						<div class="ts-pick" id="pick-playlists"></div>
+						<div class="ts-pick" id="pick-genres"></div>
+						<div class="ts-pick" id="pick-decades"></div>
+						<div class="ts-pick" id="pick-artists"></div>
+					</div>
+				</details>
+
+				<details class="ts-fold" id="fold-limits">
+					<summary><span class="ts-fold-name">Limits</span> <span class="ts-fold-val" id="limits-summary">None</span></summary>
+					<div class="ts-fold-body ts-limits">
+						<label>Stop after <input class="kit-input ts-num" id="lim-tracks" type="number" min="0" max="5000" step="1" inputmode="numeric" placeholder="any"> tracks</label>
+						<label>Stop after <input class="kit-input ts-num" id="lim-minutes" type="number" min="0" max="6000" step="5" inputmode="numeric" placeholder="any"> minutes</label>
+						<label>Leave out what played in the last <input class="kit-input ts-num" id="lim-hours" type="number" min="0" max="8760" step="1" inputmode="numeric" placeholder="0"> hours</label>
+						<div class="ts-pick" id="pick-lengths"></div>
+						<label class="ts-check"><input id="keep-runs" type="checkbox" checked> Keep numbered parts together (Pt. 1, 2, 3 of one work play in order)</label>
+						<label id="block-size-row">Genre blocks of <input class="kit-input ts-num" id="block-size" type="number" min="1" max="20" step="1" inputmode="numeric" value="3"> tracks</label>
+					</div>
+				</details>
+
+				<details class="ts-fold" id="fold-presets">
+					<summary><span class="ts-fold-name">Presets</span> <span class="ts-fold-val" id="presets-summary">None saved</span></summary>
+					<div class="ts-fold-body">
+						<div class="ts-presets" id="preset-list" role="group" aria-label="Saved presets"></div>
+						<div class="kit-row">
+							<label class="kit-sr" for="preset-name">Name for these choices</label>
+							<input class="kit-input ts-grow" id="preset-name" type="text" maxlength="40" autocomplete="off" placeholder="Name these choices">
+							<button class="kit-btn" id="btn-preset-save" type="button">Save preset</button>
+						</div>
+					</div>
+				</details>
+			</div>
+
+			<p class="ts-sentence" id="sentence" aria-live="polite"></p>
+
+			<div class="ts-queuebox">
+				<div class="ts-tabs kit-nothumb" role="tablist" aria-label="Queue and history">
+					<button class="ts-tab" id="tab-next" type="button" role="tab" aria-selected="true" aria-controls="panel-next">Up next</button>
+					<button class="ts-tab" id="tab-history" type="button" role="tab" aria-selected="false" aria-controls="panel-history" tabindex="-1">History</button>
+				</div>
+				<div id="panel-next" role="tabpanel" aria-labelledby="tab-next">
+					<ol class="ts-queue" id="queue" aria-label="Up next"></ol>
+					<p class="kit-note ts-queue-more" id="queue-more"></p>
+				</div>
+				<div id="panel-history" role="tabpanel" aria-labelledby="tab-history" hidden>
+					<ol class="ts-queue ts-history" id="history" aria-label="History, newest first"></ol>
+					<p class="kit-note ts-queue-more" id="history-more"></p>
+				</div>
+			</div>
+		</section>
+	</div>
+
+	<section class="ts-panel ts-library kit-nothumb" id="library" aria-labelledby="library-h">
+		<div class="ts-panel-head">
+			<h2 id="library-h">Library</h2>
+			<p class="kit-note" id="lib-count"></p>
+		</div>
+		<div class="ts-libbar">
+			<label class="kit-sr" for="lib-search">Search the library</label>
+			<input class="kit-input ts-grow" id="lib-search" type="search" autocomplete="off" spellcheck="false" placeholder="Search the library ( / )">
+			<label class="ts-sel"><span>Group</span>
+				<select class="kit-input" id="lib-group">
+					<option value="artist">Artist</option>
+					<option value="genre">Genre</option>
+					<option value="decade">Decade</option>
+					<option value="playlist">Playlist</option>
+					<option value="channel">Channel</option>
+					<option value="none">No groups</option>
+				</select>
+			</label>
+			<label class="ts-sel"><span>Sort</span>
+				<select class="kit-input" id="lib-sort">
+					<option value="title">Title</option>
+					<option value="artist">Artist</option>
+					<option value="plays">Most played</option>
+					<option value="least">Least played</option>
+					<option value="rating">Rating</option>
+					<option value="length">Longest</option>
+					<option value="added">Recently added</option>
+					<option value="year">Year</option>
+				</select>
+			</label>
+			<label class="ts-sel"><span>Show</span>
+				<select class="kit-input" id="lib-show">
+					<option value="all">Everything</option>
+					<option value="never">Never played</option>
+					<option value="unknown">Unknown artist</option>
+					<option value="edited">Corrected by you</option>
+					<option value="blocked">Blocked</option>
+					<option value="dups">Duplicates</option>
+					<option value="gone">Gone or cannot be embedded</option>
+				</select>
+			</label>
+		</div>
+		<div class="kit-row ts-reports" id="lib-reports"></div>
+		<div class="ts-confirm ts-learn" id="learn-offer" hidden role="region" aria-live="polite" aria-label="Teach this channel"></div>
+		<p class="kit-note" id="lib-note" hidden></p>
+		<div class="ts-tablewrap">
+			<table class="ts-table" id="lib-table">
+				<thead>
+					<tr>
+						<th class="c-check" scope="col"><span class="kit-sr">Select</span></th>
+						<th class="c-main" scope="col">Track</th>
+						<th class="c-genres" scope="col">Genres</th>
+						<th class="c-len" scope="col">Length</th>
+						<th class="c-plays" scope="col">Plays</th>
+						<th class="c-rate" scope="col">Rating</th>
+						<th class="c-act" scope="col"><span class="kit-sr">Actions</span></th>
+					</tr>
+				</thead>
+				<tbody id="lib-body"></tbody>
+			</table>
+		</div>
+		<div class="kit-row ts-libmore"><button class="kit-btn" id="lib-more" type="button" hidden>Show more</button></div>
+
+		<div class="ts-bulk" id="bulk" hidden role="region" aria-label="Edit the selected tracks">
+			<p class="ts-bulk-count" id="bulk-count" aria-live="polite"></p>
+			<div class="kit-row">
+				<button class="kit-btn small" type="button" data-bulk="next">Play next</button>
+				<button class="kit-btn small" type="button" data-bulk="queue">Add to queue</button>
+				<button class="kit-btn small" type="button" data-bulk="artist">Set artist</button>
+				<button class="kit-btn small" type="button" data-bulk="genres">Set genres</button>
+				<button class="kit-btn small" type="button" data-bulk="merge">Merge artists</button>
+				<button class="kit-btn small" type="button" data-bulk="rate">Rate</button>
+				<button class="kit-btn small" type="button" data-bulk="block">Block</button>
+				<button class="kit-btn small" type="button" data-bulk="unblock">Unblock</button>
+				<button class="kit-btn small" type="button" data-bulk="retry" hidden>Try again</button>
+				<button class="kit-btn small" type="button" data-bulk="clear">Clear selection</button>
+			</div>
+			<form class="kit-row ts-bulk-form" id="bulk-form" hidden>
+				<label for="bulk-input" id="bulk-label"></label>
+				<input class="kit-input ts-grow" id="bulk-input" type="text" autocomplete="off" list="genre-list">
+				<select class="kit-input" id="bulk-select" hidden></select>
+				<button class="kit-btn small primary" type="submit" id="bulk-apply">Apply</button>
+				<button class="kit-btn small" type="button" id="bulk-cancel">Cancel</button>
+			</form>
+			<div class="ts-progress ts-bulk-busy" id="bulk-busy" hidden>
+				<progress id="bulk-progress" max="1" value="0" aria-label="Bulk edit progress"></progress>
+				<p id="bulk-busy-text" aria-live="polite"></p>
+			</div>
+		</div>
+		<datalist id="genre-list"></datalist>
+	</section>
+
+	<div class="ts-lower kit-nothumb">
+		<section class="ts-panel" id="bring" aria-labelledby="bring-h">
+			<div class="ts-panel-head"><h2 id="bring-h">Bring music in</h2><p class="kit-note" id="quota"></p></div>
+
+			<p class="kit-note" id="acct-demo" hidden>This is the demo: signing in, importing and files are switched off here, and nothing you do is kept. <a href="./">Leave the demo</a> to use your own playlists.</p>
+
+			<div id="acct">
+				<div class="ts-setup" id="setup" hidden>
+					<p><b>Signing in is not set up yet.</b> The page needs the client id of a Google Cloud project that the person running it creates once. It is not a secret and there is no client secret.</p>
+					<ol>
+						<li>At <a href="https://console.cloud.google.com/" rel="noopener">console.cloud.google.com</a>, signed in with the account whose playlists you want to read, create a project and select it.</li>
+						<li>APIs &amp; Services &rsaquo; Library: enable <b>YouTube Data API v3</b>.</li>
+						<li>OAuth consent screen (Google Auth Platform): audience External, publishing status Testing, yourself under Test users, and the one scope <code>https://www.googleapis.com/auth/youtube.readonly</code>.</li>
+						<li>Credentials &rsaquo; Create credentials &rsaquo; OAuth client ID, type <b>Web application</b>. Authorised JavaScript origin: <code id="setup-origin"></code>. Authorised redirect URI: <code id="setup-redirect"></code> (exactly, with the final slash).</li>
+						<li>Copy the Client ID (it ends in <code>.apps.googleusercontent.com</code>) and paste it below, or into <code>config.js</code> to set it for everyone. Ignore the client secret.</li>
+						<li>At the first sign-in Google says it has not verified the app. That only means the project is in Testing; the test users you listed can press Continue.</li>
+					</ol>
+				</div>
+				<form class="kit-row ts-clientid" id="client-form">
+					<label for="client-id">Client id for this browser only</label>
+					<input class="kit-input ts-grow" id="client-id" type="text" autocomplete="off" spellcheck="false" placeholder="1234-abc.apps.googleusercontent.com">
+					<button class="kit-btn small" id="btn-client-id" type="submit">Use</button>
+				</form>
+
+				<div class="kit-row ts-signrow">
+					<button class="kit-btn primary" id="btn-signin" type="button">Sign in with Google</button>
+					<button class="kit-btn" id="btn-signout" type="button" hidden>Disconnect</button>
+					<span class="kit-note" id="acct-who"></span>
+				</div>
+				<p class="kit-note" id="signin-note">Sign-in asks Google for read-only access to your YouTube account for one hour. The page cannot change, add or delete anything there.</p>
+
+				<div id="sources-box" hidden>
+					<h3>Choose what to import</h3>
+					<ul class="ts-sources" id="sources"></ul>
+					<div class="kit-row">
+						<button class="kit-btn primary" id="btn-import" type="button">Import the ticked lists</button>
+						<button class="kit-btn" id="btn-stop" type="button" hidden>Stop</button>
+						<button class="kit-btn" id="btn-refresh" type="button">Refresh everything from YouTube</button>
+					</div>
+				</div>
+				<div class="ts-progress" id="import-box" hidden>
+					<progress id="import-progress" max="1" value="0" aria-label="Import progress"></progress>
+					<p id="import-text" aria-live="polite"></p>
+				</div>
+
+				<div id="have-box" hidden>
+					<h3>In the library</h3>
+					<ul class="ts-sources" id="have"></ul>
+				</div>
+
+				<h3>Finer genres</h3>
+				<p class="kit-note">YouTube only says Rock, Pop, Jazz and a dozen more. MusicBrainz knows finer genres per artist. Pressing the button sends your artists' names to musicbrainz.org, one a second.</p>
+				<div class="kit-row">
+					<button class="kit-btn" id="btn-mb" type="button">Look up genres on MusicBrainz</button>
+					<button class="kit-btn" id="btn-mb-stop" type="button" hidden>Stop</button>
+					<span class="kit-note" id="mb-text" aria-live="polite"></span>
+				</div>
+
+				<h3>Your data</h3>
+				<p class="kit-note" id="usage"></p>
+				<div class="kit-row">
+					<button class="kit-btn" id="btn-export" type="button">Export everything</button>
+					<label class="kit-btn" for="import-file" id="import-file-label">Import a file</label>
+					<input class="kit-sr" id="import-file" type="file" accept="application/json,.json">
+					<button class="kit-btn ts-danger" id="btn-wipe" type="button">Delete everything stored here</button>
+				</div>
+				<div class="ts-confirm" id="wipe-confirm" hidden role="alertdialog" aria-labelledby="wipe-q">
+					<p id="wipe-q">Delete the library, your corrections, ratings, history, queue and presets from this browser? Export first if you may want them back.</p>
+					<div class="kit-row"><button class="kit-btn ts-danger" id="btn-wipe-yes" type="button">Yes, delete it all</button><button class="kit-btn" id="btn-wipe-no" type="button">Keep it</button></div>
+				</div>
+			</div>
+		</section>
+
+		<section class="ts-panel" id="numbers" aria-labelledby="numbers-h">
+			<div class="ts-panel-head"><h2 id="numbers-h">Honest numbers</h2></div>
+			<div class="ts-tiles" id="num-tiles"></div>
+			<h3 id="chart-h">Plays per track</h3>
+			<p class="kit-note" id="chart-note"></p>
+			<div class="ts-chart" id="chart-plays" role="img" aria-labelledby="chart-h" aria-describedby="chart-note"></div>
+			<details class="ts-charttable">
+				<summary>The same as a table</summary>
+				<table class="ts-mini"><thead><tr><th scope="col">Plays</th><th scope="col">Tracks</th><th scope="col">Share</th></tr></thead><tbody id="chart-table"></tbody></table>
+			</details>
+		</section>
+	</div>
+</main>
+
+<footer class="kit-footer" id="how">
+	<p><b>How it works.</b> After a Google sign-in with read-only access, the page lists your YouTube playlists and Liked videos through the YouTube Data API, reads the ones you tick, and guesses artist, title and version from each video's title and channel (you can correct any of it, one track or a whole channel at a time). Genres come from the topics YouTube attaches to a video, decades from a stated release date or else the upload year. The true shuffle is a Fisher&ndash;Yates shuffle fed by the browser's cryptographic random source, kept as a bag: nothing repeats until every track in the selection has played, across reloads. The other orders are described where you choose them. Playback is YouTube's own embedded player; a video that was removed or may not be embedded is skipped and listed in the library.</p>
+	<p><b>What this page stores.</b> In this browser only (IndexedDB): the videos of the lists you imported, with the titles, channels, lengths and topics YouTube reports; your corrections, genres, tags, ratings and blocks; play counts, listening history, the queue, your listening choices and presets. The sign-in token stays in this tab's session storage for at most an hour and is revoked by Disconnect. A client id you paste is kept in this browser's local storage. Nothing is sent to this site, and nothing to anyone but Google (and artist names to MusicBrainz, only if you press that button). YouTube data older than 30 days is refreshed at your next sign-in; &ldquo;Delete everything stored here&rdquo; removes all of it; access can also be removed at <a href="https://myaccount.google.com/permissions" rel="noopener">myaccount.google.com/permissions</a>.</p>
+	<p>This page uses YouTube API Services. By using it you agree to the <a href="https://www.youtube.com/t/terms" rel="noopener">YouTube Terms of Service</a>; see also the <a href="https://policies.google.com/privacy" rel="noopener">Google Privacy Policy</a>. On a phone, playback stops when the screen locks or the browser goes to the background: YouTube's player does that, and this page does not work around it. Finer genres, when asked for, are from <a href="https://musicbrainz.org/" rel="noopener">MusicBrainz</a> (genre data under CC BY-NC-SA 3.0). The demo's artists, tracks and playlists are invented.</p>
+</footer>
+
+<template id="help-template">
+	<p>A playlist organiser and randomiser for your own YouTube playlists and Liked videos. Sign in under <b>Bring music in</b>, tick the lists to import, then say how you want to listen. <a href="?demo=1">The demo</a> shows everything on an invented library with a player that only advances a clock.</p>
+	<h3>Listening</h3>
+	<p><b>True shuffle</b> gives every order the same chance and repeats nothing until the whole selection has played, also after a reload. The other orders spread artists apart, favour what is new, loved or neglected, rotate artists, or play a few tracks of one genre at a time. <b>What</b> narrows it to playlists, genres, decades and artists; <b>Limits</b> stops after some tracks or minutes. Changing a choice keeps the current track and replaces what comes next.</p>
+	<h3>Keys</h3>
+	<p><kbd>Space</kbd> play or pause &middot; <kbd>n</kbd> next &middot; <kbd>p</kbd> previous &middot; <kbd>&larr;</kbd> <kbd>&rarr;</kbd> ten seconds back or on &middot; <kbd>s</kbd> shuffle again &middot; <kbd>/</kbd> search the library. In the queue, focus a handle and press <kbd>&uarr;</kbd> <kbd>&darr;</kbd> to move a track, <kbd>Delete</kbd> to remove it. Keys do nothing while the YouTube player itself has the focus; headphone and lock-screen buttons work where the browser hands them to the page.</p>
+	<h3>What this page stores</h3>
+	<p>Everything stays in this browser: the imported lists as YouTube reports them, your corrections, genres, tags, ratings, play counts, history, queue and presets. The sign-in token lasts an hour and stays in this tab. Nothing goes to this site. &ldquo;Delete everything stored here&rdquo; removes all of it; &ldquo;Disconnect&rdquo; revokes this page's access to your YouTube account. YouTube data older than 30 days is refreshed when you next sign in.</p>
+	<h3>Good to know</h3>
+	<p>On a phone, playback stops when the screen locks: YouTube's player does that. The decade of a track without a stated release date is the year it was uploaded; correct the year where it matters.</p>
+	<p>This page uses YouTube API Services: <a href="https://www.youtube.com/t/terms" rel="noopener">YouTube Terms of Service</a> &middot; <a href="https://policies.google.com/privacy" rel="noopener">Google Privacy Policy</a> &middot; <a href="https://myaccount.google.com/permissions" rel="noopener">remove access at Google</a></p>
+</template>
+
+<script src="config.js"></script>
+<script src="parse.js"></script>
+<script src="library.js"></script>
+<script src="shuffle.js"></script>
+<script src="store.js"></script>
+<script src="player.js"></script>
+<script src="demo.js"></script>
+<script src="yt.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

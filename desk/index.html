@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+
+	<!-- The Desk: the site owner's private side. The code on this page is public
+	     and does nothing without his GitHub token, which he pastes once per
+	     browser and which is kept encrypted (see desk/README.md).
+
+	     This page loads no script, style or font from any other origin, and the
+	     policy below makes the browser enforce that. The only hosts it may talk
+	     to are this site, the GitHub API and GoatCounter (127.0.0.1 and localhost
+	     are for the tests, which run a fake GitHub). -->
+	<meta http-equiv="Content-Security-Policy"
+		content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://avatars.githubusercontent.com; font-src 'self'; connect-src 'self' https://api.github.com https://*.goatcounter.com http://127.0.0.1:* http://localhost:*; frame-src 'self' blob:; base-uri 'none'; form-action 'none'">
+	<meta name="robots" content="noindex,nofollow">
+	<meta name="referrer" content="no-referrer">
+
+	<title>Desk</title>
+	<link rel="icon" type="image/svg+xml" href="../assets/img/favicon.svg">
+	<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+	<meta name="theme-color" content="#0f1115" media="(prefers-color-scheme: dark)">
+
+	<link rel="stylesheet" href="vendor/fonts/fonts.css">
+	<link rel="stylesheet" href="desk.css">
+
+	<!-- In <head> on purpose: it sets the theme before the first paint. -->
+	<script src="ui.js"></script>
+</head>
+
+<body>
+	<noscript>
+		<div class="gate">
+			<div class="gate-card">
+				<h1>Desk</h1>
+				<p>This page needs JavaScript.</p>
+			</div>
+		</div>
+	</noscript>
+
+	<div id="desk-root"></div>
+
+	<script src="vault.js"></script>
+	<script src="gh.js"></script>
+	<script src="store.js"></script>
+	<script src="desk.js"></script>
+
+	<!-- The views. Each file calls window.Desk.registerView({...}); a file that
+	     registers nothing simply adds no tab. -->
+	<script src="views/write.js"></script>
+	<script src="views/notes.js"></script>
+	<script src="views/reading.js"></script>
+	<script src="views/todos.js"></script>
+	<script src="views/stats.js"></script>
+	<script src="views/health.js"></script>
+</body>
+
+</html>
