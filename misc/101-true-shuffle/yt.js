@@ -350,6 +350,7 @@
 	}
 	// Add units to a stored tally { day, units }, starting again on a new
 	// Pacific day. -> the new tally (store it under the key 'quota').
+	var SEARCH_UNITS = 100;
 	function tallyQuota(saved, units, now) {
 		var day = pacificDay(now == null ? Date.now() : now);
 		var base = saved && saved.day === day ? +saved.units || 0 : 0;
@@ -385,11 +386,13 @@
 		var maxRetries = opts.maxRetries == null ? 4 : opts.maxRetries;
 		var tally = { units: 0, requests: 0, byMethod: {}, since: now() };
 
+		// Every list call costs one unit, an error included; a search costs 100.
 		function spend(method) {
-			tally.units += 1;             // every list call costs one unit, an error included
+			var units = method === 'search.list' ? SEARCH_UNITS : 1;
+			tally.units += units;
 			tally.requests += 1;
 			tally.byMethod[method] = (tally.byMethod[method] || 0) + 1;
-			if (opts.onQuota) { try { opts.onQuota(1, method); } catch (e) { /* the meter must not break the import */ } }
+			if (opts.onQuota) { try { opts.onQuota(units, method); } catch (e) { /* the meter must not break the import */ } }
 		}
 
 		// One GET, with retries. resource: 'playlists', params: an object.
@@ -516,6 +519,17 @@
 
 			// The details of up to 50 videos. -> { videos: [library records],
 			// missing: [ids YouTube did not return] }. 1 unit.
+			// Videos for a query (100 quota units): [{ videoId, title, channel, channelId, publishedAt }].
+			// Only embeddable music videos.
+			search: function (query, o) {
+				o = o || {};
+				return get('search', { part: 'snippet', q: String(query || ''), type: 'video', videoEmbeddable: 'true', videoCategoryId: '10', maxResults: Math.max(1, Math.min(25, o.max || 5)) }, o).then(function (res) {
+					return (res.items || []).filter(function (it) { return it.id && it.id.videoId; }).map(function (it) {
+						var sn = it.snippet || {};
+						return { videoId: it.id.videoId, title: sn.title || '', channel: sn.channelTitle || '', channelId: sn.channelId || '', publishedAt: sn.publishedAt || null };
+					});
+				});
+			},
 			videoBatch: function (ids, o) {
 				if (!ids.length) return Promise.resolve({ videos: [], missing: [] });
 				if (ids.length > 50) return Promise.reject(YTError('bad-request', 'At most 50 videos can be asked for at once.'));
@@ -853,7 +867,7 @@
 		endpoints: endpoints, isLoopback: isLoopback,
 		redirectUriFor: redirectUriFor, randomState: randomState, buildAuthUrl: buildAuthUrl, parseAuthResponse: parseAuthResponse, checkAuthResponse: checkAuthResponse,
 		createAuth: createAuth,
-		pacificDay: pacificDay, tallyQuota: tallyQuota,
+		pacificDay: pacificDay, tallyQuota: tallyQuota, SEARCH_UNITS: SEARCH_UNITS,
 		createClient: createClient, toVideo: toVideo,
 		importInto: importInto, pendingImport: pendingImport, refreshInto: refreshInto,
 		createMusicBrainz: createMusicBrainz

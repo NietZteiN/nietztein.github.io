@@ -1,6 +1,6 @@
 # True Shuffle: the core
 
-Toy 101. A playlist organiser and randomiser for one listener's YouTube playlists and Liked videos: sign in with Google (read-only), import, then listen in a real shuffle or by artist, genre, decade and other rules. This folder holds everything under the page. The page itself (`index.html`, `app.js`) is the next builder's; the `index.html` here now is a test bench and is meant to be replaced.
+Toy 101. A music player for one listener's YouTube playlists and Liked videos: sign in with Google (read-only), import, then browse by artist, genre, mood, scene and the anime or game a song is from, and listen in a real shuffle or by other rules. Since 2026-10-08 the page is an app (see "The page" below) and tracks can carry hand-made labels (see "Labels").
 
 | File | What it is | Needs a browser |
 | --- | --- | --- |
@@ -10,12 +10,16 @@ Toy 101. A playlist organiser and randomiser for one listener's YouTube playlist
 | `shuffle.js` | The listening modes, the bag, the limits, the queue reducer, the seeded random source. | no |
 | `store.js` | IndexedDB behind a plain interface, with an in-memory twin; export and import. | IndexedDB half |
 | `player.js` | One player interface over the YouTube IFrame player and a mock; the controller that walks a queue. | YouTube half |
-| `demo.js` | An invented library of 160 tracks for `?demo=1` and `?thumb=1`. | no |
+| `taxonomy.js` | The taste map: genres in families, and the names of the other labels. | no |
+| `discover.js` | Related artists and their best songs from Deezer, through a sandboxed JSONP frame. | frame only |
+| `embed.js` | Embeddings of the tracks, nearest neighbours, the 2D layout of the map, its regions. | no |
+| `demo.js` | An invented library of 160 tracks for `?demo=1` and `?thumb=1`, labelled. | no |
 | `yt.js` | Google sign-in, the YouTube Data API client, the resumable import, the refresh, MusicBrainz. | sign-in redirect only |
 | `test.js` | `node misc/101-true-shuffle/test.js`: over 700 checks, PASS and FAIL lines, exit 1 on failure. | no |
 | `test/fake-youtube.mjs` | A local fake of the Google endpoints, for tests. | no |
 | `toy.json` | The manifest (`"status": "wip"` until the page exists). | |
-| `index.html` | A **test bench** that wires all of the above. Replace it. | |
+| `ui.js` | The page's small parts: DOM builder, icons, router, menus, dialogs, virtual list, cover art. | yes |
+| `index.html`, `app.js`, `app.css` | The page. | yes |
 
 Everything is UMD: in the browser each file adds one member to `window.TrueShuffle` (`config`, `parse`, `library`, `shuffle`, `store`, `player`, `demo`, `yt`); in Node each is a CommonJS module. The sources are plain ASCII (other characters are written as escapes), old-style (`var`, `function`, one IIFE), tabs.
 
@@ -26,8 +30,12 @@ Everything is UMD: in the browser each file adds one member to `window.TrueShuff
 <script src="shuffle.js"></script>
 <script src="store.js"></script>
 <script src="player.js"></script>      <!-- needs shuffle -->
+<script src="taxonomy.js"></script>
+<script src="embed.js"></script>
+<script src="discover.js"></script>
 <script src="demo.js"></script>        <!-- needs library, shuffle -->
 <script src="yt.js"></script>          <!-- needs parse, library -->
+<script src="ui.js"></script>
 <script src="app.js"></script>
 ```
 
@@ -35,7 +43,7 @@ Loading these contacts no host. Nothing reaches Google, YouTube or MusicBrainz u
 
 ## The page in one screen
 
-The bench's inline script is a working example of all of this; copy from it.
+app.js uses all of this; the lines below are the bones of it.
 
 ```js
 var TS = window.TrueShuffle, L = TS.library, S = TS.shuffle, Y = TS.yt;
@@ -77,6 +85,50 @@ store.wipe();            // deletes everything stored
 Every library function that changes something returns the ids (or the track) it changed; write those with `store.putTracks(ids.map(function (id) { return lib.tracks[id]; }))`, and after a change to aliases, channel rules, genre overrides or settings also `store.saveLibraryMeta(L.meta(lib))`.
 
 **Imported data is untrusted text.** Titles come from YouTube and from files the reader imports. Put them on the page with `textContent`, never `innerHTML`.
+
+## The page
+
+An app shell: the kit's header is the top bar (brand, back and forward, the search box; the kit adds theme, help and the link back to the site), then the sections, the view, and the now-playing panel (YouTube's player, this track's labels and rating, the queue and what played), with the player bar at the bottom. Under 1180 px the sections keep only their icons; under 760 px the page is a phone app: tabs at the bottom, the video docked under the top bar once something plays (it never shrinks below 200 px), the queue as a sheet.
+
+Views, by hash: `#/` home (quick starts, today's mix, moods, families, scenes, artists, works, recently added), `#/search?q=`, `#/songs`, `#/artists`, `#/artist/<key>` (play, shuffle, artist radio, appears in, sounds like), `#/genres`, `#/family/<key>`, `#/genre/<name>`, `#/browse` (moods, scenes, languages, decades), `#/c/<mood|scene|lang|decade|role>/<value>`, `#/works`, `#/work/<name>`, `#/track/<id>`, `#/mix` (the mix builder; saved mixes are stations), `#/stats`, `#/fix` (unsure artists with one-tap readings, unlabelled, duplicates, unplayable, blocked), `#/settings` (YouTube, labels, backup, cover art, MusicBrainz, privacy), `#/library` (the phone's hub).
+
+Every collection has Play (in order) and Shuffle (its filters as a plan, in the current order mode); Radio plays songs that share genres, mood, scene, language and family with a seed. Track lists are virtual, select with click, Ctrl or Cmd and Shift, play with a double click or Enter (one tap on a phone), and have a menu per row (the menu key or Shift+F10 too) and a bar for a selection. The editor edits one track or many (fields left alone stay). Cover art is the video's thumbnail from i.ytimg.com when there is a library, never in the demo, and can be switched off in Settings.
+
+**Playlists and focus (#/lists, #/list/<id>).** A playlist is smart (`{ id, name, kind: 'smart', patch, mode }`: a saved filter in the plan's terms, so songs join and leave as their labels change) or hand-picked (`{ kind: 'manual', ids }`). They are kept under the store key `lists` (older `presets` are migrated). Focus (the button left of the search, key `focus`) narrows the whole app to one playlist: every view, search, the index the views count from, the shuffle's selection and bag (its key gains `:<id>`), radio and the map read `scopeTracks()`. Every collection page (genre, family, mood, scene, work, artist, search results) offers Focus and Save as playlist; the playlists page suggests ones built from the library (each scene, openings, endings, mood and scene pairs, the biggest works). Songs are added to a hand-picked playlist from a song's menu, a selection, or by dragging rows onto it in the sidebar; dragging onto the queue panel queues them.
+
+**Shuffle options.** The plan carries `apart` (default on: `S.apart` keeps songs of one work, like one artist, from playing back to back in every order but the true shuffle and the rotations), `oneVersion` (one version of each song, `S.songKey`, per build or per bag round) and `text`. The order modes gain `flow` (`S.flowOrder`, Mood flow): a walk where each song leads to a near one by `S.labelSimilarity` (shared genres, `S.moodDistance` on `S.MOOD_RING`, scene, language), never the same artist or `S.workKey` as the last two.
+
+**The map (#/map).** `embed.js` turns the tracks of the scope into vectors by one of `E.RECIPES`: Sound (the labels), Names (character trigrams of titles, artists and works, hashed), Taste timeline (labels and when each song was added), Blend, and Language model (multilingual MiniLM through transformers.js 4.3.1 from jsDelivr and the model from Hugging Face, about 120 MB, only after the reader asks; the vectors are kept, quantised, under `lm:vectors`). The page finds 15 neighbours each and lays the graph out in slices so it animates, then names k-means regions by their commonest genre or work. Colour by genre family, mood, scene or language (the eight validated categorical hues in a fixed order; the rest fold into Other) or by year and plays (one blue ramp). Drag, scroll or pinch, click a dot (play, play its neighbourhood), Shift-drag a box (shuffle, save as playlist); the legend fades categories; the regions are listed under the map as buttons for the keyboard. The queue's next tracks are drawn as a path.
+
+**Discover (#/discover?seed=<track> or ?artist=<key>).** Songs that are not in the library yet. `discover.js` asks Deezer's public API (no key) for the seed artist, its related artists and their top songs. Deezer sends no CORS header, only JSONP, which runs the server's script; so `sandboxTransport()` runs it in a hidden iframe with `sandbox="allow-scripts"` and no same origin: the frame cannot read this page, its storage or the sign-in token, accepts only `https://api.deezer.com/` addresses, and posts plain JSON back, which the page checks (only Deezer's own picture and preview hosts are used) and shows as text. `createDeezer({ transport })` (`searchArtists`, `related`, `top`, cached), `findArtist(dz, names, titles)` (the artist whose top songs include a title the library has; with titles to check and none matching, another artist of the same name is refused), `suggest(dz, { names, titles, known, hidden, perArtist, artists })` (the related artists, the seed and hidden ones left out, those the library lacks first, each with its top songs), `norm`, `youtubeQuery`, `bestVideo(results, track)` (the Topic channel first, covers last), `API`. When Deezer does not know the artist the page tries the three library artists that sound closest. A preview plays 30 seconds in the page (the YouTube player pauses). Play, when signed in, runs one `client.search(query, { max })` (`SEARCH_UNITS`, 100 quota units; every other call costs one) and one `videoBatch`, adds the video to the local playlist `local:discovered` ("Discovered") with the artist and title as labels, and plays it; signed out, it opens a YouTube search in a new tab. "Not interested" keeps an artist out (`discover:hidden`). The page also lists songs like the seed from the library that were played at most once, and, signed in, a YouTube search box prefilled from the labels.
+
+**History (#/history), the quick labeller (#/label), small things.** History keeps every listen in the store and shows On repeat, plays per month and the days. The labeller walks the unlabelled songs (or a selection) one at a time with suggestions from the channel, the artist and similar titles; 1 to 6 set the mood, Enter saves, the arrows move. Work pages filter by role (openings, endings...). The player bar has repeat and a sleep timer.
+
+**Sync with the Desk.** The page keeps `sync:outbox` in its store: `{ format: 'true-shuffle-sync', version: 1, savedAt, labels (exportLabels), state: { videoId: { rating, blocked, plays, skips, lastPlayed, stateAt } }, stations (the playlists), history }`, the owner's own data and never YouTube's. The Desk's Music view (`desk/views/music.js`) pushes it to the private repository and pulls it back into `sync:inbox`, which the page merges on start and on focus (ratings and blocks by `stateAt`, which `edit` stamps; plays and skips as the larger count; labels applied; playlists and history added) and deletes.
+
+## Labels
+
+A labels file is a hand-made reading of a library, kept apart from it:
+
+```js
+{ format: 'true-shuffle-labels', version: 1,
+  tracks:  { videoId: { artist, title, titleAlt, origArtist, version, year, genres,
+                        scene, work, role, lang, mood, kind } },
+  artists: { 'Name': { native, genres, scene, lang } },   // passed on to later imports
+  aliases: { 'Other spelling': 'Name' } }
+```
+
+`L.applyLabels(lib, data)` stores each track's labels in `track.labels`, the artists' `native`, `scene` and `lang` in `lib.profiles` (kept in the meta) and their genres as artist genres, and derives everything: `-> { ids, matched, missing, artists }`. `L.checkLabels(data)` is the check (`''` or a sentence), `L.LABELS_FORMAT` the format name, `L.exportLabels(lib, now)` writes the labels back out with the user's corrections folded in. The order of authority is the user's correction (`userEdits`), then the label, then the artist's profile (scene, language), then the parser; taking a correction back returns to the label. `L.LABEL_FIELDS` are the fields beyond the corrected five (`titleAlt origArtist scene work role lang mood kind`); `edit` and `editMany` take them too. A labelled artist is fixed like a corrected one (`L.fixedArtist(t)`): never re-read by the parser, never taught over. A track also gets `artistNative` from the profile. `facets()` adds `scene`, `work`, `lang`, `mood`, `kind`; `search()` also looks at `titleAlt`, `artistNative`, `work` and `origArtist`; `S.select` takes `scenes works langs moods kinds roles` (and under `not`). The page leaves clips (`kind: 'clip'`) out of every shuffle unless asked.
+
+The owner's own labels file is not in this repository: it describes a private playlist and lives with the owner.
+
+## embed.js
+
+`TS.embed`: `RECIPES`, `vectors(tracks, recipe, { taxonomy, firstAdded, lm })` (unit-length `Float32Array` rows; `labelVectors`, `nameVectors`, `timeVectors` are the parts), `describe(track, taxonomy)` (the sentence the language model reads), `knn(vecs, k)` and `knnJob(vecs, k)` (the same in slices: `step(budgetMs)` until `done`), `layout(vecs, nn, { rand, epochs })` (a UMAP-like layout from the first two principal components, `pca2`; `step(budgetMs)`, `pos`), `regions(pos, tracks, k, rand)` (k-means on the layout, each `{ x, y, name, mood, size, members }`), `dot`, `unit`. Pure; the seeded random source makes the same map every time.
+
+## taxonomy.js
+
+`TS.taxonomy`: `FAMILIES` (twelve families, each `{ key, name, hue, blurb, genres: [[name, blurb]], list: [{ name, blurb, family }] }`), `SCENES`, `MOODS` (with a sentence each), `LANGS`, `KINDS`, `ROLES` as `[key, name]` rows and `SCENE_NAME`, `MOOD_NAME`, `LANG_NAME`, `KIND_NAME`, `ROLE_NAME` as maps. `genre(name)`, `family(key)`, `familyOf(genre)` (`'other'` for a genre the map does not know, such as YouTube's own Rock), `trackFamily(track)` (its first known genre's), `genresOfFamily(key, known)` (for `'other'`, also the unknown genres in `known`), `hueOf(genre or family key)` (`{ h, s }`: one hue per family, shifted a little per genre). The map was written by hand for one listener's library: anime and visual-novel music, J-rock, city pop and Shibuya-kei, net music, western indie and classics, scores, musicals and classical.
 
 ## What YouTube's terms ask of the page
 
@@ -510,4 +562,3 @@ The fake serves the OAuth redirect, revoke, `channels`, `playlists` (59, two pag
 - Liked videos beyond YouTube's 5,000-item cap; live streams (length 0, class "unknown"); region-blocked videos (they surface as player errors).
 - The decade of a track without a stated release date is its upload year (`yearSource: 'upload'`).
 - Two tabs on one library: last write wins. The page could listen for `storage`-free signals (BroadcastChannel) if this matters.
-- The bench is not the page: no thumbnail, no design, no artist or genre pickers beyond one select.

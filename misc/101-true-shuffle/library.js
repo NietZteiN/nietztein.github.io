@@ -188,6 +188,7 @@
 			aliases: {},
 			channelRules: {},
 			genres: { artist: {}, channel: {}, mb: {} },
+			profiles: {},
 			settings: { minConfidence: 0.6 }
 		};
 	}
@@ -211,6 +212,7 @@
 				if (d.genres[level] && typeof d.genres[level] === 'object') for (var key in d.genres[level]) lib.genres[level][key] = d.genres[level][key];
 			});
 		}
+		if (d.profiles && typeof d.profiles === 'object') for (k in d.profiles) if (d.profiles[k] && typeof d.profiles[k] === 'object') lib.profiles[k] = d.profiles[k];
 		if (d.settings && typeof d.settings === 'object') for (k in d.settings) lib.settings[k] = d.settings[k];
 		return lib;
 	}
@@ -221,13 +223,13 @@
 		return {
 			tracks: list(lib),
 			playlists: Object.keys(lib.playlists).map(function (id) { return lib.playlists[id]; }),
-			meta: { version: VERSION, aliases: lib.aliases, channelRules: lib.channelRules, genres: lib.genres, settings: lib.settings }
+			meta: { version: VERSION, aliases: lib.aliases, channelRules: lib.channelRules, genres: lib.genres, profiles: lib.profiles, settings: lib.settings }
 		};
 	}
 	function fromParts(parts) {
 		parts = parts || {};
 		var meta = parts.meta || {};
-		return load({ tracks: parts.tracks || [], playlists: parts.playlists || [], aliases: meta.aliases, channelRules: meta.channelRules, genres: meta.genres, settings: meta.settings });
+		return load({ tracks: parts.tracks || [], playlists: parts.playlists || [], aliases: meta.aliases, channelRules: meta.channelRules, genres: meta.genres, profiles: meta.profiles, settings: meta.settings });
 	}
 	function meta(lib) { return toParts(lib).meta; }
 
@@ -237,7 +239,8 @@
 			channel: '', channelId: '', durationSec: 0, publishedAt: null, year: null, yearSource: '', decade: '',
 			addedAt: {}, playlists: [],
 			genres: [], topics: [], embeddable: true, removed: false, removedReason: '', playerError: null,
-			rating: 0, plays: 0, skips: 0, lastPlayed: null, blocked: false, tags: [], userEdits: {},
+			rating: 0, plays: 0, skips: 0, lastPlayed: null, blocked: false, tags: [], userEdits: {}, labels: null, stateAt: null,
+			titleAlt: '', artistNative: '', origArtist: '', scene: '', work: '', role: '', lang: '', mood: '', kind: '',
 			raw: { title: '', channel: '' }, guess: { artist: '', title: '', rule: 'none', confidence: 0 }, artistGuess: '', spreadKey: '',
 			run: null, live: false, releaseYear: null, categoryId: '', fetchedAt: null
 		};
@@ -268,8 +271,9 @@
 	// MusicBrainz for the artist (fetched only when the user asked); then
 	// YouTube's topics and what the title itself says (a soundtrack).
 	function genresOf(lib, t) {
-		var e = t.userEdits || {};
+		var e = t.userEdits || {}, lab = t.labels || {};
 		if (Array.isArray(e.genres)) return { genres: uniq(e.genres), source: 'track' };
+		if (Array.isArray(lab.genres) && lab.genres.length) return { genres: uniq(lab.genres), source: 'label' };
 		var a = t.artistKey && lib.genres.artist[t.artistKey];
 		if (Array.isArray(a)) return { genres: uniq(a), source: 'artist' };
 		var c = lib.genres.channel[channelKey(t)];
@@ -315,7 +319,7 @@
 					if (rk) right[rk] = (right[rk] || 0) + 1;
 				}
 			}
-			var edited = t.userEdits && t.userEdits.artist != null;
+			var edited = fixedArtist(t);
 			// a reading taught from one tap is the user's generalisation, not a
 			// source: it counts for no name, sure or seen (else it would keep
 			// itself in place against a sure artist found later)
@@ -349,6 +353,21 @@
 	// tracks that nothing else names; sure readings and corrections stay.
 	function taughtRule(rule) { return rule && typeof rule === 'object' && rule.scope === 'guesses' ? rule.rule : null; }
 
+	// Labels: a hand-made reading of a track (applyLabels), between what the
+	// parser reads and the user's own corrections, which still win. The fields
+	// beyond the corrected five describe where a track lives and how it sounds:
+	//   titleAlt    romaji or English title, for search
+	//   origArtist  the original artist of a cover
+	//   scene       anime, vn, game, vtuber, vocaloid, utaite, touhou, film, tv, stage, meme, or ''
+	//   work        the anime, game, film or musical it comes from
+	//   role        OP, ED, insert, theme, OST, image
+	//   lang        ja, en, ko, zh, fr, de, es, la, other, inst
+	//   mood        bright, driving, wistful, tender, dark, quirky
+	//   kind        song, set (an album, medley, mix), clip (not music)
+	var LABEL_FIELDS = ['titleAlt', 'origArtist', 'scene', 'work', 'role', 'lang', 'mood', 'kind'];
+	// An artist named by hand (a correction or a label) is never re-read.
+	function fixedArtist(t) { return !!t && ((t.userEdits && t.userEdits.artist != null) || !!(t.labels && t.labels.artist)); }
+
 	function derive(lib, t, known) {
 		var rule = lib.channelRules[channelKey(t)], taught = taughtRule(rule);
 		var opts = {};
@@ -362,9 +381,12 @@
 		}
 		var trusted = p.confidence >= minConfidence(lib);
 		t.guess = { artist: p.artist, title: p.title, rule: p.rule, confidence: p.confidence };
+		var lab = t.labels && typeof t.labels === 'object' ? t.labels : {};
 
 		var artist = trusted ? p.artist : '';
 		var title = trusted || !p.artist ? p.title : p.whole;
+		if (lab.artist) artist = str(lab.artist).trim();
+		if (lab.title && str(lab.title).trim()) title = str(lab.title).trim();
 		if (e.artist != null) artist = str(e.artist).trim();
 		if (e.title != null && str(e.title).trim()) title = str(e.title).trim();
 		var who = artistOf(lib, artist);
@@ -375,15 +397,23 @@
 		// its place, marked as a guess, and the title as it was uploaded. The
 		// artist stays unknown for counting, filters and the shuffle (which
 		// already treats the channel as the artist of such a track).
-		t.artistGuess = !t.artist && e.artist == null && p.rule !== 'channel-rule' ? channelName(t) : '';
+		t.artistGuess = !t.artist && e.artist == null && !lab.artist && p.rule !== 'channel-rule' ? channelName(t) : '';
+		// The rest of the labels: the user's value, the track's label, then what
+		// the artist's profile says (scene and language), else nothing.
+		var prof = (t.artistKey && lib.profiles && lib.profiles[t.artistKey]) || {};
+		LABEL_FIELDS.forEach(function (k) {
+			t[k] = e[k] != null ? str(e[k]) : lab[k] != null ? str(lab[k]) : (k === 'scene' || k === 'lang') && prof[k] ? str(prof[k]) : '';
+		});
+		t.artistNative = prof.native ? str(prof.native) : '';
 		// Who the track counts as for the shuffle's "not the same artist
 		// twice" and for the by-artist view: its sure artist, else its channel
 		// (marked with "~", so it never mixes with an artist's key), else itself.
 		// artistKey stays empty for a guess: counts, filters and MusicBrainz see
 		// only artists something vouches for.
 		t.spreadKey = t.artistKey || '~' + (channelKey(t) || t.id);
-		t.version = e.version != null ? str(e.version) : p.version;
-		t.versionText = e.version != null ? str(e.version) : p.versionText;
+		if (e.version != null) { t.version = str(e.version); t.versionText = str(e.version); }
+		else if (lab.version != null) { t.version = str(lab.version); t.versionText = t.version ? (p.version && p.versionText ? p.versionText : t.version) : ''; }
+		else { t.version = p.version; t.versionText = p.versionText; }
 		t.feat = p.feat;
 		t.album = p.album;
 		t.trackNo = p.trackNo;
@@ -393,6 +423,7 @@
 		// description states, else a year in the title, else the upload year.
 		var up = t.publishedAt ? new Date(t.publishedAt).getUTCFullYear() : null;
 		if (e.year != null && +e.year) { t.year = +e.year; t.yearSource = 'edit'; }
+		else if (lab.year != null && +lab.year) { t.year = +lab.year; t.yearSource = 'label'; }
 		else if (t.releaseYear) { t.year = t.releaseYear; t.yearSource = 'release'; }
 		else if (p.year && (!up || p.year <= up)) { t.year = p.year; t.yearSource = 'title'; }
 		else if (up) { t.year = up; t.yearSource = 'upload'; }
@@ -415,14 +446,22 @@
 		return t;
 	}
 
+	// What deriving can change on a track, as one string to compare.
+	function snapshot(t, withGuess) {
+		var v = [t.title, t.artist, t.artistKey, t.version, t.year, t.genres, t.run, t.guess, t.artistNative];
+		if (withGuess) v.push(t.artistGuess);
+		LABEL_FIELDS.forEach(function (k) { v.push(t[k]); });
+		return JSON.stringify(v);
+	}
+
 	function deriveAll(lib, test, known) {
 		var changed = [];
 		known = known || knownArtists(lib);
 		list(lib).forEach(function (t) {
 			if (test && !test(t)) return;
-			var before = JSON.stringify([t.title, t.artist, t.artistKey, t.version, t.year, t.genres, t.run, t.guess]);
+			var before = snapshot(t, false);
 			derive(lib, t, known);
-			if (JSON.stringify([t.title, t.artist, t.artistKey, t.version, t.year, t.genres, t.run, t.guess]) !== before) changed.push(t.id);
+			if (snapshot(t, false) !== before) changed.push(t.id);
 		});
 		return changed;
 	}
@@ -573,12 +612,13 @@
 		return false;
 	}
 	function setFields(t, fields) {
-		['title', 'artist', 'version', 'year', 'genres'].forEach(function (k) {
+		['title', 'artist', 'version', 'year', 'genres'].concat(LABEL_FIELDS).forEach(function (k) {
 			if (!(k in fields)) return;
 			if (fields[k] == null) delete t.userEdits[k];
 			else t.userEdits[k] = k === 'genres' ? uniq(fields[k]) : (k === 'year' ? +fields[k] || null : str(fields[k]));
 			if (t.userEdits[k] === null) delete t.userEdits[k];
 		});
+		if ('rating' in fields || 'blocked' in fields) t.stateAt = fields.at ? iso(fields.at) : iso();
 		if ('rating' in fields) t.rating = Math.max(0, Math.min(5, Math.round(+fields.rating || 0)));
 		if ('blocked' in fields) t.blocked = !!fields.blocked;
 		if ('tags' in fields) t.tags = uniq(fields.tags);
@@ -618,9 +658,9 @@
 		(ids || []).forEach(function (id) {
 			var t = lib.tracks[id];
 			if (!t) return;
-			var before = JSON.stringify([t.title, t.artist, t.artistKey, t.artistGuess, t.version, t.year, t.genres, t.run, t.guess]);
+			var before = snapshot(t, true);
 			derive(lib, t, known);
-			if (JSON.stringify([t.title, t.artist, t.artistKey, t.artistGuess, t.version, t.year, t.genres, t.run, t.guess]) !== before) changed.push(id);
+			if (snapshot(t, true) !== before) changed.push(id);
 		});
 		return changed;
 	}
@@ -710,7 +750,7 @@
 	// Is this track's artist a guess the one-tap teaching may read again? Its
 	// reading names no sure artist, and the user has not set its artist.
 	function teachable(lib, t) {
-		if (!t || (t.userEdits && t.userEdits.artist != null)) return false;
+		if (!t || fixedArtist(t)) return false;
 		if (t.artist && t.guess && t.guess.rule === 'channel-taught') return true;
 		return !t.artist && !(t.guess && (t.guess.rule === 'ost' || t.guess.rule === 'channel-rule'));
 	}
@@ -730,7 +770,7 @@
 		list(lib).forEach(function (x) {
 			if (x.id === id || channelKey(x) !== key) return;
 			if (teachable(lib, x)) { ids.push(x.id); return; }
-			if (!x.artistKey || (x.userEdits && x.userEdits.artist != null)) return;
+			if (!x.artistKey || fixedArtist(x)) return;
 			var q = Parse.parse(x.raw.title, x.raw.channel, { channelRule: rule });
 			if (q.rule === 'channel-rule' && q.artist && artistOf(lib, q.artist).key !== x.artistKey) conflicts++;
 		});
@@ -770,6 +810,90 @@
 		if (record == null) delete lib.genres.mb[artistKey];
 		else lib.genres.mb[artistKey] = { genres: uniq(record.genres), mbid: str(record.mbid), at: record.at || null };
 		return deriveAll(lib, function (t) { return t.artistKey === artistKey; });
+	}
+
+	// ---- Labels files ------------------------------------------------------------------
+	// A labels file is a hand-made reading of a library, kept apart from it so
+	// it can be applied again after an import or a wipe:
+	//   { format: 'true-shuffle-labels', version: 1,
+	//     tracks:  { videoId: { artist, title, version, year, genres, titleAlt, origArtist,
+	//                           scene, work, role, lang, mood, kind } },
+	//     artists: { 'Name': { native, genres, scene, lang } },   // inherited by later imports
+	//     aliases: { 'Other spelling': 'Name' } }
+	var LABELS_FORMAT = 'true-shuffle-labels';
+	var LABEL_KEYS = ['artist', 'title', 'version', 'year', 'genres'].concat(LABEL_FIELDS);
+	// -> '' when data is a labels file, else a sentence saying why not
+	function checkLabels(data) {
+		if (!data || typeof data !== 'object' || data.format !== LABELS_FORMAT) return 'That file is not a True Shuffle labels file, so nothing was changed.';
+		if (+data.version !== 1) return 'That labels file is from a newer version of True Shuffle, so nothing was changed.';
+		if (!data.tracks || typeof data.tracks !== 'object') return 'That labels file has no tracks, so nothing was changed.';
+		return '';
+	}
+	function cleanLabel(x) {
+		var out = {};
+		LABEL_KEYS.forEach(function (k) {
+			if (x[k] == null) return;
+			if (k === 'genres') { if (Array.isArray(x[k])) out.genres = uniq(x[k]); return; }
+			if (k === 'year') { if (+x[k] >= 1000 && +x[k] <= 2999) out.year = +x[k]; return; }
+			out[k] = str(x[k]).trim();
+		});
+		return out;
+	}
+	// Apply a labels file. Tracks the library does not have are counted and
+	// skipped; the artists' profiles and aliases are kept for later imports.
+	// -> { ids: tracks changed, matched, missing, artists }
+	function applyLabels(lib, data) {
+		var why = checkLabels(data);
+		if (why) throw new Error(why);
+		var matched = 0, missing = 0, artists = 0, k;
+		if (data.aliases && typeof data.aliases === 'object') {
+			for (k in data.aliases) {
+				var a = normArtist(k), c = str(data.aliases[k]).trim();
+				if (a && c && a !== normArtist(c)) lib.aliases[a] = c;
+			}
+		}
+		if (data.artists && typeof data.artists === 'object') {
+			for (k in data.artists) {
+				var info = data.artists[k] || {}, key = artistOf(lib, k).key;
+				if (!key) continue;
+				var prof = {};
+				['native', 'scene', 'lang'].forEach(function (f) { if (info[f]) prof[f] = str(info[f]).trim(); });
+				lib.profiles[key] = prof;
+				if (Array.isArray(info.genres) && info.genres.length) lib.genres.artist[key] = uniq(info.genres);
+				artists++;
+			}
+		}
+		for (k in data.tracks) {
+			var t = lib.tracks[k];
+			if (!t) { missing++; continue; }
+			t.labels = cleanLabel(data.tracks[k] || {});
+			matched++;
+		}
+		var ids = deriveAll(lib, null, knownArtists(lib));
+		return { ids: ids, matched: matched, missing: missing, artists: artists };
+	}
+	// The labels of a library as a file: every labelled track, with the user's
+	// own corrections folded in, and the profiles. -> a labels file
+	function exportLabels(lib, now) {
+		var out = { format: LABELS_FORMAT, version: 1, createdAt: iso(now), tracks: {}, artists: {}, aliases: {} };
+		list(lib).forEach(function (t) {
+			if (!t.labels && !Object.keys(t.userEdits).length) return;
+			var x = {};
+			LABEL_KEYS.forEach(function (f) {
+				var v = f === 'year' ? (t.yearSource === 'edit' || t.yearSource === 'label' ? t.year : null) : t[f];
+				if (v != null && v !== '' && !(Array.isArray(v) && !v.length)) x[f] = Array.isArray(v) ? v.slice() : v;
+			});
+			out.tracks[t.id] = x;
+		});
+		var names = {};
+		list(lib).forEach(function (t) { if (t.artistKey) names[t.artistKey] = t.artist; });
+		Object.keys(lib.profiles).forEach(function (key) {
+			var p = lib.profiles[key], a = { native: p.native || '', scene: p.scene || '', lang: p.lang || '' };
+			if (lib.genres.artist[key]) a.genres = lib.genres.artist[key].slice();
+			out.artists[names[key] || key] = a;
+		});
+		for (var k in lib.aliases) out.aliases[k] = lib.aliases[k];
+		return out;
 	}
 
 	// One listen. info: { at (ms), completed, listenedSec }. It counts as a
@@ -837,7 +961,7 @@
 	function facets(lib, tracks, now) {
 		tracks = tracks || list(lib);
 		now = now == null ? Date.now() : now;
-		var f = { artist: {}, genre: {}, decade: {}, playlist: {}, channel: {}, length: {}, tag: {} };
+		var f = { artist: {}, genre: {}, decade: {}, playlist: {}, channel: {}, length: {}, tag: {}, scene: {}, work: {}, lang: {}, mood: {}, kind: {} };
 		var never = 0, month = 0, blocked = 0, unplayable = 0;
 		tracks.forEach(function (t) {
 			// a guess is counted under its channel, labelled as a guess, never
@@ -851,6 +975,8 @@
 			count(f.channel, channelKey(t), t.channel || 'Unknown channel');
 			count(f.length, lengthClass(t.durationSec), '');
 			(t.tags || []).forEach(function (g) { count(f.tag, g, g); });
+			['scene', 'lang', 'mood', 'kind'].forEach(function (k) { if (t[k]) count(f[k], t[k], t[k]); });
+			if (t.work) count(f.work, t.work, t.work);
 			if (!t.plays) never++;
 			if (lastAdded(t) && sameMonth(lastAdded(t), now)) month++;
 			if (t.blocked) blocked++;
@@ -860,7 +986,9 @@
 		return {
 			total: tracks.length,
 			artist: ranked(f.artist).map(function (e) { e.guess = e.key.charAt(0) === '~'; return e; }), genre: ranked(f.genre), decade: ranked(f.decade, true), playlist: ranked(f.playlist), channel: ranked(f.channel),
-			length: lengths, tag: ranked(f.tag), neverPlayed: never, addedThisMonth: month, blocked: blocked, unplayable: unplayable
+			length: lengths, tag: ranked(f.tag),
+			scene: ranked(f.scene), work: ranked(f.work), lang: ranked(f.lang), mood: ranked(f.mood), kind: ranked(f.kind),
+			neverPlayed: never, addedThisMonth: month, blocked: blocked, unplayable: unplayable
 		};
 	}
 
@@ -873,8 +1001,8 @@
 		if (!q) return tracks.slice();
 		var terms = q.split(' '), out = [];
 		tracks.forEach(function (t) {
-			var title = foldText(t.title), artist = foldText(t.artist);
-			var rest = foldText([t.feat.join(' '), t.album, t.channel, t.versionText || t.version, t.genres.join(' '), t.tags.join(' '), t.raw.title].join(' '));
+			var title = foldText(t.title + ' ' + (t.titleAlt || '')), artist = foldText(t.artist + ' ' + (t.artistNative || ''));
+			var rest = foldText([t.feat.join(' '), t.album, t.channel, t.versionText || t.version, t.genres.join(' '), t.tags.join(' '), t.raw.title, t.work || '', t.origArtist || ''].join(' '));
 			var hay = ' ' + title + ' ' + artist + ' ' + rest + ' ', score = 0;
 			for (var i = 0; i < terms.length; i++) {
 				if (hay.indexOf(terms[i]) < 0) return;
@@ -944,6 +1072,8 @@
 	return {
 		VERSION: VERSION,
 		GENRE_TOPICS: GENRE_TOPICS,
+		LABEL_FIELDS: LABEL_FIELDS, LABELS_FORMAT: LABELS_FORMAT,
+		applyLabels: applyLabels, checkLabels: checkLabels, exportLabels: exportLabels, fixedArtist: fixedArtist,
 		LENGTH_CLASSES: LENGTH_CLASSES,
 		create: create, load: load, toParts: toParts, fromParts: fromParts, meta: meta,
 		list: list, get: get, playable: playable,

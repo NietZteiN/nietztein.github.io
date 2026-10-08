@@ -1260,7 +1260,28 @@ describe('shuffle', function () {
 	ok(S.build(world, { mode: 'genres', seed: 'g', blockSize: 5 }, { now: NOW }).blocks.length >= 12, 'build: genre blocks are reported');
 	throws(function () { S.build(world, { mode: 'nonsense' }); }, 'build: an unknown mode throws');
 	eq(S.build([], { mode: 'spread', seed: 'x' }).order, [], 'build: an empty library gives an empty order');
-	eq(S.MODES.map(function (m2) { return m2.key; }), ['true', 'spread', 'fresh', 'newest', 'favourites', 'neglected', 'artists', 'genres'], 'MODES lists the eight modes');
+	eq(S.MODES.map(function (m2) { return m2.key; }), ['true', 'spread', 'fresh', 'newest', 'favourites', 'neglected', 'artists', 'genres', 'flow'], 'MODES lists the nine modes');
+	// works apart, one version per song, mood flow
+	(function () {
+		var r = S.rng('apart'), ts = [];
+		for (var i = 0; i < 60; i++) ts.push({ id: 't' + i, artistKey: 'a' + (i % 12), spreadKey: 'a' + (i % 12), work: i < 30 ? 'Work ' + (i % 3) : '', title: 'Song ' + i, genres: [i % 2 ? 'City pop' : 'Anison pop'], mood: S.MOOD_RING[i % 6], playlists: [], addedAt: {}, durationSec: 200 });
+		var byId = {}; ts.forEach(function (t) { byId[t.id] = t; });
+		function clashes(order) { var c = 0; for (var k = 1; k < order.length; k++) { var a = byId[order[k - 1]], b = byId[order[k]]; if (a.artistKey === b.artistKey || (a.work && a.work === b.work)) c++; } return c; }
+		var raw = S.trueShuffle(ts, r), fixed = S.apart(raw, byId);
+		ok(clashes(fixed) < clashes(raw) && clashes(fixed) <= 1, 'apart: neighbours sharing an artist or a work fall from ' + clashes(raw) + ' to ' + clashes(fixed));
+		eq(fixed.slice().sort(), raw.slice().sort(), 'apart keeps the same tracks');
+		var built = S.build(ts, { mode: 'spread', apart: true, seed: 'x' }, { now: 0 });
+		ok(clashes(built.order) <= 1, 'build with apart: a spread keeps works apart too (' + clashes(built.order) + ' clashes)');
+		var versions = [{ id: 'v1', title: 'Sakura', artistKey: 'hana', version: '' }, { id: 'v2', title: 'Sakura', artistKey: 'alo', origArtist: 'hana', version: 'orchestral' }, { id: 'v3', title: 'Sakura', artistKey: 'hana', version: 'live' }, { id: 'v4', title: 'Other', artistKey: 'hana', version: '' }];
+		eq(S.songKey(versions[0]) === S.songKey(versions[1]) && S.songKey(versions[0]) !== S.songKey(versions[3]), true, 'songKey: a cover shares the key of its original');
+		eq(S.oneVersion(versions, S.rng('v')).length, 2, 'oneVersion keeps one version of each song');
+		var flow = S.flowOrder(ts, S.rng('flow'));
+		eq(flow.slice().sort(), ts.map(function (t) { return t.id; }).sort(), 'flowOrder is a permutation');
+		var jumps = 0, rjumps = 0;
+		for (var k = 1; k < flow.length; k++) { jumps += S.moodDistance(byId[flow[k - 1]].mood, byId[flow[k]].mood); rjumps += S.moodDistance(byId[raw[k - 1]].mood, byId[raw[k]].mood); }
+		ok(jumps < rjumps, 'mood flow moves between nearer moods than a true shuffle (' + jumps + ' against ' + rjumps + ')');
+	})();
+
 
 	// ---- signature
 	eq(S.signature({ genres: ['Rock', 'Jazz'], artists: [] }), S.signature({ artists: undefined, genres: ['Jazz', 'Rock'], neverPlayed: false }), 'signature: the same choices in another order, with empty ones left out, give the same name');
@@ -1672,8 +1693,8 @@ describe('demo', function () {
 	var trueRepeats = 0;
 	for (i = 0; i < 50; i++) trueRepeats += S.adjacentRepeats(S.build(tracks, { mode: 'true', seed: 'demo-' + i }, { now: T0 }).order, byId);
 	ok(trueRepeats > 200, 'while a true shuffle does, about ' + Math.round(trueRepeats / 50) + ' times per pass, which is what makes the difference visible');
-	var jazz = S.build(tracks, { mode: 'true', seed: 'x', select: { genres: ['Jazz'], decades: ['1970s'] } }, { now: T0 });
-	ok(jazz.order.length >= 3 && jazz.order.every(function (id) { return byId[id].genres.indexOf('Jazz') >= 0 && byId[id].decade === '1970s'; }), 'a selection by genre and decade finds tracks (' + jazz.order.length + ' jazz tracks of the 1970s)');
+	var jazz = S.build(tracks, { mode: 'true', seed: 'x', select: { genres: ['Jazz arrangement'], decades: ['1970s'] } }, { now: T0 });
+	ok(jazz.order.length >= 3 && jazz.order.every(function (id) { return byId[id].genres.indexOf('Jazz arrangement') >= 0 && byId[id].decade === '1970s'; }), 'a selection by genre and decade finds tracks (' + jazz.order.length + ' jazz tracks of the 1970s)');
 	eq(Demo.videos(T0).length, 160, 'videos(): the raw records');
 	ok(Demo.ARTISTS.length >= 12, 'about a dozen artists (' + Demo.ARTISTS.length + ')');
 });
@@ -2015,6 +2036,137 @@ describe('yt', async function () {
 });
 
 // =============================================================================
+// labels (a hand-made reading of the library) and the taste map
+// =============================================================================
+
+describe('labels', function () {
+	var L = require('./library.js'), S = require('./shuffle.js'), T = require('./taxonomy.js');
+	function lib3() {
+		var lib = L.create();
+		L.upsert(lib, [
+			{ id: 'aaaaaaaaaaa', title: 'Kumo no Ue - Hollow Signal (Lyrics)', channel: 'lyric shelf', durationSec: 200, publishedAt: '2019-01-01T00:00:00Z', topics: ['https://en.wikipedia.org/wiki/Music_of_Asia'] },
+			{ id: 'bbbbbbbbbbb', title: 'Paper Signal', channel: 'Hollow Signal - Topic', durationSec: 240, publishedAt: '2018-01-01T00:00:00Z', topics: [] },
+			{ id: 'ccccccccccc', title: 'stream highlights #3', channel: 'clip zone', durationSec: 600, publishedAt: '2021-01-01T00:00:00Z', topics: [] }
+		], { playlistId: 'PL1', addedAt: {}, now: Date.UTC(2026, 0, 1) });
+		return lib;
+	}
+	var file = {
+		format: L.LABELS_FORMAT, version: 1,
+		tracks: {
+			aaaaaaaaaaa: { artist: 'Hollow Signal', title: 'Kumo no Ue', titleAlt: 'Above the Clouds', genres: ['Alt J-rock'], mood: 'wistful', scene: 'anime', work: 'Paper Sky', role: 'ED', lang: 'ja', kind: 'song', year: 2009 },
+			ccccccccccc: { genres: ['Spoken & clips'], kind: 'clip' },
+			zzzzzzzzzzz: { artist: 'Nobody' }
+		},
+		artists: { 'Hollow Signal': { native: '\u30DB\u30ED\u30A6', genres: ['Alt J-rock', 'Shoegaze & dream pop'], scene: 'anime', lang: 'ja' } },
+		aliases: { '\u30DB\u30ED\u30A6': 'Hollow Signal' }
+	};
+	eq(L.checkLabels({ format: 'x' }) !== '', true, 'checkLabels refuses a file that is not a labels file');
+	var lib = lib3();
+	var r = L.applyLabels(lib, file);
+	eq([r.matched, r.missing, r.artists], [2, 1, 1], 'applyLabels: two tracks matched, one missing from the library, one artist profile');
+	var a = lib.tracks.aaaaaaaaaaa, b = lib.tracks.bbbbbbbbbbb, c = lib.tracks.ccccccccccc;
+	eq([a.artist, a.title, a.titleAlt, a.genres, a.mood, a.scene, a.work, a.role, a.lang, a.year, a.yearSource], ['Hollow Signal', 'Kumo no Ue', 'Above the Clouds', ['Alt J-rock'], 'wistful', 'anime', 'Paper Sky', 'ED', 'ja', 2009, 'label'], 'a labelled track carries every label');
+	eq([b.genres, b.scene, b.lang, b.artistNative], [['Alt J-rock', 'Shoegaze & dream pop'], 'anime', 'ja', '\u30DB\u30ED\u30A6'], 'an unlabelled track by a profiled artist inherits genres, scene, language and the native name');
+	eq(L.fixedArtist(a) && !L.teachable(lib, a), true, 'a labelled artist is fixed: never re-read or taught over');
+	L.edit(lib, 'aaaaaaaaaaa', { mood: 'bright', artist: 'Someone Else' });
+	eq([a.mood, a.artist], ['bright', 'Someone Else'], 'the user\'s correction wins over the label');
+	L.edit(lib, 'aaaaaaaaaaa', { mood: null, artist: null });
+	eq([a.mood, a.artist], ['wistful', 'Hollow Signal'], 'taking the correction back returns to the label, not to the parser');
+	eq(L.search(lib, 'above clouds').map(function (t) { return t.id; }), ['aaaaaaaaaaa'], 'search finds the romaji or English title');
+	eq(L.search(lib, '\u30DB\u30ED\u30A6').length, 2, 'search finds an artist by the native name');
+	var f = L.facets(lib);
+	eq([f.mood.length, f.kind.map(function (e) { return e.key; }).sort()], [1, ['clip', 'song']], 'facets count moods and kinds');
+	eq(S.select(L.list(lib), { not: { kinds: ['clip'] } }).length, 2, 'select leaves clips out with not.kinds');
+	eq(S.select(L.list(lib), { works: ['Paper Sky'], roles: ['ED'] }).map(function (t) { return t.id; }), ['aaaaaaaaaaa'], 'select by work and role');
+	var parts = L.toParts(lib), back = L.fromParts(JSON.parse(JSON.stringify(parts)));
+	eq(back.profiles, lib.profiles, 'profiles survive the store');
+	var out = L.exportLabels(lib, Date.UTC(2026, 9, 8));
+	eq([out.format, Object.keys(out.tracks).sort(), out.artists['Hollow Signal'].native], [L.LABELS_FORMAT, ['aaaaaaaaaaa', 'ccccccccccc'], '\u30DB\u30ED\u30A6'], 'exportLabels writes the labelled tracks and the profiles');
+	var again = lib3();
+	L.applyLabels(again, out);
+	eq([again.tracks.aaaaaaaaaaa.artist, again.tracks.aaaaaaaaaaa.work], ['Hollow Signal', 'Paper Sky'], 'an exported labels file applies to a fresh import');
+	// the taste map
+	var names = {};
+	T.FAMILIES.forEach(function (fam) { fam.list.forEach(function (g) { ok(!names[g.name], 'genre named once: ' + g.name); names[g.name] = true; }); });
+	eq([T.familyOf('City pop'), T.familyOf('Rock'), T.trackFamily({ genres: ['Rock', 'Vocaloid'] })], ['retro', 'other', 'net'], 'familyOf and trackFamily (an unknown genre is Other)');
+	ok(T.genresOfFamily('other', ['Rock']).indexOf('Rock') >= 0, 'Other also holds genres the map does not know');
+	var lab = require('./demo.js').build(Date.UTC(2026, 9, 5)).lib;
+	ok(L.list(lab).every(function (t) { return t.mood && t.genres.length; }), 'the demo carries a mood and genres on every track');
+});
+
+// =============================================================================
+// embed (vectors, neighbours, the map layout)
+// =============================================================================
+
+describe('embed', function () {
+	var E = require('./embed.js'), S = require('./shuffle.js'), T = require('./taxonomy.js'), L = require('./library.js');
+	var demo = require('./demo.js').build(Date.UTC(2026, 9, 5)).lib, ts = L.list(demo).filter(function (t) { return t.kind !== 'clip'; });
+	E.RECIPES.forEach(function (r) {
+		if (r.key === 'lm') return;
+		var v = E.vectors(ts, r.key, { taxonomy: T, firstAdded: L.firstAdded });
+		ok(v.length === ts.length && v.every(function (x) { var n2 = E.dot(x, x); return n2 === 0 || Math.abs(n2 - 1) < 1e-4; }), 'vectors (' + r.key + '): one unit vector per track');
+	});
+	var v = E.vectors(ts, 'labels', { taxonomy: T }), nn = E.knn(v, 10);
+	var same = 0, total = 0;
+	nn.forEach(function (row, i) { for (var k = 0; k < 5; k++) { total++; if (ts[row.ids[k]].genres[0] === ts[i].genres[0]) same++; } });
+	ok(same / total > 0.7, 'knn on labels: ' + Math.round(100 * same / total) + '% of the five nearest share the first genre');
+	ok(nn.every(function (row, i) { return Array.prototype.indexOf.call(row.ids, i) < 0; }), 'knn never lists a track as its own neighbour');
+	var lay = E.layout(v, nn, { rand: S.rng('t') });
+	lay.step();
+	ok(lay.done && lay.pos.length === ts.length * 2 && Array.prototype.every.call(lay.pos, isFinite), 'layout: finite positions for every track');
+	var pos = lay.pos, near = 0, far = 0, cnt = 0;
+	nn.forEach(function (row, i) { var j = row.ids[0], r2 = Math.floor(S.rng('p' + i)() * ts.length); near += Math.hypot(pos[2 * i] - pos[2 * j], pos[2 * i + 1] - pos[2 * j + 1]); far += Math.hypot(pos[2 * i] - pos[2 * r2], pos[2 * i + 1] - pos[2 * r2 + 1]); cnt++; });
+	ok(near * 3 < far, 'layout: nearest neighbours land closer than random pairs (' + (near / cnt).toFixed(2) + ' against ' + (far / cnt).toFixed(2) + ')');
+	var lay2 = E.layout(v, nn, { rand: S.rng('t') }); lay2.step();
+	eq(Array.from(lay2.pos).slice(0, 6), Array.from(pos).slice(0, 6), 'layout: the same seed gives the same map');
+	var regs = E.regions(pos, ts, 8, S.rng('r'));
+	ok(regs.length >= 2 && regs.every(function (r) { return r.name && r.size > 0; }), 'regions: named groups (' + regs.map(function (r) { return r.name; }).join(', ') + ')');
+	ok(E.describe(ts[0], T).indexOf(ts[0].title) === 0, 'describe starts with the title');
+	var job = E.knnJob(v, 5); while (!job.step(1)); eq(job.result.length, ts.length, 'knnJob finishes in slices');
+});
+
+// =============================================================================
+// discover (related artists from Deezer, through a transport the tests fake)
+// =============================================================================
+
+describe('discover', async function () {
+	var D = require('./discover.js'), Y = require('./yt.js');
+	var calls = [];
+	var data = {
+		'search/artist?q=Paper%20Lanterns&limit=6': { data: [{ id: 1, name: 'PAPER LANTERNS', nb_fan: 10 }, { id: 2, name: 'Paper Lanterns', nb_fan: 900 }] },
+		'artist/1/top?limit=25': { data: [{ id: 11, title: 'Blue Signal', artist: { name: 'Paper Lanterns' } }] },
+		'artist/2/top?limit=25': { data: [{ id: 21, title: 'Other Song', artist: { name: 'Paper Lanterns' } }] },
+		'artist/1/related?limit=20': { data: [{ id: 5, name: 'Glass Orchard', nb_fan: 50 }, { id: 6, name: 'Hollow Compass', nb_fan: 500 }, { id: 7, name: 'paper lanterns', nb_fan: 1 }, { id: 8, name: 'Hidden One', nb_fan: 9 }] },
+		'artist/5/top?limit=3': { data: [{ id: 51, title: 'Mosaic', duration: 200, preview: 'https://cdnt-preview.dzcdn.net/x.mp3', album: { title: 'A', cover_medium: 'https://evil.example/x.jpg' }, artist: { name: 'Glass Orchard' } }] },
+		'artist/6/top?limit=3': { data: [{ id: 61, title: 'Tide', preview: 'https://evil.example/x.mp3', artist: { name: 'Hollow Compass' } }] },
+		'search/artist?q=Nobody&limit=6': { data: [{ id: 9, name: 'Nobody', nb_fan: 1 }] },
+		'artist/9/top?limit=25': { data: [{ id: 91, title: 'Unrelated' }] }
+	};
+	var dz = D.createDeezer({ transport: function (u) { calls.push(u); var k = u.replace(D.API, ''); return data[k] ? Promise.resolve(data[k]) : Promise.reject(new Error('no ' + k)); } });
+	var r = await D.suggest(dz, { names: ['Paper Lanterns'], titles: ['Blue Signal'], known: function (n) { return n === 'Hollow Compass'; }, hidden: { [D.norm('Hidden One')]: true } });
+	eq([r.artist.id, r.verified], [1, true], 'findArtist: of two artists with the name, the one whose songs the library has (not the one with more fans)');
+	eq(r.related.map(function (a) { return a.name; }), ['Glass Orchard', 'Hollow Compass'], 'suggest: the artist itself and hidden artists left out; artists the library lacks first');
+	eq([r.related[0].known, r.related[1].known], [false, true], 'suggest: marks the artists the library already has');
+	eq([r.related[0].tracks[0].preview, r.related[0].tracks[0].cover, r.related[1].tracks[0].preview], ['https://cdnt-preview.dzcdn.net/x.mp3', '', ''], 'only the hosts of Deezer are kept for previews and pictures');
+	var none = await D.suggest(dz, { names: ['Nobody'], titles: ['Some Song'] });
+	eq(none.artist, null, 'a name whose songs do not match the library is taken for another artist');
+	var before = calls.length;
+	await dz.related(1);
+	eq(calls.length, before, 'answers are cached');
+	eq(D.bestVideo([{ videoId: 'a', title: 'Mosaic (cover)', channel: 'someone' }, { videoId: 'b', title: 'Mosaic', channel: 'Glass Orchard - Topic' }], { artist: 'Glass Orchard', title: 'Mosaic' }).videoId, 'b', 'bestVideo prefers the Topic channel of the artist to a cover');
+	eq(D.youtubeQuery({ artist: 'Glass Orchard', title: 'Mosaic' }), 'Glass Orchard Mosaic', 'youtubeQuery');
+	// the YouTube client's search, and its quota
+	var spent = [];
+	var client = Y.createClient({ getToken: function () { return 'tok'; }, endpoints: Y.GOOGLE, onQuota: function (u, m) { spent.push([u, m]); }, fetch: function (u) {
+		ok(u.indexOf('/search?') >= 0 && /type=video/.test(u) && /videoEmbeddable=true/.test(u), 'search asks for embeddable videos');
+		return Promise.resolve({ ok: true, status: 200, headers: { get: function () { return 'application/json'; } }, json: function () { return Promise.resolve({ items: [{ id: { videoId: 'abcdefghijk' }, snippet: { title: 'Mosaic', channelTitle: 'Glass Orchard - Topic', channelId: 'UCx', publishedAt: '2020-01-01T00:00:00Z' } }, { id: { channelId: 'UCy' }, snippet: {} }] }); }, text: function () { return Promise.resolve(''); } });
+	} });
+	var found = await client.search('Glass Orchard Mosaic', { max: 3 });
+	eq(found.map(function (f) { return f.videoId + ' ' + f.channel; }), ['abcdefghijk Glass Orchard - Topic'], 'client.search returns the videos (a channel result is dropped)');
+	eq(spent, [[Y.SEARCH_UNITS, 'search.list']], 'a search costs ' + Y.SEARCH_UNITS + ' quota units');
+});
+
+// =============================================================================
 // readme (every name the page can call is documented)
 // =============================================================================
 
@@ -2035,6 +2187,9 @@ describe('readme', function () {
 		'a player': Object.keys(mock),
 		'a controller': Object.keys(P.controller({ player: mock })),
 		demo: Object.keys(require('./demo.js')),
+		taxonomy: Object.keys(require('./taxonomy.js')),
+		embed: Object.keys(require('./embed.js')),
+		discover: Object.keys(require('./discover.js')),
 		yt: Object.keys(Y),
 		'an auth': Object.keys(Y.createAuth({ clientId: 'x', storage: null, location: fakeLocation('http://127.0.0.1/'), endpoints: Y.GOOGLE })),
 		'a client': Object.keys(Y.createClient({ getToken: function () { return null; }, endpoints: Y.GOOGLE })),

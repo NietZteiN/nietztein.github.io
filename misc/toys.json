@@ -1237,7 +1237,7 @@
 			"n": 101,
 			"slug": "101-true-shuffle",
 			"title": "True Shuffle",
-			"desc": "Reads your YouTube playlists and Liked videos after a Google sign-in, then plays them in a real shuffle or by artist, genre and decade. A demo library runs without signing in.",
+			"desc": "A music app over your YouTube playlists: browse by artist, genre, mood and the anime or game a song is from, then shuffle it properly. A demo runs without signing in.",
 			"note": "Signing in works for the owner's Google account; anyone else brings a Google client id of their own.",
 			"group": "art",
 			"tags": [
@@ -1264,7 +1264,17 @@
 				"www.gstatic.com",
 				"ssl.gstatic.com",
 				"fonts.gstatic.com",
-				"jnn-pa.googleapis.com"
+				"jnn-pa.googleapis.com",
+				"cdn.jsdelivr.net",
+				"huggingface.co",
+				"us.aws.cdn.hf.co",
+				"cas-bridge.xethub.hf.co",
+				"cdn-lfs.huggingface.co",
+				"api.deezer.com",
+				"cdn-images.dzcdn.net",
+				"e-cdns-images.dzcdn.net",
+				"cdnt-preview.dzcdn.net",
+				"cdns-preview-d.dzcdn.net"
 			],
 			"thumb": {
 				"query": "?thumb=1",

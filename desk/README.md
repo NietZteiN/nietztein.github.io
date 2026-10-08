@@ -34,7 +34,7 @@ Where things are kept:
 - **`localStorage["desk.vault"]`:** the encrypted token (with the login and the private repository's name inside the ciphertext), encrypted extra secrets, and the login in the clear for the lock screen. Nothing else.
 - **IndexedDB `desk`:** the local cache and the write queue. Every value and every key name is encrypted; only the "space" a record belongs to is readable.
 - **`sessionStorage["desk.wizard"]`:** the wizard's step and the private repository's name while the owner is on github.com. Never a token.
-- **The private repository:** `drafts/`, `notes/` (quick captures in `notes/inbox/`), `reading/`, `desk/settings.json`, a README.
+- **The private repository:** `drafts/`, `notes/` (quick captures in `notes/inbox/`), `reading/`, `music/true-shuffle-sync.json` (the Music view), `desk/settings.json`, a README.
 - **The public repository:** only what the owner publishes, after the confirm dialog.
 
 Unlocking needs no network: the passphrase opens the vault, and what was cached is readable offline. There is no service worker, though: the page itself has to be loaded (or still be in the browser's cache) before the connection goes.
@@ -282,6 +282,7 @@ node desk/test/test-vault.mjs      the vault: round trip, wrong passphrase, tamp
 node desk/test/test-gh.mjs         every client method against the fake server: conflict, 401, 403, 404,
                                    rate limit, offline, the ticket rule
 node desk/test/test-store.mjs      the encrypted store and the offline queue
+node desk/test/test-music.mjs      the Music view: True Shuffle's database read without creating it, push, pull, conflicts
 node scripts/qa/smoke.mjs --path desk
 node desk/vendor/fetch-vendor.mjs --check
 ```

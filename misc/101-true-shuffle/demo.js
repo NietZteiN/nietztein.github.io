@@ -177,6 +177,38 @@
 
 	// The whole demo: a library built through the same upsert() an import
 	// uses, then given its listening state.
+	// A labels file for the invented library, as a listener would write one
+	// (see taxonomy.js): each artist's genres, scene and language, and a mood
+	// for every track, so the genre families, moods and scenes have something
+	// to show.
+	var TASTE = {
+		'Paper Lanterns': { genres: ['Alt J-rock', 'Indie rock'], lang: 'en' },
+		'Glass Orchard': { genres: ['Indie pop & bedroom pop'], lang: 'en' },
+		'Hollow Compass': { genres: ['70s classic & soft rock'], lang: 'en' },
+		'Neon Abacus': { genres: ['Remix & future bass'], lang: 'inst' },
+		'Saffron Circuit': { genres: ['Technopop & new wave', 'Western pop'], lang: 'en' },
+		'Quiet Ferrymen': { genres: ['Indie folk & chamber'], lang: 'en' },
+		'Tin Lighthouse Trio': { genres: ['Jazz arrangement'], lang: 'inst' },
+		'DJ Tessellate': { genres: ['Hip hop & rap', 'Lo-fi & jazz hop'], lang: 'en' },
+		'Marrow & Pine': { genres: ['Indie folk & chamber', 'Acoustic arrangement'], lang: 'en' },
+		'The Velvet Algorithms': { genres: ['Funk, soul & R&B'], lang: 'en' },
+		'Kumori Station': { genres: ['Anison pop'], scene: 'anime', lang: 'ja' },
+		'Aldric Vessant': { genres: ['Classical & Romantic orchestral'], lang: 'inst' },
+		'Mizuiro Parade': { genres: ['Galge song'], scene: 'vn', lang: 'ja' }
+	};
+	TASTE['Las Polillas El' + E_ACUTE + 'ctricas'] = { genres: ['Chanson & world', 'Indie rock'], lang: 'es' };
+	var MOODS = ['bright', 'driving', 'wistful', 'tender', 'dark', 'quirky'];
+	function labels(lib) {
+		var r = Shuffle.rng('true-shuffle-demo-labels'), tracks = {};
+		Library.list(lib).sort(function (a, b) { return a.id < b.id ? -1 : 1; }).forEach(function (t) {
+			var x = { mood: MOODS[r.int(MOODS.length)], kind: 'song' };
+			if (t.album) { x.genres = ['Game & VN score']; x.scene = 'game'; x.work = t.album; x.role = 'OST'; x.lang = 'inst'; }
+			else if (t.artist === 'Kumori Station') { x.work = 'Kumori Station Anime'; x.role = r() < 0.5 ? 'OP' : 'ED'; }
+			tracks[t.id] = x;
+		});
+		return { format: Library.LABELS_FORMAT, version: 1, tracks: tracks, artists: TASTE };
+	}
+
 	function build(now) {
 		now = now == null ? Date.now() : now;
 		var entries = make(now), lib = Library.create(), errors = {};
@@ -187,6 +219,7 @@
 			Library.upsert(lib, mine.map(function (e) { return e.video; }), { playlistId: p.id, addedAt: addedAt, now: now });
 		});
 		Library.resolveArtists(lib);
+		Library.applyLabels(lib, labels(lib));
 		entries.forEach(function (e) {
 			var t = lib.tracks[e.video.id];
 			t.plays = e.state.plays; t.skips = e.state.skips; t.rating = e.state.rating; t.lastPlayed = e.state.lastPlayed; t.blocked = e.state.blocked;

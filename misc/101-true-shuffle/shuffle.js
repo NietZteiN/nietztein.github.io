@@ -156,7 +156,20 @@
 		if (on(f.channels) && !has(f.channels, channelKey(t))) return false;
 		if (on(f.lengths) && !has(f.lengths, lengthClass(t.durationSec))) return false;
 		if (on(f.tags) && !any(f.tags, t.tags || [])) return false;
+		for (var i = 0; i < LABEL_FACETS.length; i++) {
+			var k = LABEL_FACETS[i];
+			if (on(f[k[0]]) && !has(f[k[0]], t[k[1]] || '')) return false;
+		}
 		return true;
+	}
+	// The label facets: the selection's key and the track's field.
+	var LABEL_FACETS = [['scenes', 'scene'], ['works', 'work'], ['langs', 'lang'], ['moods', 'mood'], ['kinds', 'kind'], ['roles', 'role']];
+	function labelHit(t, f) {
+		for (var i = 0; i < LABEL_FACETS.length; i++) {
+			var k = LABEL_FACETS[i];
+			if (on(f[k[0]]) && has(f[k[0]], t[k[1]] || '')) return true;
+		}
+		return false;
 	}
 	function facetHit(t, f) {
 		return (on(f.artists) && has(f.artists, artistFacetKey(t))) ||
@@ -164,14 +177,16 @@
 			(on(f.decades) && has(f.decades, t.decade || '')) ||
 			(on(f.playlists) && any(f.playlists, t.playlists || [])) ||
 			(on(f.channels) && has(f.channels, channelKey(t))) ||
-			(on(f.tags) && any(f.tags, t.tags || []));
+			(on(f.tags) && any(f.tags, t.tags || [])) ||
+			labelHit(t, f);
 	}
 
 	// The tracks a selection picks. Within one facet the choices are
 	// alternatives (rock OR jazz); different facets must all hold (rock or
 	// jazz, AND the 1990s, AND this playlist). sel:
 	//   artists, genres, decades, playlists, channels, lengths, tags   lists of facet keys
-	//   not: { artists, genres, decades, playlists, channels, tags }   leave these out
+	//   scenes, works, langs, moods, kinds, roles                      the labels' values ('' unlabelled)
+	//   not: { artists, genres, decades, playlists, channels, tags, scenes, works, langs, moods, kinds, roles }   leave these out
 	//   neverPlayed, addedThisMonth         true to require
 	//   addedWithinDays, minRating          numbers
 	//   text                                words that must all occur
@@ -201,7 +216,7 @@
 				if (sel.addedWithinDays && now - added > sel.addedWithinDays * DAY) return false;
 			}
 			if (terms.length) {
-				var hay = ' ' + fold([t.title, t.artist, (t.feat || []).join(' '), t.album, t.channel, t.versionText || t.version, (t.genres || []).join(' '), (t.tags || []).join(' ')].join(' ')) + ' ';
+				var hay = ' ' + fold([t.title, t.titleAlt || '', t.artist, t.artistNative || '', t.work || '', (t.feat || []).join(' '), t.album, t.channel, t.versionText || t.version, (t.genres || []).join(' '), (t.tags || []).join(' ')].join(' ')) + ' ';
 				for (var i = 0; i < terms.length; i++) if (hay.indexOf(terms[i]) < 0) return false;
 			}
 			return true;
@@ -649,7 +664,8 @@
 		{ key: 'favourites', name: 'Favourites', blurb: 'Random, weighted toward what you rate highly and play often.' },
 		{ key: 'neglected', name: 'Neglected', blurb: 'Random, weighted toward what you rarely play.' },
 		{ key: 'artists', name: 'Artist rotation', blurb: 'One track per artist, in turn.' },
-		{ key: 'genres', name: 'Genre blocks', blurb: 'A few tracks of one genre, then another genre.' }
+		{ key: 'genres', name: 'Genre blocks', blurb: 'A few tracks of one genre, then another genre.' },
+		{ key: 'flow', name: 'Mood flow', blurb: 'Each song leads to one that sounds close to it, so the mood drifts instead of jumping.' }
 	];
 
 	// One listening plan, start to finish:
@@ -662,6 +678,100 @@
 	// ctx:  { now, rand, after }. With a seed the same plan over the same
 	// tracks gives the same order; without one the cryptographic source is
 	// used. -> { order, mode, seed, selected, seconds, stoppedBy, blocks }
+	// ---- Works apart, one version, mood flow --------------------------------------------------
+
+	// The work a track comes from, as a key ('' for none): two songs of one
+	// anime are kept apart like two songs of one artist.
+	function workKey(t) { return t && t.work ? 'w:' + fold(t.work).replace(/ /g, '') : ''; }
+	// One song in all its versions (the original, a piano cover, a live take,
+	// an orchestral arrangement): the folded title and the original artist,
+	// else the artist, else the channel.
+	function songKey(t) {
+		var who = t.origArtist ? fold(t.origArtist).replace(/ /g, '') : (t.artistKey || artistKey(t));
+		return fold(t.title || (t.raw && t.raw.title) || t.id).replace(/ /g, '') + '|' + who;
+	}
+	// Repair an order so that no two neighbours share any of the keys (an
+	// artist, a work) where a swap with a track up to `reach` places later can
+	// fix it. The order stays a permutation; what cannot be fixed stays.
+	function apart(order, byId, keys, reach) {
+		var out = order.slice(), n = out.length, R = reach || 60;
+		keys = keys || [artistKey, workKey];
+		function clash(a, b) {
+			var x = byId[a], y = byId[b];
+			if (!x || !y) return false;
+			for (var k = 0; k < keys.length; k++) { var p = keys[k](x), q = keys[k](y); if (p && p === q) return true; }
+			return false;
+		}
+		for (var i = 1; i < n; i++) {
+			if (!clash(out[i - 1], out[i])) continue;
+			for (var j = i + 1; j < Math.min(n, i + R); j++) {
+				if (clash(out[i - 1], out[j])) continue;
+				if (i + 1 < n && j !== i + 1 && clash(out[j], out[i + 1])) continue;
+				var tmp = out[i]; out[i] = out[j]; out[j] = tmp;
+				break;
+			}
+		}
+		return out;
+	}
+	// Keep one version of each song (songKey): the plain recording twice as
+	// likely as a cover or arrangement, a rated one more likely still.
+	function oneVersion(tracks, rand) {
+		var groups = {}, keys = [];
+		tracks.forEach(function (t) { var k = songKey(t); if (!groups[k]) { groups[k] = []; keys.push(k); } groups[k].push(t); });
+		return keys.map(function (k) {
+			var g = groups[k];
+			if (g.length === 1) return g[0];
+			var w = g.map(function (t) { return (t.version ? 1 : 2) * (1 + (t.rating || 0) / 2); }), sum = 0, i;
+			for (i = 0; i < w.length; i++) sum += w[i];
+			var r = rand() * sum;
+			for (i = 0; i < g.length; i++) { r -= w[i]; if (r <= 0) return g[i]; }
+			return g[g.length - 1];
+		});
+	}
+	// How alike two tracks are by their labels: shared genres most, then the
+	// mood (the same, or a neighbour on the ring), scene and language.
+	var MOOD_RING = ['tender', 'wistful', 'dark', 'driving', 'bright', 'quirky'];
+	function moodDistance(a, b) {
+		var i = MOOD_RING.indexOf(a), j = MOOD_RING.indexOf(b);
+		if (i < 0 || j < 0) return 2;
+		var d = Math.abs(i - j);
+		return Math.min(d, MOOD_RING.length - d);
+	}
+	function labelSimilarity(a, b) {
+		var s = 0, ga = a.genres || [], gb = b.genres || [];
+		for (var i = 0; i < ga.length; i++) if (gb.indexOf(ga[i]) >= 0) s += i === 0 ? 3 : 2;
+		var md = moodDistance(a.mood, b.mood);
+		s += md === 0 ? 2 : md === 1 ? 1 : md >= 3 ? -1 : 0;
+		if (a.scene && a.scene === b.scene) s += 1;
+		if (a.lang && a.lang === b.lang) s += 1;
+		return s;
+	}
+	// Mood flow: a walk where each next track is drawn among the closest of a
+	// random sample of what is left (opts.sim(a, b), or the labels), never the
+	// same artist or work as the last two. The mood drifts instead of jumping.
+	function flowOrder(tracks, rand, opts) {
+		opts = opts || {};
+		var sim = opts.sim || labelSimilarity, left = tracks.slice(), out = [], SAMPLE = opts.sample || 48;
+		if (!left.length) return out;
+		var cur = left.splice(rand.int(left.length), 1)[0], prev = null;
+		out.push(cur.id);
+		while (left.length) {
+			var best = -1, bestScore = -Infinity, tries = Math.min(SAMPLE, left.length);
+			for (var k = 0; k < tries; k++) {
+				var at = tries === left.length ? k : rand.int(left.length), c = left[at];
+				var s = sim(cur, c) + rand() * 1.5;
+				if (artistKey(c) === artistKey(cur) || (prev && artistKey(c) === artistKey(prev))) s -= 6;
+				var wk = workKey(c);
+				if (wk && (wk === workKey(cur) || (prev && wk === workKey(prev)))) s -= 4;
+				if (s > bestScore) { bestScore = s; best = at; }
+			}
+			prev = cur;
+			cur = left.splice(best, 1)[0];
+			out.push(cur.id);
+		}
+		return out;
+	}
+
 	function build(tracks, plan, ctx) {
 		plan = plan || {};
 		ctx = ctx || {};
@@ -671,6 +781,7 @@
 		var chosen = select(tracks, plan.select, now);
 		// The order of `tracks` must not matter: start from a sorted list.
 		chosen = chosen.slice().sort(function (a, b) { return a.id < b.id ? -1 : a.id > b.id ? 1 : 0; });
+		if (plan.oneVersion) chosen = oneVersion(chosen, rand);
 		var byId = index(chosen), order, blocks = null;
 		// With keepRuns each numbered run goes through the mode as one unit (its
 		// first part stands for it) and is unfolded afterwards. So a spread
@@ -685,12 +796,16 @@
 		else if (mode === 'favourites') order = favourites(pool, rand);
 		else if (mode === 'neglected') order = neglected(pool, rand, now);
 		else if (mode === 'artists') order = artistRotation(pool, rand);
+		else if (mode === 'flow') order = flowOrder(pool, rand, { sim: ctx.sim });
 		else if (mode === 'genres') {
 			blocks = genreBlockList(pool, rand, { size: plan.blockSize });
 			if (runs) blocks.forEach(function (b) { b.ids = unfoldRuns(b.ids, runs.members); });
 			order = [];
 			blocks.forEach(function (b) { order = order.concat(b.ids); });
 		} else throw new Error('Unknown mode: ' + mode);
+		// plan.apart: keep works (and artists) apart in the orders that are not
+		// about being random or blocked; the true shuffle keeps its promise.
+		if (plan.apart && mode !== 'true' && mode !== 'genres' && mode !== 'artists') order = apart(order, byId, [artistKey, workKey]);
 		if (runs && mode !== 'genres') order = unfoldRuns(order, runs.members);
 		var lim = limit(order, byId, plan.limits);
 		return { order: lim.order, mode: mode, seed: plan.seed == null ? null : plan.seed, selected: chosen.length, seconds: lim.seconds, stoppedBy: lim.stoppedBy, blocks: blocks };
@@ -826,6 +941,7 @@
 		weightedOrder: weightedOrder, favouriteWeight: favouriteWeight, neglectedWeight: neglectedWeight, favourites: favourites, neglected: neglected,
 		artistRotation: artistRotation, genreBlockList: genreBlockList, genreBlocks: genreBlocks, keepRuns: keepRuns, foldRuns: foldRuns, unfoldRuns: unfoldRuns,
 		limit: limit, build: build, signature: signature, MODES: MODES,
+		workKey: workKey, songKey: songKey, apart: apart, oneVersion: oneVersion, flowOrder: flowOrder, labelSimilarity: labelSimilarity, moodDistance: moodDistance, MOOD_RING: MOOD_RING,
 		queueInit: queueInit, queue: queue, current: current, upcoming: upcoming
 	};
 });
