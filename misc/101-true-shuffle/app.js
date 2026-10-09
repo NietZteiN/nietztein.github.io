@@ -2619,6 +2619,7 @@
 		var labelled = L.list(lib).filter(function (t) { return t.labels; }).length, edited = L.list(lib).filter(function (t) { return Object.keys(t.userEdits).length; }).length;
 		lab.appendChild(h('p', { text: 'Labels are a hand-made reading of the library: artist, title, genres from the families under Genres, mood, scene, the work a song is from and its role there, language and kind. ' + (L.list(lib).length ? n(labelled) + ' of ' + n(L.list(lib).length) + ' tracks carry labels; ' + n(edited) + ' carry your own corrections, which always win.' : '') }));
 		lab.appendChild(h('p', { class: 'ts-muted', text: 'A labels file applies a whole set at once and can be applied again after a new import. Artists in it pass their genres, scene and language on to songs imported later.' }));
+		if (siteLabels) lab.appendChild(h('p', { class: 'ts-muted', text: 'This site has labels for ' + plural(siteLabels.matched, 'song') + ' of this library (made ' + siteLabels.createdAt.slice(0, 10) + '). They are applied on their own, to songs imported later too; your corrections still win.' }));
 		var lr = h('div', { class: 'ts-row-btns' });
 		var lfile = h('input', { class: 'kit-sr', type: 'file', id: 'labels-file', accept: 'application/json,.json' });
 		lfile.addEventListener('change', function () { var f = lfile.files[0]; if (f) applyLabelsFile(f); lfile.value = ''; });
@@ -2789,7 +2790,7 @@
 		return p.then(function () {
 			var st = ctl.state();
 			if (!st.items.length && L.list(lib).length) return applyPlan({});
-		}).then(function () { renderAll(); }).catch(fail);
+		}).then(function () { renderAll(); return applySiteLabels(); }).catch(fail);
 	}
 	function startMB() {
 		var ctrl = window.AbortController ? new AbortController() : null;
@@ -2816,21 +2817,50 @@
 			reader.readAsText(file);
 		});
 	}
+	// Apply a checked labels object: store every track and the meta, then redraw.
+	function applyLabelsData(data) {
+		var res = L.applyLabels(lib, data);
+		return saveIds(Object.keys(lib.tracks)).then(saveMeta).then(function () {
+			if (data.createdAt) kvSet('labels:applied', String(data.createdAt));
+			dirty();
+			if (queueMode === 'true' && bag) return ensureBag();
+		}).then(function () { renderAll(); return res; });
+	}
 	function applyLabelsFile(file) {
 		readJson(file).then(function (data) {
 			var why = L.checkLabels(data);
 			if (why) throw new Error(why);
 			setStatus('Applying the labels' + ELL);
-			var res = L.applyLabels(lib, data);
-			var all = Object.keys(lib.tracks);
-			return saveIds(all).then(saveMeta).then(function () {
-				dirty();
-				if (queueMode === 'true' && bag) return ensureBag();
-			}).then(function () {
-				renderAll();
+			return applyLabelsData(data).then(function (res) {
 				say('Labels applied to ' + plural(res.matched, 'track') + (res.missing ? '; ' + n(res.missing) + ' in the file are not in this library' : '') + '. ' + plural(res.artists, 'artist profile') + ' kept for later imports.');
 			});
 		}).catch(fail);
+	}
+	// The owner's labels ship with the site (labels.json next to the page). They apply only to a
+	// library that is mostly in them, once per version of the file, and to songs imported since.
+	// Corrections made here still win over them.
+	var siteLabels = null;
+	function applySiteLabels() {
+		if (thumb || demo || !store || !L.list(lib).length || !window.fetch) return Promise.resolve();
+		return fetch('labels.json', { cache: 'no-cache' }).then(function (r) {
+			if (!r.ok) throw new Error('no site labels');
+			return r.json();
+		}).then(function (data) {
+			if (L.checkLabels(data)) return;
+			var ids = Object.keys(lib.tracks), inFile = ids.filter(function (id) { return data.tracks[id]; });
+			if (inFile.length < Math.max(50, ids.length / 2)) return;
+			siteLabels = { createdAt: String(data.createdAt || ''), matched: inFile.length };
+			return kvGet('labels:applied', '').then(function (last) {
+				if (!last || siteLabels.createdAt > String(last)) {
+					return applyLabelsData(data).then(function (res) { say('Labels for ' + plural(res.matched, 'song') + ' loaded from the site.'); });
+				}
+				var missing = inFile.filter(function (id) { return !lib.tracks[id].labels; });
+				if (!missing.length) return;
+				var part = { format: data.format, version: data.version, tracks: {} };
+				missing.forEach(function (id) { part.tracks[id] = data.tracks[id]; });
+				return applyLabelsData(part).then(function () { say('Labels for ' + plural(missing.length, 'new song') + ' loaded from the site.'); });
+			});
+		}).catch(function () { /* no labels on this site, or offline: nothing to apply */ });
 	}
 	function exportLabelsFile() {
 		var data = L.exportLabels(lib, Date.now());
@@ -5051,7 +5081,7 @@
 			renderView(false);
 			ToyKit.ready();
 			afterSignInReturn();
-			checkInbox();
+			checkInbox().then(applySiteLabels);
 			window.addEventListener('focus', function () { checkInbox(); });
 			queueSync();
 		}).catch(function (err) { ToyKit.fail(err); ToyKit.ready(); });
@@ -5082,6 +5112,7 @@
 	hook.createSmart = function (name, patch) { var li = { id: newId(), name: name, kind: 'smart', patch: patch }; lists.push(li); saveLists(); return li.id; };
 	hook.playIds = playIds;
 	hook.scopeTracks = scopeTracks;
+	hook.applySiteLabels = applySiteLabels;
 	window.__ts = hook;
 
 	start();

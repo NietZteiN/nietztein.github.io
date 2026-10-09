@@ -2085,6 +2085,24 @@ describe('labels', function () {
 	var again = lib3();
 	L.applyLabels(again, out);
 	eq([again.tracks.aaaaaaaaaaa.artist, again.tracks.aaaaaaaaaaa.work], ['Hollow Signal', 'Paper Sky'], 'an exported labels file applies to a fresh import');
+	// the owner's labels, shipped next to the page
+	var site = JSON.parse(fs.readFileSync(path.join(HERE, 'labels.json'), 'utf8'));
+	eq(L.checkLabels(site), '', 'labels.json is a labels file');
+	ok(Object.keys(site.tracks).length >= 1800 && /^\d{4}-\d\d-\d\dT/.test(site.createdAt), 'labels.json covers the library and says when it was made');
+	var allowed = function (list) { var o = {}; list.forEach(function (x) { o[x[0]] = true; }); return o; };
+	var SC = allowed(T.SCENES), MO = allowed(T.MOODS), LA = allowed(T.LANGS), KI = allowed(T.KINDS), RO = allowed(T.ROLES), bad = [];
+	Object.keys(site.tracks).forEach(function (id) {
+		var x = site.tracks[id];
+		if (!/^[A-Za-z0-9_-]{11}$/.test(id)) bad.push(id + ' id');
+		if (x.scene && !SC[x.scene]) bad.push(id + ' scene ' + x.scene);
+		if (x.mood && !MO[x.mood]) bad.push(id + ' mood ' + x.mood);
+		if (x.lang && !LA[x.lang]) bad.push(id + ' lang ' + x.lang);
+		if (x.kind && !KI[x.kind]) bad.push(id + ' kind ' + x.kind);
+		if (x.role && !RO[x.role]) bad.push(id + ' role ' + x.role);
+		(x.genres || []).forEach(function (g) { if (!T.genre(g)) bad.push(id + ' genre ' + g); });
+		if ('note' in x || 'sure' in x || 'src' in x) bad.push(id + ' research notes');
+	});
+	eq(bad.slice(0, 5), [], 'every value in labels.json is one the taxonomy allows, with no research notes left in');
 	// the taste map
 	var names = {};
 	T.FAMILIES.forEach(function (fam) { fam.list.forEach(function (g) { ok(!names[g.name], 'genre named once: ' + g.name); names[g.name] = true; }); });
