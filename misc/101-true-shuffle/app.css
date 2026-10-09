@@ -777,3 +777,11 @@ body.is-dragging .ts-now, body.is-dragging .ts-station { outline: 2px dashed var
 .ts-drow .ts-tag { margin: 0; }
 .ts-pv.is-on { color: var(--accent); }
 .ts-ytsearch { margin-top: 24px; max-width: 900px; }
+
+/* what the player is doing, over the video box */
+.ts-player-msg { position: absolute; left: 12px; right: 12px; top: 12px; z-index: 2; min-height: 200px; aspect-ratio: 16 / 9; border-radius: 10px; display: flex; flex-direction: column; justify-content: center; gap: 8px; padding: 16px; color: #fff; font-size: 13px; line-height: 1.45; background: rgba(10, 12, 16, 0.86); pointer-events: none; }
+.ts-player-msg p { margin: 0; }
+.ts-player-msg .ts-row-btns, .ts-player-msg a, .ts-player-msg button { pointer-events: auto; }
+.ts-player-msg.is-loading { background: transparent; align-items: center; text-align: center; font-weight: 600; text-shadow: 0 1px 4px #000; }
+.ts-player-msg.is-error { overflow-y: auto; }
+@media (max-width: 760px) { .ts-player-msg { left: 0; right: 0; top: 0; border-radius: 0; aspect-ratio: auto; height: max(200px, min(56.25vw, 34vh)); } }

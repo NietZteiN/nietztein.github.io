@@ -195,6 +195,35 @@
 
 	// ---- The player and the queue -------------------------------------------------------------------
 
+	// What the player is doing, shown over the video box: loading, or why it
+	// could not start (a blocker, the network), with a way to try again.
+	var playerMsgTimer = 0;
+	function playerMessage(kind, text, actions) {
+		var box = $('video'), m = $('player-msg');
+		clearTimeout(playerMsgTimer);
+		if (!kind) { if (m) m.parentNode.removeChild(m); return; }
+		if (!m) { m = h('div', { class: 'ts-player-msg', id: 'player-msg', role: 'status' }); box.appendChild(m); }
+		m.className = 'ts-player-msg is-' + kind;
+		clear(m);
+		m.appendChild(h('p', { text: text }));
+		if (actions) m.appendChild(h('div', { class: 'ts-row-btns' }, actions));
+	}
+	function blockedHelp(why) {
+		var id = ctl && ctl.current();
+		var acts = [h('button', { class: 'kit-btn small primary', text: 'Try again', on: { click: function () { location.reload(); } } })];
+		if (id && U.YT_ID.test(id)) acts.push(h('a', { class: 'kit-btn small', href: 'https://www.youtube.com/watch?v=' + id, target: '_blank', rel: 'noopener', text: 'Open on YouTube' }));
+		playerMessage('error', why + ' Something in this browser may be blocking YouTube: an ad or tracker blocker (uBlock Origin, AdGuard, Brave Shields), strict tracking protection (Firefox, Edge), or a filtering DNS. Allow youtube.com and youtube-nocookie.com on this site, then try again.', acts);
+	}
+	function watchPlayerStart() {
+		if (demo || mockOnLocal()) return;
+		playerMessage('loading', 'Loading the YouTube player' + ELL);
+		playerMsgTimer = setTimeout(function () {
+			if (player.state() === 'playing' || player.state() === 'paused') return;
+			if (!window.YT || !window.YT.Player) blockedHelp('The YouTube player script has not arrived after 8 seconds.');
+			else playerMessage('loading', 'The YouTube player is taking long to start' + ELL);
+		}, 8000);
+	}
+
 	// A player that builds the real one (YouTube, or the mock) on the first
 	// load(), so nothing is fetched from YouTube before the reader presses Play.
 	function lazyPlayer() {
@@ -204,6 +233,7 @@
 			document.body.classList.add('has-player');
 			var box = $('player'), poster = $('poster');
 			if (poster && poster.parentNode) poster.parentNode.removeChild(poster);
+			watchPlayerStart();
 			if (demo || mockOnLocal()) {
 				real = P.create({
 					kind: 'mock', container: box, auto: !thumb, speed: speed,
@@ -270,12 +300,12 @@
 				dirty();
 				say('Skipped ' + q(trackTitle(t)) + ': ' + (P.ERROR_TEXT[code] || 'it cannot be played.'));
 			},
-			onError: function (id, code, message) { refusals.push(0); if (refusals.length > 5) refusals.shift(); setStatus(message || 'This track could not be played.'); },
+			onError: function (id, code, message) { refusals.push(0); if (refusals.length > 5) refusals.shift(); setStatus(message || 'This track could not be played.'); if (code === 'api' || code === 'too-small') blockedHelp(message || 'The player could not start.'); },
 			onNeedMore: function () { return queueMode === 'true' && bag ? bagDraw(5) : []; },
 			onHalt: function (reason) {
 				if (reason === 'finished') say('That was the last track. Press Shuffle again for more.');
 				else if (reason === 'errors') say(haltReason());
-				else say('The YouTube player could not be started here.');
+				else { say('The YouTube player could not be started here.'); blockedHelp('The YouTube player could not be loaded.'); }
 				renderTransport();
 			}
 		});
@@ -3710,7 +3740,7 @@
 		var seek = $('seek');
 		seek.addEventListener('input', function () { seeking = true; $('time-cur').textContent = clock(+seek.value); });
 		seek.addEventListener('change', function () { seeking = false; player.seek(+seek.value); });
-		player.on('state', function () { renderTransport(); renderTime(); });
+		player.on('state', function (e) { renderTransport(); renderTime(); if (e && (e.state === 'playing' || e.state === 'paused')) playerMessage(null); });
 		player.on('time', renderTime);
 		window.addEventListener('hashchange', onRoute);
 	}
