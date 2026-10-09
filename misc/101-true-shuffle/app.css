@@ -933,3 +933,21 @@ body.is-compact .ts-r-sub { font-size: 12px; }
 @container (max-width: 560px) { .ts-hero { flex-direction: column; align-items: flex-start; } .ts-hero-art { width: 140px; height: 140px; } }
 
 body.is-filedrop::after { content: 'Drop the labels file to apply it'; position: fixed; inset: 12px; z-index: 990; display: flex; align-items: center; justify-content: center; border: 3px dashed var(--accent); border-radius: 16px; background: color-mix(in srgb, var(--bg) 80%, transparent); color: var(--heading); font-size: 22px; font-weight: 800; pointer-events: none; }
+
+/* works: one-song works, the list view */
+.ts-onesong { margin: 4px 0 18px; }
+.ts-onesong summary { cursor: pointer; font-weight: 650; color: var(--text-2); font-size: 13.5px; padding: 6px 0; }
+.ts-onesong .ts-chips { margin-top: 8px; }
+.ts-wtable-wrap { overflow-x: auto; }
+.ts-wtable { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.ts-wtable th { text-align: left; font-size: 12px; color: var(--text-2); font-weight: 600; padding: 6px 8px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+.ts-wtable td { padding: 6px 8px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.ts-wtable tr:hover td { background: var(--ts-hover); }
+.ts-wtable .is-num { text-align: right; font-variant-numeric: tabular-nums; }
+.ts-wt-art { width: 40px; height: 40px; border-radius: 6px; }
+.ts-wt-name { font-weight: 650; color: var(--heading); text-decoration: none; }
+.ts-wt-name:hover { text-decoration: underline; }
+.ts-wt-artists { max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ts-sec-head .ts-act { margin-left: auto; height: 34px; font-size: 13px; }
+@media (max-width: 760px) { .ts-wtable th:nth-child(3), .ts-wtable td:nth-child(3), .ts-wtable th:nth-child(7), .ts-wtable td:nth-child(7), .ts-wtable th:nth-child(8), .ts-wtable td:nth-child(8) { display: none; } }
+.ts-wtable td { white-space: nowrap; } .ts-wtable td.ts-wt-artists { white-space: nowrap; }

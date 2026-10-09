@@ -2002,57 +2002,190 @@
 		trackList(view, list, { context: o.ctx });
 	}
 
-	// ---- Works ----------------------------------------------------------------------------------------------
+	// ---- Works: the anime, visual novels, games, films and stage shows songs come from --------------
 
+	var WORK_SORTS = [['songs', 'Most songs'], ['name', 'A to Z'], ['added', 'Recently added'], ['plays', 'Most played'], ['themes', 'Most openings and endings']];
+	function workStats(w) {
+		var s = { op: 0, ed: 0, insert: 0, other: 0, plays: 0, added: 0, artists: {} };
+		w.tracks.forEach(function (t) {
+			if (t.role === 'OP') s.op++; else if (t.role === 'ED') s.ed++; else if (t.role === 'insert') s.insert++; else s.other++;
+			s.plays += t.plays || 0;
+			s.added = Math.max(s.added, L.lastAdded(t) || 0);
+			if (t.artist) s.artists[t.artist] = (s.artists[t.artist] || 0) + 1;
+		});
+		s.topArtists = Object.keys(s.artists).sort(function (a2, b2) { return s.artists[b2] - s.artists[a2]; });
+		return s;
+	}
+	function sortWorks(list, how) {
+		var st = {};
+		list.forEach(function (w) { st[w.key] = workStats(w); });
+		return list.sort(function (a2, b2) {
+			if (how === 'name') return cmp(a2.key, b2.key);
+			if (how === 'added') return st[b2.key].added - st[a2.key].added || cmp(a2.key, b2.key);
+			if (how === 'plays') return st[b2.key].plays - st[a2.key].plays || b2.tracks.length - a2.tracks.length;
+			if (how === 'themes') return (st[b2.key].op + st[b2.key].ed) - (st[a2.key].op + st[a2.key].ed) || b2.tracks.length - a2.tracks.length;
+			return b2.tracks.length - a2.tracks.length || cmp(a2.key, b2.key);
+		});
+	}
+	function worksEmpty(view) {
+		var box = h('section', { class: 'ts-welcome' });
+		box.appendChild(h('h2', { text: 'No song says yet which anime, game or show it is from' }));
+		box.appendChild(h('p', { text: 'That comes from the labels: each song\u2019s work (Bocchi the Rock!, Sakura no Uta, Hamilton...) and its role there (opening, ending, insert song, score). Drop your labels file anywhere on this page, or choose it here, and this tab fills in.' }));
+		var inp = h('input', { class: 'kit-sr', type: 'file', id: 'works-labels-file', accept: 'application/json,.json' });
+		inp.addEventListener('change', function () { var f = inp.files[0]; if (f) applyLabelsFile(f); inp.value = ''; });
+		box.appendChild(inp);
+		box.appendChild(h('div', { class: 'ts-row-btns' }, [h('label', { class: 'kit-btn primary', for: 'works-labels-file' }, [icon('upload'), ' Apply a labels file']), h('a', { class: 'kit-btn', href: '#/label', text: 'Label songs one by one' })]));
+		view.appendChild(box);
+	}
 	function viewWorks(view, parts, query) {
 		var ix = idx();
 		if (!ix.all.length) { noMusic(view); return; }
-		var filt = query.get('f') || '', scene = query.get('scene') || '';
+		var filt = query.get('f') || '', scene = query.get('scene') || '', sort = query.get('sort') || ToyKit.load('worksSort', 'songs'), mode = query.get('view') || ToyKit.load('worksView', 'grid');
 		var all = Object.keys(ix.works).map(function (k) { return ix.works[k]; });
 		view.appendChild(h('h1', { class: 'ts-h1', text: 'Anime, games & stage' }));
-		view.appendChild(h('p', { class: 'ts-muted ts-lede', text: n(all.length) + ' works your songs come from: openings, endings, insert songs, scores and covers of them.' }));
+		if (!all.length) { worksEmpty(view); return; }
+		var songs = 0;
+		all.forEach(function (w) { songs += w.tracks.length; });
+		view.appendChild(h('p', { class: 'ts-muted ts-lede', text: plural(songs, 'song') + ' from ' + plural(all.length, 'work') + ': openings, endings, insert songs, character songs, scores, and covers of them.' }));
+		// controls
 		var bar = h('div', { class: 'ts-filterbar' });
 		var fi = h('input', { class: 'kit-input ts-filter', type: 'search', placeholder: 'Find an anime, game or musical', value: filt, aria: { label: 'Find a work' } });
 		fi.addEventListener('input', later(function () { setQuery({ f: fi.value || null }); }, 250));
 		bar.appendChild(fi);
+		bar.appendChild(sortSelect(sort, function (v) { ToyKit.store('worksSort', v); setQuery({ sort: v }); }, WORK_SORTS));
+		var seg = h('div', { class: 'ts-seg', role: 'radiogroup', aria: { label: 'View' } });
+		[['grid', 'Grid'], ['list', 'List']].forEach(function (o2) { seg.appendChild(h('button', { class: 'ts-seg-b', role: 'radio', aria: { checked: mode === o2[0] ? 'true' : 'false' }, text: o2[1], on: { click: function () { ToyKit.store('worksView', o2[0]); setQuery({ view: o2[0] }); } } })); });
+		bar.appendChild(seg);
 		view.appendChild(bar);
 		var chips = h('div', { class: 'ts-chips ts-chipbar' });
-		chips.appendChild(h('a', { class: 'ts-chip' + (scene ? '' : ' is-on'), href: '#/works', text: 'All' }));
-		T.SCENES.forEach(function (s) {
-			var c = all.filter(function (w) { return w.scene === s[0]; }).length;
-			if (c) { var ch = chip(s[1] + ' ' + c, '#/works?scene=' + s[0], { h: SCENE_HUE[s[0]], s: 45 }); if (scene === s[0]) ch.classList.add('is-on'); chips.appendChild(ch); }
+		chips.appendChild(h('a', { class: 'ts-chip' + (scene ? '' : ' is-on'), href: '#/works', text: 'All ' + all.length }));
+		T.SCENES.forEach(function (s2) {
+			var c = all.filter(function (w) { return w.scene === s2[0]; }).length;
+			if (c) { var ch = chip(s2[1] + ' ' + c, '#/works?scene=' + s2[0], { h: SCENE_HUE[s2[0]], s: 45 }); if (scene === s2[0]) ch.classList.add('is-on'); chips.appendChild(ch); }
 		});
+		var noScene = all.filter(function (w) { return !w.scene; }).length;
+		if (noScene) { var ch2 = chip('Other ' + noScene, '#/works?scene=none'); if (scene === 'none') ch2.classList.add('is-on'); chips.appendChild(ch2); }
 		view.appendChild(chips);
-		var list = all.filter(function (w) { return (!scene || w.scene === scene) && (!filt || Parse.fold(w.key).indexOf(Parse.fold(filt)) >= 0); }).sort(function (a, b) { return b.tracks.length - a.tracks.length || cmp(a.key, b.key); });
-		if (!list.length) view.appendChild(h('p', { class: 'ts-empty', text: all.length ? 'No work matches.' : 'No song says yet which anime, game or musical it is from. Labels do that: edit a song, or apply a labels file under Settings.' }));
-		grid(view, list.map(workCard), 'is-cards');
+		var ff = Parse.fold(filt);
+		var list = all.filter(function (w) {
+			if (scene === 'none' ? w.scene : scene && w.scene !== scene) return false;
+			if (!ff) return true;
+			var st = workStats(w);
+			return Parse.fold(w.key + ' ' + st.topArtists.join(' ')).indexOf(ff) >= 0;
+		});
+		sortWorks(list, sort);
+		if (!list.length) { view.appendChild(h('p', { class: 'ts-empty', text: 'No work matches.' })); return; }
+		if (mode === 'list') { worksTable(view, list); return; }
+		// grid: by scene when everything is shown, the one-song works folded away
+		var groups = scene || ff || sort !== 'songs' ? [{ key: scene, works: list }] : T.SCENES.map(function (s2) { return { key: s2[0], works: list.filter(function (w) { return w.scene === s2[0]; }) }; }).concat([{ key: '', works: list.filter(function (w) { return !w.scene; }) }]).filter(function (g) { return g.works.length; });
+		groups.forEach(function (g) {
+			var big = g.works.filter(function (w) { return w.tracks.length > 1 || ff; }), small = g.works.filter(function (w) { return w.tracks.length === 1 && !ff; });
+			if (groups.length > 1) {
+				var hd = h('div', { class: 'ts-sec-head ts-fam-head' });
+				var hue = { h: SCENE_HUE[g.key] || 210, s: 45 };
+				hd.style.setProperty('--h', String(hue.h)); hd.style.setProperty('--s', hue.s + '%');
+				var count = 0;
+				g.works.forEach(function (w) { count += w.tracks.length; });
+				hd.appendChild(h('h2', null, h('a', { href: '#/works?scene=' + (g.key || 'none'), text: g.key ? T.SCENE_NAME[g.key] : 'Other' })));
+				hd.appendChild(h('span', { class: 'ts-muted', text: plural(g.works.length, 'work') + ' ' + DOT + ' ' + plural(count, 'song') }));
+				if (g.key) hd.appendChild(shuffleSplit({ scenes: [g.key] }, { label: T.SCENE_NAME[g.key], href: '#/works?scene=' + g.key, patch: { scenes: [g.key] } }));
+				view.appendChild(hd);
+			}
+			if (big.length) grid(view, big.map(workCard), 'is-cards');
+			if (small.length) {
+				var det = h('details', { class: 'ts-onesong' }, [h('summary', { text: plural(small.length, 'more work') + ' with one song' })]);
+				var cl = h('div', { class: 'ts-chips' });
+				small.forEach(function (w) { cl.appendChild(h('a', { class: 'ts-chip', href: link('work', w.key), title: trackTitle(w.tracks[0]) + ' ' + DOT + ' ' + trackArtist(w.tracks[0]) }, [h('span', { text: w.key }), w.tracks[0].role ? h('span', { class: 'ts-count', text: w.tracks[0].role }) : null])); });
+				det.appendChild(cl);
+				view.appendChild(det);
+			}
+		});
 	}
+	// The list view: one row per work, its numbers, its artists.
+	function worksTable(view, list) {
+		var tbl = h('table', { class: 'ts-wtable' });
+		tbl.appendChild(h('thead', null, h('tr', null, [h('th', { scope: 'col' }), h('th', { scope: 'col', text: 'Work' }), h('th', { scope: 'col', text: 'Scene' }), h('th', { scope: 'col', class: 'is-num', text: 'Songs' }), h('th', { scope: 'col', class: 'is-num', text: 'OP' }), h('th', { scope: 'col', class: 'is-num', text: 'ED' }), h('th', { scope: 'col', text: 'Artists' }), h('th', { scope: 'col', class: 'is-num', text: 'Time' }), h('th', { scope: 'col' })])));
+		var tb = h('tbody');
+		list.forEach(function (w) {
+			var st = workStats(w), ids = sorted(w.tracks, 'work').map(function (t) { return t.id; });
+			var tr = h('tr');
+			tr.appendChild(h('td', null, w.cover ? artFor(w.cover, 'ts-wt-art') : U.swatch(SCENE_HUE[w.scene] || 210, w.key, 'ts-wt-art')));
+			tr.appendChild(h('td', null, h('a', { href: link('work', w.key), class: 'ts-wt-name', text: w.key })));
+			tr.appendChild(h('td', { class: 'ts-muted', text: T.SCENE_NAME[w.scene] || '' }));
+			tr.appendChild(h('td', { class: 'is-num', text: String(w.tracks.length) }));
+			tr.appendChild(h('td', { class: 'is-num', text: st.op ? String(st.op) : '' }));
+			tr.appendChild(h('td', { class: 'is-num', text: st.ed ? String(st.ed) : '' }));
+			tr.appendChild(h('td', { class: 'ts-muted ts-wt-artists', text: st.topArtists.slice(0, 3).join(', ') + (st.topArtists.length > 3 ? ' +' + (st.topArtists.length - 3) : '') }));
+			tr.appendChild(h('td', { class: 'is-num ts-muted', text: longTime(secs(w.tracks)) }));
+			tr.appendChild(h('td', null, U.iconBtn('play', 'Play ' + w.key, { on: { click: function () { playIds(ids, 0, { label: w.key, href: link('work', w.key), patch: { works: [w.key] } }); } } })));
+			tb.appendChild(tr);
+		});
+		tbl.appendChild(tb);
+		view.appendChild(h('div', { class: 'ts-wtable-wrap' }, tbl));
+	}
+
+	// One work: its songs by role, its artists, related works.
+	var ROLE_SECTIONS = [
+		['OP', 'Openings', function (t) { return t.role === 'OP' && !coverish(t); }],
+		['ED', 'Endings', function (t) { return t.role === 'ED' && !coverish(t); }],
+		['insert', 'Insert songs', function (t) { return t.role === 'insert' && !coverish(t); }],
+		['theme', 'Theme songs', function (t) { return t.role === 'theme' && !coverish(t); }],
+		['image', 'Character and image songs', function (t) { return t.role === 'image' && !coverish(t); }],
+		['OST', 'Score', function (t) { return t.role === 'OST' && !coverish(t); }],
+		['cover', 'Covers and arrangements', function (t) { return coverish(t); }],
+		['', 'Other', function () { return true; }]
+	];
+	function coverish(t) { return !!t.origArtist || /cover|piano|orchestral|acoustic|remix|karaoke/.test(t.version || ''); }
 	function viewWork(view, parts) {
 		var w = parts[0], e = idx().works[w];
-		if (!e) { view.appendChild(h('p', { class: 'ts-empty', text: 'No songs from ' + q(w) + '.' })); return; }
-		var role = route.query.get('role') || '';
-		var list = sorted(e.tracks, 'work').filter(function (t) { return !role || (t.role || '') === role; }), ids = list.map(function (t) { return t.id; }), ctx = { label: w + (role ? ' ' + (T.ROLE_NAME[role] || role) : ''), href: link('work', w), patch: role ? { works: [w], roles: [role] } : { works: [w] } };
+		if (!e) { view.appendChild(h('p', { class: 'ts-empty', text: 'No songs from ' + q(w) + ' here' + (focus ? ' while focused on ' + q((listById(focus) || {}).name) : '') + '.' })); return; }
+		var st = workStats(e), years = e.tracks.map(function (t) { return t.year; }).filter(Boolean).sort();
+		var all = sorted(e.tracks, 'work'), ids = all.map(function (t) { return t.id; }), ctx = { label: w, href: link('work', w), patch: { works: [w] } };
 		var hue = { h: SCENE_HUE[e.scene] || 210, s: 45 };
-		var artists = {};
-		e.tracks.forEach(function (t) { if (t.artist) artists[t.artist] = true; });
 		headerBlock(view, {
 			kicker: T.SCENE_NAME[e.scene] || 'Work', title: w, hue: hue, artNode: e.cover ? artFor(e.cover, 'ts-hero-art') : null,
-			meta: metaLine(e.tracks) + roleSummary(e.tracks), blurb: Object.keys(artists).slice(0, 6).join(', ') + (Object.keys(artists).length > 6 ? ' and more' : ''),
+			blurb: st.topArtists.slice(0, 6).join(', ') + (st.topArtists.length > 6 ? ' and ' + (st.topArtists.length - 6) + ' more' : ''),
+			meta: metaLine(e.tracks) + roleSummary(e.tracks) + (years.length ? ' ' + DOT + ' ' + (years[0] === years[years.length - 1] ? years[0] : years[0] + NDASH + years[years.length - 1]) : '') + (st.plays ? ' ' + DOT + ' ' + plural(st.plays, 'play') : ''),
 			actions: [
 				actionBtn('play', 'Play', function () { playIds(ids, 0, ctx); }, true),
 				shuffleSplit(ctx.patch, ctx),
 				actionBtn('edit', 'Edit all', function () { openEditor(ids); })
 			].concat(scopeButtons({ works: [w] }, w))
 		});
-		var rc = {};
-		e.tracks.forEach(function (t) { if (t.role) rc[t.role] = (rc[t.role] || 0) + 1; });
-		if (Object.keys(rc).length > 1) {
-			var rb = h('div', { class: 'ts-chips ts-chipbar' });
-			rb.appendChild(h('a', { class: 'ts-chip' + (role ? '' : ' is-on'), href: link('work', w), text: 'All ' + e.tracks.length }));
-			T.ROLES.forEach(function (r) { if (rc[r[0]]) rb.appendChild(h('a', { class: 'ts-chip' + (role === r[0] ? ' is-on' : ''), href: link('work', w) + '?role=' + encodeURIComponent(r[0]) }, [h('span', { text: r[1] + 's' }), h('span', { class: 'ts-count', text: String(rc[r[0]]) })])); });
-			view.appendChild(rb);
+		// jump links to the sections
+		var used = {}, sections = [];
+		ROLE_SECTIONS.forEach(function (rs) {
+			var ts = all.filter(function (t) { return !used[t.id] && rs[2](t); });
+			ts.forEach(function (t) { used[t.id] = true; });
+			if (ts.length) sections.push({ key: rs[0], name: rs[1], tracks: ts });
+		});
+		if (sections.length > 1) {
+			var jump = h('div', { class: 'ts-chips ts-chipbar' });
+			sections.forEach(function (s2) { jump.appendChild(h('button', { class: 'ts-chip', on: { click: function () { var t0 = view.querySelector('[data-sec="' + (s2.key || 'other') + '"]'); if (t0) t0.scrollIntoView({ block: 'start', behavior: ToyKit.reducedMotion ? 'auto' : 'smooth' }); } } }, [h('span', { text: s2.name }), h('span', { class: 'ts-count', text: String(s2.tracks.length) })])); });
+			view.appendChild(jump);
 		}
-		trackList(view, list, { context: ctx, noWork: true });
+		sections.forEach(function (s2) {
+			var hd = h('div', { class: 'ts-sec-head', data: { sec: s2.key || 'other' } }, [h('h2', { text: s2.name }), h('span', { class: 'ts-muted', text: plural(s2.tracks.length, 'song') + ' ' + DOT + ' ' + longTime(secs(s2.tracks)) })]);
+			var sids = s2.tracks.map(function (t) { return t.id; });
+			hd.appendChild(U.iconBtn('play', 'Play the ' + s2.name.toLowerCase(), { text: true, cls: 'ts-act', on: { click: function () { playIds(sids, 0, { label: w + ': ' + s2.name, href: link('work', w), patch: s2.key && s2.key !== 'cover' ? { works: [w], roles: [s2.key] } : { works: [w] } }); } } }));
+			view.appendChild(hd);
+			trackList(view, s2.tracks, { context: { label: w + ': ' + s2.name, href: link('work', w) }, noWork: true, noHead: true });
+		});
+		// the artists, and works that share them
+		var ix = idx(), artistKeys = {};
+		e.tracks.forEach(function (t) { if (t.artistKey) artistKeys[t.artistKey] = (artistKeys[t.artistKey] || 0) + 1; });
+		var ak = Object.keys(artistKeys).sort(function (a2, b2) { return artistKeys[b2] - artistKeys[a2]; }).map(function (k) { return ix.artists[k]; }).filter(Boolean);
+		if (ak.length) { sectionHead(view, 'Artists here'); shelf(view, ak.slice(0, 16).map(artistCard)); }
+		var rel = {};
+		Object.keys(ix.works).forEach(function (o) {
+			if (o === w) return;
+			var s3 = 0;
+			ix.works[o].tracks.forEach(function (t) { if (t.artistKey && artistKeys[t.artistKey]) s3 += 2; });
+			if (ix.works[o].scene === e.scene) s3 += 0.5;
+			if (s3 >= 2) rel[o] = s3;
+		});
+		var relList = Object.keys(rel).sort(function (a2, b2) { return rel[b2] - rel[a2]; }).slice(0, 14).map(function (k) { return ix.works[k]; });
+		if (relList.length) { sectionHead(view, 'Shares artists with'); shelf(view, relList.map(workCard)); }
 	}
 
 	// ---- One track ------------------------------------------------------------------------------------------
