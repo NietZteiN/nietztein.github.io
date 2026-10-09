@@ -70,9 +70,9 @@
 	var DEFAULT_PLAN = {
 		mode: 'true', playlists: [], genres: [], families: [], decades: [], artists: [], lengths: [],
 		scenes: [], works: [], moods: [], langs: [], kinds: [], roles: [],
-		maxTracks: null, maxMinutes: null, hours: null, keepRuns: true, blockSize: 3, clips: false, text: '', apart: true, oneVersion: false, added: [], addedFrom: '', addedTo: '', minRating: 0
+		maxTracks: null, maxMinutes: null, hours: null, keepRuns: true, blockSize: 3, clips: false, text: '', apart: true, oneVersion: false, added: [], addedFrom: '', addedTo: '', minRating: 0, channels: []
 	};
-	var LIST_KEYS = ['playlists', 'genres', 'families', 'decades', 'artists', 'lengths', 'scenes', 'works', 'moods', 'langs', 'kinds', 'roles', 'added'];
+	var LIST_KEYS = ['playlists', 'genres', 'families', 'decades', 'artists', 'lengths', 'scenes', 'works', 'moods', 'langs', 'kinds', 'roles', 'added', 'channels'];
 	var plan = copyPlan(DEFAULT_PLAN);
 	var stations = [];
 	var bag = null, bagKey = '', bagRand = thumb ? S.rng('thumb') : S.cryptoRng();
@@ -623,7 +623,7 @@
 		{ key: '', label: 'Home', icon: 'home' }, { key: 'search', label: 'Search', icon: 'search' },
 		{ key: 'library', label: 'Library', icon: 'songs' }, { key: 'mix', label: 'Mix', icon: 'mix' }, { key: 'queue', label: 'Queue', icon: 'queue' }
 	];
-	var SECTION_OF = { artist: 'artists', genre: 'genres', family: 'genres', c: 'browse', work: 'works', track: 'songs', list: 'lists' };
+	var SECTION_OF = { channel: 'artists', artist: 'artists', genre: 'genres', family: 'genres', c: 'browse', work: 'works', track: 'songs', list: 'lists' };
 	var route = U.parseHash(location.hash);
 	function section() { var p = route.parts[0] || ''; return SECTION_OF[p] || p; }
 
@@ -1184,6 +1184,7 @@
 		items.push({ sep: true });
 		if (one && one.artistKey) items.push({ label: 'Go to ' + one.artist, icon: 'artist', onSelect: function () { location.hash = link('artist', one.artistKey); } });
 		if (one && one.work) items.push({ label: 'Go to ' + one.work, icon: 'works', onSelect: function () { location.hash = link('work', one.work); } });
+		if (one && one.channelId) items.push({ label: 'More from this channel', icon: 'external', onSelect: function () { location.hash = link('channel', one.channelId); } });
 		if (one) items.push({ label: 'About this track', icon: 'disc', onSelect: function () { location.hash = link('track', one.id); } });
 		items.push({ label: one ? 'Edit details' + ELL : 'Edit ' + n(ids.length) + ' tracks' + ELL, icon: 'edit', hint: 'E', onSelect: function () { openEditor(ids); } });
 		if (!one) items.push({ label: 'Label them one by one', icon: 'edit', onSelect: function () { startLabelling(ids); } });
@@ -1902,6 +1903,7 @@
 		});
 		scores.sort(function (x, y) { return y.s - x.s; });
 		if (scores.length) { sectionHead(view, 'Sounds like'); shelf(view, scores.slice(0, 12).map(function (x) { return artistCard(x.a); })); }
+		if (!demo) artistMore(view, key, a);
 	}
 
 	// ---- Genres, families and other collections -----------------------------------------------------------
@@ -2218,7 +2220,7 @@
 		var facts = h('dl', { class: 'ts-facts' });
 		function fact(k, v) { if (v) { facts.appendChild(h('dt', { text: k })); facts.appendChild(h('dd', { text: v })); } }
 		fact('On YouTube', t.raw.title);
-		fact('Channel', t.channel);
+		if (t.channelId) { facts.appendChild(h('dt', { text: 'Channel' })); facts.appendChild(h('dd', null, h('a', { href: link('channel', t.channelId), text: t.channel }))); } else fact('Channel', t.channel);
 		fact('Year', t.year ? t.year + (t.yearSource === 'upload' ? ' (upload)' : '') : '');
 		fact('Added', L.firstAdded(t) ? new Date(L.firstAdded(t)).toISOString().slice(0, 10) : '');
 		fact('Last played', t.lastPlayed ? String(t.lastPlayed).slice(0, 10) : 'never');
@@ -4743,6 +4745,101 @@
 		if (acts) acts.parentNode.insertBefore(bar, acts.nextSibling); else view.appendChild(bar);
 	}
 
+	// ---- More of an artist: releases, other songs, their channels -------------------------------------
+
+	function artistMore(view, key, a) {
+		var here = location.hash;
+		var wrap = h('section', { class: 'ts-more-artist' });
+		view.appendChild(wrap);
+		var others = dsection(wrap, 'Other songs by ' + a.name, 'not in your library');
+		var rels = dsection(wrap, 'Albums and releases');
+		var chans = dsection(wrap, 'From their YouTube channels');
+		// their channels: where the library's songs by them were uploaded
+		var byCh = {};
+		a.tracks.forEach(function (t) { var id = t.channelId; if (!id) return; (byCh[id] = byCh[id] || { id: id, name: t.channel, n: 0 }).n++; });
+		var chList = Object.keys(byCh).map(function (k) { return byCh[k]; }).sort(function (x, y) { return y.n - x.n; }).slice(0, 6);
+		chans.done();
+		if (!chList.length) chans.body.appendChild(h('p', { class: 'ts-muted', text: 'No channel known.' }));
+		var cl = h('div', { class: 'ts-chips' });
+		chList.forEach(function (c) { cl.appendChild(h('a', { class: 'ts-chip', href: link('channel', c.id) }, [h('span', { text: c.name }), h('span', { class: 'ts-count', text: plural(c.n, 'song') + ' here' })])); });
+		chans.body.appendChild(cl);
+		chans.body.appendChild(h('p', { class: 'ts-muted', text: 'A channel page lists its uploads on YouTube that you do not have' + (auth.signedIn() ? ' (about 2 quota units for its newest hundred).' : ' (sign in to see them here; otherwise it links to YouTube).') }));
+		loadDiscoverState().then(function () { return dzArtistFor(key); }).then(function (d) {
+			if (location.hash !== here) return;
+			if (!d) {
+				others.done(); rels.done();
+				others.body.appendChild(h('p', { class: 'ts-muted', text: 'Deezer does not know ' + a.name + ' (or could not be sure it is the same artist), so their other songs and releases are not shown.' }));
+				return;
+			}
+			others.head.appendChild(U.iconBtn('compass', 'Explore on Deezer', { text: true, cls: 'ts-act', on: { click: function () { location.hash = '#/discover?dz=' + d.id; } } }));
+			deezer().top(d.id, 40).then(function (ts) {
+				others.done();
+				var fresh = freshOnly(ts.map(function (t) { return DX.trackOf(t, { name: d.name, id: d.id }); }));
+				if (!fresh.length) { others.body.appendChild(h('p', { class: 'ts-muted', text: 'You already have their best-known songs.' })); return; }
+				others.head.appendChild(U.iconBtn('play', 'Preview them', { text: true, cls: 'ts-act', on: { click: function () { pvStart(fresh, 0, a.name); } } }));
+				dzList(others.body, fresh.slice(0, 25));
+			}).catch(function (e) { others.done(); others.body.appendChild(h('p', { class: 'ts-muted', text: e.message })); });
+			deezer().albums(d.id, 60).then(function (als) {
+				rels.done();
+				if (!als.length) { rels.body.appendChild(h('p', { class: 'ts-muted', text: 'No releases listed.' })); return; }
+				var kinds = { album: 'Albums', ep: 'EPs', single: 'Singles', compile: 'Compilations' }, groups = {};
+				als.forEach(function (al) { var k = kinds[al.type] ? al.type : 'album'; (groups[k] = groups[k] || []).push(al); });
+				['album', 'ep', 'single', 'compile'].forEach(function (k) {
+					if (!groups[k]) return;
+					rels.body.appendChild(h('h3', { class: 'ts-subh', text: kinds[k] + ' (' + groups[k].length + ')' }));
+					shelf(rels.body, groups[k].slice(0, 30).map(function (al) { return albumCard(al, d.name, d.id); }));
+				});
+			}).catch(function (e) { rels.done(); rels.body.appendChild(h('p', { class: 'ts-muted', text: e.message })); });
+		});
+	}
+
+	// ---- A YouTube channel: the songs here from it, and its other uploads --------------------------------
+	var channelCache = {};
+	function viewChannel(view, parts) {
+		var id = parts[0], ix = idx();
+		var mine = ix.all.filter(function (t) { return t.channelId === id; });
+		var name = mine.length ? mine[0].channel : 'Channel';
+		headerBlock(view, {
+			kicker: 'YouTube channel', title: name, hue: { h: 0, s: 45 }, artNode: mine[0] ? artFor(mine[0], 'ts-hero-art') : null,
+			meta: plural(mine.length, 'song') + ' in your library',
+			actions: [
+				mine.length ? actionBtn('play', 'Play', function () { playIds(sorted(mine, 'added').map(function (t) { return t.id; }), 0, { label: name, href: link('channel', id), patch: { channels: [id] } }); }, true) : null,
+				mine.length > 1 ? shuffleSplit({ channels: [id] }, { label: name, href: link('channel', id), patch: { channels: [id] } }) : null,
+				U.iconBtn('external', 'Open on YouTube', { text: true, cls: 'ts-act', on: { click: function () { window.open('https://www.youtube.com/channel/' + encodeURIComponent(id), '_blank', 'noopener'); } } })
+			]
+		});
+		if (mine.length) { sectionHead(view, 'In your library'); trackList(view, sorted(mine, 'added'), { context: { label: name, href: link('channel', id) } }); }
+		var up = dsection(view, 'More uploads on this channel', 'newest first, the ones you do not have');
+		if (demo || !/^UC[A-Za-z0-9_-]{22}$/.test(id)) { up.done(); up.body.appendChild(h('p', { class: 'ts-muted', text: demo ? 'The demo has no YouTube channels.' : 'This channel cannot be listed.' })); return; }
+		if (!auth.signedIn()) {
+			up.done();
+			up.body.appendChild(h('p', { class: 'ts-muted', text: 'Sign in (Settings) to list this channel\u2019s uploads here and play them, or open it on YouTube.' }));
+			return;
+		}
+		var here = location.hash;
+		function show(items) {
+			up.done();
+			var fresh = items.filter(function (it) { return !lib.tracks[it.videoId] && !it.unavailable; });
+			if (!fresh.length) { up.body.appendChild(h('p', { class: 'ts-muted', text: 'You have every recent upload.' })); return; }
+			var ul = h('ul', { class: 'ts-dlist' });
+			fresh.forEach(function (it) {
+				var li = h('li', { class: 'ts-drow' });
+				li.appendChild(prefs.art ? U.art(it.videoId, 0, it.title, 'ts-q-art', true, 0) : U.swatch(0, it.title, 'ts-q-art', 0));
+				li.appendChild(h('span', { class: 'ts-q-text' }, [h('span', { class: 'ts-q-title', text: it.title }), h('span', { class: 'ts-q-artist', text: (it.addedAt ? String(it.addedAt).slice(0, 10) + ' ' + DOT + ' ' : '') + name })]));
+				li.appendChild(h('button', { class: 'kit-btn small', text: 'Play', title: 'Play it here; it joins the playlist Discovered', on: { click: function (e) { playFound({ id: it.videoId, artist: name, title: it.title, _video: { videoId: it.videoId, title: it.title, channel: name } }, e.currentTarget); } } }));
+				li.appendChild(U.iconBtn('external', 'Open on YouTube', { on: { click: function () { window.open('https://www.youtube.com/watch?v=' + it.videoId, '_blank', 'noopener'); } } }));
+				ul.appendChild(li);
+			});
+			up.body.appendChild(ul);
+		}
+		if (channelCache[id]) { show(channelCache[id]); return; }
+		var uploads = 'UU' + id.slice(2), items = [];
+		client.playlistPage(uploads, '').then(function (p1) {
+			items = p1.items;
+			return p1.nextPageToken ? client.playlistPage(uploads, p1.nextPageToken).then(function (p2) { items = items.concat(p2.items); }) : null;
+		}).then(function () { channelCache[id] = items; if (location.hash === here) show(items); }).catch(function (e) { up.done(); up.body.appendChild(h('p', { class: 'ts-muted', text: e.message || String(e) })); });
+	}
+
 	// ---- Keys ----------------------------------------------------------------------------------------------
 
 	function wireKeys() {
@@ -4840,7 +4937,7 @@
 		'': viewHome, search: viewSearch, songs: viewSongs, artists: viewArtists, artist: viewArtist, genres: viewGenres, genre: viewGenre,
 		family: viewFamily, c: viewFacet, browse: viewBrowse, works: viewWorks, work: viewWork, track: viewTrack, mix: viewMix,
 		stats: viewStats, fix: viewFix, settings: viewSettings, library: viewLibrary,
-		lists: viewLists, list: viewList, liked: viewLiked, history: viewHistory, label: viewLabel, map: viewMap, discover: viewDiscover
+		lists: viewLists, list: viewList, liked: viewLiked, channel: viewChannel, history: viewHistory, label: viewLabel, map: viewMap, discover: viewDiscover
 	};
 	function renderAll() {
 		renderNav();
