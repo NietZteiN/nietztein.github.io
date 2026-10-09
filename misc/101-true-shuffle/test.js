@@ -2155,6 +2155,14 @@ describe('discover', async function () {
 	eq(calls.length, before, 'answers are cached');
 	eq(D.bestVideo([{ videoId: 'a', title: 'Mosaic (cover)', channel: 'someone' }, { videoId: 'b', title: 'Mosaic', channel: 'Glass Orchard - Topic' }], { artist: 'Glass Orchard', title: 'Mosaic' }).videoId, 'b', 'bestVideo prefers the Topic channel of the artist to a cover');
 	eq(D.youtubeQuery({ artist: 'Glass Orchard', title: 'Mosaic' }), 'Glass Orchard Mosaic', 'youtubeQuery');
+	// Deezer's rate limit: a quota answer waits and tries again
+	var tries = 0, waits = [];
+	var dz2 = D.createDeezer({ gapMs: 0, sleep: function (ms) { waits.push(ms); return Promise.resolve(); }, transport: function () { tries++; return Promise.resolve(tries < 3 ? { error: { code: 4, message: 'Quota limit exceeded' } } : { data: [{ id: 1, name: 'X' }] }); } });
+	var got = await dz2.searchArtists('X');
+	eq([got.length, tries, waits.length], [1, 3, 2], 'a quota answer is retried after a wait (twice here), then the answer arrives');
+	var al = D.albumOf({ id: 3, title: 'A', release_date: '2025-01-02', record_type: 'single', cover_medium: 'https://evil.example/x.jpg' });
+	eq([al.date, al.type, al.cover, D.img('https://cdn-images.dzcdn.net/x.jpg')], ['2025-01-02', 'single', '', 'https://cdn-images.dzcdn.net/x.jpg'], 'albumOf and img keep only Deezer image hosts');
+	eq(D.trackOf({ id: 9, title: 'T', artist: { id: 4, name: 'Y' }, preview: 'https://cdnt-preview.dzcdn.net/p.mp3' }).artistId, 4, 'trackOf carries the artist id');
 	// the YouTube client's search, and its quota
 	var spent = [];
 	var client = Y.createClient({ getToken: function () { return 'tok'; }, endpoints: Y.GOOGLE, onQuota: function (u, m) { spent.push([u, m]); }, fetch: function (u) {

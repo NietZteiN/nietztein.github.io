@@ -1739,7 +1739,7 @@
 	}
 	function browseTiles(view, title) {
 		var ix = idx();
-		view.appendChild(h('h1', { class: 'ts-h1', text: title }));
+		if (title) view.appendChild(h('h1', { class: 'ts-h1', text: title }));
 		sectionHead(view, 'Genre families');
 		grid(view, T.FAMILIES.filter(function (f) { return ix.families[f.key]; }).map(function (f) {
 			return tile({ href: link('family', f.key), title: f.name, sub: plural(ix.families[f.key].tracks.length, 'song'), hue: familyHue(f.key), cover: coverOf(ix.families[f.key].tracks), cls: 'is-family' });
@@ -1780,7 +1780,13 @@
 		fig.appendChild(row);
 		view.appendChild(fig);
 	}
-	function viewBrowse(view) { if (!idx().all.length) { noMusic(view); return; } browseTiles(view, 'Moods & scenes'); }
+	function viewBrowse(view, parts, query) {
+		if (!idx().all.length) { noMusic(view); return; }
+		view.appendChild(h('h1', { class: 'ts-h1', text: 'Moods & scenes' }));
+		var picked = browseMixer(view, query || route.query);
+		if (!picked) moodMatrix(view);
+		browseTiles(view, null);
+	}
 
 	// ---- Songs ----------------------------------------------------------------------------------------------
 
@@ -1956,6 +1962,7 @@
 		var patch = {}; patch[f.key] = [v];
 		collection(view, { kicker: f.kicker, title: f.name(v), blurb: f.blurb ? f.blurb(v) : '', hue: f.hue(v), tracks: tracks.filter(function (t) { return t.kind !== 'clip'; }), ctx: { label: f.name(v), href: link('c', parts[0], v), patch: patch }, sort: parts[0] === 'added' ? 'added' : 'artist', breakdown: parts[0] !== 'scene' ? 'family' : 'work' });
 		if (parts[0] === 'added') addedNav(view, v);
+		if (parts[0] === 'mood' || parts[0] === 'scene') facetBreakdown(view, parts[0], v);
 	}
 	// On an added-year page: its months; on a month page: the year and the months around it.
 	function addedNav(view, v) {
@@ -3825,6 +3832,13 @@
 		loadHidden().then(function (hd) { hd[DX.norm(name)] = true; if (!thumb) store.set('discover:hidden', hd); renderView(true); say(name + ' will not be suggested again.'); });
 	}
 	function viewDiscover(view, parts, query) {
+		if (!dzIds) { view.appendChild(h('p', { class: 'ts-muted', text: 'Loading' + ELL })); var hh = location.hash; loadDiscoverState().then(function () { if (location.hash === hh) renderView(true); }); return; }
+		if (query.get('dz')) { viewDzArtist(view, query.get('dz')); return; }
+		if (!query.get('seed') && !query.get('artist')) { viewDiscoverHub(view); return; }
+		view.appendChild(h('a', { class: 'ts-back', href: '#/discover', text: String.fromCharCode(0x2190) + ' Discover' }));
+		viewDiscoverSeed(view, parts, query);
+	}
+	function viewDiscoverSeed(view, parts, query) {
 		var seedT = lib.tracks[query.get('seed') || ''] || null, seedKey = query.get('artist') || '';
 		if (!seedT && !seedKey && ctl && ctl.current()) seedT = lib.tracks[ctl.current()];
 		if (!seedKey && seedT) seedKey = seedT.artistKey;
@@ -3843,7 +3857,11 @@
 			kicker: 'Discover', title: seedT ? 'Like ' + trackTitle(seedT) : 'Like ' + a.name, alt: seedT ? 'by ' + a.name : '', hue: hue,
 			artNode: seedT ? artFor(seedT, 'ts-hero-art') : (a.cover && prefs.art && !demo ? U.art(a.cover.id, hue.h, a.name, 'ts-hero-art is-round', true, hue.s) : null),
 			blurb: 'Artists like ' + a.name + ' and their best songs, from Deezer. Preview 30 seconds here; Play finds the song on YouTube' + (auth.signedIn() ? ' (100 quota units a search) and keeps it in the playlist Discovered.' : ' (sign in to play it here; otherwise YouTube opens in a new tab).'),
-			actions: [actionBtn('artist', 'Go to ' + a.name, function () { location.hash = link('artist', seedKey); })]
+			actions: [
+				actionBtn('radio', 'Preview radio like this', function () { dzArtistFor(seedKey).then(function (d) { if (!d) { say('Deezer does not know ' + a.name + '.'); return; } return deezer().radio(d.id, 50).then(function (ts) { pvStart(freshOnly(ts), 0, a.name + ' mix'); }); }); }, true),
+				actionBtn('compass', 'Explore ' + a.name + ' on Deezer', function () { dzArtistFor(seedKey).then(function (d) { if (d) location.hash = '#/discover?dz=' + d.id; else say('Deezer does not know ' + a.name + '.'); }); }),
+				actionBtn('artist', 'Go to ' + a.name, function () { location.hash = link('artist', seedKey); })
+			]
 		});
 		var status = h('p', { class: 'ts-muted', aria: { live: 'polite' }, text: 'Asking Deezer' + ELL });
 		view.appendChild(status);
@@ -4273,6 +4291,458 @@
 	// ---- Density -------------------------------------------------------------------------------------------
 	function applyDensity() { document.body.classList.toggle('is-compact', prefs.density === 'compact'); }
 
+	// ---- Discover, the hub -------------------------------------------------------------------------------
+	// Many ways in: artists like the ones you play most, new releases from
+	// artists you have, more songs by them you don't have, picks from
+	// playlists of your genres, any artist on Deezer, a preview radio, and a
+	// list of songs saved for later.
+
+	var dzIds = null, dzSaved = null, dzRecent = null;
+	function kvGet(key, fb) { return thumb || !store ? Promise.resolve(fb) : store.get(key, fb); }
+	function kvSet(key, v) { if (!thumb && store) store.set(key, v); }
+	function loadDiscoverState() {
+		if (dzIds) return Promise.resolve();
+		return Promise.all([kvGet('discover:ids', {}), kvGet('discover:saved', []), kvGet('discover:recent', []), loadHidden()]).then(function (r) { dzIds = r[0] || {}; dzSaved = r[1] || []; dzRecent = r[2] || []; });
+	}
+	// Run fn over items, n at a time.
+	function pool(items, n, fn) {
+		var i = 0, out = new Array(items.length);
+		function worker() { if (i >= items.length) return Promise.resolve(); var k = i++; return Promise.resolve(fn(items[k], k)).then(function (v) { out[k] = v; }, function () { out[k] = null; }).then(worker); }
+		var ws = [];
+		for (var w = 0; w < Math.min(n, items.length); w++) ws.push(worker());
+		return Promise.all(ws).then(function () { return out; });
+	}
+	// The Deezer artist for a library artist, remembered.
+	function dzArtistFor(key) {
+		if (dzIds[key] !== undefined) return Promise.resolve(dzIds[key]);
+		var ev = artistEvidence(key);
+		return DX.findArtist(deezer(), ev.names, ev.titles).then(function (f) {
+			dzIds[key] = f && f.verified ? { id: f.artist.id, name: f.artist.name, picture: DX.img(f.artist.picture_medium) } : null;
+			kvSet('discover:ids', dzIds);
+			return dzIds[key];
+		});
+	}
+	// Is a Deezer song already in the library? By artist and title, any spelling the labels know.
+	var libSongs = null, libSongsFor = null;
+	function inLibrary(t) {
+		if (libSongsFor !== memo || !libSongs) {
+			libSongs = {};
+			L.list(lib).forEach(function (x) {
+				var as = [x.artist, x.artistNative, x.origArtist].filter(Boolean).map(DX.norm), ts2 = [x.title, x.titleAlt].filter(Boolean).map(DX.norm);
+				ts2.forEach(function (tt) { libSongs['*|' + tt] = true; as.forEach(function (aa) { libSongs[aa + '|' + tt] = true; }); });
+			});
+			libSongsFor = memo;
+		}
+		var tt = DX.norm(t.title);
+		return !!(libSongs[DX.norm(t.artist) + '|' + tt] || (tt.length > 5 && libSongs['*|' + tt] && knownArtistName(t.artist)));
+	}
+	function freshOnly(tracks) {
+		var seen = {};
+		return tracks.filter(function (t) {
+			if (!t || !t.preview || inLibrary(t) || (discoverHidden && discoverHidden[DX.norm(t.artist)])) return false;
+			var k = DX.norm(t.artist) + '|' + DX.norm(t.title);
+			if (seen[k]) return false;
+			seen[k] = true;
+			return true;
+		});
+	}
+	function topSeeds(n) {
+		var ix = idx();
+		return Object.keys(ix.artists).map(function (k) {
+			var a = ix.artists[k], likes = a.tracks.filter(liked).length;
+			return { key: k, a: a, s: a.plays * 3 + likes * 5 + a.tracks.length + (ix.artists[k].scene === 'vtuber' ? -2 : 0) };
+		}).filter(function (x) { return x.a.tracks.length >= 2 || x.a.plays; }).sort(function (x, y) { return y.s - x.s; }).slice(0, n);
+	}
+	function isSaved(t) { return dzSaved.some(function (s2) { return s2.id === t.id; }); }
+	function toggleSaved(t, btn) {
+		var was = isSaved(t);
+		if (was) dzSaved = dzSaved.filter(function (s2) { return s2.id !== t.id; });
+		else dzSaved.unshift({ id: t.id, title: t.title, artist: t.artist, artistId: t.artistId, preview: t.preview, cover: t.cover, album: t.album, savedAt: Date.now() });
+		kvSet('discover:saved', dzSaved);
+		if (btn) { btn.classList.toggle('is-on', !was); btn.setAttribute('aria-pressed', was ? 'false' : 'true'); }
+		U.toast(was ? 'Removed from Saved for later.' : 'Saved for later: ' + t.title + '.', { action: 'Undo', onAction: function () { toggleSaved(t, btn); } });
+	}
+	function remember(seed) {
+		dzRecent = [seed].concat((dzRecent || []).filter(function (r) { return r.id !== seed.id; })).slice(0, 12);
+		kvSet('discover:recent', dzRecent);
+	}
+	function dzImg(src, cls, name, round) {
+		if (!src) return U.swatch(200, name, cls + (round ? ' is-round' : ''));
+		var w = h('span', { class: 'ts-art ' + (cls || '') + (round ? ' is-round' : '') });
+		w.appendChild(h('img', { alt: '', loading: 'lazy', referrerpolicy: 'no-referrer', src: src }));
+		return w;
+	}
+	// One Deezer song: preview, save, play on YouTube, not interested.
+	function dzRow(t, list) {
+		var li = h('li', { class: 'ts-drow' });
+		li.appendChild(dzImg(t.cover, 'ts-q-art', t.title));
+		var who = t.artistId ? h('a', { href: '#/discover?dz=' + t.artistId, text: t.artist }) : h('span', { text: t.artist });
+		li.appendChild(h('span', { class: 'ts-q-text' }, [h('span', { class: 'ts-q-title', text: t.title + (t.version ? ' ' + t.version : '') }), h('span', { class: 'ts-q-artist' }, [who, t.album ? ' ' + DOT + ' ' + t.album : ''])]));
+		if (!knownArtistName(t.artist)) li.appendChild(h('span', { class: 'ts-tag', text: 'New artist' }));
+		var pv = U.iconBtn('play', 'Preview ' + t.title, { cls: 'ts-pv', on: { click: function () { if (list) pvStart(list, list.indexOf(t), 'Previews'); else preview(t, pv); } } });
+		pv.disabled = !t.preview;
+		li.appendChild(pv);
+		var sv = U.iconBtn('plus', 'Save ' + t.title + ' for later', { cls: 'ts-save' + (isSaved(t) ? ' is-on' : ''), on: { click: function () { toggleSaved(t, sv); } } });
+		sv.setAttribute('aria-pressed', isSaved(t) ? 'true' : 'false');
+		li.appendChild(sv);
+		li.appendChild(h('button', { class: 'kit-btn small', text: auth.signedIn() ? 'Play' : 'YouTube', title: auth.signedIn() ? 'Find it on YouTube and play it here (100 quota units)' : 'Search YouTube in a new tab', on: { click: function (e) { playFound(t, e.currentTarget); } } }));
+		li.appendChild(U.iconBtn('close', 'Not interested in ' + t.artist, { on: { click: function () { hideArtist(t.artist); li.parentNode && li.parentNode.removeChild(li); } } }));
+		return li;
+	}
+	function dzList(box, tracks, empty) {
+		var ul = h('ul', { class: 'ts-dlist' });
+		tracks.forEach(function (t) { ul.appendChild(dzRow(t, tracks)); });
+		if (!tracks.length && empty) ul.appendChild(h('li', { class: 'ts-muted', text: empty }));
+		box.appendChild(ul);
+		return ul;
+	}
+	function dzArtistCard(a) {
+		return card({ round: true, href: '#/discover?dz=' + a.id, art: dzImg(a.picture || DX.img(a.picture_medium), '', a.name, true), title: a.name, sub: knownArtistName(a.name) ? 'In your library' : (a.fans || a.nb_fan ? n(a.fans || a.nb_fan) + ' fans' : 'New to you'), play: function () { deezer().radio(a.id, 40).then(function (ts) { pvStart(freshOnly(ts), 0, a.name + ' mix'); }); }, playLabel: 'Preview radio: ' + a.name });
+	}
+	function albumDialog(album, artistName) {
+		var d = U.openDialog({ title: album.title + (artistName ? ' ' + NDASH + ' ' + artistName : ''), wide: true });
+		d.body.appendChild(h('p', { class: 'ts-muted', text: (album.type || 'release') + (album.date ? ' ' + DOT + ' ' + album.date : '') }));
+		var box = h('div', null, h('p', { class: 'ts-muted', text: 'Loading' + ELL }));
+		d.body.appendChild(box);
+		deezer().albumTracks(album).then(function (ts) { clear(box); ts.forEach(function (t) { if (!t.artist) t.artist = artistName || ''; }); dzList(box, ts, 'No songs listed.'); }).catch(function (e) { clear(box); box.appendChild(h('p', { class: 'ts-muted', text: e.message })); });
+	}
+	function albumCard(al, artistName, artistId) {
+		var c = card({ href: '#', art: dzImg(al.cover, '', al.title), title: al.title, sub: artistName + ' ' + DOT + ' ' + (al.date || '') + (al.type && al.type !== 'album' ? ' ' + DOT + ' ' + al.type : '') });
+		c.querySelector('a').addEventListener('click', function (e) { e.preventDefault(); albumDialog(al, artistName); });
+		return c;
+	}
+	function dsection(view, title, sub) {
+		var sec = h('section', { class: 'ts-dsec' });
+		var hd = h('div', { class: 'ts-sec-head' }, [h('h2', { text: title })]);
+		if (sub) hd.appendChild(h('span', { class: 'ts-muted', text: sub }));
+		sec.appendChild(hd);
+		var body = h('div', null, h('p', { class: 'ts-muted ts-dloading', text: 'Looking' + ELL }));
+		sec.appendChild(body);
+		view.appendChild(sec);
+		return { sec: sec, head: hd, body: body, done: function () { var l = body.querySelector('.ts-dloading'); if (l) l.parentNode.removeChild(l); } };
+	}
+	var GENRE_QUERY = { 'Anison pop': 'anime songs', 'Anime rock': 'anime rock', 'Galge song': 'visual novel songs', 'Seiyuu & character song': 'seiyuu', 'Idol pop': 'japanese idol', 'Net-born J-pop': 'j-pop vocaloid producers', 'Mainstream J-pop': 'j-pop hits', 'J-pop rock': 'j-rock', 'Alt J-rock': 'japanese indie rock', 'J-punk & garage': 'japanese punk', 'Psych & art rock (JP)': 'japanese psychedelic', 'City pop': 'city pop', 'Shibuya-kei & neo-acoustic': 'shibuya-kei', 'Showa kayou & 80s idol': 'showa kayokyoku', 'Shoegaze & dream pop': 'shoegaze', 'Indie rock': 'indie rock', 'Vocaloid': 'vocaloid', 'Denpa & kawaii': 'denpa', 'Ethereal & fantasy vocal': 'fantasy anime vocal', 'Touhou arrange': 'touhou arrange', 'Mod & Britpop': 'britpop', 'Post-punk & jangle': 'post-punk' };
+
+	function viewDiscoverHub(view) {
+		view.appendChild(h('h1', { class: 'ts-h1', text: 'Discover' }));
+		view.appendChild(h('p', { class: 'ts-muted ts-lede', text: 'Songs and artists you do not have yet, from your own taste. Preview 30 seconds of anything; save what you like for later; Play finds it on YouTube.' }));
+		// explore any artist
+		var f = h('form', { class: 'ts-inline-form ts-dsearch', role: 'search' });
+		var inp = h('input', { class: 'kit-input', type: 'search', placeholder: 'Explore any artist (Deezer)', autocomplete: 'off', aria: { label: 'Explore any artist' } });
+		f.appendChild(inp);
+		var resBox = h('div', { class: 'ts-shelf ts-dsearch-res' });
+		f.addEventListener('submit', function (e) { e.preventDefault(); go(); });
+		var go = later(function () {
+			var v = inp.value.trim();
+			clear(resBox);
+			if (v.length < 2) return;
+			deezer().searchArtists(v).then(function (as) { clear(resBox); as.slice(0, 8).forEach(function (a) { resBox.appendChild(dzArtistCard({ id: a.id, name: a.name, picture: DX.img(a.picture_medium), fans: a.nb_fan })); }); }).catch(function (err) { resBox.appendChild(h('p', { class: 'ts-muted', text: err.message })); });
+		}, 350);
+		inp.addEventListener('input', go);
+		view.appendChild(f);
+		view.appendChild(resBox);
+		var seedRow = h('div', { class: 'ts-chips ts-chipbar' });
+		var cur = ctl && ctl.current() && lib.tracks[ctl.current()];
+		if (cur && cur.artistKey) seedRow.appendChild(h('a', { class: 'ts-chip is-hued', style: { '--h': '200', '--s': '55%' }, href: '#/discover?seed=' + encodeURIComponent(cur.id), text: 'Like what is playing: ' + trackTitle(cur) }));
+		(dzRecent || []).slice(0, 6).forEach(function (r) { seedRow.appendChild(h('a', { class: 'ts-chip', href: '#/discover?dz=' + r.id, text: r.name })); });
+		view.appendChild(seedRow);
+		var acts = h('div', { class: 'ts-actions' });
+		var radioBtn = actionBtn('radio', 'Preview radio from your taste', function () { tasteRadio(radioBtn); }, true);
+		acts.appendChild(radioBtn);
+		acts.appendChild(actionBtn('plus', 'Saved for later (' + dzSaved.length + ')', function () { var s2 = view.querySelector('.ts-dsaved'); if (s2) s2.scrollIntoView({ block: 'start' }); }));
+		if (lib.playlists[DISCOVERED]) acts.appendChild(actionBtn('list', 'Songs you found here', function () { var li = lists.filter(function (x) { return x.kind === 'smart' && x.patch && x.patch.playlists && x.patch.playlists[0] === DISCOVERED; })[0]; if (!li) { li = { id: newId(), name: 'Discovered', kind: 'smart', patch: { playlists: [DISCOVERED] }, created: new Date().toISOString() }; lists.push(li); saveLists(); } location.hash = link('list', li.id); }));
+		view.appendChild(acts);
+		var here = location.hash, seeds = topSeeds(14);
+		if (!seeds.length) { view.appendChild(h('p', { class: 'ts-empty', text: 'Play or like a few songs first, or label your library, so Discover knows what you like.' })); return; }
+		var becauseBox = h('div');
+		view.appendChild(becauseBox);
+		var newRel = dsection(view, 'New from artists you have', 'releases from the last two years');
+		var more = dsection(view, 'More by artists you have', 'their best songs that are not in your library');
+		var genres = dsection(view, 'From playlists of your genres');
+		var savedSec = h('section', { class: 'ts-dsec ts-dsaved' }, [h('div', { class: 'ts-sec-head' }, [h('h2', { text: 'Saved for later' }), h('span', { class: 'ts-muted', text: plural(dzSaved.length, 'song') })])]);
+		view.appendChild(savedSec);
+		dzList(savedSec, dzSaved.slice(), 'Press + on any song to keep it here.');
+		// find the top artists on Deezer, then fill the sections
+		pool(seeds, 4, function (s2) { return dzArtistFor(s2.key).then(function (d) { return d ? { key: s2.key, name: s2.a.name, dz: d } : null; }); }).then(function (found) {
+			if (location.hash !== here) return;
+			found = found.filter(Boolean);
+			if (!found.length) { newRel.done(); newRel.body.appendChild(h('p', { class: 'ts-muted', text: 'Deezer does not know your top artists. Try exploring an artist by name above.' })); return; }
+			// because you like X: four of them, related artists you do not have
+			found.slice(0, 5).forEach(function (fa) {
+				var s3 = dsection(becauseBox, 'Because you like ' + fa.name);
+				deezer().related(fa.dz.id).then(function (rel) {
+					s3.done();
+					var fresh = rel.filter(function (a) { return !knownArtistName(a.name) && !(discoverHidden && discoverHidden[DX.norm(a.name)]); }).slice(0, 14);
+					if (!fresh.length) { s3.body.appendChild(h('p', { class: 'ts-muted', text: 'You already have every artist Deezer relates to them.' })); return; }
+					s3.head.appendChild(U.iconBtn('radio', 'Preview radio: ' + fa.name, { text: true, cls: 'ts-act', on: { click: function () { deezer().radio(fa.dz.id, 50).then(function (ts) { pvStart(freshOnly(ts), 0, fa.name + ' mix'); }); } } }));
+					shelf(s3.body, fresh.map(function (a) { return dzArtistCard({ id: a.id, name: a.name, picture: DX.img(a.picture_medium), fans: a.nb_fan }); }));
+				}).catch(function (e) { s3.done(); s3.body.appendChild(h('p', { class: 'ts-muted', text: 'Deezer did not answer (' + (e && e.message || 'error') + '). Reload to try again.' })); });
+			});
+			// new releases
+			var cutoff = new Date(Date.now() - 730 * 86400000).toISOString().slice(0, 10);
+			pool(found.slice(0, 20), 4, function (fa) { return deezer().albums(fa.dz.id, 30).then(function (als) { return als.filter(function (al) { return al.date >= cutoff; }).slice(0, 3).map(function (al) { al.artistName = fa.dz.name; return al; }); }); }).then(function (lists2) {
+				newRel.done();
+				var all2 = [].concat.apply([], lists2.filter(Boolean)).sort(function (a, b) { return a.date < b.date ? 1 : -1; });
+				if (!all2.length) newRel.body.appendChild(h('p', { class: 'ts-muted', text: 'Nothing new from your top artists on Deezer in the last two years.' }));
+				else shelf(newRel.body, all2.slice(0, 24).map(function (al) { return albumCard(al, al.artistName); }));
+			});
+			// more by artists you have
+			pool(found.slice(0, 12), 4, function (fa) { return deezer().top(fa.dz.id, 10).then(function (ts) { return freshOnly(ts.map(function (t) { return DX.trackOf(t, { name: fa.dz.name, id: fa.dz.id }); })).slice(0, 3); }); }).then(function (lists2) {
+				more.done();
+				var all3 = [].concat.apply([], lists2.filter(Boolean));
+				if (!all3.length) more.body.appendChild(h('p', { class: 'ts-muted', text: 'You already have their best-known songs.' }));
+				else { more.head.appendChild(U.iconBtn('play', 'Preview them all', { text: true, cls: 'ts-act', on: { click: function () { pvStart(all3, 0, 'More by your artists'); } } })); dzList(more.body, all3); }
+			});
+		});
+		// playlists of your genres
+		var gc = {};
+		idx().music.forEach(function (t) { if (t.genres[0]) gc[t.genres[0]] = (gc[t.genres[0]] || 0) + 1 + (liked(t) ? 3 : 0) + (t.plays || 0); });
+		var topG = Object.keys(gc).filter(function (g) { return GENRE_QUERY[g]; }).sort(function (a, b) { return gc[b] - gc[a]; }).slice(0, 4);
+		pool(topG, 2, function (g) {
+			return deezer().searchPlaylists(GENRE_QUERY[g], 3).then(function (pls) {
+				var pl = pls.filter(function (p) { return p.nb_tracks >= 10; })[0];
+				if (!pl) return null;
+				return deezer().playlistTracks(pl.id, 80).then(function (ts) { return { genre: g, title: pl.title, tracks: freshOnly(ts).slice(0, 10) }; });
+			});
+		}).then(function (rows) {
+			genres.done();
+			rows.filter(Boolean).forEach(function (r) {
+				if (!r.tracks.length) return;
+				var hd = h('div', { class: 'ts-sec-head ts-dsub' }, [h('h3', { text: r.genre }), h('span', { class: 'ts-muted', text: 'from the playlist ' + q(r.title) })]);
+				hd.appendChild(U.iconBtn('play', 'Preview these', { text: true, cls: 'ts-act', on: { click: function () { pvStart(r.tracks, 0, r.genre); } } }));
+				genres.body.appendChild(hd);
+				dzList(genres.body, r.tracks);
+			});
+			if (!genres.body.querySelector('li')) genres.body.appendChild(h('p', { class: 'ts-muted', text: 'No playlists found for your genres.' }));
+		});
+	}
+	// A preview radio from your taste: the artist mixes of three of your top artists.
+	function tasteRadio(btn) {
+		if (btn) btn.disabled = true;
+		var seeds = topSeeds(30);
+		var pick = S.trueShuffle(seeds.map(function (s2) { return { id: s2.key }; }), S.cryptoRng()).slice(0, 6);
+		pool(pick, 3, function (k) { return dzArtistFor(k.id).then(function (d) { return d ? deezer().radio(d.id, 30) : []; }); }).then(function (lists2) {
+			if (btn) btn.disabled = false;
+			var all2 = freshOnly([].concat.apply([], lists2.filter(Boolean)));
+			var mixed = S.spreadShuffle(all2.map(function (t) { return { id: String(t.id), spreadKey: DX.norm(t.artist), t: t }; }), S.cryptoRng(), {}).map(function (id) { return all2.filter(function (t) { return String(t.id) === id; })[0]; });
+			if (!mixed.length) { say('Deezer had nothing new for your taste just now.'); return; }
+			pvStart(mixed.slice(0, 60), 0, 'Your taste');
+		}).catch(function (e) { if (btn) btn.disabled = false; fail(e); });
+	}
+
+	// ---- An artist on Deezer: top songs, releases, related, an artist mix ---------------------------------
+	function viewDzArtist(view, id) {
+		var here = location.hash;
+		var head = h('div');
+		view.appendChild(h('a', { class: 'ts-back', href: '#/discover', text: String.fromCharCode(0x2190) + ' Discover' }));
+		view.appendChild(head);
+		var top = dsection(view, 'Top songs'), rel = dsection(view, 'Releases'), like = dsection(view, 'Related artists');
+		deezer().artist(id).then(function (a) {
+			if (location.hash !== here || !a || !a.name) return;
+			remember({ id: a.id, name: a.name });
+			var known = L.normArtist(a.name), libA = idx().artists[known];
+			headerBlock(head, {
+				kicker: 'Artist on Deezer', title: a.name, round: true, hue: { h: 200, s: 40 }, artNode: dzImg(DX.img(a.picture_big || a.picture_medium), 'ts-hero-art', a.name, true),
+				meta: (a.nb_fan ? n(a.nb_fan) + ' fans' : '') + (a.nb_album ? ' ' + DOT + ' ' + plural(a.nb_album, 'release') : '') + (libA ? ' ' + DOT + ' ' + plural(libA.tracks.length, 'song') + ' in your library' : ' ' + DOT + ' new to you'),
+				actions: [
+					actionBtn('radio', 'Preview artist mix', function () { deezer().radio(a.id, 50).then(function (ts) { pvStart(freshOnly(ts), 0, a.name + ' mix'); }); }, true),
+					actionBtn('play', 'Preview top songs', function () { deezer().top(a.id, 20).then(function (ts) { pvStart(ts.map(function (t) { return DX.trackOf(t, a); }).filter(function (t) { return t.preview; }), 0, a.name); }); }),
+					libA ? actionBtn('artist', 'In your library', function () { location.hash = link('artist', known); }) : null,
+					actionBtn('close', 'Not interested', function () { hideArtist(a.name); location.hash = '#/discover'; })
+				]
+			});
+		}).catch(function (e) { head.appendChild(h('p', { class: 'ts-empty', text: e.message })); });
+		deezer().top(id, 15).then(function (ts) { top.done(); dzList(top.body, ts.map(function (t) { return DX.trackOf(t); }), 'No songs listed.'); }).catch(function () { top.done(); });
+		deezer().albums(id, 60).then(function (als) { rel.done(); if (!als.length) { rel.body.appendChild(h('p', { class: 'ts-muted', text: 'No releases listed.' })); return; } return deezer().artist(id).then(function (a) { grid(rel.body, als.slice(0, 24).map(function (al) { return albumCard(al, a.name, id); }), 'is-cards'); }); }).catch(function () { rel.done(); });
+		deezer().related(id).then(function (as) { like.done(); shelf(like.body, as.slice(0, 18).map(function (a) { return dzArtistCard({ id: a.id, name: a.name, picture: DX.img(a.picture_medium), fans: a.nb_fan }); })); }).catch(function () { like.done(); });
+	}
+
+	// ---- The preview radio: 30-second previews one after another -------------------------------------------
+	var pv = { list: [], at: 0, audio: null, label: '' };
+	function pvStart(list, at, label) {
+		list = (list || []).filter(function (t) { return t && t.preview; });
+		if (!list.length) { say('No previews here.'); return; }
+		stopPreview();
+		pv.list = list; pv.at = Math.max(0, at || 0); pv.label = label || 'Previews';
+		pvPlay();
+	}
+	function pvPlay() {
+		if (pv.audio) { pv.audio.pause(); pv.audio = null; }
+		var t = pv.list[pv.at];
+		if (!t) { pvClose(); say('That was the last preview.'); return; }
+		if (player && player.state() === 'playing') ctl.toggle();
+		pv.audio = new Audio(t.preview);
+		pv.audio.volume = Math.max(0, Math.min(1, (player && !player.muted() ? player.volume() : 100) / 100));
+		pv.audio.addEventListener('ended', function () { pv.at++; pvPlay(); });
+		pv.audio.addEventListener('timeupdate', pvProgress);
+		pv.audio.play().catch(function () { pvRender(); });
+		pvRender();
+	}
+	function pvProgress() { var b = document.querySelector('.ts-pvbar-fill'); if (b && pv.audio && pv.audio.duration) b.style.width = (100 * pv.audio.currentTime / pv.audio.duration) + '%'; }
+	function pvClose() { if (pv.audio) pv.audio.pause(); pv.audio = null; var bar = $('pvbar'); if (bar) bar.parentNode.removeChild(bar); document.body.classList.remove('has-pvbar'); }
+	function pvRender() {
+		var t = pv.list[pv.at], bar = $('pvbar');
+		if (!t) return;
+		if (!bar) { bar = h('div', { class: 'ts-pvbar', id: 'pvbar', role: 'region', aria: { label: 'Preview radio' } }); document.body.appendChild(bar); document.body.classList.add('has-pvbar'); }
+		clear(bar);
+		bar.appendChild(dzImg(t.cover, 'ts-pvbar-art', t.title));
+		var tx = h('div', { class: 'ts-pvbar-text' }, [h('span', { class: 'ts-kicker', text: pv.label + ' ' + DOT + ' ' + (pv.at + 1) + ' of ' + pv.list.length }), h('b', { text: t.title }), t.artistId ? h('a', { href: '#/discover?dz=' + t.artistId, text: t.artist }) : h('span', { text: t.artist })]);
+		bar.appendChild(tx);
+		var playing = pv.audio && !pv.audio.paused;
+		var tg = U.iconBtn(playing ? 'pause' : 'play', playing ? 'Pause the preview' : 'Play the preview', { on: { click: function () { if (!pv.audio) { pvPlay(); return; } if (pv.audio.paused) pv.audio.play(); else pv.audio.pause(); pvRender(); } } });
+		bar.appendChild(U.iconBtn('prev', 'Previous preview', { on: { click: function () { pv.at = Math.max(0, pv.at - 1); pvPlay(); } } }));
+		bar.appendChild(tg);
+		bar.appendChild(U.iconBtn('next', 'Next preview', { on: { click: function () { pv.at++; pvPlay(); } } }));
+		var sv = U.iconBtn('plus', 'Save for later', { text: true, cls: 'ts-save' + (isSaved(t) ? ' is-on' : ''), on: { click: function () { toggleSaved(t, sv); } } });
+		bar.appendChild(sv);
+		bar.appendChild(h('button', { class: 'kit-btn small', text: auth.signedIn() ? 'Play on YouTube' : 'Open YouTube', on: { click: function (e) { pvClose(); playFound(t, e.currentTarget); } } }));
+		bar.appendChild(U.iconBtn('block', 'Not interested in ' + t.artist, { on: { click: function () { hideArtist(t.artist); var a2 = DX.norm(t.artist); pv.list = pv.list.filter(function (x, i) { return i <= pv.at || DX.norm(x.artist) !== a2; }); pv.at++; pvPlay(); } } }));
+		bar.appendChild(U.iconBtn('close', 'Close the preview radio', { on: { click: pvClose } }));
+		bar.appendChild(h('span', { class: 'ts-pvbar-prog' }, h('i', { class: 'ts-pvbar-fill' })));
+	}
+
+	// ---- Moods & scenes: mix and match, and the mood-by-scene grid ------------------------------------
+	var MIX_ROWS = [
+		['moods', 'Mood', function () { return T.MOODS.map(function (m) { return [m[0], m[1], { h: MOOD_HUE[m[0]], s: 60 }]; }); }, 'mood'],
+		['scenes', 'Scene', function () { return T.SCENES.map(function (s2) { return [s2[0], s2[1], { h: SCENE_HUE[s2[0]], s: 45 }]; }); }, 'scene'],
+		['langs', 'Language', function () { return T.LANGS.map(function (l) { return [l[0], l[1], null]; }); }, 'lang'],
+		['families', 'Family', function () { return T.FAMILIES.map(function (f2) { return [f2.key, f2.name, familyHue(f2.key)]; }); }, null],
+		['decades', 'Era', function () { return Object.keys(idx().decades).sort().map(function (d) { return [d, d, null]; }); }, 'decade'],
+		['added', 'Added', function () { return Object.keys(idx().addedY).sort().reverse().map(function (y) { return [y, y, addedHue(y)]; }); }, null]
+	];
+	function mixFromQuery(query) {
+		var p = {};
+		MIX_ROWS.forEach(function (r) { var v = query.get(r[0]); if (v) p[r[0]] = v.split(',').filter(Boolean); });
+		return p;
+	}
+	function mixName(p) {
+		var parts = [];
+		if (p.moods) parts.push(p.moods.map(function (m) { return T.MOOD_NAME[m]; }).join(' or '));
+		if (p.families) parts.push(p.families.map(function (f2) { return (T.family(f2) || {}).name; }).join(' or '));
+		if (p.scenes) parts.push(p.scenes.map(function (s2) { return T.SCENE_NAME[s2]; }).join(' or '));
+		if (p.langs) parts.push(p.langs.map(function (l) { return T.LANG_NAME[l]; }).join(' or '));
+		if (p.decades) parts.push(p.decades.join(' or '));
+		if (p.added) parts.push('added ' + p.added.join(' or '));
+		return parts.join(', ') || 'Everything';
+	}
+	function browseMixer(view, query) {
+		var p = mixFromQuery(query), ix = idx();
+		var box = h('section', { class: 'ts-mixer', aria: { label: 'Mix and match' } });
+		box.appendChild(h('h2', { text: 'Mix and match' }));
+		box.appendChild(h('p', { class: 'ts-muted', text: 'Pick in any rows: choices in one row are alternatives, rows narrow each other (wistful or tender, and visual novels, and Japanese).' }));
+		var base = S.select(ix.music, selectOf(planWith(p, 'true')), now());
+		MIX_ROWS.forEach(function (r) {
+			var row = h('div', { class: 'ts-mixrow' }, [h('span', { class: 'ts-mixrow-h', text: r[1] })]);
+			var cs = h('div', { class: 'ts-chips is-tight' });
+			// how many songs each choice would give with the other rows as they are
+			var others = {};
+			for (var k in p) if (k !== r[0]) others[k] = p[k];
+			var pool2 = S.select(ix.music, selectOf(planWith(others, 'true')), now());
+			r[2]().forEach(function (o) {
+				var cnt = S.select(pool2, selectOf(planWith((function () { var x = {}; x[r[0]] = [o[0]]; return x; })(), 'true')), now()).length;
+				var on = (p[r[0]] || []).indexOf(o[0]) >= 0;
+				if (!cnt && !on) return;
+				var c = h('button', { class: 'ts-chip' + (on ? ' is-on' : '') + (o[2] ? ' is-hued' : ''), aria: { pressed: on ? 'true' : 'false' } }, [h('span', { text: o[1] }), h('span', { class: 'ts-count', text: n(cnt) })]);
+				if (o[2]) { c.style.setProperty('--h', String(o[2].h)); c.style.setProperty('--s', o[2].s + '%'); }
+				c.addEventListener('click', function () {
+					var cur = (p[r[0]] || []).slice(), at = cur.indexOf(o[0]);
+					if (at >= 0) cur.splice(at, 1); else cur.push(o[0]);
+					var ch = {}; ch[r[0]] = cur.length ? cur.join(',') : null;
+					setQuery(ch);
+				});
+				cs.appendChild(c);
+			});
+			row.appendChild(cs);
+			box.appendChild(row);
+		});
+		var any = Object.keys(p).length > 0;
+		var res = h('div', { class: 'ts-mixres' });
+		res.appendChild(h('b', { text: plural(base.length, 'song') }));
+		res.appendChild(h('span', { class: 'ts-muted', text: ' ' + DOT + ' ' + longTime(secs(base)) + ' ' + DOT + ' ' + mixName(p) }));
+		box.appendChild(res);
+		if (any) {
+			var acts = h('div', { class: 'ts-actions' }, [
+				actionBtn('play', 'Play', function () { playIds(sorted(base, 'artist').map(function (t) { return t.id; }), 0, { label: mixName(p), href: location.hash, patch: p }); }, true),
+				shuffleSplit(p, { label: mixName(p), href: location.hash, patch: p })
+			].concat(scopeButtons(p, mixName(p))).concat([actionBtn('close', 'Clear', function () { var ch = {}; MIX_ROWS.forEach(function (r) { ch[r[0]] = null; }); setQuery(ch); })]));
+			box.appendChild(acts);
+		}
+		view.appendChild(box);
+		if (any) { trackList(view, sorted(base, 'artist'), { context: { label: mixName(p), href: location.hash, patch: p }, empty: 'Nothing has all of these. Take a choice away.' }); }
+		return any;
+	}
+	// A grid: moods down, another facet across, the count in each cell (a
+	// single-hue tint for size; the number is written), every cell a link.
+	var MATRIX_COLS = [['scene', 'Scene'], ['family', 'Genre family'], ['lang', 'Language'], ['added', 'Year added'], ['decade', 'Era']];
+	function moodMatrix(view) {
+		var ix = idx(), across = ToyKit.load('matrixCols', 'scene');
+		var wrap = h('section', { class: 'ts-matrix-sec' });
+		var hd = h('div', { class: 'ts-sec-head' }, [h('h2', { text: 'Moods by ' + (MATRIX_COLS.filter(function (c) { return c[0] === across; })[0] || MATRIX_COLS[0])[1].toLowerCase() })]);
+		var sel = h('select', { class: 'kit-input ts-sort', aria: { label: 'Across' } });
+		MATRIX_COLS.forEach(function (c) { sel.appendChild(h('option', { value: c[0], text: 'Across: ' + c[1] })); });
+		sel.value = across;
+		sel.addEventListener('change', function () { ToyKit.store('matrixCols', sel.value); renderView(true); });
+		hd.appendChild(sel);
+		wrap.appendChild(hd);
+		var cols, colOf, colKey;
+		if (across === 'family') { cols = T.FAMILIES.map(function (f2) { return [f2.key, f2.name]; }); colOf = function (t) { return T.trackFamily(t); }; colKey = 'families'; }
+		else if (across === 'lang') { cols = T.LANGS.map(function (l) { return [l[0], l[1]]; }); colOf = function (t) { return t.lang; }; colKey = 'langs'; }
+		else if (across === 'added') { cols = Object.keys(ix.addedY).sort().map(function (y) { return [y, y]; }); colOf = function (t) { return S.addedKeys(t)[0]; }; colKey = 'added'; }
+		else if (across === 'decade') { cols = Object.keys(ix.decades).sort().filter(function (d) { return d >= '1960s'; }).map(function (d) { return [d, d]; }); colOf = function (t) { return t.decade; }; colKey = 'decades'; }
+		else { cols = T.SCENES.map(function (s2) { return [s2[0], s2[1]]; }); colOf = function (t) { return t.scene; }; colKey = 'scenes'; }
+		var cnt = {}, max = 1;
+		ix.music.forEach(function (t) { if (!t.mood) return; var c = colOf(t) || ''; var k = t.mood + '|' + c; cnt[k] = (cnt[k] || 0) + 1; max = Math.max(max, cnt[k]); });
+		cols = cols.filter(function (c) { return T.MOODS.some(function (m) { return cnt[m[0] + '|' + c[0]]; }); });
+		var tbl = h('table', { class: 'ts-matrix' });
+		var trh = h('tr', null, [h('th', { scope: 'col' })]);
+		cols.forEach(function (c) { trh.appendChild(h('th', { scope: 'col', text: c[1] })); });
+		tbl.appendChild(h('thead', null, trh));
+		var tb = h('tbody');
+		T.MOODS.forEach(function (m) {
+			var tr = h('tr', null, [h('th', { scope: 'row' }, h('a', { href: link('c', 'mood', m[0]), text: m[1] }))]);
+			cols.forEach(function (c) {
+				var v = cnt[m[0] + '|' + c[0]] || 0, td = h('td');
+				if (v) {
+					var qs = 'moods=' + m[0] + '&' + colKey + '=' + encodeURIComponent(c[0]);
+					var a = h('a', { href: '#/browse?' + qs, title: m[1] + ', ' + c[1] + ': ' + plural(v, 'song'), aria: { label: m[1] + ', ' + c[1] + ': ' + plural(v, 'song') }, text: String(v) });
+					a.style.setProperty('--t', String(Math.round(8 + 72 * Math.sqrt(v / max))));
+					td.appendChild(a);
+				}
+				tr.appendChild(td);
+			});
+			tb.appendChild(tr);
+		});
+		tbl.appendChild(tb);
+		wrap.appendChild(h('div', { class: 'ts-matrix-wrap' }, tbl));
+		wrap.appendChild(h('p', { class: 'ts-muted', text: 'Each cell opens that combination below the mixer: play it, shuffle it, focus on it or keep it as a playlist.' }));
+		view.appendChild(wrap);
+	}
+	// On a mood page: where it lives; on a scene page: its moods.
+	function facetBreakdown(view, facet, v) {
+		var ix = idx(), rows = [], key = '';
+		if (facet === 'mood') {
+			var by = {};
+			ix.music.forEach(function (t) { if (t.mood === v && t.scene) by[t.scene] = (by[t.scene] || 0) + 1; });
+			rows = Object.keys(by).sort(function (a, b) { return by[b] - by[a]; }).map(function (s2) { return [T.SCENE_NAME[s2] || s2, by[s2], '#/browse?moods=' + v + '&scenes=' + s2, { h: SCENE_HUE[s2], s: 45 }]; });
+			var fam = {};
+			ix.music.forEach(function (t) { if (t.mood === v) { var f2 = T.trackFamily(t); fam[f2] = (fam[f2] || 0) + 1; } });
+			rows = rows.concat(Object.keys(fam).sort(function (a, b) { return fam[b] - fam[a]; }).slice(0, 8).map(function (f2) { return [(T.family(f2) || {}).name, fam[f2], '#/browse?moods=' + v + '&families=' + f2, familyHue(f2)]; }));
+			key = 'Split it by scene or family';
+		} else if (facet === 'scene') {
+			var bm = {};
+			ix.music.forEach(function (t) { if (t.scene === v && t.mood) bm[t.mood] = (bm[t.mood] || 0) + 1; });
+			rows = T.MOODS.filter(function (m) { return bm[m[0]]; }).map(function (m) { return [m[1], bm[m[0]], '#/browse?scenes=' + v + '&moods=' + m[0], { h: MOOD_HUE[m[0]], s: 60 }]; });
+			key = 'Split it by mood';
+		}
+		if (!rows.length) return;
+		var bar = h('div', { class: 'ts-breakdown' }, [h('span', { class: 'ts-muted', text: key })]);
+		var cs = h('div', { class: 'ts-chips is-tight' });
+		rows.forEach(function (r) { cs.appendChild(chip(r[0] + ' ' + r[1], r[2], r[3])); });
+		bar.appendChild(cs);
+		var acts = view.querySelector('.ts-actions');
+		if (acts) acts.parentNode.insertBefore(bar, acts.nextSibling); else view.appendChild(bar);
+	}
+
 	// ---- Keys ----------------------------------------------------------------------------------------------
 
 	function wireKeys() {
@@ -4359,7 +4829,7 @@
 		var seek = $('seek');
 		seek.addEventListener('input', function () { seeking = true; $('time-cur').textContent = clock(+seek.value); });
 		seek.addEventListener('change', function () { seeking = false; player.seek(+seek.value); });
-		player.on('state', function (e) { renderTransport(); renderTime(); if (e && (e.state === 'playing' || e.state === 'paused')) playerMessage(null); });
+		player.on('state', function (e) { renderTransport(); renderTime(); if (e && (e.state === 'playing' || e.state === 'paused')) playerMessage(null); if (e && e.state === 'playing' && pv.audio && !pv.audio.paused) { pv.audio.pause(); pvRender(); } });
 		player.on('time', renderTime);
 		window.addEventListener('hashchange', onRoute);
 	}

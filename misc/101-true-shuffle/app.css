@@ -951,3 +951,47 @@ body.is-filedrop::after { content: 'Drop the labels file to apply it'; position:
 .ts-sec-head .ts-act { margin-left: auto; height: 34px; font-size: 13px; }
 @media (max-width: 760px) { .ts-wtable th:nth-child(3), .ts-wtable td:nth-child(3), .ts-wtable th:nth-child(7), .ts-wtable td:nth-child(7), .ts-wtable th:nth-child(8), .ts-wtable td:nth-child(8) { display: none; } }
 .ts-wtable td { white-space: nowrap; } .ts-wtable td.ts-wt-artists { white-space: nowrap; }
+
+/* ---------- Discover hub ---------- */
+.ts-back { display: inline-block; margin: 0 0 8px; font-size: 13.5px; font-weight: 650; color: var(--text-2); text-decoration: none; }
+.ts-back:hover { color: var(--heading); text-decoration: underline; }
+.ts-dsearch .kit-input { flex: 1 1 320px; max-width: 520px; height: 44px; font-size: 15px; }
+.ts-dsearch-res:empty { display: none; }
+.ts-dsec { margin-top: 8px; }
+.ts-dsub { margin-top: 16px; }
+.ts-dsub h3 { margin: 0; font-size: 16px; color: var(--heading); }
+.ts-dsub .ts-act, .ts-dsec .ts-sec-head .ts-act { margin-left: auto; height: 34px; font-size: 13px; }
+.ts-save.is-on { color: var(--accent); }
+.ts-dloading { font-size: 13px; }
+
+/* the preview radio, above the player bar */
+.ts-pvbar { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(var(--ts-bar) + 12px); z-index: 900; width: min(980px, calc(100vw - 24px)); display: flex; align-items: center; gap: 8px; padding: 10px 12px 14px; border-radius: 14px; background: var(--surface-2); border: 1px solid var(--border-strong); box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4); }
+.ts-pvbar-art { width: 52px; height: 52px; border-radius: 8px; flex: none; }
+.ts-pvbar-text { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.ts-pvbar-text .ts-kicker { margin: 0; font-size: 10.5px; }
+.ts-pvbar-text b { color: var(--heading); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ts-pvbar-text a, .ts-pvbar-text span { font-size: 13px; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ts-pvbar-prog { position: absolute; left: 12px; right: 12px; bottom: 6px; height: 3px; border-radius: 3px; background: var(--border); overflow: hidden; }
+.ts-pvbar-fill { display: block; height: 100%; width: 0; background: var(--accent); }
+body.has-pvbar .ts-toast { bottom: calc(var(--ts-bar) + 110px); }
+@media (max-width: 760px) { .ts-pvbar { bottom: 140px; flex-wrap: wrap; } .ts-pvbar .kit-btn { display: none; } }
+
+/* ---------- Moods & scenes: the mixer and the grid ---------- */
+.ts-mixer { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; margin: 4px 0 18px; }
+.ts-mixer h2 { margin: 0 0 4px; font-size: 19px; color: var(--heading); }
+.ts-mixer > p { margin: 0 0 10px; font-size: 13px; }
+.ts-mixrow { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 10px; align-items: start; padding: 6px 0; border-top: 1px solid var(--border); }
+.ts-mixrow-h { font-size: 12.5px; font-weight: 700; color: var(--text-2); padding-top: 6px; }
+.ts-mixres { margin-top: 10px; font-size: 15px; }
+.ts-mixres b { color: var(--heading); }
+.ts-mixer .ts-actions { padding-bottom: 0; }
+.ts-matrix-wrap { overflow-x: auto; }
+.ts-matrix { border-collapse: separate; border-spacing: 3px; font-size: 13px; }
+.ts-matrix th { font-weight: 650; color: var(--text-2); padding: 4px 8px; white-space: nowrap; text-align: center; font-size: 12px; }
+.ts-matrix th[scope="row"] { text-align: left; font-size: 13px; }
+.ts-matrix th a { color: var(--heading); text-decoration: none; }
+.ts-matrix td { padding: 0; min-width: 64px; }
+.ts-matrix td a { display: block; text-align: center; padding: 10px 6px; border-radius: 6px; text-decoration: none; color: var(--heading); font-weight: 650; font-variant-numeric: tabular-nums; background: color-mix(in srgb, var(--ts-bar-fill) calc(var(--t, 10) * 1%), transparent); }
+.ts-matrix td a:hover, .ts-matrix td a:focus-visible { outline: 2px solid var(--accent); }
+.ts-breakdown { display: flex; flex-direction: column; gap: 4px; margin: 4px 0 10px; font-size: 13px; }
+@media (max-width: 760px) { .ts-mixrow { grid-template-columns: minmax(0, 1fr); gap: 2px; } }

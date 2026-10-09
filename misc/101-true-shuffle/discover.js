@@ -90,12 +90,23 @@
 
 	function createDeezer(opts) {
 		var transport = opts.transport, cache = {};
-		function call(path) {
-			if (cache[path]) return cache[path];
-			var p = transport(API + path).then(function (d) {
-				if (d && d.error) throw new Error('Deezer: ' + (d.error.message || 'error'));
+		// Deezer allows 50 requests in 5 seconds: requests leave at least
+		// GAP ms apart, and a 'quota exceeded' answer waits and tries again.
+		var GAP = opts.gapMs == null ? 125 : opts.gapMs, next = 0;
+		var wait = opts.sleep || function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
+		function slot() { var t = Date.now(), at = Math.max(t, next); next = at + GAP; return at - t > 0 ? wait(at - t) : Promise.resolve(); }
+		function send(path, tries) {
+			return slot().then(function () { return transport(API + path); }).then(function (d) {
+				if (d && d.error) {
+					if (+d.error.code === 4 && tries < 4) return wait(1500 * (tries + 1)).then(function () { return send(path, tries + 1); });
+					throw new Error('Deezer: ' + (d.error.message || 'error'));
+				}
 				return d;
 			});
+		}
+		function call(path) {
+			if (cache[path]) return cache[path];
+			var p = send(path, 0);
 			cache[path] = p;
 			p.catch(function () { delete cache[path]; });
 			return p;
@@ -103,7 +114,15 @@
 		return {
 			searchArtists: function (name) { return call('search/artist?q=' + encodeURIComponent(str(name)) + '&limit=6').then(function (d) { return (d && d.data) || []; }); },
 			related: function (id) { return call('artist/' + id + '/related?limit=20').then(function (d) { return (d && d.data) || []; }); },
-			top: function (id, n) { return call('artist/' + id + '/top?limit=' + (n || 5)).then(function (d) { return (d && d.data) || []; }); }
+			top: function (id, n) { return call('artist/' + id + '/top?limit=' + (n || 5)).then(function (d) { return (d && d.data) || []; }); },
+			artist: function (id) { return call('artist/' + id); },
+			// newest first
+			albums: function (id, n) { return call('artist/' + id + '/albums?limit=' + (n || 50)).then(function (d) { return ((d && d.data) || []).map(albumOf).sort(function (a, b) { return a.date < b.date ? 1 : a.date > b.date ? -1 : 0; }); }); },
+			albumTracks: function (album) { return call('album/' + album.id + '/tracks?limit=60').then(function (d) { return ((d && d.data) || []).map(function (t) { var x = trackOf(t); if (!x.cover) x.cover = album.cover || ''; if (!x.album) x.album = album.title || ''; return x; }); }); },
+			// an artist mix: songs like the artist's, by them and others
+			radio: function (id, n) { return call('artist/' + id + '/radio?limit=' + (n || 40)).then(function (d) { return ((d && d.data) || []).map(function (t) { return trackOf(t); }); }); },
+			searchPlaylists: function (q, n) { return call('search/playlist?q=' + encodeURIComponent(str(q)) + '&limit=' + (n || 5)).then(function (d) { return (d && d.data) || []; }); },
+			playlistTracks: function (id, n) { return call('playlist/' + id + '/tracks?limit=' + (n || 60)).then(function (d) { return ((d && d.data) || []).map(function (t) { return trackOf(t); }); }); }
 		};
 	}
 
@@ -136,9 +155,11 @@
 		return next();
 	}
 
+	function img(u) { return /^https:[/][/][a-z0-9-]+[.]dzcdn[.]net[/]/.test(str(u)) ? str(u) : ''; }
+	function albumOf(a) { return { id: a.id, title: str(a.title), date: str(a.release_date), type: str(a.record_type), cover: img(a.cover_medium), fans: +a.fans || 0 }; }
 	function trackOf(t, artist) {
 		return {
-			id: t.id, title: str(t.title_short || t.title), version: str(t.title_version), artist: str((t.artist && t.artist.name) || (artist && artist.name)),
+			id: t.id, title: str(t.title_short || t.title), version: str(t.title_version), artist: str((t.artist && t.artist.name) || (artist && artist.name)), artistId: (t.artist && t.artist.id) || (artist && artist.id) || null,
 			preview: /^https:\/\/[a-z0-9-]+\.dzcdn\.net\//.test(str(t.preview)) ? str(t.preview) : '',
 			cover: t.album && /^https:\/\/[a-z0-9-]+\.dzcdn\.net\//.test(str(t.album.cover_medium)) ? str(t.album.cover_medium) : '',
 			album: str(t.album && t.album.title), duration: +t.duration || 0, link: /^https:\/\/www\.deezer\.com\//.test(str(t.link)) ? str(t.link) : ''
@@ -190,5 +211,5 @@
 		return best;
 	}
 
-	return { API: API, norm: norm, sandboxTransport: sandboxTransport, createDeezer: createDeezer, findArtist: findArtist, suggest: suggest, youtubeQuery: youtubeQuery, bestVideo: bestVideo };
+	return { API: API, norm: norm, trackOf: trackOf, albumOf: albumOf, img: img, sandboxTransport: sandboxTransport, createDeezer: createDeezer, findArtist: findArtist, suggest: suggest, youtubeQuery: youtubeQuery, bestVideo: bestVideo };
 });
