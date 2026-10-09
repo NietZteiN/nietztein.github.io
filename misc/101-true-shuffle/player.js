@@ -76,7 +76,7 @@
 		var ev = emitter(), state = 'idle', id = null, current = 0, duration = 0, heard = 0, timer = null, destroyed = false, pending = null;
 		var auto = opts.auto == null ? typeof root.document !== 'undefined' : !!opts.auto;
 		var speed = opts.speed > 0 ? opts.speed : 1, stepMs = opts.stepMs > 0 ? opts.stepMs : 250;
-		var card = null, bar = null, label = null, clock = null;
+		var card = null, bar = null, label = null, clock = null, mockVol = 100, mockMuted = false;
 
 		function fmt(s) { s = Math.max(0, Math.floor(s)); return Math.floor(s / 60) + ':' + (s % 60 < 10 ? '0' : '') + (s % 60); }
 		function draw() {
@@ -139,6 +139,8 @@
 			seek: function (sec) { if (id == null) return; current = Math.max(0, Math.min(duration, +sec || 0)); ev.emit('time', { id: id, current: current, duration: duration }); draw(); },
 			time: function () { return { current: current, duration: duration }; },
 			listened: function () { return heard; },
+			volume: function (v) { if (v != null) mockVol = Math.max(0, Math.min(100, +v || 0)); return mockVol; },
+			muted: function (m) { if (m != null) mockMuted = !!m; return mockMuted; },
 			state: function () { return state; },
 			id: function () { return id; },
 			tick: function (ms) { advance(ms == null ? stepMs : ms); },
@@ -195,6 +197,7 @@
 		opts = opts || {};
 		var ev = emitter(), state = 'idle', id = null, yt = null, building = null, poll = null, destroyed = false, wanted = null, heard = 0, lastSeen = null;
 		var host = opts.host || 'https://www.youtube-nocookie.com';
+		var vol = null, mute = null;     // what was asked for before the player was ready
 
 		function set(s) { if (state !== s) { state = s; ev.emit('state', { id: id, state: s }); } }
 		function fail(code, message, detail) { set('error'); ev.emit('error', { id: id, code: code, message: message || ERROR_TEXT[code] || 'The video cannot be played.', detail: detail || '' }); }
@@ -250,7 +253,10 @@
 						// default). playsinline keeps phones from going full screen.
 						playerVars: { autoplay: o.autoplay === false ? 0 : 1, playsinline: 1, rel: 0, start: Math.floor(+o.startSec || 0) || undefined, origin: root.location ? root.location.origin : undefined },
 						events: {
-							onReady: function () { ev.emit('ready', {}); resolve(yt); },
+							onReady: function () {
+								try { if (vol != null) yt.setVolume(vol); if (mute === true) yt.mute(); else if (mute === false) yt.unMute(); } catch (e) { /* an old player */ }
+								ev.emit('ready', {}); resolve(yt);
+							},
 							onStateChange: onState,
 							onError: function (e) { stopPoll(); fail(e.data); }
 						}
@@ -300,6 +306,9 @@
 			seek: function (sec) { if (yt && yt.seekTo) yt.seekTo(+sec || 0, true); },
 			time: function () { return { current: yt && yt.getCurrentTime ? yt.getCurrentTime() || 0 : 0, duration: yt && yt.getDuration ? yt.getDuration() || 0 : 0 }; },
 			listened: function () { return heard; },
+			// 0 to 100; kept until the player is ready when asked for earlier
+			volume: function (v) { if (v != null) { vol = Math.max(0, Math.min(100, Math.round(+v || 0))); if (yt && yt.setVolume) yt.setVolume(vol); } return yt && yt.getVolume ? yt.getVolume() : (vol == null ? 100 : vol); },
+			muted: function (m) { if (m != null) { mute = !!m; if (yt && yt.mute) { if (mute) yt.mute(); else yt.unMute(); } } return yt && yt.isMuted ? yt.isMuted() : !!mute; },
 			state: function () { return state; },
 			id: function () { return id; },
 			destroy: function () { destroyed = true; stopPoll(); ev.clear(); if (yt && yt.destroy) { try { yt.destroy(); } catch (e) { /* gone already */ } } yt = null; }

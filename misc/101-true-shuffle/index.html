@@ -55,6 +55,7 @@
 				<button class="ts-poster" id="poster" type="button"><span class="ts-poster-art" id="poster-art" aria-hidden="true"></span><span class="ts-poster-play" aria-hidden="true"></span><span class="ts-poster-text" id="poster-text">Press play</span></button>
 			</div>
 			<span class="ts-demo-tag" id="demo-tag" hidden>Demo &middot; no sound</span>
+			<div class="ts-vbar kit-nothumb" id="vbar" role="group" aria-label="Player size"></div>
 		</div>
 		<div class="ts-now-rest" id="now-rest">
 			<div class="ts-sheet-grip kit-nothumb"><button class="ts-icon-btn" id="sheet-close" type="button" aria-label="Close the queue"></button></div>
@@ -64,10 +65,12 @@
 					<button class="ts-tab" id="tab-next" type="button" role="tab" aria-selected="true" aria-controls="panel-next">Up next</button>
 					<button class="ts-tab" id="tab-history" type="button" role="tab" aria-selected="false" aria-controls="panel-history" tabindex="-1">Played</button>
 					<span class="ts-tabs-sp"></span>
+					<button class="ts-link-btn kit-nothumb" id="btn-save-queue" type="button" title="Save what is queued as a playlist">Save</button>
 					<button class="ts-link-btn kit-nothumb" id="btn-clear-queue" type="button">Clear</button>
 				</div>
 				<div id="panel-next" role="tabpanel" aria-labelledby="tab-next">
 					<p class="ts-context" id="queue-context"></p>
+					<div class="ts-qmode kit-nothumb" id="queue-mode"></div>
 					<ol class="ts-qlist" id="queue"></ol>
 					<p class="ts-muted ts-qmore" id="queue-more"></p>
 				</div>
@@ -83,20 +86,27 @@
 		<div class="ts-bar-track" id="bar-track"></div>
 		<div class="ts-bar-mid">
 			<div class="ts-transport" role="group" aria-label="Playback">
-				<button class="ts-icon-btn ts-modebtn" id="btn-mode" type="button" aria-haspopup="menu" title="How the next tracks are chosen"></button>
+				<button class="ts-modepill" id="btn-mode" type="button" aria-haspopup="menu" title="How the next songs are chosen (o)"></button>
 				<button class="ts-icon-btn" id="btn-prev" type="button" aria-label="Previous track" title="Previous (p)"></button>
 				<button class="ts-play" id="btn-toggle" type="button" aria-label="Play" title="Play or pause (space)"></button>
 				<button class="ts-icon-btn" id="btn-next" type="button" aria-label="Next track" title="Next (n)"></button>
 				<button class="ts-icon-btn" id="btn-reshuffle" type="button" aria-label="Shuffle again" title="Shuffle what comes next again (s)"></button>
+				<button class="ts-icon-btn" id="btn-repeat" type="button" aria-label="Repeat the queue" aria-pressed="false" title="Repeat the queue (r)"></button>
 			</div>
-			<div class="ts-seek">
+			<div class="ts-seek" id="seekbox">
+				<span class="ts-seektip" id="seektip" hidden></span>
 				<span class="ts-time" id="time-cur">0:00</span>
 				<input class="ts-range" id="seek" type="range" min="0" max="1" step="1" value="0" aria-label="Position in the track" disabled>
 				<span class="ts-time" id="time-dur">0:00</span>
 			</div>
 		</div>
 		<div class="ts-bar-right">
-			<button class="ts-icon-btn" id="btn-repeat" type="button" aria-label="Repeat the queue" aria-pressed="false" title="Repeat the queue"></button>
+			<button class="ts-icon-btn" id="btn-like" type="button" aria-label="Like" aria-pressed="false" title="Like (l)"></button>
+			<div class="ts-vol" role="group" aria-label="Volume">
+				<button class="ts-icon-btn" id="btn-mute" type="button" aria-label="Mute" aria-pressed="false" title="Mute (m)"></button>
+				<input class="ts-range ts-volrange" id="vol" type="range" min="0" max="100" step="1" value="100" aria-label="Volume">
+			</div>
+			<button class="ts-icon-btn" id="btn-theater" type="button" aria-label="Theater mode: a big video" aria-pressed="false" title="Theater mode (t)"></button>
 			<button class="ts-icon-btn" id="btn-sleep" type="button" aria-label="Sleep timer" aria-pressed="false" aria-haspopup="menu" title="Sleep timer"></button>
 			<button class="ts-icon-btn" id="btn-edit-now" type="button" aria-label="Edit this track's details" title="Edit details (e)"></button>
 			<button class="ts-icon-btn" id="btn-queue" type="button" aria-label="Show the queue" aria-pressed="false" title="Queue (q)"></button>

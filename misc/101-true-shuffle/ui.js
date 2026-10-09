@@ -87,6 +87,11 @@
 		grip: 'M8 5h3v3H8zm5 0h3v3h-3zm-5 5.5h3v3H8zm5 0h3v3h-3zM8 16h3v3H8zm5 0h3v3h-3z',
 		upload: 'M11 16V7.8L7.4 11.4 6 10l6-6 6 6-1.4 1.4L13 7.8V16zm-6 2h14v2H5z',
 		download: 'M11 4h2v8.2l3.6-3.6L18 10l-6 6-6-6 1.4-1.4 3.6 3.6zm-6 14h14v2H5z',
+		volume: 'M3 9h4l5-4.5v15L7 15H3zm12.5-1.8a6 6 0 0 1 0 9.6l-1.3-1.6a4 4 0 0 0 0-6.4zM17.6 4a10 10 0 0 1 0 16l-1.3-1.6a8 8 0 0 0 0-12.8z',
+		mute: 'M3 9h4l5-4.5v15L7 15H3zm12.3.2 1.4-1.4 2.3 2.3 2.3-2.3 1.4 1.4-2.3 2.3 2.3 2.3-1.4 1.4-2.3-2.3-2.3 2.3-1.4-1.4 2.3-2.3z',
+		theater: 'M2.5 5h19v14h-19zm2 2v10h15V7z',
+		fullscreen: 'M3 3h7v2H5v5H3zm11 0h7v7h-2V5h-5zM3 14h2v5h5v2H3zm16 0h2v7h-7v-2h5z',
+		keyboard: 'M2 6h20v12H2zm2 2v8h16V8zm1 1h2v2H5zm3 0h2v2H8zm3 0h2v2h-2zm3 0h2v2h-2zm3 0h2v2h-2zM5 12h2v2H5zm3 0h8v2H8zm9 0h2v2h-2z',
 		compass: 'M12 2.5a9.5 9.5 0 1 1 0 19 9.5 9.5 0 0 1 0-19zm0 2.2a7.3 7.3 0 1 0 0 14.6 7.3 7.3 0 0 0 0-14.6zm4.2 3.1-2.6 5.8-5.8 2.6 2.6-5.8zM12 10.8a1.2 1.2 0 1 0 0 2.4 1.2 1.2 0 0 0 0-2.4z',
 		map: 'M9 3.5 3 6v14.5l6-2.5 6 2.5 6-2.5V3.5L15 6zm1 2.3 4 1.7v11.7l-4-1.7zM5 7.3l3-1.2v11.6l-3 1.2zm11 .2 3-1.2v11.5l-3 1.3z',
 		repeat: 'M7 7h10v3l4-4-4-4v3H5v6h2zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2z',
@@ -159,7 +164,8 @@
 			if (it.heading) { m.appendChild(h('div', { class: 'ts-menu-h', text: it.heading })); return; }
 			var b = h('button', { class: 'ts-menu-item' + (it.checked ? ' is-checked' : ''), role: it.checked != null ? 'menuitemradio' : 'menuitem', disabled: it.disabled, tabindex: '-1', aria: { checked: it.checked != null ? !!it.checked : null } });
 			b.appendChild(it.icon ? icon(it.icon) : h('span', { class: 'ts-i-sp' }));
-			b.appendChild(h('span', { class: 'ts-menu-label', text: it.label }));
+			if (it.desc) b.appendChild(h('span', { class: 'ts-menu-two' }, [h('span', { class: 'ts-menu-label', text: it.label }), h('span', { class: 'ts-menu-desc', text: it.desc })]));
+			else b.appendChild(h('span', { class: 'ts-menu-label', text: it.label }));
 			if (it.hint) b.appendChild(h('span', { class: 'ts-menu-hint', text: it.hint }));
 			if (it.checked) b.appendChild(icon('check', 'ts-menu-check'));
 			b.addEventListener('click', function () { menuReturn = opts.returnTo || null; closeMenu(); if (it.onSelect) it.onSelect(); });
@@ -306,8 +312,23 @@
 		return swatch(hue, text, cls, sat);
 	}
 
+	// ---- A toast with an action (Undo) -----------------------------------------------------------
+	var toastEl = null, toastTimer = 0;
+	function toast(text, opts) {
+		opts = opts || {};
+		if (!toastEl) { toastEl = h('div', { class: 'ts-toast', role: 'status', aria: { live: 'polite' } }); document.body.appendChild(toastEl); }
+		clearTimeout(toastTimer);
+		clear(toastEl);
+		toastEl.appendChild(h('span', { text: text }));
+		if (opts.action) toastEl.appendChild(h('button', { class: 'ts-toast-btn', text: opts.action, on: { click: function () { hide(); opts.onAction(); } } }));
+		toastEl.classList.add('is-on');
+		function hide() { toastEl.classList.remove('is-on'); }
+		toastTimer = setTimeout(hide, opts.ms || (opts.action ? 7000 : 3500));
+	}
+
 	root.TrueShuffle = root.TrueShuffle || {};
 	root.TrueShuffle.ui = {
+		toast: toast,
 		h: h, add: add, clear: clear, icon: icon, iconBtn: iconBtn, setIcon: setIcon, PATHS: PATHS,
 		parseHash: parseHash, link: link,
 		openMenu: openMenu, closeMenu: closeMenu, openDialog: openDialog, dialogOpen: dialogOpen,
