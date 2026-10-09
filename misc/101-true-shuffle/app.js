@@ -1201,6 +1201,7 @@
 		if (!one) items.push({ label: 'Label them one by one', icon: 'edit', onSelect: function () { startLabelling(ids); } });
 		var menuAt = at && at.getBoundingClientRect ? (function () { var rr = at.getBoundingClientRect(); return { x: rr.left, y: rr.bottom }; })() : at;
 		items.push({ label: 'Add to playlist' + ELL, icon: 'plus', onSelect: function () { addToList(ids, menuAt); } });
+		if (one && !demo && U.YT_ID.test(one.id) && ytTargets().some(function (p) { return !inPlaylist(one.id, p); })) items.push({ label: addLabel() + ' on YouTube' + (ytTargets().length > 1 ? ELL : ''), icon: 'external', onSelect: function () { addToYouTube({ id: one.id, artist: one.artist, title: trackTitle(one), _video: { videoId: one.id } }, menuAt); } });
 		var pl = route.parts[0] === 'list' && listById(route.parts[1]);
 		if (pl && pl.kind === 'manual') items.push({ label: 'Remove from ' + pl.name, icon: 'close', onSelect: function () { removeFromList(pl, ids); } });
 		items.push({ sep: true });
@@ -2224,6 +2225,7 @@
 				actionBtn('play', 'Play', function () { playIds([t.id], 0, { label: trackTitle(t), href: link('track', t.id) }); }, true),
 				actionBtn('radio', 'Start radio', function () { startRadio(t); }),
 				actionBtn('edit', 'Edit details', function () { openEditor([t.id]); }),
+				!demo && U.YT_ID.test(t.id) && ytTargets().some(function (p) { return !inPlaylist(t.id, p); }) ? actionBtn('plus', addLabel() + ' on YouTube', function (e) { addToYouTube({ id: t.id, artist: t.artist, title: trackTitle(t), _video: { videoId: t.id } }, e.currentTarget); }) : null,
 				U.iconBtn('more', 'More', { on: { click: function (e) { trackMenu(t, e.currentTarget, null); } } })
 			]
 		});
@@ -2553,7 +2555,7 @@
 				var setup = h('div', { class: 'ts-setup' });
 				setup.appendChild(h('p', null, [h('b', { text: 'Signing in is not set up yet. ' }), 'The page needs the client id of a Google Cloud project that the person running it creates once. It is not a secret and there is no client secret.']));
 				var ol = h('ol');
-				['At console.cloud.google.com, signed in with the account whose playlists you want to read, create a project and select it.', 'APIs & Services > Library: enable YouTube Data API v3.', 'OAuth consent screen (Google Auth Platform): audience External, publishing status Testing, yourself under Test users, and the one scope https://www.googleapis.com/auth/youtube.readonly.', 'Credentials > Create credentials > OAuth client ID, type Web application. Authorised JavaScript origin: ' + location.origin + '. Authorised redirect URI: ' + auth.redirectUri() + ' (exactly, with the final slash).', 'Copy the Client ID (it ends in .apps.googleusercontent.com) and paste it below. Ignore the client secret.', 'At the first sign-in Google says it has not verified the app. That only means the project is in Testing; the test users you listed can press Continue.'].forEach(function (s) { ol.appendChild(h('li', { text: s })); });
+				['At console.cloud.google.com, signed in with the account whose playlists you want to read, create a project and select it.', 'APIs & Services > Library: enable YouTube Data API v3.', 'OAuth consent screen (Google Auth Platform): audience External, publishing status Testing, yourself under Test users, and the scope https://www.googleapis.com/auth/youtube.readonly; add https://www.googleapis.com/auth/youtube too if you want to add songs to your playlists from here.', 'Credentials > Create credentials > OAuth client ID, type Web application. Authorised JavaScript origin: ' + location.origin + '. Authorised redirect URI: ' + auth.redirectUri() + ' (exactly, with the final slash).', 'Copy the Client ID (it ends in .apps.googleusercontent.com) and paste it below. Ignore the client secret.', 'At the first sign-in Google says it has not verified the app. That only means the project is in Testing; the test users you listed can press Continue.'].forEach(function (s) { ol.appendChild(h('li', { text: s })); });
 				setup.appendChild(ol);
 				acct.appendChild(setup);
 			}
@@ -2576,7 +2578,7 @@
 			var row = h('div', { class: 'ts-row-btns' });
 			if (!signed) { var si = h('button', { class: 'kit-btn primary', text: 'Sign in with Google', disabled: !configured, on: { click: signIn } }); row.appendChild(si); }
 			else row.appendChild(h('button', { class: 'kit-btn', text: 'Disconnect', on: { click: signOut } }));
-			row.appendChild(h('span', { class: 'ts-muted', text: signed ? 'Signed in' + (sources && sources.me ? ' as ' + sources.me.title : '') + ', read-only, for about ' + Math.max(1, Math.round(auth.secondsLeft() / 60)) + ' more minutes.' : 'Read-only access to your YouTube account for one hour. The page cannot change anything there.' }));
+			row.appendChild(h('span', { class: 'ts-muted', text: signed ? 'Signed in' + (sources && sources.me ? ' as ' + sources.me.title : '') + (auth.canWrite() ? ', may add songs to your playlists,' : ', read-only,') + ' for about ' + Math.max(1, Math.round(auth.secondsLeft() / 60)) + ' more minutes.' : 'Read-only access to your YouTube account for one hour. The page cannot change anything there.' }));
 			acct.appendChild(row);
 			if (signed) {
 				acct.appendChild(h('h3', { text: 'Choose what to import' }));
@@ -3972,6 +3974,8 @@
 					pv.disabled = !t.preview;
 					li.appendChild(pv);
 					li.appendChild(h('button', { class: 'kit-btn small', text: auth.signedIn() ? 'Play' : 'YouTube', title: auth.signedIn() ? 'Find it on YouTube and play it here (100 quota units)' : 'Search YouTube in a new tab', on: { click: function (e) { playFound(t, e.currentTarget); } } }));
+					var ab2 = addButton(t);
+					if (ab2) li.appendChild(ab2);
 					if (i === 0) li.appendChild(U.iconBtn('close', 'Not interested in ' + r2.name, { on: { click: function () { hideArtist(r2.name); } } }));
 					list.appendChild(li);
 				});
@@ -4002,6 +4006,8 @@
 					if (prefs.art) li.appendChild(U.art(it.videoId, 210, it.title, 'ts-q-art', true));
 					li.appendChild(h('span', { class: 'ts-q-text' }, [h('span', { class: 'ts-q-title', text: it.title }), h('span', { class: 'ts-q-artist', text: it.channel })]));
 					li.appendChild(h('button', { class: 'kit-btn small', text: 'Play', on: { click: function (ev) { playFound({ id: it.videoId, artist: it.channel.replace(/ - Topic$/, ''), title: it.title, _video: it }, ev.currentTarget); } } }));
+					var ab3 = addButton({ id: it.videoId, artist: it.channel.replace(/ - Topic$/, ''), title: it.title, _video: it });
+					if (ab3) li.appendChild(ab3);
 					res.appendChild(li);
 				});
 				if (!res.firstChild) res.appendChild(h('li', { class: 'ts-muted', text: 'Nothing new: everything found is already in your library.' }));
@@ -4446,6 +4452,8 @@
 		sv.setAttribute('aria-pressed', isSaved(t) ? 'true' : 'false');
 		li.appendChild(sv);
 		li.appendChild(h('button', { class: 'kit-btn small', text: auth.signedIn() ? 'Play' : 'YouTube', title: auth.signedIn() ? 'Find it on YouTube and play it here (100 quota units)' : 'Search YouTube in a new tab', on: { click: function (e) { playFound(t, e.currentTarget); } } }));
+		var ab = addButton(t);
+		if (ab) li.appendChild(ab);
 		li.appendChild(U.iconBtn('close', 'Not interested in ' + t.artist, { on: { click: function () { hideArtist(t.artist); li.parentNode && li.parentNode.removeChild(li); } } }));
 		return li;
 	}
@@ -4656,6 +4664,8 @@
 		var sv = U.iconBtn('plus', 'Save for later', { text: true, cls: 'ts-save' + (isSaved(t) ? ' is-on' : ''), on: { click: function () { toggleSaved(t, sv); } } });
 		bar.appendChild(sv);
 		bar.appendChild(h('button', { class: 'kit-btn small', text: auth.signedIn() ? 'Play on YouTube' : 'Open YouTube', on: { click: function (e) { pvClose(); playFound(t, e.currentTarget); } } }));
+		var ab5 = addButton(t);
+		if (ab5) bar.appendChild(ab5);
 		bar.appendChild(U.iconBtn('block', 'Not interested in ' + t.artist, { on: { click: function () { hideArtist(t.artist); var a2 = DX.norm(t.artist); pv.list = pv.list.filter(function (x, i) { return i <= pv.at || DX.norm(x.artist) !== a2; }); pv.at++; pvPlay(); } } }));
 		bar.appendChild(U.iconBtn('close', 'Close the preview radio', { on: { click: pvClose } }));
 		bar.appendChild(h('span', { class: 'ts-pvbar-prog' }, h('i', { class: 'ts-pvbar-fill' })));
@@ -4885,6 +4895,8 @@
 				li.appendChild(prefs.art ? U.art(it.videoId, 0, it.title, 'ts-q-art', true, 0) : U.swatch(0, it.title, 'ts-q-art', 0));
 				li.appendChild(h('span', { class: 'ts-q-text' }, [h('span', { class: 'ts-q-title', text: it.title }), h('span', { class: 'ts-q-artist', text: (it.addedAt ? String(it.addedAt).slice(0, 10) + ' ' + DOT + ' ' : '') + name })]));
 				li.appendChild(h('button', { class: 'kit-btn small', text: 'Play', title: 'Play it here; it joins the playlist Discovered', on: { click: function (e) { playFound({ id: it.videoId, artist: name, title: it.title, _video: { videoId: it.videoId, title: it.title, channel: name } }, e.currentTarget); } } }));
+				var ab4 = addButton({ id: it.videoId, artist: name, title: it.title, _video: { videoId: it.videoId, title: it.title, channel: name } });
+				if (ab4) li.appendChild(ab4);
 				li.appendChild(U.iconBtn('external', 'Open on YouTube', { on: { click: function () { window.open('https://www.youtube.com/watch?v=' + it.videoId, '_blank', 'noopener'); } } }));
 				ul.appendChild(li);
 			});
@@ -4896,6 +4908,146 @@
 			items = p1.items;
 			return p1.nextPageToken ? client.playlistPage(uploads, p1.nextPageToken).then(function (p2) { items = items.concat(p2.items); }) : null;
 		}).then(function () { channelCache[id] = items; if (location.hash === here) show(items); }).catch(function (e) { up.done(); up.body.appendChild(h('p', { class: 'ts-muted', text: e.message || String(e) })); });
+	}
+
+	// ---- Add a song to one of the account's YouTube playlists ----------------------------------------
+	// The page reads YouTube with a read-only sign-in. Adding asks Google, once, for permission to
+	// edit playlists (Y.WRITE_SCOPE); the add then costs 50 quota units (151 with the search that
+	// finds the video for a song from Deezer). The song joins the library under that playlist.
+
+	var PENDING_ADD = 'toy.101-true-shuffle.pendingAdd';
+	// The account's own playlists in the library: not Liked videos, not the local Discovered.
+	function ytTargets() {
+		return Object.keys(lib.playlists).map(function (k) { return lib.playlists[k]; })
+			.filter(function (p) { return p && !p.special && !/^local:/.test(p.id) && !/^LL/.test(p.id); })
+			.sort(function (a, b) { return (b.count || 0) - (a.count || 0); });
+	}
+	function ytTarget() { var ts = ytTargets(), last = ToyKit.load('addTo', ''); return ts.filter(function (p) { return p.id === last; })[0] || ts[0] || null; }
+	function addLabel() { var tg = ytTarget(); return tg ? 'Add to ' + (tg.title || 'playlist') : 'Add to playlist'; }
+	// The video id a found song already has, if any.
+	function videoOf(t) { return t._video ? t._video.videoId : (lib.tracks[t.id] ? t.id : null); }
+	function inPlaylist(vid, p) { var tr = vid && lib.tracks[vid]; return !!(tr && tr.playlists.indexOf(p.id) >= 0); }
+
+	// The Add button for a song that is not in the playlist yet.
+	function addButton(t, cls) {
+		var tg = ytTarget(), vid = videoOf(t);
+		if (demo || !tg || (vid && ytTargets().every(function (p) { return inPlaylist(vid, p); }))) return null;
+		var b = h('button', { class: 'kit-btn small ts-addyt' + (cls ? ' ' + cls : ''), text: 'Add', title: addLabel() + ' on YouTube (' + (vid ? 50 : 151) + ' quota units)', aria: { label: addLabel() + ' on YouTube: ' + t.title } });
+		b.addEventListener('click', function (e) { e.stopPropagation(); addToYouTube(t, b); });
+		return b;
+	}
+	// Pick the playlist (a menu when there are several), then add.
+	function addToYouTube(t, btn) {
+		if (demo) { say('The demo cannot change YouTube playlists.'); return; }
+		var ts = ytTargets(), vid = videoOf(t);
+		if (!ts.length) { say('Import one of your YouTube playlists first (Settings); songs can then be added to it.'); return; }
+		var open = ts.filter(function (p) { return !inPlaylist(vid, p); });
+		if (!open.length) { say(q(t.title) + ' is already in your playlists.'); return; }
+		if (ts.length === 1) { addTo(t, open[0], btn); return; }
+		var last = ToyKit.load('addTo', '');
+		U.openMenu(btn, [{ heading: 'Add to a YouTube playlist' }].concat(ts.map(function (p) {
+			var has = inPlaylist(vid, p);
+			return { label: p.title || p.id, icon: 'list', hint: has ? 'in it' : n(p.count || 0), checked: p.id === last, disabled: has, onSelect: function () { if (!has) addTo(t, p, btn); } };
+		})), { label: 'Add to a YouTube playlist', returnTo: btn && btn.nodeType ? btn : null });
+	}
+	// Ask for permission to edit playlists. The redirect leaves the page, so the add is kept and
+	// finished when Google sends the reader back (afterSignInReturn).
+	function askWrite(t, p) {
+		var d = U.openDialog({ title: 'Allow adding to your playlists?' });
+		d.body.appendChild(h('p', { text: 'True Shuffle only reads your YouTube account so far. To add ' + q(t.title) + ' to ' + q(p.title) + ', Google will ask once whether this page may also manage your YouTube account: Google has no narrower permission for adding to a playlist. The page only ever adds songs you choose, to the playlist you choose.' }));
+		d.body.appendChild(h('p', { class: 'ts-muted', text: 'The permission lasts for this sign-in (about an hour, in this tab). Disconnect in Settings takes it back.' }));
+		var go = h('button', { class: 'kit-btn primary', text: 'Continue to Google', on: { click: function () {
+			d.close();
+			if (!auth.configured()) { location.hash = '#/settings'; say('Signing in needs a Google client id: see Settings.'); return; }
+			try { sessionStorage.setItem(PENDING_ADD, JSON.stringify({ t: slimFound(t), playlistId: p.id, hash: location.hash, at: Date.now() })); } catch (e) { /* no storage: the add is asked for again after the sign-in */ }
+			setStatus('Going to Google' + ELL);
+			auth.signIn({ scope: Y.SCOPE + ' ' + Y.WRITE_SCOPE }).then(function () { finishPendingAdd(false); }).catch(fail);
+		} } });
+		d.body.appendChild(h('div', { class: 'ts-row-btns' }, [go, h('button', { class: 'kit-btn', text: 'Not now', on: { click: d.close } })]));
+		go.focus();
+	}
+	function slimFound(t) {
+		var o = { id: t.id, artist: t.artist || '', title: t.title || '' };
+		if (t._video) o._video = { videoId: t._video.videoId, title: t._video.title || '', channel: t._video.channel || '' };
+		return o;
+	}
+	// Back from Google: finish the add that sent the reader there. -> true when there was one.
+	function finishPendingAdd(denied) {
+		var pend = null;
+		try { pend = JSON.parse(sessionStorage.getItem(PENDING_ADD) || 'null'); sessionStorage.removeItem(PENDING_ADD); } catch (e) { pend = null; }
+		if (!pend || !pend.t || Date.now() - pend.at > 600000) return false;
+		if (pend.hash) location.hash = pend.hash;
+		var p = lib.playlists[pend.playlistId];
+		if (denied || !auth.canWrite()) { say('Google did not allow editing your playlists, so ' + q(pend.t.title) + ' was not added.'); return true; }
+		if (!p) { say('That playlist is no longer in the library.'); return true; }
+		addTo(pend.t, p, null);
+		return true;
+	}
+	function addTo(t, p, btn) {
+		if (btn && !btn.nodeType) btn = null;
+		if (!auth.signedIn() || !auth.canWrite()) { askWrite(t, p); return; }
+		if (btn) btn.disabled = true;
+		var found = !t._video && !lib.tracks[t.id], vid = videoOf(t), wasIn = !!(vid && lib.tracks[vid]);
+		setStatus('Adding ' + q(t.title) + ' to ' + q(p.title) + ELL);
+		var find = vid ? Promise.resolve(vid) : client.search(DX.youtubeQuery(t), { max: 6 }).then(function (results) {
+			var best = DX.bestVideo(results, t);
+			if (!best) throw new Error('YouTube found nothing for ' + q(DX.youtubeQuery(t)) + '.');
+			vid = best.videoId; wasIn = !!lib.tracks[vid];
+			return vid;
+		});
+		var item = null;
+		find.then(function () {
+			if (inPlaylist(vid, p)) throw new Error(q(t.title) + ' is already in ' + q(p.title) + '.');
+			return client.addToPlaylist(p.id, vid);
+		}).then(function (r) {
+			item = r;
+			var when = r.addedAt || new Date().toISOString();
+			if (lib.tracks[vid]) return lib.tracks[vid];
+			return client.videoBatch([vid]).then(function (res) {
+				if (!res.videos.length) return null;
+				var at = {}; at[vid] = when;
+				L.upsert(lib, res.videos, { playlistId: p.id, addedAt: at, now: Date.now() });
+				return lib.tracks[vid];
+			});
+		}).then(function (tr) {
+			var when = item.addedAt || new Date().toISOString();
+			if (tr) {
+				if (tr.playlists.indexOf(p.id) < 0) tr.playlists.push(p.id);
+				if (!tr.addedAt[p.id]) tr.addedAt[p.id] = when;
+				if (found && !tr.labels) tr.labels = { artist: t.artist, title: t.title };
+				L.deriveIds(lib, [tr.id]);
+			}
+			p.count = (p.count || 0) + 1;
+			ToyKit.store('addTo', p.id);
+			return store.putPlaylists([p]).then(function () { return tr ? changed([tr.id], true) : saveMeta(); }).then(function () {
+				if (btn) { btn.textContent = 'Added'; btn.classList.add('is-done'); }
+				setStatus('');
+				U.toast('Added ' + q(t.title) + ' to ' + q(p.title) + ' on YouTube.', { action: 'Undo', onAction: function () { undoAdd(item, p, vid, wasIn, btn); } });
+			});
+		}).catch(function (err) {
+			if (btn) btn.disabled = false;
+			setStatus('');
+			if (err && err.code === 'needs-write') { askWrite(t, p); return; }
+			onApiError(err);
+		});
+	}
+	function undoAdd(item, p, vid, wasIn, btn) {
+		client.removeFromPlaylist(item.itemId).then(function () {
+			var tr = lib.tracks[vid];
+			p.count = Math.max(0, (p.count || 1) - 1);
+			var done;
+			if (tr) {
+				tr.playlists = tr.playlists.filter(function (x) { return x !== p.id; });
+				delete tr.addedAt[p.id];
+			}
+			if (tr && !wasIn && !tr.playlists.length) { delete lib.tracks[vid]; done = store.deleteTracks([vid]).then(function () { dirty(); return saveMeta(); }); }
+			else done = tr ? changed([vid], true) : saveMeta();
+			return Promise.all([done, store.putPlaylists([p])]).then(function () {
+				if (btn) { btn.textContent = 'Add'; btn.disabled = false; btn.classList.remove('is-done'); }
+				renderAll();
+				say('Taken out of ' + q(p.title) + ' again.');
+			});
+		}).catch(onApiError);
 	}
 
 	// ---- Keys ----------------------------------------------------------------------------------------------
@@ -5088,8 +5240,9 @@
 	}
 	function afterSignInReturn() {
 		if (demo) return;
-		if (back.status === 'error') { say(back.error.message); return; }
+		if (back.status === 'error') { try { sessionStorage.removeItem(PENDING_ADD); } catch (e) { /* none */ } say(back.error.message); return; }
 		if (back.status !== 'signed-in') return;
+		if (finishPendingAdd(!!back.writeDenied)) return;
 		location.hash = '#/settings';
 		listSources().then(function () {
 			var stale = L.stale(lib, Date.now(), TS.config.refreshDays);

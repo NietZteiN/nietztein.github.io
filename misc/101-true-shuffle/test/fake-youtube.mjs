@@ -19,6 +19,8 @@
  *   GET  /youtube/v3/playlists        mine=true: 59 playlists, 50 a page
  *   GET  /youtube/v3/playlistItems    50 a page; PL_BIG has 1,230 items
  *   GET  /youtube/v3/videos           up to 50 ids
+ *   POST /youtube/v3/playlistItems    adds a video to a playlist (a token with the write scope only)
+ *   DELETE /youtube/v3/playlistItems  ?id=: takes an added item out again
  *   GET  /ws/2/artist                 a fake of MusicBrainz's artist search and lookup
  *   GET  /__stats, POST /__control    what was asked, and the switches below
  *
@@ -34,6 +36,7 @@
  *   rateLimitNext: n     the next n API calls answer 403 rateLimitExceeded
  *   expireAfter: n       after n more API calls, every token answers 401
  *   deny: true           the sign-in answers error=access_denied
+ *   denyWrite: true      a sign-in that asks to write is granted only the read scope
  *   noChannel: true      the account has no YouTube channel
  *   gone: [ids]          these videos are no longer returned by videos.list
  *   shrink: { PL_SMALL: 2 }   the playlist lists that many items fewer
@@ -44,6 +47,7 @@ import { pathToFileURL } from 'node:url';
 
 const WIKI = 'https://en.wikipedia.org/wiki/';
 const SCOPE = 'https://www.googleapis.com/auth/youtube.readonly';
+const WRITE_SCOPE = 'https://www.googleapis.com/auth/youtube';
 
 const ARTISTS = ['Paper Lanterns', 'Glass Orchard', 'Hollow Compass', 'Neon Abacus', 'Saffron Circuit', 'Quiet Ferrymen', 'Tin Lighthouse Trio', 'DJ Tessellate', 'Marrow & Pine', 'The Velvet Algorithms', 'Kumori Station', 'Las Polillas Electricas'];
 const TOPICS = [['Rock_music'], ['Pop_music'], ['Rock_music'], ['Electronic_music'], ['Electronic_music', 'Pop_music'], ['Country_music'], ['Jazz'], ['Hip_hop_music'], ['Independent_music'], ['Soul_music', 'Rhythm_and_blues'], ['Pop_music', 'Music_of_Asia'], ['Music_of_Latin_America']];
@@ -125,8 +129,9 @@ function googleError(code, reason, message, domain) {
 export async function startFake(options = {}) {
 	const playlists = buildPlaylists();
 	let tokenSerial = 0;
-	const tokens = new Map();      // token -> { revoked }
-	const fresh = () => ({ quotaAfter: null, failNext: 0, rateLimitNext: 0, expireAfter: null, deny: false, noChannel: false, gone: [], shrink: {}, latencyMs: 0 });
+	const tokens = new Map();      // token -> { revoked, write }
+	const fresh = () => ({ quotaAfter: null, failNext: 0, rateLimitNext: 0, expireAfter: null, deny: false, denyWrite: false, noChannel: false, gone: [], shrink: {}, latencyMs: 0 });
+	let itemSerial = 0;
 	let sw = Object.assign(fresh(), options.switches || {});
 	const stats = { requests: 0, units: 0, byMethod: {}, auth: 0, revoked: [], preflights: 0, mb: 0, log: [] };
 
@@ -245,6 +250,46 @@ export async function startFake(options = {}) {
 		return send(res, 404, googleError(404, 'notFound', 'Not Found', 'global'));
 	}
 
+	// playlistItems.insert and .delete, 50 units each
+	function writeItem(req, res, url, body) {
+		const method = 'playlistItems.' + (req.method === 'POST' ? 'insert' : 'delete');
+		stats.requests++;
+		stats.units += 50;
+		stats.byMethod[method] = (stats.byMethod[method] || 0) + 1;
+		stats.log.push(method);
+		const auth = /^Bearer (.+)$/.exec(req.headers.authorization || '');
+		const tok = auth && tokens.get(auth[1]);
+		if (!tok || tok.revoked) return send(res, 401, googleError(401, 'authError', 'Invalid Credentials', 'global'));
+		if (!tok.write) return send(res, 403, googleError(403, 'insufficientPermissions', 'Request had insufficient authentication scopes.', 'global'));
+		if (sw.quotaAfter != null) {
+			if (sw.quotaAfter <= 0) return send(res, 403, googleError(403, 'quotaExceeded', 'The request cannot be completed because you have exceeded your quota.', 'youtube.quota'));
+			sw.quotaAfter--;
+		}
+		if (req.method === 'DELETE') {
+			const m = /^PLI-(.+)-(\d+)$/.exec(url.searchParams.get('id') || '');
+			const list = m && playlists[m[1]];
+			if (!list || Number(m[2]) >= list.items.length) return send(res, 404, googleError(404, 'playlistItemNotFound', 'Playlist item not found.', 'youtube.playlistItem'));
+			list.items.splice(Number(m[2]), 1);
+			res.writeHead(204, { 'Access-Control-Allow-Origin': '*' });
+			return res.end();
+		}
+		let data;
+		try { data = JSON.parse(body || '{}'); } catch { return send(res, 400, googleError(400, 'parseError', 'Parse Error', 'global')); }
+		const sn = data.snippet || {}, id = sn.playlistId, vid = sn.resourceId && sn.resourceId.videoId;
+		if (url.searchParams.get('part') !== 'snippet') return send(res, 400, googleError(400, 'missingRequiredParameter', 'No part parameter.', 'youtube.parameter'));
+		if (!id || !playlists[id] || playlists[id].forbidden) return send(res, 404, googleError(404, 'playlistNotFound', 'Playlist not found.', 'youtube.playlistItem'));
+		const n = numberOf(vid || '');
+		if (Number.isNaN(n) || n <= 0 || isDeleted(n) || isPrivate(n) || sw.gone.includes(vid)) return send(res, 404, googleError(404, 'videoNotFound', 'Video not found.', 'youtube.playlistItem'));
+		const list = playlists[id];
+		list.items.push(n);
+		const position = list.items.length - 1;
+		itemSerial++;
+		return send(res, 200, {
+			kind: 'youtube#playlistItem', id: 'PLI-' + id + '-' + position,
+			snippet: { publishedAt: new Date(Date.UTC(2026, 9, 9, 12, 0, itemSerial)).toISOString(), channelId: 'UCfakelistener', playlistId: id, position, title: makeVideo(n).snippet.title, resourceId: { kind: 'youtube#video', videoId: vid } }
+		});
+	}
+
 	function musicbrainz(res, url) {
 		stats.mb++;
 		const m = /^\/ws\/2\/artist\/([0-9a-f-]{36})$/.exec(url.pathname);
@@ -269,7 +314,7 @@ export async function startFake(options = {}) {
 			try {
 				if (req.method === 'OPTIONS') {
 					stats.preflights++;
-					res.writeHead(204, { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers': 'authorization, content-type, accept', 'Access-Control-Max-Age': '600' });
+					res.writeHead(204, { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS', 'Access-Control-Allow-Headers': 'authorization, content-type, accept', 'Access-Control-Max-Age': '600' });
 					return res.end();
 				}
 				if (url.pathname === '/o/oauth2/v2/auth') {
@@ -280,14 +325,18 @@ export async function startFake(options = {}) {
 					if (!['127.0.0.1', 'localhost', '[::1]'].includes(target.hostname)) return send(res, 400, 'Error 400: redirect_uri_mismatch (the fake only sends tokens to localhost)');
 					if (q.get('response_type') !== 'token') return send(res, 400, 'Error 400: unsupported_response_type');
 					if (!q.get('client_id')) return send(res, 400, 'Error 401: invalid_client');
-					if (q.get('scope') !== SCOPE) return send(res, 400, 'Error 400: invalid_scope');
+					const asked = String(q.get('scope') || '').split(/ +/).filter(Boolean);
+					if (!asked.length || asked.some((s) => s !== SCOPE && s !== WRITE_SCOPE)) return send(res, 400, 'Error 400: invalid_scope');
+					const write = asked.includes(WRITE_SCOPE) && !sw.denyWrite;
+					// include_granted_scopes: the read scope comes along with the write one
+					const granted = write ? [SCOPE, WRITE_SCOPE] : [SCOPE];
 					const state = q.get('state') || '';
 					let frag;
 					if (sw.deny) frag = new URLSearchParams({ error: 'access_denied', state });
 					else {
 						const token = 'fake-token-' + (++tokenSerial);
-						tokens.set(token, { revoked: false });
-						frag = new URLSearchParams({ state, access_token: token, token_type: 'Bearer', expires_in: '3599', scope: SCOPE });
+						tokens.set(token, { revoked: false, write });
+						frag = new URLSearchParams({ state, access_token: token, token_type: 'Bearer', expires_in: '3599', scope: granted.join(' ') });
 					}
 					res.writeHead(302, { Location: back.split('#')[0] + '#' + frag.toString(), 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store' });
 					return res.end();
@@ -306,6 +355,12 @@ export async function startFake(options = {}) {
 					return undefined;
 				}
 				if (url.pathname.startsWith('/youtube/v3/') && req.method === 'GET') return api(req, res, url);
+				if (url.pathname === '/youtube/v3/playlistItems' && (req.method === 'POST' || req.method === 'DELETE')) {
+					let body = '';
+					req.on('data', (c) => { body += c; });
+					req.on('end', () => writeItem(req, res, url, body));
+					return undefined;
+				}
 				if (url.pathname.startsWith('/ws/2/artist') && req.method === 'GET') return musicbrainz(res, url);
 				if (url.pathname === '/__stats') return send(res, 200, stats);
 				if (url.pathname === '/__control' && req.method === 'POST') {
@@ -336,7 +391,7 @@ export async function startFake(options = {}) {
 		stats,
 		playlists,
 		// A token as the sign-in would issue it, without going through the redirect.
-		issueToken() { const t = 'fake-token-' + (++tokenSerial); tokens.set(t, { revoked: false }); return t; },
+		issueToken(o = {}) { const t = 'fake-token-' + (++tokenSerial); tokens.set(t, { revoked: false, write: !!o.write }); return t; },
 		set(changes) { if (changes && changes.reset) sw = fresh(); Object.assign(sw, changes || {}); delete sw.reset; return handle; },
 		reset() { sw = fresh(); stats.requests = 0; stats.units = 0; stats.byMethod = {}; stats.auth = 0; stats.preflights = 0; stats.mb = 0; stats.log = []; stats.revoked = []; return handle; },
 		close() { return new Promise((resolve) => { server.closeAllConnections?.(); server.close(() => resolve()); }); }

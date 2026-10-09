@@ -998,3 +998,6 @@ body.has-pvbar .ts-toast { bottom: calc(var(--ts-bar) + 110px); }
 .ts-subh { margin: 14px 0 6px; font-size: 15px; color: var(--text-2); } .ts-more-artist { margin-top: 8px; border-top: 1px solid var(--border); }
 .ts-bars-t { table-layout: fixed; } .ts-bars-t th { width: 42%; max-width: none; } .ts-bars-v { width: 14%; } .ts-bars-c { width: 44%; }
 @media (max-width: 760px) { .ts-sticky { margin: 0 -16px; padding: 0 16px; } .ts-r-sub:has(.ts-guesspicks) { white-space: normal; } .ts-guesspicks { display: flex; flex-wrap: wrap; margin: 4px 0 0; } .ts-pick { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } }
+
+/* adding a found song to a YouTube playlist */
+.ts-addyt.is-done { color: var(--accent); border-color: var(--accent); }

@@ -1797,6 +1797,24 @@ describe('yt', async function () {
 		eq(s.auth.handleRedirect().status, 'none', 'handleRedirect: nothing to do the second time');
 		var reload = Y.createAuth({ clientId: CLIENT_ID, endpoints: s.auth.test ? Y.endpoints({ search: '', hostname: '127.0.0.1', storage: storage }) : null, storage: storage, location: fakeLocation(PAGE), history: null, now: now });
 		eq(reload.token(), s.auth.token(), 'a reload keeps the session: the token comes back from sessionStorage');
+		// ---- asking to write, only to add to a playlist
+		async function signInWrite(deny) {
+			var st = fakeStorage(), loc = fakeLocation(PAGE + '?api=' + fake.url);
+			fake.set({ denyWrite: !!deny });
+			var a1 = Y.createAuth({ clientId: CLIENT_ID, endpoints: Y.endpoints({ search: loc.search, hostname: loc.hostname, storage: st }), storage: st, location: loc, history: fakeHistory(loc), now: now });
+			a1.signIn({ scope: Y.WRITE_SCOPE });
+			var res = await fetch(loc.assigned, { redirect: 'manual' });
+			await res.text();
+			fake.set({ denyWrite: false });
+			var loc2 = fakeLocation(res.headers.get('location'));
+			var a2 = Y.createAuth({ clientId: CLIENT_ID, endpoints: Y.endpoints({ search: loc2.search, hostname: loc2.hostname, storage: st }), storage: st, location: loc2, history: fakeHistory(loc2), now: now });
+			return { asked: new URL(loc.assigned).searchParams.get('scope'), auth: a2, back: a2.handleRedirect() };
+		}
+		var w = await signInWrite(false);
+		eq([w.asked, w.back.status, !!w.back.writeDenied, w.auth.canWrite()], [Y.WRITE_SCOPE, 'signed-in', false, true], 'signIn({ scope: WRITE_SCOPE }) asks to write, and the token may then add to playlists');
+		var wd = await signInWrite(true);
+		eq([wd.back.status, wd.back.writeDenied, wd.auth.signedIn(), wd.auth.canWrite()], ['signed-in', true, true, false], 'allowed only to read: still signed in for reading, and the answer says writing was refused');
+		eq([s.auth.canWrite(), Y.canWriteScope(Y.SCOPE), Y.canWriteScope(Y.SCOPE + ' ' + Y.WRITE_SCOPE)], [false, false, true], 'the ordinary sign-in may only read; canWriteScope tells the two apart');
 		var changes = [];
 		reload.onChange(function (signedIn) { changes.push(signedIn); });
 		clock += 3540 * 1000;
@@ -1902,6 +1920,18 @@ describe('yt', async function () {
 		eq(dead.quota().units, 0, 'network: a request that got no answer is not counted');
 		var ac = new AbortController(); ac.abort();
 		await rejects(x.client.me({ signal: ac.signal }), function (e) { return e.code === 'aborted'; }, 'aborted: a signal that has fired stops the call');
+
+		// ---- adding to a playlist (50 units each way)
+		var xw = session(), wtok = fake.issueToken({ write: true });
+		var cw = Y.createClient({ getToken: function () { return wtok; }, endpoints: xw.client.endpoints, sleep: function () { return Promise.resolve(); } });
+		var small = fake.playlists.PL_SMALL.items.length;
+		var added = await cw.addToPlaylist('PL_SMALL', 'fake0000500');
+		eq([added.playlistId, added.videoId, /^PLI-PL_SMALL-[0-9]+$/.test(added.itemId), typeof added.addedAt, fake.playlists.PL_SMALL.items.length], ['PL_SMALL', 'fake0000500', true, 'string', small + 1], 'addToPlaylist: the video goes at the end, and the item id and time come back');
+		eq([cw.quota().units, cw.quota().byMethod], [50, { 'playlistItems.insert': 1 }], 'addToPlaylist costs 50 quota units');
+		await rejects(xw.client.addToPlaylist('PL_SMALL', 'fake0000501'), function (e) { return e.code === 'needs-write'; }, 'addToPlaylist with a reading sign-in: needs-write, so the page can ask for more');
+		await rejects(cw.addToPlaylist('PL_SMALL', 'fake0000041'), function (e) { return e.code === 'not-found' && /video/.test(e.message); }, 'addToPlaylist of a deleted video: not-found, and the message names the video');
+		await rejects(cw.addToPlaylist('PL_NOPE', 'fake0000500'), function (e) { return e.code === 'not-found'; }, 'addToPlaylist to a playlist that is not there: not-found');
+		eq([await cw.removeFromPlaylist(added.itemId), fake.playlists.PL_SMALL.items.length, cw.quota().byMethod['playlistItems.delete']], [true, small, 1], 'removeFromPlaylist takes it out again (the undo)');
 
 		// ---- the import: 1,230 items
 		x = session();

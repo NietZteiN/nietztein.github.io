@@ -149,7 +149,7 @@
 		openMenuEl = null;
 		if (m.parentNode) m.parentNode.removeChild(m);
 		document.removeEventListener('pointerdown', outside, true);
-		if (menuReturn && document.body.contains(menuReturn)) { try { menuReturn.focus(); } catch (e) { /* gone */ } }
+		if (menuReturn && menuReturn.nodeType && document.body.contains(menuReturn)) { try { menuReturn.focus(); } catch (e) { /* gone */ } }
 		menuReturn = null;
 	}
 	function outside(e) { if (openMenuEl && !openMenuEl.contains(e.target)) { menuReturn = null; closeMenu(); } }

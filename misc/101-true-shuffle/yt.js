@@ -16,6 +16,9 @@
  *   createMusicBrainz()                        finer genres per artist, one request a second
  *
  * Sign-in is OAuth 2.0 for a browser app with the read-only YouTube scope.
+ * Adding a song to one of the account's playlists needs WRITE_SCOPE, which
+ * is asked for only then (signIn({ scope: WRITE_SCOPE })); auth.canWrite()
+ * says whether the token has it.
  * The default is the plain redirect: the page sends the browser to
  * accounts.google.com with response_type=token and a random state, Google
  * sends it back to the page's own address with the token in the fragment,
@@ -29,7 +32,8 @@
  *   'forbidden'    Google refused (`reason` says which rule)
  *   'quota'        the project's daily quota is used up (resets at midnight Pacific)
  *   'rate'         too many requests even after waiting
- *   'not-found'    no such playlist
+ *   'not-found'    no such playlist (or video)
+ *   'needs-write'  a write was refused because the sign-in may only read
  *   'bad-request'  a request Google called invalid (an expired page token, say)
  *   'server'       Google kept answering 5xx
  *   'network'      no answer at all
@@ -48,6 +52,11 @@
 	'use strict';
 
 	var SCOPE = 'https://www.googleapis.com/auth/youtube.readonly';
+	// Adding to a playlist: Google has no narrower scope for playlistItems.insert.
+	var WRITE_SCOPE = 'https://www.googleapis.com/auth/youtube';
+	var WRITE_SCOPES = [WRITE_SCOPE, 'https://www.googleapis.com/auth/youtube.force-ssl', 'https://www.googleapis.com/auth/youtubepartner'];
+	// Does a granted-scope string allow writes?
+	function canWriteScope(s) { return String(s || '').split(/\s+/).some(function (x) { return WRITE_SCOPES.indexOf(x) >= 0; }); }
 	var GOOGLE = {
 		auth: 'https://accounts.google.com/o/oauth2/v2/auth',
 		revoke: 'https://oauth2.googleapis.com/revoke',
@@ -168,8 +177,9 @@
 		}
 		if (!resp.access_token) return { ok: false, error: YTError('state', 'The sign-in answer has no token.') };
 		var want = scope || SCOPE, granted = String(resp.scope || '').split(/\s+/).filter(Boolean);
-		if (resp.scope != null && granted.indexOf(want) < 0) {
-			return { ok: false, error: YTError('scope', 'The sign-in did not grant read access to YouTube, so nothing can be read.') };
+		// Every scope asked for must be granted (want may list several, space-separated).
+		if (resp.scope != null && want.split(' ').filter(Boolean).some(function (w) { return granted.indexOf(w) < 0; })) {
+			return { ok: false, error: YTError('scope', canWriteScope(want) ? 'The sign-in did not allow editing your YouTube playlists.' : 'The sign-in did not grant read access to YouTube, so nothing can be read.') };
 		}
 		var seconds = Math.max(0, Math.min(86400, parseInt(resp.expires_in, 10) || 3600));
 		return { ok: true, token: { accessToken: resp.access_token, expiresAt: now + seconds * 1000, scope: granted.join(' ') || want } };
@@ -217,6 +227,8 @@
 				return token ? token.accessToken : null;
 			},
 			signedIn: function () { return !!api.token(); },
+			// May this token add to playlists? (Signed in with WRITE_SCOPE.)
+			canWrite: function () { return !!api.token() && canWriteScope(token.scope); },
 			secondsLeft: function () { return api.token() ? Math.max(0, Math.round((token.expiresAt - now()) / 1000)) : 0; },
 			onChange: function (fn) { subs.push(fn); return function () { subs = subs.filter(function (f) { return f !== fn; }); }; },
 
@@ -225,7 +237,7 @@
 				o = o || {};
 				if (!clientId) throw YTError('config', 'No Google client id is set, so there is nothing to sign in to.');
 				var state = randomState(opts.crypto);
-				return { url: buildAuthUrl({ authUrl: ep.auth, clientId: clientId, redirectUri: api.redirectUri(), scope: scope, state: state, prompt: o.prompt, loginHint: o.loginHint }), state: state };
+				return { url: buildAuthUrl({ authUrl: ep.auth, clientId: clientId, redirectUri: api.redirectUri(), scope: o.scope || scope, state: state, prompt: o.prompt, loginHint: o.loginHint }), state: state };
 			},
 
 			// Start signing in. Redirect mode: remembers the state and the page's
@@ -236,7 +248,7 @@
 				var s;
 				if (mode === 'gis') return gisSignIn(o);
 				try { s = api.signInUrl(o); } catch (e) { return Promise.reject(e); }
-				write(KEY_STATE, { state: s.state, at: now(), search: String(loc.search || '') });
+				write(KEY_STATE, { state: s.state, at: now(), search: String(loc.search || ''), scope: (o && o.scope) || scope });
 				loc.assign(s.url);
 				return new Promise(function () {});
 			},
@@ -256,11 +268,17 @@
 				} catch (e) { /* the address keeps its fragment; the token is still handled */ }
 				// An answer is accepted for ten minutes after the question.
 				var fresh = pending && pending.state && now() - pending.at < 600000;
-				var res = checkAuthResponse(resp, fresh ? pending.state : null, now(), scope);
+				var asked = (pending && pending.scope) || scope;
+				var res = checkAuthResponse(resp, fresh ? pending.state : null, now(), asked), writeDenied = false;
+				// Asked to write, allowed only to read: keep the reading sign-in.
+				if (!res.ok && res.error.code === 'scope' && asked !== scope) {
+					var readOnly = checkAuthResponse(resp, fresh ? pending.state : null, now(), scope);
+					if (readOnly.ok) { res = readOnly; writeDenied = true; }
+				}
 				if (!res.ok) return { status: 'error', error: res.error };
 				res.token.clientId = clientId;
 				setToken(res.token);
-				return { status: 'signed-in' };
+				return writeDenied ? { status: 'signed-in', writeDenied: true, asked: asked } : { status: 'signed-in', asked: asked };
 			},
 
 			// Forget the token here without telling Google.
@@ -304,7 +322,7 @@
 					if (!g) { reject(YTError('network', 'Google\'s sign-in script did not load.')); return; }
 					var tc = g.initTokenClient({
 						client_id: clientId,
-						scope: scope,
+						scope: (o && o.scope) || scope,
 						prompt: o && o.prompt ? o.prompt : '',
 						callback: function (resp) {
 							if (!resp || resp.error || !resp.access_token) { reject(YTError('denied', 'Access was not granted, so nothing was read.', { reason: resp && resp.error })); return; }
@@ -351,24 +369,26 @@
 	// Add units to a stored tally { day, units }, starting again on a new
 	// Pacific day. -> the new tally (store it under the key 'quota').
 	var SEARCH_UNITS = 100;
+	var UNITS = { 'search.list': SEARCH_UNITS, 'playlistItems.insert': 50, 'playlistItems.delete': 50 };
 	function tallyQuota(saved, units, now) {
 		var day = pacificDay(now == null ? Date.now() : now);
 		var base = saved && saved.day === day ? +saved.units || 0 : 0;
 		return { day: day, units: base + (+units || 0) };
 	}
 
-	function describe(status, reason, googleMessage) {
+	function describe(status, reason, googleMessage, write) {
 		if (status === 401) return ['signed-out', 'The sign-in has ended. Sign in again to go on.'];
 		if (status === 403) {
 			if (reason === 'quotaExceeded' || reason === 'dailyLimitExceeded') return ['quota', 'Today\'s YouTube API quota for this Google project is used up. It starts again at midnight Pacific time; what was imported so far is kept.'];
 			if (reason === 'rateLimitExceeded' || reason === 'userRateLimitExceeded') return ['rate', 'YouTube asked for fewer requests. Try again in a minute.'];
 			if (reason === 'accessNotConfigured') return ['forbidden', 'The YouTube Data API is not switched on for this Google project (step 2 of the setup).'];
-			if (reason === 'insufficientPermissions') return ['forbidden', 'The sign-in did not grant read access to YouTube. Disconnect and sign in again.'];
+			if (reason === 'insufficientPermissions') return write ? ['needs-write', 'True Shuffle may only read your YouTube account. Allow it to edit your playlists to add songs.'] : ['forbidden', 'The sign-in did not grant read access to YouTube. Disconnect and sign in again.'];
+			if (reason === 'playlistContainsMaximumNumberOfVideos') return ['forbidden', 'That playlist is full: YouTube allows 5,000 videos in one.'];
 			if (reason === 'youtubeSignupRequired') return ['forbidden', 'This Google account has no YouTube channel, so it has no playlists to read.'];
 			if (reason === 'playlistItemsNotAccessible' || reason === 'playlistForbidden') return ['forbidden', 'This account may not read that playlist.'];
 			return ['forbidden', 'YouTube refused the request' + (googleMessage ? ': ' + googleMessage : '.')];
 		}
-		if (status === 404) return ['not-found', 'YouTube does not know that playlist (it may have been deleted).'];
+		if (status === 404) return ['not-found', reason === 'videoNotFound' ? 'YouTube does not know that video (it may have been deleted).' : reason === 'playlistItemNotFound' ? 'That song is no longer in the playlist.' : 'YouTube does not know that playlist (it may have been deleted).'];
 		if (status === 429) return ['rate', 'YouTube asked for fewer requests. Try again in a minute.'];
 		if (status === 400) return ['bad-request', 'YouTube did not accept the request' + (googleMessage ? ': ' + googleMessage : '.')];
 		if (status >= 500) return ['server', 'YouTube is having trouble answering. Try again later; what was imported so far is kept.'];
@@ -386,9 +406,10 @@
 		var maxRetries = opts.maxRetries == null ? 4 : opts.maxRetries;
 		var tally = { units: 0, requests: 0, byMethod: {}, since: now() };
 
-		// Every list call costs one unit, an error included; a search costs 100.
+		// Every list call costs one unit, an error included; a search costs 100,
+		// adding to or removing from a playlist 50.
 		function spend(method) {
-			var units = method === 'search.list' ? SEARCH_UNITS : 1;
+			var units = UNITS[method] || 1;
 			tally.units += units;
 			tally.requests += 1;
 			tally.byMethod[method] = (tally.byMethod[method] || 0) + 1;
@@ -396,15 +417,17 @@
 		}
 
 		// One GET, with retries. resource: 'playlists', params: an object.
-		function get(resource, params, o) {
+		function get(resource, params, o) { return call('GET', resource, params, null, o); }
+		// One request. Writes (POST, DELETE) are not retried: a retry could add a song twice.
+		function call(verb, resource, params, body, o) {
 			o = o || {};
-			var method = resource + '.list', attempt = 0;
+			var write = verb !== 'GET', method = resource + '.' + (verb === 'POST' ? 'insert' : verb === 'DELETE' ? 'delete' : 'list'), attempt = 0;
 			var q = new URLSearchParams();
 			Object.keys(params).forEach(function (k) { if (params[k] != null && params[k] !== '') q.set(k, params[k]); });
 			var url = ep.api + '/' + resource + '?' + q.toString();
 
 			function again(err) {
-				if (attempt >= maxRetries) return Promise.reject(err);
+				if (write || attempt >= maxRetries) return Promise.reject(err);
 				var wait = 500 * Math.pow(2, attempt) + Math.floor(Math.random() * 250);
 				attempt++;
 				return sleep(wait).then(run);
@@ -413,8 +436,11 @@
 				if (o.signal && o.signal.aborted) return Promise.reject(YTError('aborted', 'Stopped.'));
 				var token = opts.getToken ? opts.getToken() : null;
 				if (!token) return Promise.reject(YTError('signed-out', 'Sign in to read from YouTube.'));
-				return doFetch(url, { method: 'GET', headers: { Authorization: 'Bearer ' + token, Accept: 'application/json' }, signal: o.signal }).then(function (res) {
+				var init = { method: verb, headers: { Authorization: 'Bearer ' + token, Accept: 'application/json' }, signal: o.signal };
+				if (body) { init.headers['Content-Type'] = 'application/json'; init.body = JSON.stringify(body); }
+				return doFetch(url, init).then(function (res) {
 					spend(method);
+					if (res.status === 204) return {};
 					if (res.ok) return res.json();
 					return res.text().then(function (text) {
 						var body = null, reason = '', message = '';
@@ -423,7 +449,7 @@
 							message = String(body.error.message || '');
 							reason = body.error.errors && body.error.errors[0] ? String(body.error.errors[0].reason || '') : '';
 						}
-						var d = describe(res.status, reason, message);
+						var d = describe(res.status, reason, message, write);
 						var err = YTError(d[0], d[1], { status: res.status, reason: reason, detail: message, method: method });
 						if (d[0] === 'signed-out' && opts.onSignedOut) { try { opts.onSignedOut(); } catch (e2) { /* ignore */ } }
 						if (d[0] === 'server' || d[0] === 'rate') return again(err);
@@ -530,6 +556,17 @@
 					});
 				});
 			},
+			// Add a video at the end of one of the account's playlists (50 units).
+			// Needs a sign-in with WRITE_SCOPE. -> { itemId, playlistId, videoId, addedAt, position }
+			addToPlaylist: function (playlistId, videoId, o) {
+				var body = { snippet: { playlistId: String(playlistId), resourceId: { kind: 'youtube#video', videoId: String(videoId) } } };
+				return call('POST', 'playlistItems', { part: 'snippet' }, body, o).then(function (res) {
+					var sn = res.snippet || {};
+					return { itemId: res.id || '', playlistId: sn.playlistId || playlistId, videoId: (sn.resourceId && sn.resourceId.videoId) || videoId, addedAt: sn.publishedAt || null, position: sn.position };
+				});
+			},
+			// Take an added item out again (50 units). itemId: from addToPlaylist.
+			removeFromPlaylist: function (itemId, o) { return call('DELETE', 'playlistItems', { id: itemId }, null, o).then(function () { return true; }); },
 			videoBatch: function (ids, o) {
 				if (!ids.length) return Promise.resolve({ videos: [], missing: [] });
 				if (ids.length > 50) return Promise.reject(YTError('bad-request', 'At most 50 videos can be asked for at once.'));
@@ -859,7 +896,7 @@
 	}
 
 	return {
-		SCOPE: SCOPE,
+		SCOPE: SCOPE, WRITE_SCOPE: WRITE_SCOPE, canWriteScope: canWriteScope,
 		GOOGLE: copy(GOOGLE),
 		TERMS: TERMS,
 		KEYS: { token: KEY_TOKEN, state: KEY_STATE, api: KEY_API },
@@ -867,7 +904,7 @@
 		endpoints: endpoints, isLoopback: isLoopback,
 		redirectUriFor: redirectUriFor, randomState: randomState, buildAuthUrl: buildAuthUrl, parseAuthResponse: parseAuthResponse, checkAuthResponse: checkAuthResponse,
 		createAuth: createAuth,
-		pacificDay: pacificDay, tallyQuota: tallyQuota, SEARCH_UNITS: SEARCH_UNITS,
+		pacificDay: pacificDay, tallyQuota: tallyQuota, SEARCH_UNITS: SEARCH_UNITS, UNITS: UNITS,
 		createClient: createClient, toVideo: toVideo,
 		importInto: importInto, pendingImport: pendingImport, refreshInto: refreshInto,
 		createMusicBrainz: createMusicBrainz
