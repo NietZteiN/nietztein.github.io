@@ -91,6 +91,7 @@
 	function planWith(patch, mode) {
 		var p = copyPlan(DEFAULT_PLAN);
 		p.mode = mode || plan.mode;
+		['apart', 'oneVersion', 'keepRuns', 'blockSize'].forEach(function (k) { if (plan && plan[k] !== undefined) p[k] = plan[k]; });
 		for (var k in patch) p[k] = Array.isArray(patch[k]) ? patch[k].slice() : patch[k];
 		return p;
 	}
@@ -301,7 +302,7 @@
 		};
 	}
 
-	var refusals = [];
+	var refusals = [], pauseOnStart = false;
 	function makeController(state) {
 		if (ctl) ctl.destroy();
 		ctl = P.controller({
@@ -322,7 +323,7 @@
 				histCache.unshift(he);
 				dirty();
 				queueSync();
-				if (sleep && sleep.end === 'track' && sleep.id === id) { setTimeout(function () { if (player.state() === 'playing') ctl.toggle(); }, 300); sleep = null; renderSleep(); say('Sleep timer: paused after the track.'); }
+				if (sleep && sleep.end === 'track' && sleep.id === id && info.completed) { pauseOnStart = true; sleep = null; renderSleep(); }
 			},
 			onUnplayable: function (id, code) {
 				var t = L.markUnplayable(lib, id, code, now());
@@ -336,6 +337,7 @@
 			onError: function (id, code, message, detail) { refusals.push(0); if (refusals.length > 5) refusals.shift(); setStatus(message || 'This track could not be played.'); if (code === 'api' || code === 'too-small') { playerFailed = true; blockedHelp(message || 'The player could not start.', detail || code); } },
 			onNeedMore: function () { return queueMode === 'true' && bag ? bagDraw(5) : []; },
 			onHalt: function (reason) {
+				pauseOnStart = false;
 				if (reason === 'finished') say('That was the last track. Press Shuffle again for more.');
 				else if (reason === 'errors') say(haltReason());
 				else { say('The YouTube player could not be started here.'); if (!playerFailed) blockedHelp('The YouTube player could not be loaded.'); playerFailed = false; }
@@ -366,6 +368,7 @@
 	function replaceUpcoming(ids, play) {
 		var cur = ctl.current(), started = player.id() != null, fromBag = queueMode === 'true';
 		queueMode = plan.mode === 'true' ? 'true' : 'plan';
+		if (context.list) { context = Object.keys(context.patch || {}).length ? { label: context.label, href: context.href, patch: context.patch } : { label: 'Your library', href: '#/songs', patch: {} }; if (!thumb) store.set('context', context); }
 		if (cur != null && started && !play) {
 			if (fromBag) returnToBag(S.upcoming(ctl.state()));
 			ids = ids.filter(function (id) { return id !== cur; });
@@ -384,6 +387,7 @@
 	function ensureBag() {
 		var sel = selectOf(plan), key = 'bag:' + S.signature(sel) + (focus ? ':' + focus : ''), chosen = S.select(scopeTracks(), sel, now());
 		if (bag && bagKey === key) { bag = S.bagSync(bag, chosen, bagRand).bag; return saveBag(); }
+		if (bag && bagKey && bagKey !== key && queueMode === 'true' && ctl) returnToBag(S.upcoming(ctl.state()));
 		var load = thumb ? Promise.resolve(null) : store.get(key, null);
 		return load.then(function (saved) {
 			bag = saved && saved.order ? S.bagSync(saved, chosen, bagRand).bag : S.bagCreate(chosen, bagRand);
@@ -657,7 +661,7 @@
 		if (!lists.length) { ul.appendChild(h('li', { class: 'ts-side-empty' }, ['Work with part of your library: ', h('a', { href: '#/lists', text: 'make or pick a playlist' }), '.'])); return; }
 		lists.forEach(function (li) {
 			var a = h('a', { class: 'ts-station' + (focus === li.id ? ' is-focused' : '') + (route.parts[0] === 'list' && route.parts[1] === li.id ? ' is-on' : ''), href: link('list', li.id), title: li.name, data: { list: li.id } }, [U.swatch(li.kind === 'manual' ? 200 : 265, li.name, 'ts-station-art'), h('span', { text: li.name }), focus === li.id ? icon('mix', 'ts-station-focus') : null]);
-			if (li.kind === 'manual') dropTarget(a, function (ids) { ids.forEach(function (id) { if (li.ids.indexOf(id) < 0) li.ids.push(id); }); saveLists(); say(plural(ids.length, 'song') + ' added to ' + q(li.name) + '.'); });
+			if (li.kind === 'manual') dropTarget(a, function (ids) { ids.forEach(function (id) { if (li.ids.indexOf(id) < 0) li.ids.push(id); }); saveLists(); if (focus === li.id) { dirty(); redrawView(); } say(plural(ids.length, 'song') + ' added to ' + q(li.name) + '.'); });
 			ul.appendChild(h('li', null, a));
 		});
 	}
@@ -689,6 +693,7 @@
 		var prevKey = route.path + '?' + route.query.toString();
 		scrollMemo[prevKey] = $('main').scrollTop;
 		route = U.parseHash(location.hash);
+		if (previewAudio) stopPreview();
 		closeSheet();
 		U.closeMenu();
 		if (route.parts[0] !== 'search' && document.activeElement !== $('search')) $('search').value = '';
@@ -696,6 +701,7 @@
 		renderNav();
 	}
 	// Draw the current view. keep: a redraw after a change (keep the scroll).
+	var liveLists = [];
 	function renderView(keep) {
 		var main = $('main'), view = $('view'), top = main.scrollTop;
 		var key = route.path + '?' + route.query.toString();
@@ -703,6 +709,7 @@
 		labelKeys = null;
 		mapRedraw = null;
 		clear(view);
+		liveLists = liveLists.filter(function (v) { if (v.node.isConnected) return true; v.destroy(); return false; });
 		view.classList.remove('is-map');
 		var p = route.parts, name = p[0] || '';
 		if (focus && listById(focus) && name !== 'list' && name !== 'lists' && name !== 'settings') {
@@ -1010,7 +1017,10 @@
 			t.addEventListener('keydown', function (e) { if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); var k = 1 - i; pick(k); tabs[k].focus(); } });
 		});
 		$('btn-save-queue').addEventListener('click', saveQueueAsList);
-		$('btn-clear-queue').addEventListener('click', function () { var was = S.upcoming(ctl.state()); if (queueMode === 'true') returnToBag(was); ctl.clearUpcoming(); U.toast('Cleared what was coming next.', { action: 'Undo', onAction: function () { ctl.enqueue(was); } }); });
+		$('btn-clear-queue').addEventListener('click', function () { var was = S.upcoming(ctl.state()); if (queueMode === 'true') returnToBag(was); ctl.clearUpcoming(); U.toast('Cleared what was coming next.', { action: 'Undo', onAction: function () {
+			if (queueMode === 'true' && bag) { var pl = S.bagPlayed(bag), back = was.filter(function (id) { return pl.indexOf(id) < 0 && bag.order.indexOf(id) >= 0; }), rest = S.bagRemaining(bag).filter(function (id) { return was.indexOf(id) < 0; }), gone = bag.gone; bag = { v: 1, order: pl.concat(back, rest), pos: pl.length + back.length, cycle: bag.cycle, last: bag.last }; if (gone && gone.length) bag.gone = gone.slice(); saveBag(); }
+			ctl.playNext(was);
+		} }); });
 	}
 	// The queue on a phone or a narrow window: a sheet over the page.
 	function toggleSheet() { if (document.body.classList.contains('sheet-open')) closeSheet(); else openSheet(); }
@@ -1053,6 +1063,7 @@
 		var ids = tracks.map(function (t) { return t.id; });
 		var sel = { ids: {}, anchor: -1, focus: 0 };
 		var vl = U.virtualList({ scroller: $('main'), rowHeight: opts.compact || prefs.density === 'compact' ? 48 : 60, label: opts.label || 'Tracks', render: row });
+		liveLists.push(vl);
 		wrap.appendChild(vl.node);
 		function row(i) {
 			var t = tracks[i];
@@ -1087,7 +1098,7 @@
 			r.appendChild(h('span', { class: 'ts-c-more' }, [likeButton(t), U.iconBtn('more', 'More for ' + trackTitle(t), { on: { click: function (e) { e.stopPropagation(); select(i, e, true); trackMenu(t, e.currentTarget, current()); } } })]));
 			r.addEventListener('click', function (e) {
 				if (e.target.closest('a')) return;
-				if (e.pointerType === 'touch' || (e.detail === 0 && false)) { play(i); return; }
+				if (e.pointerType === 'touch') return;
 				select(i, e);
 			});
 			r.addEventListener('dblclick', function (e) { if (!e.target.closest('a,button')) play(i); });
@@ -1584,6 +1595,7 @@
 		return card({ href: link('track', t.id), art: artFor(t), title: trackTitle(t), sub: trackArtist(t), play: function () { playIds(ids, i, ctx); }, playLabel: 'Play ' + trackTitle(t) });
 	}
 	function noMusic(view) {
+		if (focus && listById(focus) && L.list(lib).length) { view.appendChild(h('p', { class: 'ts-empty' }, ['Nothing in ' + q(listById(focus).name) + ' yet. ', h('button', { class: 'ts-link-btn', text: 'Show everything', on: { click: function () { setFocus(null); } } })])); return; }
 		var box = h('section', { class: 'ts-welcome' });
 		box.appendChild(h('h1', { text: 'Your playlists, as a music app' }));
 		box.appendChild(h('p', { text: 'True Shuffle reads your own YouTube playlists and Liked videos (read-only, after a Google sign-in), works out artist and title for every video, and lets you browse them by artist, genre, mood and the anime or game they come from, and shuffle them properly. Your library stays in this browser.' }));
@@ -2840,11 +2852,13 @@
 		}).catch(fail);
 	}
 	function reloadFromStore() {
+		if (ctl) { ctl.destroy(); ctl = null; }
+		player.stop();
 		return store.loadLibrary().then(function (parts) {
 			lib = L.fromParts(parts);
 			bag = null; bagKey = '';
 			dirty();
-			return loadSettings();
+			return Promise.all([loadSettings(), loadHistory()]);
 		}).then(startQueue).then(renderAll);
 	}
 	function wipe() {
@@ -2892,7 +2906,8 @@
 		scopeMemo = null;
 		dirty();
 		if (!thumb) store.set('focus', focus);
-		bag = null; bagKey = '';
+		if (queueMode === 'true' && ctl && ctl.current() != null) applyPlan({});
+		else { bag = null; bagKey = ''; }
 		renderAll();
 		renderFocusBtn();
 		if (!quiet) say(focus ? 'Focused on ' + q(listById(focus).name) + ': the whole app works inside it.' : 'Back to everything.');
@@ -3175,6 +3190,7 @@
 	function viewLabel(view) {
 		if (!labelQueue) { labelQueue = scopeTracks().filter(needsLabel).map(function (t) { return t.id; }); labelAt = 0; }
 		var ids = labelQueue;
+		while (labelAt < ids.length && !lib.tracks[ids[labelAt]]) labelAt++;
 		view.appendChild(h('h1', { class: 'ts-h1', text: 'Quick labeller' }));
 		if (!ids.length || labelAt >= ids.length) {
 			view.appendChild(h('p', { class: 'ts-empty', text: ids.length ? 'Done: ' + plural(ids.length, 'song') + ' labelled or skipped.' : 'Every song here has labels. Songs you import later land here; you can also select songs anywhere and choose Label them one by one.' }));
@@ -3273,7 +3289,8 @@
 		view.appendChild(card2);
 		labelKeys = function (e) {
 			var tag = (e.target && e.target.tagName) || '';
-			if (/^(INPUT|SELECT|TEXTAREA)$/.test(tag) && e.key !== 'Enter') return false;
+			if (/^(BUTTON|A|SUMMARY|SELECT|TEXTAREA)$/.test(tag) || !(e.target.closest && e.target.closest('#view'))) return false;
+			if (tag === 'INPUT' && e.key !== 'Enter') return false;
 			if (e.key >= '1' && e.key <= '6') { fields.mood = T.MOODS[+e.key - 1][0]; redraw(); return true; }
 			if (e.key === 'Enter') { save(); return true; }
 			if (e.key === 'ArrowRight') { labelAt++; renderView(false); return true; }
@@ -3323,6 +3340,7 @@
 		return dark ? ramp[ramp.length - 1 - Math.min(i, ramp.length - 2)] : ramp[i];
 	}
 	function viewMap(view) {
+		if (mapState.recipe === 'lm' && !mapState.lm) mapState.recipe = 'labels';
 		var tracks = scopeTracks().filter(function (t) { return t.kind !== 'clip'; });
 		view.classList.add('is-map');
 		if (tracks.length < 8) { view.appendChild(h('p', { class: 'ts-empty', text: 'The map needs at least eight songs here.' })); return; }
@@ -3359,24 +3377,28 @@
 		fi.addEventListener('input', function () { mapState.find = fi.value; draw(); });
 
 		var key = mapKey(tracks), entry = mapState.cache[key];
+		if (mapState.selKey !== key) { mapState.sel = []; mapState.hover = -1; mapState.selKey = key; }
 		var ctx2 = cv.getContext('2d'), dpr = Math.min(2, window.devicePixelRatio || 1), W = 0, H = 0, cats = null;
 		if (!entry) {
-			entry = mapState.cache[key] = { tracks: tracks, pos: null, regions: [], done: false };
+			Object.keys(mapState.cache).forEach(function (k) { delete mapState.cache[k]; });
+			entry = mapState.cache[key] = { tracks: tracks, pos: null, regions: [], done: false, info: info };
 			info.textContent = 'Reading the songs' + ELL;
 			var vecs = E.vectors(tracks, mapState.recipe, { taxonomy: T, firstAdded: L.firstAdded, lm: mapState.lm });
 			var kj = E.knnJob(vecs, 15), lay = null, r = S.rng('map-' + mapState.recipe);
 			entry.vecs = vecs;
+			var later = function (f) { if (route.parts[0] === 'map') requestAnimationFrame(f); else setTimeout(f, 50); };
 			(function tick() {
-				if (!kj.done) { kj.step(14); info.textContent = 'Finding neighbours ' + Math.round(100 * kj.progress) + '%'; requestAnimationFrame(tick); return; }
+				if (mapState.cache[key] !== entry) return;
+				if (!kj.done) { kj.step(14); entry.info.textContent = 'Finding neighbours ' + Math.round(100 * kj.progress) + '%'; later(tick); return; }
 				if (!lay) { entry.nn = kj.result; lay = E.layout(vecs, kj.result, { rand: r }); entry.pos = lay.pos; }
 				lay.step(ToyKit.reducedMotion ? null : 14);
-				info.textContent = lay.done ? '' : 'Laying out ' + Math.round(100 * lay.progress) + '%';
-				if (lay.done) { entry.done = true; entry.regions = E.regions(entry.pos, tracks, Math.round(Math.min(18, Math.max(6, tracks.length / 110))), S.rng('regions')); drawRegions(); }
-				if (cv.isConnected) draw();
-				if (!lay.done && cv.isConnected) requestAnimationFrame(tick);
-				else if (!lay.done) { lay.step(); entry.done = true; entry.regions = E.regions(entry.pos, tracks, 12, S.rng('regions')); }
+				entry.info.textContent = lay.done ? '' : 'Laying out ' + Math.round(100 * lay.progress) + '%';
+				if (lay.done) { entry.done = true; entry.regions = E.regions(entry.pos, tracks, Math.round(Math.min(18, Math.max(6, tracks.length / 110))), S.rng('regions')); if (entry.onDone) entry.onDone(); return; }
+				if (mapRedraw) mapRedraw();
+				later(tick);
 			})();
 		}
+		entry.info = info;
 		// the middle 96% of the points, so a few strays do not shrink the rest
 		function bounds() {
 			var p = entry.pos, xs = [], ys = [];
@@ -3616,6 +3638,7 @@
 		if (entry.done) drawRegions();
 		showSide();
 		mapRedraw = draw;
+		entry.onDone = function () { if (mapRedraw === draw) { drawRegions(); draw(); } };
 		draw();
 	}
 	var mapRedraw = null;
@@ -3686,12 +3709,14 @@
 		L.list(lib).forEach(function (t) { if (t.rating || t.blocked || t.plays || t.skips) state[t.id] = { rating: t.rating, blocked: t.blocked, plays: t.plays, skips: t.skips, lastPlayed: t.lastPlayed, stateAt: t.stateAt || null }; });
 		store.set('sync:outbox', { format: 'true-shuffle-sync', version: 1, savedAt: new Date().toISOString(), labels: L.exportLabels(lib, Date.now()), state: state, stations: lists, history: histCache.slice(0, 5000) });
 	}, 4000);
+	var inboxBusy = null;
 	function checkInbox() {
 		if (thumb || demo || !store) return Promise.resolve();
-		return store.get('sync:inbox', null).then(function (box) {
+		if (inboxBusy) return inboxBusy;
+		inboxBusy = store.get('sync:inbox', null).then(function (box) {
 			if (!box || box.format !== 'true-shuffle-sync' || +box.version !== 1) return;
 			var ids = [];
-			if (box.labels && box.labels.format === L.LABELS_FORMAT) ids = L.applyLabels(lib, box.labels).ids;
+			if (box.labels && box.labels.format === L.LABELS_FORMAT) ids = L.applyLabels(lib, box.labels).ids.concat(Object.keys(box.labels.tracks || {}).filter(function (id) { return lib.tracks[id]; }));
 			var st = box.state || {}, touched = 0;
 			Object.keys(st).forEach(function (id) {
 				var t = lib.tracks[id], s = st[id];
@@ -3716,7 +3741,8 @@
 				saveLists();
 				return changed(ids, true);
 			}).then(function () { say('Merged what the Desk pulled: labels, ' + plural(touched, 'track') + ' of ratings and plays, playlists and history.'); });
-		}).catch(fail);
+		}).catch(fail).then(function () { inboxBusy = null; });
+		return inboxBusy;
 	}
 
 	// ---- Small things: repeat, sleep timer, work roles -------------------------------------------------
@@ -3732,7 +3758,7 @@
 	function setSleep(s) {
 		if (sleep && sleep.timer) clearTimeout(sleep.timer);
 		sleep = s;
-		if (s && s.at) s.timer = setTimeout(function () { if (player.state() === 'playing') ctl.toggle(); sleep = null; renderSleep(); say('Sleep timer: paused.'); }, s.at - Date.now());
+		if (s && s.at) s.timer = setTimeout(function () { var st = player.state(); if (st === 'playing') ctl.pause(); else if (st !== 'paused' && st !== 'idle') pauseOnStart = true; pvClose(); stopPreview(); sleep = null; renderSleep(); say('Sleep timer: paused.'); }, s.at - Date.now());
 		renderSleep();
 		if (s) say(s.end === 'track' ? 'Playback pauses when this track ends.' : 'Playback pauses at ' + new Date(s.at).toTimeString().slice(0, 5) + '.');
 	}
@@ -3790,6 +3816,7 @@
 	function preview(t, btn) {
 		if (previewing && previewing.id === t.id) { stopPreview(); return; }
 		stopPreview();
+		pvClose();
 		if (!t.preview) { say('No preview for this song.'); return; }
 		if (player && player.state() === 'playing') ctl.toggle();
 		previewAudio = new Audio(t.preview);
@@ -3831,10 +3858,10 @@
 		}).catch(function (err) { if (btn) btn.disabled = false; onApiError(err); });
 	}
 	function hideArtist(name) {
-		loadHidden().then(function (hd) { hd[DX.norm(name)] = true; if (!thumb) store.set('discover:hidden', hd); renderView(true); say(name + ' will not be suggested again.'); });
+		loadHidden().then(function (hd) { hd[DX.norm(name)] = true; if (!thumb) store.set('discover:hidden', hd); if (route.parts[0] === 'discover' || route.parts[0] === 'artist') renderView(true); say(name + ' will not be suggested again.'); });
 	}
 	function viewDiscover(view, parts, query) {
-		if (!dzIds) { view.appendChild(h('p', { class: 'ts-muted', text: 'Loading' + ELL })); var hh = location.hash; loadDiscoverState().then(function () { if (location.hash === hh) renderView(true); }); return; }
+		if (!dzIds) { view.appendChild(h('p', { class: 'ts-muted', text: 'Loading' + ELL })); var hh = location.hash; loadDiscoverState().then(function () { if (location.hash === hh) renderView(true); }, function (e) { if (location.hash === hh) { clear(view); view.appendChild(h('p', { class: 'ts-muted', text: 'Discover could not start: ' + (e && e.message || e) })); } }); return; }
 		if (query.get('dz')) { viewDzArtist(view, query.get('dz')); return; }
 		if (!query.get('seed') && !query.get('artist')) { viewDiscoverHub(view); return; }
 		view.appendChild(h('a', { class: 'ts-back', href: '#/discover', text: String.fromCharCode(0x2190) + ' Discover' }));
@@ -4304,7 +4331,7 @@
 	function kvSet(key, v) { if (!thumb && store) store.set(key, v); }
 	function loadDiscoverState() {
 		if (dzIds) return Promise.resolve();
-		return Promise.all([kvGet('discover:ids', {}), kvGet('discover:saved', []), kvGet('discover:recent', []), loadHidden()]).then(function (r) { dzIds = r[0] || {}; dzSaved = r[1] || []; dzRecent = r[2] || []; });
+		return Promise.all([kvGet('discover:ids', {}), kvGet('discover:saved', []), kvGet('discover:recent', []), loadHidden()]).then(function (r) { dzIds = r[0] || {}; delete dzIds['undefined']; dzSaved = r[1] || []; dzRecent = r[2] || []; });
 	}
 	// Run fn over items, n at a time.
 	function pool(items, n, fn) {
@@ -4327,13 +4354,14 @@
 	// Is a Deezer song already in the library? By artist and title, any spelling the labels know.
 	var libSongs = null, libSongsFor = null;
 	function inLibrary(t) {
-		if (libSongsFor !== memo || !libSongs) {
+		var m = idx();
+		if (libSongsFor !== m || !libSongs) {
 			libSongs = {};
 			L.list(lib).forEach(function (x) {
-				var as = [x.artist, x.artistNative, x.origArtist].filter(Boolean).map(DX.norm), ts2 = [x.title, x.titleAlt].filter(Boolean).map(DX.norm);
+				var g = x.guess || {}, as = [x.artist, x.artistNative, x.origArtist, x.artistGuess, g.artist, g.title].filter(Boolean).map(DX.norm), ts2 = [x.title, x.titleAlt, g.title, g.artist].filter(Boolean).map(DX.norm);
 				ts2.forEach(function (tt) { libSongs['*|' + tt] = true; as.forEach(function (aa) { libSongs[aa + '|' + tt] = true; }); });
 			});
-			libSongsFor = memo;
+			libSongsFor = m;
 		}
 		var tt = DX.norm(t.title);
 		return !!(libSongs[DX.norm(t.artist) + '|' + tt] || (tt.length > 5 && libSongs['*|' + tt] && knownArtistName(t.artist)));
@@ -4522,8 +4550,8 @@
 	function tasteRadio(btn) {
 		if (btn) btn.disabled = true;
 		var seeds = topSeeds(30);
-		var pick = S.trueShuffle(seeds.map(function (s2) { return { id: s2.key }; }), S.cryptoRng()).slice(0, 6);
-		pool(pick, 3, function (k) { return dzArtistFor(k.id).then(function (d) { return d ? deezer().radio(d.id, 30) : []; }); }).then(function (lists2) {
+		var pick = S.trueShuffle(seeds.map(function (s2) { return s2.key; }), S.cryptoRng()).slice(0, 6);
+		pool(pick, 3, function (k) { return dzArtistFor(k).then(function (d) { return d ? deezer().radio(d.id, 30) : []; }); }).then(function (lists2) {
 			if (btn) btn.disabled = false;
 			var all2 = freshOnly([].concat.apply([], lists2.filter(Boolean)));
 			var mixed = S.spreadShuffle(all2.map(function (t) { return { id: String(t.id), spreadKey: DX.norm(t.artist), t: t }; }), S.cryptoRng(), {}).map(function (id) { return all2.filter(function (t) { return String(t.id) === id; })[0]; });
@@ -4926,7 +4954,7 @@
 		var seek = $('seek');
 		seek.addEventListener('input', function () { seeking = true; $('time-cur').textContent = clock(+seek.value); });
 		seek.addEventListener('change', function () { seeking = false; player.seek(+seek.value); });
-		player.on('state', function (e) { renderTransport(); renderTime(); if (e && (e.state === 'playing' || e.state === 'paused')) playerMessage(null); if (e && e.state === 'playing' && pv.audio && !pv.audio.paused) { pv.audio.pause(); pvRender(); } });
+		player.on('state', function (e) { renderTransport(); renderTime(); if (e && (e.state === 'playing' || e.state === 'paused')) playerMessage(null); if (e && e.state === 'playing' && pv.audio && !pv.audio.paused) { pv.audio.pause(); pvRender(); } if (e && e.state === 'playing') { if (previewAudio) stopPreview(); if (pauseOnStart) { pauseOnStart = false; ctl.pause(); say('Sleep timer: paused after the track.'); } } });
 		player.on('time', renderTime);
 		window.addEventListener('hashchange', onRoute);
 	}
@@ -4967,7 +4995,8 @@
 			var ok = saved && Array.isArray(saved.items) && saved.items.length;
 			if (ok) {
 				var items = saved.items.filter(function (id) { return lib.tracks[id]; });
-				var at = Math.min(Math.max(-1, saved.index | 0), items.length);
+				var at = items.indexOf(saved.items[saved.index | 0]);
+				if (at < 0) at = Math.min(Math.max(-1, saved.index | 0), items.length);
 				makeController({ items: items, index: items.length ? Math.max(0, Math.min(at, items.length - 1)) : -1, history: (saved.history || []).filter(function (id) { return lib.tracks[id]; }), done: false, repeat: !!saved.repeat });
 				queueMode = context.list ? 'list' : plan.mode === 'true' ? 'true' : 'plan';
 				return queueMode === 'true' ? ensureBag() : null;
@@ -5052,6 +5081,7 @@
 	hook.setFocus = function (id) { setFocus(id); };
 	hook.createSmart = function (name, patch) { var li = { id: newId(), name: name, kind: 'smart', patch: patch }; lists.push(li); saveLists(); return li.id; };
 	hook.playIds = playIds;
+	hook.scopeTracks = scopeTracks;
 	window.__ts = hook;
 
 	start();
