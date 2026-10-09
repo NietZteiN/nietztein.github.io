@@ -220,13 +220,15 @@
 		}
 		// The box is measured when the player is built. A page that has just
 		// shown it gets two frames for its layout before the size is refused.
+		// Half a pixel of grace: with display scaling a 200 px box can measure 199.8.
+		function fits(b) { return b.width >= MIN_SIZE - 0.5 && b.height >= MIN_SIZE - 0.5; }
 		function measured() {
 			var box = visibleBox(opts.container);
-			if (box && box.width >= MIN_SIZE && box.height >= MIN_SIZE) return Promise.resolve(box);
+			if (box && fits(box)) return Promise.resolve(box);
 			var raf = root.requestAnimationFrame || function (f) { return setTimeout(f, 16); };
 			return new Promise(function (r) { raf(function () { raf(r); }); }).then(function () {
 				var b2 = visibleBox(opts.container);
-				if (b2 && b2.width >= MIN_SIZE && b2.height >= MIN_SIZE) return b2;
+				if (b2 && fits(b2)) return b2;
 				var err = new Error(ERROR_TEXT['too-small']);
 				err.code = 'too-small';
 				err.detail = b2 ? 'box ' + Math.round(b2.width) + 'x' + Math.round(b2.height) : 'box hidden';

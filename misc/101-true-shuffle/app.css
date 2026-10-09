@@ -195,7 +195,7 @@ body.ts {
 
 /* ---------- Now playing panel ---------- */
 .ts-video { position: relative; padding: 12px 12px 0; }
-.ts-player { position: relative; width: 100%; aspect-ratio: 16 / 9; min-height: 200px; min-width: 200px; border-radius: 10px; overflow: hidden; background: #000; }
+.ts-player { position: relative; width: 100%; aspect-ratio: 16 / 9; min-height: 210px; min-width: 210px; border-radius: 10px; overflow: hidden; background: #000; }
 .ts-player iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
 .ts-poster { position: absolute; inset: 0; border: 0; padding: 0; cursor: pointer; background: #111; color: #fff; display: flex; align-items: center; justify-content: center; }
 .ts-poster-art { position: absolute; inset: 0; }
@@ -588,7 +588,7 @@ body:not(.is-playing) .ts-eq i { animation: none; height: 55%; }
 	.ts-now { display: contents; }
 	.ts-video { grid-area: video; display: none; padding: 0; background: #000; }
 	body.has-player .ts-video { display: block; }
-	.ts-player { border-radius: 0; aspect-ratio: auto; height: max(200px, min(56.25vw, 34vh)); }
+	.ts-player { border-radius: 0; aspect-ratio: auto; height: max(210px, min(56.25vw, 34vh)); }
 	.ts-demo-tag { top: 8px; left: 8px; }
 	.ts-now-rest {
 		position: fixed; left: 0; right: 0; bottom: 0; top: 18vh; z-index: 800; background: var(--bg);
@@ -596,7 +596,7 @@ body:not(.is-playing) .ts-eq i { animation: none; height: 55%; }
 		transform: translateY(105%); transition: transform var(--dur) var(--ease-out); visibility: hidden;
 	}
 	body.sheet-open .ts-now-rest { transform: none; visibility: visible; }
-	body.has-player.sheet-open .ts-now-rest { top: calc(52px + max(200px, min(56.25vw, 34vh))); }
+	body.has-player.sheet-open .ts-now-rest { top: calc(52px + max(210px, min(56.25vw, 34vh))); }
 	.ts-sheet-grip { display: flex; justify-content: center; position: sticky; top: 0; background: var(--bg); z-index: 1; padding-top: 4px; }
 	.ts-bar { grid-area: bar; grid-template-columns: minmax(0, 1fr) auto; padding: 6px 10px; gap: 8px; background: var(--surface); border-top: 1px solid var(--border); position: relative; }
 	.ts-bar-art { width: 44px; height: 44px; }
@@ -784,5 +784,5 @@ body.is-dragging .ts-now, body.is-dragging .ts-station { outline: 2px dashed var
 .ts-player-msg .ts-row-btns, .ts-player-msg a, .ts-player-msg button { pointer-events: auto; }
 .ts-player-msg.is-loading { background: transparent; align-items: center; text-align: center; font-weight: 600; text-shadow: 0 1px 4px #000; }
 .ts-player-msg.is-error { overflow-y: auto; }
-@media (max-width: 760px) { .ts-player-msg { left: 0; right: 0; top: 0; border-radius: 0; aspect-ratio: auto; height: max(200px, min(56.25vw, 34vh)); } }
+@media (max-width: 760px) { .ts-player-msg { left: 0; right: 0; top: 0; border-radius: 0; aspect-ratio: auto; height: max(210px, min(56.25vw, 34vh)); } }
 .ts-player-msg .ts-diag { font: 11px var(--font-mono); opacity: 0.75; overflow-wrap: anywhere; }
