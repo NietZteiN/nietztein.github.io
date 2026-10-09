@@ -3697,6 +3697,49 @@
 		view.appendChild(sec);
 	}
 
+	// ---- The now-playing panel's width ---------------------------------------------------------------
+	// A handle on its left edge; the width is kept for this browser.
+
+	var NOW_MIN = 280;
+	function nowMax() { return Math.max(NOW_MIN, Math.min(1100, window.innerWidth - 480)); }
+	function setNowWidth(w, save) {
+		var root = document.documentElement;
+		if (w == null) { root.style.removeProperty('--ts-now'); if (save) ToyKit.store('nowWidth', null); }
+		else { w = Math.round(Math.max(NOW_MIN, Math.min(nowMax(), w))); root.style.setProperty('--ts-now', w + 'px'); if (save) ToyKit.store('nowWidth', w); }
+		var hd = $('now-resizer'), cur = $('now').getBoundingClientRect().width;
+		if (hd) { hd.setAttribute('aria-valuenow', String(Math.round(cur))); hd.setAttribute('aria-valuemin', String(NOW_MIN)); hd.setAttribute('aria-valuemax', String(Math.round(nowMax()))); }
+		if (mapRedraw) mapRedraw();
+	}
+	function wireResizer() {
+		var hd = $('now-resizer'), saved = thumb ? null : ToyKit.load('nowWidth', null);
+		if (saved) setNowWidth(+saved, false);
+		if (!hd) return;
+		var drag = null;
+		hd.addEventListener('pointerdown', function (e) {
+			e.preventDefault();
+			hd.setPointerCapture(e.pointerId);
+			drag = { x: e.clientX, w: $('now').getBoundingClientRect().width };
+			document.body.classList.add('is-resizing');
+		});
+		hd.addEventListener('pointermove', function (e) { if (drag) setNowWidth(drag.w + (drag.x - e.clientX), false); });
+		function end() { if (!drag) return; drag = null; document.body.classList.remove('is-resizing'); setNowWidth($('now').getBoundingClientRect().width, true); }
+		hd.addEventListener('pointerup', end);
+		hd.addEventListener('pointercancel', end);
+		hd.addEventListener('dblclick', function () { setNowWidth(null, true); say('The panel is back to its usual width.'); });
+		hd.addEventListener('keydown', function (e) {
+			var w = $('now').getBoundingClientRect().width, step = e.shiftKey ? 80 : 20;
+			if (e.key === 'ArrowLeft') setNowWidth(w + step, true);
+			else if (e.key === 'ArrowRight') setNowWidth(w - step, true);
+			else if (e.key === 'Home') setNowWidth(NOW_MIN, true);
+			else if (e.key === 'End') setNowWidth(nowMax(), true);
+			else if (e.key === 'Enter' || e.key === 'Escape') { setNowWidth(null, true); }
+			else return;
+			e.preventDefault();
+			e.stopPropagation();
+		});
+		window.addEventListener('resize', later(function () { var s2 = ToyKit.load('nowWidth', null); if (s2) setNowWidth(+s2, false); }, 150));
+	}
+
 	// ---- Keys ----------------------------------------------------------------------------------------------
 
 	function wireKeys() {
@@ -3757,6 +3800,7 @@
 		$('btn-sleep').addEventListener('click', function (e) { sleepMenu(e.currentTarget); });
 		dropTarget($('now'), function (ids) { queueLater(ids); });
 		ToyKit.onTheme(function () { if (mapRedraw) mapRedraw(); });
+		wireResizer();
 		var seek = $('seek');
 		seek.addEventListener('input', function () { seeking = true; $('time-cur').textContent = clock(+seek.value); });
 		seek.addEventListener('change', function () { seeking = false; player.seek(+seek.value); });

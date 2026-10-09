@@ -786,3 +786,13 @@ body.is-dragging .ts-now, body.is-dragging .ts-station { outline: 2px dashed var
 .ts-player-msg.is-error { overflow-y: auto; }
 @media (max-width: 760px) { .ts-player-msg { left: 0; right: 0; top: 0; border-radius: 0; aspect-ratio: auto; height: max(210px, min(56.25vw, 34vh)); } }
 .ts-player-msg .ts-diag { font: 11px var(--font-mono); opacity: 0.75; overflow-wrap: anywhere; }
+
+/* the handle that resizes the now-playing panel */
+.ts-now { position: relative; }
+.ts-resizer { position: absolute; left: 0; top: 0; bottom: 0; width: 10px; z-index: 4; cursor: col-resize; touch-action: none; outline: none; }
+.ts-resizer::after { content: ''; position: absolute; left: 3px; top: 50%; width: 4px; height: 44px; margin-top: -22px; border-radius: 4px; background: var(--border-strong); opacity: 0; transition: opacity var(--dur-fast), background var(--dur-fast); }
+.ts-now:hover .ts-resizer::after, .ts-resizer:focus-visible::after { opacity: 1; }
+.ts-resizer:hover::after, .ts-resizer:focus-visible::after, body.is-resizing .ts-resizer::after { background: var(--accent); opacity: 1; }
+body.is-resizing { cursor: col-resize; user-select: none; -webkit-user-select: none; }
+body.is-resizing iframe { pointer-events: none; }
+@media (max-width: 760px) { .ts-resizer { display: none; } }
