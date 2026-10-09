@@ -126,6 +126,19 @@
 		for (var k in (t.addedAt || {})) { var x = time(t.addedAt[k]); if (x > best) best = x; }
 		return best;
 	}
+	// When the track first came into the library (its earliest playlist addition).
+	function firstAdded(t) {
+		var best = 0;
+		for (var k in (t.addedAt || {})) { var x = time(t.addedAt[k]); if (x && (!best || x < best)) best = x; }
+		return best;
+	}
+	// Its year and month, as the keys the 'added' choice takes: '2021', '2021-05' (UTC).
+	function addedKeys(t) {
+		var f = firstAdded(t);
+		if (!f) return ['', ''];
+		var iso = new Date(f).toISOString();
+		return [iso.slice(0, 4), iso.slice(0, 7)];
+	}
 	// The same classes as library.js's lengthClass (test.js checks they agree).
 	function lengthClass(sec) {
 		sec = +sec || 0;
@@ -160,6 +173,7 @@
 			var k = LABEL_FACETS[i];
 			if (on(f[k[0]]) && !has(f[k[0]], t[k[1]] || '')) return false;
 		}
+		if (on(f.added) && !any(f.added, addedKeys(t))) return false;
 		return true;
 	}
 	// The label facets: the selection's key and the track's field.
@@ -178,6 +192,7 @@
 			(on(f.playlists) && any(f.playlists, t.playlists || [])) ||
 			(on(f.channels) && has(f.channels, channelKey(t))) ||
 			(on(f.tags) && any(f.tags, t.tags || [])) ||
+			(on(f.added) && any(f.added, addedKeys(t))) ||
 			labelHit(t, f);
 	}
 
@@ -186,6 +201,8 @@
 	// jazz, AND the 1990s, AND this playlist). sel:
 	//   artists, genres, decades, playlists, channels, lengths, tags   lists of facet keys
 	//   scenes, works, langs, moods, kinds, roles                      the labels' values ('' unlabelled)
+	//   added                               years ('2021') or months ('2021-05') a track was first added in
+	//   addedFrom, addedTo                  first added between these days (ISO dates, both included)
 	//   not: { artists, genres, decades, playlists, channels, tags, scenes, works, langs, moods, kinds, roles }   leave these out
 	//   neverPlayed, addedThisMonth         true to require
 	//   addedWithinDays, minRating          numbers
@@ -208,6 +225,10 @@
 			if (sel.minRating && !((t.rating || 0) >= sel.minRating)) return false;
 			if (sel.minSec != null && !(t.durationSec >= sel.minSec)) return false;
 			if (sel.maxSec != null && !(t.durationSec <= sel.maxSec)) return false;
+			if (sel.addedFrom || sel.addedTo) {
+				var fa = firstAdded(t);
+				if (!fa || (sel.addedFrom && fa < time(sel.addedFrom)) || (sel.addedTo && fa >= time(sel.addedTo) + DAY)) return false;
+			}
 			if (sel.notPlayedWithinHours && t.lastPlayed && now - time(t.lastPlayed) < sel.notPlayedWithinHours * HOUR) return false;
 			if (sel.addedThisMonth || sel.addedWithinDays) {
 				var added = lastAdded(t);
@@ -941,6 +962,7 @@
 		weightedOrder: weightedOrder, favouriteWeight: favouriteWeight, neglectedWeight: neglectedWeight, favourites: favourites, neglected: neglected,
 		artistRotation: artistRotation, genreBlockList: genreBlockList, genreBlocks: genreBlocks, keepRuns: keepRuns, foldRuns: foldRuns, unfoldRuns: unfoldRuns,
 		limit: limit, build: build, signature: signature, MODES: MODES,
+		firstAdded: firstAdded, addedKeys: addedKeys,
 		workKey: workKey, songKey: songKey, apart: apart, oneVersion: oneVersion, flowOrder: flowOrder, labelSimilarity: labelSimilarity, moodDistance: moodDistance, MOOD_RING: MOOD_RING,
 		queueInit: queueInit, queue: queue, current: current, upcoming: upcoming
 	};

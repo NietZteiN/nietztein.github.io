@@ -53,6 +53,10 @@
 	function cmp(a, b) { return collator ? collator.compare(a, b) : String(a).localeCompare(String(b)); }
 	function capital(s) { s = String(s || ''); return s.charAt(0).toUpperCase() + s.slice(1); }
 
+	var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+	// '2021' -> '2021', '2021-05' -> 'May 2021'
+	function addedName(k) { k = String(k || ''); return k.length === 7 ? MONTHS[+k.slice(5) - 1] + ' ' + k.slice(0, 4) : k || 'Unknown'; }
+	function addedHue(k) { var y = +String(k).slice(0, 4) || 2020; return { h: (y - 2016) * 37 % 360, s: 45 }; }
 	var VERSION_NAME = { cover: 'Cover', remix: 'Remix', live: 'Live', acoustic: 'Acoustic', instrumental: 'Instrumental', karaoke: 'Karaoke', piano: 'Piano', orchestral: 'Orchestral', remaster: 'Remaster', demo: 'Demo', extended: 'Extended', edit: 'Edit', 'sped-up': 'Sped up', slowed: 'Slowed', 'tv-size': 'TV size', short: 'Short', acapella: 'A cappella', session: 'Session', language: 'Translated', alt: 'Alternate' };
 	function versionWords(t) { return t && t.version ? t.version.split('+').map(function (v) { return VERSION_NAME[v] || v; }).join(', ') : ''; }
 	var MOOD_HUE = { bright: 45, driving: 8, wistful: 215, tender: 150, dark: 265, quirky: 305 };
@@ -66,9 +70,9 @@
 	var DEFAULT_PLAN = {
 		mode: 'true', playlists: [], genres: [], families: [], decades: [], artists: [], lengths: [],
 		scenes: [], works: [], moods: [], langs: [], kinds: [], roles: [],
-		maxTracks: null, maxMinutes: null, hours: null, keepRuns: true, blockSize: 3, clips: false, text: '', apart: true, oneVersion: false
+		maxTracks: null, maxMinutes: null, hours: null, keepRuns: true, blockSize: 3, clips: false, text: '', apart: true, oneVersion: false, added: [], addedFrom: '', addedTo: ''
 	};
-	var LIST_KEYS = ['playlists', 'genres', 'families', 'decades', 'artists', 'lengths', 'scenes', 'works', 'moods', 'langs', 'kinds', 'roles'];
+	var LIST_KEYS = ['playlists', 'genres', 'families', 'decades', 'artists', 'lengths', 'scenes', 'works', 'moods', 'langs', 'kinds', 'roles', 'added'];
 	var plan = copyPlan(DEFAULT_PLAN);
 	var stations = [];
 	var bag = null, bagKey = '', bagRand = thumb ? S.rng('thumb') : S.cryptoRng();
@@ -102,6 +106,8 @@
 		}
 		if (p.hours > 0) s.notPlayedWithinHours = +p.hours;
 		if (p.text) s.text = p.text;
+		if (p.addedFrom) s.addedFrom = p.addedFrom;
+		if (p.addedTo) s.addedTo = p.addedTo;
 		if (!p.clips && !(p.kinds && p.kinds.indexOf('clip') >= 0) && !(p.genres && p.genres.indexOf('Spoken & clips') >= 0)) s.not = { kinds: ['clip'] };
 		return s;
 	}
@@ -127,7 +133,7 @@
 	function knownGenres() { var g = {}; L.list(lib).forEach(function (t) { t.genres.forEach(function (x) { g[x] = true; }); }); return Object.keys(g); }
 	function idx() {
 		if (memo) return memo;
-		var m = { all: scopeTracks(), music: [], artists: {}, works: {}, genres: {}, families: {}, moods: {}, scenes: {}, langs: {}, decades: {}, needs: { unsure: 0, unlabelled: 0, gone: 0 } };
+		var m = { all: scopeTracks(), music: [], artists: {}, works: {}, genres: {}, families: {}, moods: {}, scenes: {}, langs: {}, decades: {}, addedY: {}, addedM: {}, needs: { unsure: 0, unlabelled: 0, gone: 0 } };
 		function bump(map, key, t, extra) {
 			var e = map[key] || (map[key] = { key: key, tracks: [], seconds: 0, plays: 0 });
 			e.tracks.push(t);
@@ -146,6 +152,8 @@
 			if (t.scene) bump(m.scenes, t.scene, t);
 			if (t.lang) bump(m.langs, t.lang, t);
 			if (t.decade) bump(m.decades, t.decade, t);
+			var ak = S.addedKeys(t);
+			if (ak[0] && t.kind !== 'clip') { bump(m.addedY, ak[0], t); bump(m.addedM, ak[1], t); }
 			if (!t.artistKey) m.needs.unsure++;
 			if (!t.labels && !Object.keys(t.userEdits).length) m.needs.unlabelled++;
 			if (!L.playable(t)) m.needs.gone++;
@@ -667,7 +675,7 @@
 		context = { label: 'Station: ' + st.name, href: '#/mix', patch: patchOf(st.plan) };
 		applyPlan({ play: true, say: 'Playing ' + q(st.name) + '.' });
 	}
-	function patchOf(p) { var o = {}; LIST_KEYS.forEach(function (k) { if (p[k] && p[k].length) o[k] = p[k].slice(); }); ['maxTracks', 'maxMinutes', 'hours', 'clips', 'text', 'oneVersion'].forEach(function (k) { if (p[k]) o[k] = p[k]; }); if (p.apart === false) o.apart = false; return o; }
+	function patchOf(p) { var o = {}; LIST_KEYS.forEach(function (k) { if (p[k] && p[k].length) o[k] = p[k].slice(); }); ['maxTracks', 'maxMinutes', 'hours', 'clips', 'text', 'oneVersion', 'addedFrom', 'addedTo'].forEach(function (k) { if (p[k]) o[k] = p[k]; }); if (p.apart === false) o.apart = false; return o; }
 
 	var scrollMemo = {};
 	function onRoute() {
@@ -1648,6 +1656,13 @@
 		if (artists.length) { sectionHead(view, 'Your artists', { href: '#/artists' }); shelf(view, artists.map(artistCard)); }
 		var works = Object.keys(ix.works).map(function (k) { return ix.works[k]; }).sort(function (a, b) { return b.tracks.length - a.tracks.length || cmp(a.key, b.key); }).slice(0, 18);
 		if (works.length) { sectionHead(view, 'From your anime, games and stage', { href: '#/works' }); shelf(view, works.map(workCard)); }
+		var nowD = new Date(now()), thisYear = nowD.getUTCFullYear(), mm = nowD.getUTCMonth();
+		var back = music.filter(function (t) { var f = S.firstAdded(t); if (!f) return false; var d = new Date(f); var diff = (mm - d.getUTCMonth() + 12) % 12; return d.getUTCFullYear() < thisYear && (diff <= 0 || diff >= 11); });
+		if (back.length >= 4) {
+			var bk = S.trueShuffle(back, S.rng('back-' + ToyKit.daily())).slice(0, 18).map(function (id) { return lib.tracks[id]; }), bIds = bk.map(function (t) { return t.id; });
+			sectionHead(view, 'Around this time in earlier years', { href: link('c', 'added', new Date(S.firstAdded(bk[0])).toISOString().slice(0, 7)), text: 'That month' });
+			shelf(view, bk.map(function (t, i) { var c = trackCard(t, bIds, i, { label: 'Around this time, earlier years', href: '#/' }); var sub = c.querySelector('.ts-card-sub'); if (sub) sub.textContent = trackArtist(t) + ' ' + DOT + ' added ' + addedName(new Date(S.firstAdded(t)).toISOString().slice(0, 7)); return c; }));
+		}
 		var recent = sorted(music, 'added').slice(0, 18), rIds = recent.map(function (t) { return t.id; });
 		if (recent.length) { sectionHead(view, 'Recently added', { href: '#/songs?sort=added' }); shelf(view, recent.map(function (t, i) { return trackCard(t, rIds, i, { label: 'Recently added', href: '#/songs?sort=added' }); })); }
 		var neg = S.neglected(music, thumb ? S.rng('home') : S.rng(ToyKit.daily()), now()).slice(0, 18).map(function (id) { return lib.tracks[id]; });
@@ -1718,8 +1733,35 @@
 		if (scenes.length) { sectionHead(view, 'Scenes'); grid(view, scenes.map(function (s) { return tile({ href: link('c', 'scene', s[0]), title: s[1], sub: plural(ix.scenes[s[0]].tracks.length, 'song'), hue: { h: SCENE_HUE[s[0]], s: 50 } }); }), 'is-tiles'); }
 		var langs = T.LANGS.filter(function (l) { return ix.langs[l[0]]; });
 		if (langs.length) { sectionHead(view, 'Languages'); grid(view, langs.map(function (l) { return tile({ href: link('c', 'lang', l[0]), title: l[1], sub: plural(ix.langs[l[0]].tracks.length, 'song'), hue: { h: LANG_HUE[l[0]] || 200, s: 35 } }); }), 'is-tiles is-small'); }
+		var ys = Object.keys(ix.addedY).sort();
+		if (ys.length) {
+			sectionHead(view, 'When you added them');
+			grid(view, ys.slice().reverse().map(function (y) { return tile({ href: link('c', 'added', y), title: y, sub: plural(ix.addedY[y].tracks.length, 'song') + ' added', hue: addedHue(y), cover: coverOf(ix.addedY[y].tracks) }); }), 'is-tiles is-small');
+			var ms = Object.keys(ix.addedM).sort();
+			if (ms.length > 1) timeline(view, ms, ix);
+		}
 		var decs = Object.keys(ix.decades).sort();
 		if (decs.length) { sectionHead(view, 'Decades'); grid(view, decs.map(function (dk) { return tile({ href: link('c', 'decade', dk), title: dk, sub: plural(ix.decades[dk].tracks.length, 'song'), hue: { h: (parseInt(dk, 10) - 1950) * 4 + 180, s: 30 } }); }), 'is-tiles is-small'); }
+	}
+	// Songs added per month, a single-series column chart: one hue, the count on hover and in
+	// each column's name, every column a link to that month.
+	function timeline(view, months, ix) {
+		var first = months[0], last = months[months.length - 1], all = [], y = +first.slice(0, 4), mo = +first.slice(5);
+		while (true) { var k = y + '-' + (mo < 10 ? '0' : '') + mo; all.push(k); if (k >= last) break; mo++; if (mo > 12) { mo = 1; y++; } }
+		var max = 1;
+		all.forEach(function (k) { if (ix.addedM[k]) max = Math.max(max, ix.addedM[k].tracks.length); });
+		var fig = h('figure', { class: 'ts-timeline' });
+		fig.appendChild(h('figcaption', { class: 'ts-muted', text: 'Songs added per month, ' + addedName(first) + ' to ' + addedName(last) + '. Each column opens that month.' }));
+		var row = h('div', { class: 'ts-tl-cols', role: 'list' });
+		all.forEach(function (k) {
+			var c = ix.addedM[k] ? ix.addedM[k].tracks.length : 0;
+			var col = h(c ? 'a' : 'span', { class: 'ts-tl-col' + (k.slice(5) === '01' ? ' is-year' : ''), href: c ? link('c', 'added', k) : null, role: 'listitem', title: addedName(k) + ': ' + plural(c, 'song'), aria: { label: addedName(k) + ': ' + plural(c, 'song') } });
+			col.appendChild(h('i', { style: { height: (c ? Math.max(3, 100 * c / max) : 0) + '%' } }));
+			if (k.slice(5) === '01' || k === first) col.appendChild(h('b', { text: k.slice(0, 4) }));
+			row.appendChild(col);
+		});
+		fig.appendChild(row);
+		view.appendChild(fig);
 	}
 	function viewBrowse(view) { if (!idx().all.length) { noMusic(view); return; } browseTiles(view, 'Moods & scenes'); }
 
@@ -1886,16 +1928,33 @@
 		scene: { key: 'scenes', field: 'scene', name: function (v) { return T.SCENE_NAME[v] || v; }, kicker: 'Scene', hue: function (v) { return { h: SCENE_HUE[v] || 0, s: 50 }; } },
 		lang: { key: 'langs', field: 'lang', name: function (v) { return T.LANG_NAME[v] || v; }, kicker: 'Language', hue: function (v) { return { h: LANG_HUE[v] || 200, s: 35 }; } },
 		decade: { key: 'decades', field: 'decade', name: function (v) { return v; }, kicker: 'Decade', hue: function (v) { return { h: (parseInt(v, 10) - 1950) * 4 + 180, s: 30 }; }, blurb: function () { return 'By release year where it is known, else the year of the upload.'; } },
-		role: { key: 'roles', field: 'role', name: function (v) { return T.ROLE_NAME[v] || v; }, kicker: 'Role', hue: function () { return { h: 330, s: 45 }; } }
+		role: { key: 'roles', field: 'role', name: function (v) { return T.ROLE_NAME[v] || v; }, kicker: 'Role', hue: function () { return { h: 330, s: 45 }; } },
+		added: { key: 'added', match: function (t, v) { return S.addedKeys(t).indexOf(v) >= 0; }, name: function (v) { return 'Added in ' + addedName(v); }, kicker: 'When you added them', hue: addedHue, blurb: function (v) { return 'The songs you first added to your playlists in ' + addedName(v) + '.'; } }
 	};
 	function viewFacet(view, parts) {
 		var f = FACETS[parts[0]], v = parts[1];
 		if (!f) { viewHome(view); return; }
-		var tracks = idx().all.filter(function (t) { return (t[f.field] || '') === v && (f.field !== 'kind'); });
+		var tracks = idx().all.filter(function (t) { return f.match ? f.match(t, v) : (t[f.field] || '') === v; });
 		if (!tracks.length) { view.appendChild(h('p', { class: 'ts-empty', text: 'Nothing here yet.' })); return; }
 		var patch = {}; patch[f.key] = [v];
-		collection(view, { kicker: f.kicker, title: f.name(v), blurb: f.blurb ? f.blurb(v) : '', hue: f.hue(v), tracks: tracks.filter(function (t) { return t.kind !== 'clip'; }), ctx: { label: f.name(v), href: link('c', parts[0], v), patch: patch }, sort: 'artist', breakdown: parts[0] !== 'scene' ? 'family' : 'work' });
+		collection(view, { kicker: f.kicker, title: f.name(v), blurb: f.blurb ? f.blurb(v) : '', hue: f.hue(v), tracks: tracks.filter(function (t) { return t.kind !== 'clip'; }), ctx: { label: f.name(v), href: link('c', parts[0], v), patch: patch }, sort: parts[0] === 'added' ? 'added' : 'artist', breakdown: parts[0] !== 'scene' ? 'family' : 'work' });
+		if (parts[0] === 'added') addedNav(view, v);
 	}
+	// On an added-year page: its months; on a month page: the year and the months around it.
+	function addedNav(view, v) {
+		var ix = idx(), year = v.slice(0, 4);
+		var months = Object.keys(ix.addedM).filter(function (k) { return k.slice(0, 4) === year; }).sort();
+		var years = Object.keys(ix.addedY).sort();
+		var bar = h('div', { class: 'ts-chips ts-chipbar' });
+		var yi = years.indexOf(year);
+		if (yi > 0) bar.appendChild(chip(String.fromCharCode(0x2190) + ' ' + years[yi - 1], link('c', 'added', years[yi - 1])));
+		bar.appendChild(chip('All of ' + year + ' ' + ix.addedY[year].tracks.length, link('c', 'added', year), null, v === year ? 'is-on' : ''));
+		months.forEach(function (mk) { var c = chip(MONTHS[+mk.slice(5) - 1].slice(0, 3) + ' ' + ix.addedM[mk].tracks.length, link('c', 'added', mk), addedHue(mk)); if (mk === v) c.classList.add('is-on'); bar.appendChild(c); });
+		if (yi >= 0 && yi < years.length - 1) bar.appendChild(chip(years[yi + 1] + ' ' + String.fromCharCode(0x2192), link('c', 'added', years[yi + 1])));
+		var actions = view.querySelector('.ts-actions');
+		if (actions) actions.parentNode.insertBefore(bar, actions.nextSibling); else view.appendChild(bar);
+	}
+
 	// A collection page: header, actions, a breakdown row, the list.
 	function collection(view, o) {
 		var tracks = o.tracks, sort = route.query.get('sort') || o.sort || 'artist';
@@ -2004,7 +2063,7 @@
 		fact('On YouTube', t.raw.title);
 		fact('Channel', t.channel);
 		fact('Year', t.year ? t.year + (t.yearSource === 'upload' ? ' (upload)' : '') : '');
-		fact('Added', L.lastAdded(t) ? new Date(L.lastAdded(t)).toISOString().slice(0, 10) : '');
+		fact('Added', L.firstAdded(t) ? new Date(L.firstAdded(t)).toISOString().slice(0, 10) : '');
 		fact('Last played', t.lastPlayed ? String(t.lastPlayed).slice(0, 10) : 'never');
 		fact('Skipped', t.skips ? plural(t.skips, 'time') : '');
 		fact('Labels', t.labels ? 'from a labels file' + (Object.keys(t.userEdits).length ? ', with your corrections' : '') : (Object.keys(t.userEdits).length ? 'your corrections' : 'what YouTube says'));
@@ -2121,6 +2180,10 @@
 		pickRow('Scenes', 'scenes', T.SCENES.map(function (s) { return { key: s[0], name: s[1], count: ix.scenes[s[0]] ? ix.scenes[s[0]].tracks.length : 0 }; }));
 		pickRow('Languages', 'langs', T.LANGS.map(function (l) { return { key: l[0], name: l[1], count: ix.langs[l[0]] ? ix.langs[l[0]].tracks.length : 0 }; }));
 		pickRow('Roles', 'roles', T.ROLES.map(function (r) { return { key: r[0], name: r[1], count: ix.all.filter(function (t) { return t.role === r[0]; }).length }; }));
+		pickRow('Added in (year)', 'added', Object.keys(ix.addedY).sort().reverse().map(function (y) { return { key: y, name: y, count: ix.addedY[y].tracks.length, hue: addedHue(y) }; }));
+		var pickedYears = draft.added.filter(function (k) { return k.length === 4; });
+		var monthKeys = Object.keys(ix.addedM).sort().reverse().filter(function (k) { return !pickedYears.length || pickedYears.indexOf(k.slice(0, 4)) >= 0 || draft.added.indexOf(k) >= 0; });
+		pickRow(pickedYears.length ? 'Added in (month of ' + pickedYears.join(', ') + ')' : 'Added in (month)', 'added', monthKeys.map(function (k) { return { key: k, name: addedName(k), count: ix.addedM[k].tracks.length }; }), { max: 12, all: expanded.added });
 		pickRow('Decades', 'decades', Object.keys(ix.decades).sort().map(function (dk) { return { key: dk, name: dk, count: ix.decades[dk].tracks.length }; }));
 		var fl = L.facets(lib, ix.all, now());
 		pickRow('Length', 'lengths', fl.length.map(function (e) { return { key: e.key, name: e.name, count: e.count }; }));
@@ -2141,6 +2204,16 @@
 		num('Stop after (tracks)', 'maxTracks', 'no limit');
 		num('Stop after (minutes)', 'maxMinutes', 'no limit');
 		num('Skip what played in the last (hours)', 'hours', 'none');
+		function day(label, key) {
+			var lab = h('label', { class: 'ts-field' }, [h('span', { text: label })]);
+			var inp = h('input', { class: 'kit-input', type: 'date' });
+			inp.value = draft[key] || '';
+			inp.addEventListener('change', function () { draft[key] = inp.value || ''; renderView(true); });
+			lab.appendChild(inp);
+			lim.appendChild(lab);
+		}
+		day('Added on or after', 'addedFrom');
+		day('Added on or before', 'addedTo');
 		function check(label, key) {
 			var lab = h('label', { class: 'ts-check' });
 			var cb = h('input', { type: 'checkbox', checked: !!draft[key] });
@@ -2168,6 +2241,8 @@
 		if (p.decades.length) parts.push(p.decades.join(' or '));
 		if (p.works.length) parts.push('from ' + p.works.join(' or '));
 		if (p.text) parts.push('matching ' + q(p.text));
+		if (p.added && p.added.length) parts.push('added in ' + p.added.map(addedName).join(' or '));
+		if (p.addedFrom || p.addedTo) parts.push('added ' + (p.addedFrom && p.addedTo ? 'between ' + p.addedFrom + ' and ' + p.addedTo : p.addedFrom ? 'since ' + p.addedFrom : 'until ' + p.addedTo));
 		if (p.artists.length) parts.push('by ' + p.artists.map(function (k) { return ix.artists[k] ? ix.artists[k].name : k; }).join(' or '));
 		if (p.lengths.length) parts.push(p.lengths.map(function (k) { return k; }).join(' or ') + ' length');
 		var lim = [];
@@ -2183,6 +2258,7 @@
 		else if (p.families.length === 1) bits.push((T.family(p.families[0]) || {}).name);
 		if (p.scenes.length === 1) bits.push(T.SCENE_NAME[p.scenes[0]]);
 		if (p.works.length === 1) bits.push(p.works[0]);
+		if (p.added && p.added.length === 1) bits.push('added ' + addedName(p.added[0]));
 		return bits.filter(Boolean).join(' ') || 'My mix';
 	}
 
@@ -2234,6 +2310,7 @@
 		bars(cols, 'Moods', T.MOODS.map(function (m) { return { name: m[1], href: link('c', 'mood', m[0]), value: ix.moods[m[0]] ? ix.moods[m[0]].tracks.length : 0 }; }), 'songs');
 		bars(cols, 'Scenes', T.SCENES.map(function (sc) { return { name: sc[1], href: link('c', 'scene', sc[0]), value: ix.scenes[sc[0]] ? ix.scenes[sc[0]].tracks.length : 0 }; }).sort(function (a, b) { return b.value - a.value; }), 'songs');
 		bars(cols, 'Languages', T.LANGS.map(function (l) { return { name: l[1], href: link('c', 'lang', l[0]), value: ix.langs[l[0]] ? ix.langs[l[0]].tracks.length : 0 }; }).sort(function (a, b) { return b.value - a.value; }), 'songs');
+		bars(cols, 'Added per year', Object.keys(ix.addedY).sort().map(function (y) { return { name: y, href: link('c', 'added', y), value: ix.addedY[y].tracks.length }; }), 'songs, by when you first added them');
 		bars(cols, 'Decades', Object.keys(ix.decades).sort().map(function (dk) { return { name: dk, href: link('c', 'decade', dk), value: ix.decades[dk].tracks.length }; }), 'release year where known, else upload year');
 		bars(cols, 'Most songs', Object.keys(ix.artists).map(function (k) { var a = ix.artists[k]; return { name: a.name, href: link('artist', k), value: a.tracks.length }; }).sort(function (a, b) { return b.value - a.value; }).slice(0, 12), 'by artist');
 		bars(cols, 'Most played artists', Object.keys(ix.artists).map(function (k) { var a = ix.artists[k]; return { name: a.name, href: link('artist', k), value: a.plays }; }).sort(function (a, b) { return b.value - a.value; }).slice(0, 12), 'plays counted here');
@@ -2762,6 +2839,9 @@
 			var p = k.split('|');
 			out.push({ name: T.MOOD_NAME[p[0]] + ' ' + (T.SCENE_NAME[p[1]] || p[1]).toLowerCase(), patch: { moods: [p[0]], scenes: [p[1]] }, n: ix.combos[k], hue: { h: MOOD_HUE[p[0]], s: 55 } });
 		});
+		var yc = {};
+		L.list(lib).forEach(function (t) { if (t.kind === 'clip') return; var y = S.addedKeys(t)[0]; if (y) yc[y] = (yc[y] || 0) + 1; });
+		Object.keys(yc).filter(function (y) { return yc[y] >= 40; }).sort().reverse().forEach(function (y) { out.push({ name: 'Added in ' + y, patch: { added: [y] }, n: yc[y], hue: addedHue(y) }); });
 		Object.keys(ix.works).filter(function (w) { return ix.works[w] >= 6; }).sort(function (a, b) { return ix.works[b] - ix.works[a]; }).slice(0, 14).forEach(function (w) { out.push({ name: w, patch: { works: [w] }, n: ix.works[w], hue: { h: 210, s: 40 } }); });
 		return out.filter(function (sg) { return !lists.some(function (li) { return li.kind === 'smart' && S.signature(li.patch || {}) === S.signature(sg.patch); }); });
 	}
