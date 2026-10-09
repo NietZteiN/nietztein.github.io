@@ -197,7 +197,7 @@
 
 	// What the player is doing, shown over the video box: loading, or why it
 	// could not start (a blocker, the network), with a way to try again.
-	var playerMsgTimer = 0;
+	var playerMsgTimer = 0, playerFailed = false;
 	function playerMessage(kind, text, actions) {
 		var box = $('video'), m = $('player-msg');
 		clearTimeout(playerMsgTimer);
@@ -208,11 +208,31 @@
 		m.appendChild(h('p', { text: text }));
 		if (actions) m.appendChild(h('div', { class: 'ts-row-btns' }, actions));
 	}
-	function blockedHelp(why) {
+	function blockedHelp(why, detail) {
 		var id = ctl && ctl.current();
 		var acts = [h('button', { class: 'kit-btn small primary', text: 'Try again', on: { click: function () { location.reload(); } } })];
 		if (id && U.YT_ID.test(id)) acts.push(h('a', { class: 'kit-btn small', href: 'https://www.youtube.com/watch?v=' + id, target: '_blank', rel: 'noopener', text: 'Open on YouTube' }));
-		playerMessage('error', why + ' Something in this browser may be blocking YouTube: an ad or tracker blocker (uBlock Origin, AdGuard, Brave Shields), strict tracking protection (Firefox, Edge), or a filtering DNS. Allow youtube.com and youtube-nocookie.com on this site, then try again.', acts);
+		var tooSmall = /^box/.test(detail || '');
+		playerMessage('error', why + (tooSmall ? ' YouTube asks for a player of at least 200 by 200 pixels, and the box was smaller. Make the window wider or zoom out, then try again.' : ' Something in this browser may be blocking YouTube: an ad or tracker blocker (uBlock Origin, AdGuard, Brave Shields), strict tracking protection (Firefox, Edge), or a filtering DNS. Allow youtube.com and youtube-nocookie.com on this site, then try again.'), acts);
+		playerDiagnosis(detail);
+	}
+	// One line of facts for whoever helps: what failed, the box, the script, whether youtube.com answers.
+	function playerDiagnosis(detail) {
+		var r = $('player').getBoundingClientRect(), ua = navigator.userAgent;
+		function has(s) { return ua.indexOf(s) >= 0; }
+		var br = has('Edg/') ? 'Edge' : has('OPR/') ? 'Opera' : has('Firefox/') ? 'Firefox' : has('Chrome/') ? (navigator.brave ? 'Brave' : 'Chrome') : has('Safari/') ? 'Safari' : 'other';
+		var vm = /(?:Edg|OPR|Firefox|Chrome|Version)[/]([0-9]+)/.exec(ua), v = vm ? vm[1] : '';
+		var facts = [detail || 'no detail', 'box ' + Math.round(r.width) + 'x' + Math.round(r.height), 'YT ' + (window.YT && window.YT.Player ? 'loaded' : 'missing'), br + ' ' + v, 'window ' + window.innerWidth + 'x' + window.innerHeight];
+		function show(extra) {
+			var m = $('player-msg');
+			if (!m) return;
+			var old = m.querySelector('.ts-diag');
+			if (old) old.parentNode.removeChild(old);
+			m.appendChild(h('p', { class: 'ts-diag', text: 'Details: ' + facts.concat(extra ? [extra] : []).join(' ' + DOT + ' ') }));
+		}
+		show('checking youtube.com' + ELL);
+		var t0 = Date.now();
+		fetch('https://www.youtube.com/iframe_api', { mode: 'no-cors', cache: 'no-store' }).then(function () { show('youtube.com reachable (' + (Date.now() - t0) + ' ms)'); }, function () { show('youtube.com NOT reachable: blocked or offline'); });
 	}
 	function watchPlayerStart() {
 		if (demo || mockOnLocal()) return;
@@ -300,12 +320,12 @@
 				dirty();
 				say('Skipped ' + q(trackTitle(t)) + ': ' + (P.ERROR_TEXT[code] || 'it cannot be played.'));
 			},
-			onError: function (id, code, message) { refusals.push(0); if (refusals.length > 5) refusals.shift(); setStatus(message || 'This track could not be played.'); if (code === 'api' || code === 'too-small') blockedHelp(message || 'The player could not start.'); },
+			onError: function (id, code, message, detail) { refusals.push(0); if (refusals.length > 5) refusals.shift(); setStatus(message || 'This track could not be played.'); if (code === 'api' || code === 'too-small') { playerFailed = true; blockedHelp(message || 'The player could not start.', detail || code); } },
 			onNeedMore: function () { return queueMode === 'true' && bag ? bagDraw(5) : []; },
 			onHalt: function (reason) {
 				if (reason === 'finished') say('That was the last track. Press Shuffle again for more.');
 				else if (reason === 'errors') say(haltReason());
-				else { say('The YouTube player could not be started here.'); blockedHelp('The YouTube player could not be loaded.'); }
+				else { say('The YouTube player could not be started here.'); if (!playerFailed) blockedHelp('The YouTube player could not be loaded.'); playerFailed = false; }
 				renderTransport();
 			}
 		});

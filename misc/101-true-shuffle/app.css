@@ -785,3 +785,4 @@ body.is-dragging .ts-now, body.is-dragging .ts-station { outline: 2px dashed var
 .ts-player-msg.is-loading { background: transparent; align-items: center; text-align: center; font-weight: 600; text-shadow: 0 1px 4px #000; }
 .ts-player-msg.is-error { overflow-y: auto; }
 @media (max-width: 760px) { .ts-player-msg { left: 0; right: 0; top: 0; border-radius: 0; aspect-ratio: auto; height: max(200px, min(56.25vw, 34vh)); } }
+.ts-player-msg .ts-diag { font: 11px var(--font-mono); opacity: 0.75; overflow-wrap: anywhere; }

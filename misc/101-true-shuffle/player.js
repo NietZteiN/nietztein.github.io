@@ -197,7 +197,7 @@
 		var host = opts.host || 'https://www.youtube-nocookie.com';
 
 		function set(s) { if (state !== s) { state = s; ev.emit('state', { id: id, state: s }); } }
-		function fail(code, message) { set('error'); ev.emit('error', { id: id, code: code, message: message || ERROR_TEXT[code] || 'The video cannot be played.' }); }
+		function fail(code, message, detail) { set('error'); ev.emit('error', { id: id, code: code, message: message || ERROR_TEXT[code] || 'The video cannot be played.', detail: detail || '' }); }
 		function stopPoll() { if (poll) { clearInterval(poll); poll = null; } lastSeen = null; }
 		function startPoll() {
 			if (poll) return;
@@ -218,14 +218,23 @@
 			else if (e.data === S.BUFFERING) set('loading');
 			else if (e.data === S.CUED) set('paused');
 		}
-		function build(videoId, o) {
+		// The box is measured when the player is built. A page that has just
+		// shown it gets two frames for its layout before the size is refused.
+		function measured() {
 			var box = visibleBox(opts.container);
-			if (!box || box.width < MIN_SIZE || box.height < MIN_SIZE) {
+			if (box && box.width >= MIN_SIZE && box.height >= MIN_SIZE) return Promise.resolve(box);
+			var raf = root.requestAnimationFrame || function (f) { return setTimeout(f, 16); };
+			return new Promise(function (r) { raf(function () { raf(r); }); }).then(function () {
+				var b2 = visibleBox(opts.container);
+				if (b2 && b2.width >= MIN_SIZE && b2.height >= MIN_SIZE) return b2;
 				var err = new Error(ERROR_TEXT['too-small']);
 				err.code = 'too-small';
-				return Promise.reject(err);
-			}
-			return loadIframeApi(opts.timeoutMs).then(function (YT) {
+				err.detail = b2 ? 'box ' + Math.round(b2.width) + 'x' + Math.round(b2.height) : 'box hidden';
+				throw err;
+			});
+		}
+		function build(videoId, o) {
+			return measured().then(function () { return loadIframeApi(opts.timeoutMs); }, function (err) { err.sized = true; throw err; }).then(function (YT) {
 				if (destroyed) return null;
 				return new Promise(function (resolve) {
 					var mount = root.document.createElement('div');
@@ -246,9 +255,10 @@
 					});
 				});
 			}, function (e) {
+				if (e && e.sized) throw e;
 				var err = new Error(ERROR_TEXT.api);
 				err.code = 'api';
-				err.detail = e && e.message;
+				err.detail = 'script ' + (e && e.message);
 				throw err;
 			});
 		}
@@ -276,7 +286,7 @@
 						if (player && wanted && wanted.id !== videoId) api.load(wanted.id, wanted.o);
 					}, function (err) {
 						building = null;
-						fail(err.code || 'api', err.message);
+						fail(err.code || 'api', err.message, err.detail);
 						throw err;
 					});
 				}
@@ -311,7 +321,7 @@
 	//   opts.onListened(id, info)    a track was left: { completed, listenedSec, durationSec, at }
 	//                                (library.recordPlay takes exactly this)
 	//   opts.onUnplayable(id, code)  YouTube refused the track (100, 101, 150); it is skipped
-	//   opts.onError(id, code, message)   any other failure
+	//   opts.onError(id, code, message, detail)   any other failure (detail: for 'api' and 'too-small', what went wrong)
 	//   opts.onNeedMore(state)       the queue is about to run out; return ids to add
 	//                                (how an endless true shuffle draws from its bag)
 	//   opts.onHalt(reason)          playback stopped by itself: 'finished', 'errors', 'player'
@@ -330,7 +340,7 @@
 		var playingId = null, lastDuration = 0, errorsInARow = 0, offs = [], dead = false;
 
 		function cur(s) { return s.index >= 0 && s.index < s.items.length ? s.items[s.index] : null; }
-		function call(fn, a, b, c) { if (typeof fn === 'function') { try { return fn(a, b, c); } catch (e) { if (root.setTimeout) root.setTimeout(function () { throw e; }, 0); } } return undefined; }
+		function call(fn, a, b, c, d) { if (typeof fn === 'function') { try { return fn(a, b, c, d); } catch (e) { if (root.setTimeout) root.setTimeout(function () { throw e; }, 0); } } return undefined; }
 
 		// The track that was playing is left: report how much of it was heard.
 		function leave(completed) {
@@ -385,7 +395,7 @@
 			var id = playingId;
 			playingId = null;            // a track that never played is neither a play nor a skip
 			if (UNPLAYABLE[e.code]) call(opts.onUnplayable, id, e.code);
-			else call(opts.onError, id, e.code, e.message);
+			else call(opts.onError, id, e.code, e.message, e.detail);
 			if (e.code === 'api' || e.code === 'too-small') { call(opts.onHalt, 'player'); return; }
 			if (++errorsInARow >= maxErrors) { call(opts.onHalt, 'errors'); return; }
 			dispatch({ type: 'next' }, 'skip', false);
