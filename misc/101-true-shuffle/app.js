@@ -875,6 +875,7 @@
 		if (t.decade) box.appendChild(chip(t.yearSource === 'upload' ? 'Uploaded ' + t.year : String(t.year), link('c', 'decade', t.decade)));
 	}
 	function renderNowInfo() {
+		renderLike();
 		var box = $('nowinfo'), id = ctl ? ctl.current() : null, t = id ? lib.tracks[id] : null;
 		clear(box);
 		if (!t) {
@@ -1006,16 +1007,23 @@
 			if (d.to !== d.from) ctl.move(d.from, d.to); else renderQueue();
 		});
 		list.addEventListener('pointercancel', function () { drag = null; renderQueue(); });
-		var tabs = [$('tab-next'), $('tab-history')];
+		var tabs = [$('tab-next'), $('tab-history'), $('tab-like')];
 		function pick(i) {
 			tabs.forEach(function (t, k) { t.setAttribute('aria-selected', k === i ? 'true' : 'false'); t.tabIndex = k === i ? 0 : -1; });
 			$('panel-next').hidden = i !== 0;
 			$('panel-history').hidden = i !== 1;
+			$('panel-like').hidden = i !== 2;
+			$('btn-save-queue').hidden = i !== 0;
+			$('btn-clear-queue').hidden = i !== 0;
+			ToyKit.store('queueTab', i);
+			if (i === 2) renderLike(true);
 		}
 		tabs.forEach(function (t, i) {
 			t.addEventListener('click', function () { pick(i); });
-			t.addEventListener('keydown', function (e) { if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); var k = 1 - i; pick(k); tabs[k].focus(); } });
+			t.addEventListener('keydown', function (e) { if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); var k = (i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length; pick(k); tabs[k].focus(); } });
 		});
+		var tab0 = +ToyKit.load('queueTab', 0);
+		if (tab0 > 0 && tab0 < tabs.length) pick(tab0);
 		$('btn-save-queue').addEventListener('click', saveQueueAsList);
 		$('btn-clear-queue').addEventListener('click', function () { var was = S.upcoming(ctl.state()); if (queueMode === 'true') returnToBag(was); ctl.clearUpcoming(); U.toast('Cleared what was coming next.', { action: 'Undo', onAction: function () {
 			if (queueMode === 'true' && bag) { var pl = S.bagPlayed(bag), back = was.filter(function (id) { return pl.indexOf(id) < 0 && bag.order.indexOf(id) >= 0; }), rest = S.bagRemaining(bag).filter(function (id) { return was.indexOf(id) < 0; }), gone = bag.gone; bag = { v: 1, order: pl.concat(back, rest), pos: pl.length + back.length, cycle: bag.cycle, last: bag.last }; if (gone && gone.length) bag.gone = gone.slice(); saveBag(); }
@@ -2242,8 +2250,7 @@
 		fact('Labels', t.labels ? 'from a labels file' + (Object.keys(t.userEdits).length ? ', with your corrections' : '') : (Object.keys(t.userEdits).length ? 'your corrections' : 'what YouTube says'));
 		fact('Status', !L.playable(t) ? 'cannot be played here' : t.blocked ? 'blocked' : '');
 		view.appendChild(facts);
-		var radio = radioIds(t, 40).slice(1, 21).map(function (id) { return lib.tracks[id]; });
-		if (radio.length) { sectionHead(view, 'Sounds like this'); trackList(view, radio, { context: { label: 'Radio: ' + trackTitle(t), href: link('track', t.id) } }); }
+		trackLike(view, t);
 	}
 
 	// ---- The library hub (phones) ---------------------------------------------------------------------------
@@ -5048,6 +5055,119 @@
 				say('Taken out of ' + q(p.title) + ' again.');
 			});
 		}).catch(onApiError);
+	}
+
+	// ---- Songs like this one: the Like this tab and the track page ------------------------------------
+	// S.similar scores the library against a song from the labels, the singers credited, the work,
+	// the era and what was played around it; each suggestion says why in a few words.
+
+	// The performers of a song (voice actors, not the characters they voice), for "also sung by".
+	function performers(t) {
+		var out = L.people(t.artist).filter(function (p) { return p.as !== 'character'; });
+		return out;
+	}
+	var recMemo = { id: null, ix: null, res: null };
+	function recsFor(t) {
+		var ix = idx();
+		if (recMemo.id === t.id && recMemo.ix === ix) return recMemo.res;
+		var pool = ix.all.filter(function (x) { return L.playable(x); });
+		var res = S.similar(t, pool, { history: histCache, people: performers, limit: 14 });
+		recMemo = { id: t.id, ix: ix, res: res };
+		return res;
+	}
+	function whyWords(why) {
+		return why.slice(0, 2).map(function (w) {
+			var k = w[0], v = w[1];
+			if (k === 'together') return v === 1 ? 'played right after it' : 'played together ' + v + ' times';
+			if (k === 'singer') return 'also sung by ' + v;
+			if (k === 'work') return 'also from ' + v;
+			if (k === 'artist') return 'same artist';
+			if (k === 'mood') return 'also ' + String(T.MOOD_NAME[v] || v).toLowerCase();
+			if (k === 'era') return 'same era (' + v + 's)';
+			if (k === 'scene') return T.SCENE_NAME[v] || v;
+			return v;
+		}).join(' ' + DOT + ' ');
+	}
+	// One suggestion: click plays it now, the button puts it next.
+	function likeRow(t, sub, ctx) {
+		var li = h('li', { class: 'ts-q ts-like' });
+		var main = h('button', { class: 'ts-q-main', title: 'Play now', on: { click: function () { playIds([t.id], 0, ctx); } } });
+		main.appendChild(artFor(t, 'ts-q-art'));
+		main.appendChild(h('span', { class: 'ts-q-text' }, [h('span', { class: 'ts-q-title', text: trackTitle(t) }), h('span', { class: 'ts-q-artist', text: trackArtist(t) }), sub ? h('span', { class: 'ts-like-why', text: sub }) : null]));
+		li.appendChild(main);
+		li.appendChild(U.iconBtn('playnext', 'Play ' + trackTitle(t) + ' next', { cls: 'ts-q-x', on: { click: function () { queueNext([t.id]); } } }));
+		return li;
+	}
+	function likeGroup(box, title, items, ctx) {
+		if (!items.length) return;
+		var g = h('div', { class: 'ts-like-g' }, h('h3', { class: 'ts-like-h', text: title }));
+		var ol = h('ol', { class: 'ts-qlist' });
+		items.forEach(function (it) { ol.appendChild(likeRow(it.t, it.sub, ctx)); });
+		g.appendChild(ol);
+		box.appendChild(g);
+	}
+	// The groups for one song: its work, what sounds close, what was played with it.
+	function likeGroups(t, box, max) {
+		var r = recsFor(t), ctx = { label: 'Like ' + trackTitle(t), href: link('track', t.id) };
+		var work = r.work.slice(0, max.work).map(function (x) { return { t: x, sub: T.ROLE_NAME[x.role] || '' }; });
+		var shownW = {};
+		work.forEach(function (x) { shownW[x.t.id] = true; });
+		var close = r.close.filter(function (x) { return !shownW[x.t.id] && !(t.work && x.t.work === t.work && work.length); }).slice(0, max.close).map(function (x) { return { t: x.t, sub: whyWords(x.why) }; });
+		var tog = r.together.filter(function (x) { return x.n >= 2; }).slice(0, max.together).map(function (x) { return { t: x.t, sub: 'played together ' + x.n + ' times' }; });
+		likeGroup(box, 'You often play with it', tog, ctx);
+		likeGroup(box, 'Also from ' + (t.work || ''), work, ctx);
+		likeGroup(box, 'Sounds close', close, ctx);
+		if (!tog.length && !work.length && !close.length) box.appendChild(h('p', { class: 'ts-muted', text: 'Nothing in the library is close enough to this one yet.' }));
+		return { work: work, close: close, together: tog, ctx: ctx };
+	}
+	// The Like this tab beside Up next and Played: follows the song that is on.
+	var likeShown = null;
+	function renderLike(force) {
+		var box = $('like');
+		if (!box || $('panel-like').hidden) return;
+		var id = ctl ? ctl.current() : null, t = id ? lib.tracks[id] : null;
+		var key = (t ? t.id : '') + '|' + (recMemo.ix === idx() ? 'same' : 'new');
+		if (!force && likeShown === key && box.firstChild) return;
+		likeShown = key;
+		clear(box);
+		if (!t) { box.appendChild(h('p', { class: 'ts-muted ts-qmore', text: 'Play something: songs like it show up here.' })); return; }
+		box.appendChild(h('p', { class: 'ts-context' }, ['Like ', h('a', { href: link('track', t.id), text: trackTitle(t) })]));
+		var g = likeGroups(t, box, { work: 4, close: 10, together: 4 });
+		var all = g.together.concat(g.work, g.close).map(function (x) { return x.t.id; });
+		var row = h('div', { class: 'ts-row-btns ts-like-acts' });
+		if (all.length) row.appendChild(U.iconBtn('playnext', 'Queue them all next', { text: true, cls: 'ts-act', on: { click: function () { queueNext(all); } } }));
+		if (!demo) row.appendChild(U.iconBtn('compass', 'New songs like it', { text: true, cls: 'ts-act', on: { click: function () { location.hash = '#/discover?seed=' + encodeURIComponent(t.id); } } }));
+		box.appendChild(row);
+	}
+	// The track page: the same groups, roomier, and new songs from Deezer to add.
+	function trackLike(view, t) {
+		var sec = h('section', { class: 'ts-like-sec' });
+		sec.appendChild(h('h2', { class: 'ts-sec-head', text: 'Because you like this' }));
+		var cols = h('div', { class: 'ts-like-cols' });
+		sec.appendChild(cols);
+		view.appendChild(sec);
+		var g = likeGroups(t, cols, { work: 8, close: 14, together: 6 });
+		var all = g.together.concat(g.work, g.close).map(function (x) { return x.t.id; });
+		if (all.length) sec.insertBefore(h('div', { class: 'ts-row-btns' }, [
+			actionBtn('play', 'Play them', function () { playIds([t.id].concat(all), 0, g.ctx); }, true),
+			actionBtn('playnext', 'Queue them next', function () { queueNext(all); })
+		]), cols);
+		if (demo || !t.artistKey) return;
+		var here = location.hash, nw = dsection(view, 'New to you, like this', 'from Deezer: artists close to ' + t.artist);
+		loadDiscoverState().then(function () { return dzArtistFor(t.artistKey); }).then(function (d) {
+			if (location.hash !== here) return;
+			if (!d) { nw.done(); nw.body.appendChild(h('p', { class: 'ts-muted' }, ['Deezer does not know ' + t.artist + '. ', h('a', { href: '#/discover?seed=' + encodeURIComponent(t.id), text: 'Try Discover' }), '.'])); return; }
+			return deezer().related(d.id).then(function (rel) {
+				return pool(rel.slice(0, 5), 2, function (a) { return deezer().top(a.id, 3).then(function (ts) { return ts.map(function (x) { return DX.trackOf(x, { name: a.name, id: a.id }); }); }); });
+			}).then(function (lists) {
+				if (location.hash !== here) return;
+				nw.done();
+				var fresh = freshOnly([].concat.apply([], (lists || []).filter(Boolean)));
+				if (!fresh.length) { nw.body.appendChild(h('p', { class: 'ts-muted', text: 'Nothing new from Deezer for this one just now.' })); return; }
+				nw.head.appendChild(U.iconBtn('play', 'Preview them', { text: true, cls: 'ts-act', on: { click: function () { pvStart(fresh, 0, 'Like ' + trackTitle(t)); } } }));
+				dzList(nw.body, fresh.slice(0, 12));
+			});
+		}).catch(function (e) { nw.done(); nw.body.appendChild(h('p', { class: 'ts-muted', text: e && e.message || String(e) })); });
 	}
 
 	// ---- Keys ----------------------------------------------------------------------------------------------

@@ -111,6 +111,39 @@
 		return s.replace(/[^\p{L}\p{N}]+/gu, '');
 	}
 	function normTitle(title) { return Parse.fold(title); }
+	// The people in an artist credit, for "also sung by" and the voice-actor pages:
+	// 'A & B', 'A feat. B', 'Character (CV: Voice actor)' (a CV list may hold several,
+	// and full-width brackets count). -> [{ name, key, as }], as being 'cv' for a voice
+	// actor, 'character' for the part voiced, '' for a plain artist.
+	var IDEO_COMMA = String.fromCharCode(0x3001);
+	function people(credit) {
+		var s = str(credit).normalize('NFKC'), parts = [], cur = '', depth = 0, out = [], seen = {};
+		for (var i = 0; i < s.length; i++) {
+			var ch = s.charAt(i);
+			if (ch === '(') depth++;
+			else if (ch === ')' && depth > 0) depth--;
+			if (depth === 0) {
+				var m = /^( & | feat[.] | ft[.] | featuring )/i.exec(s.slice(i));
+				if (m) { parts.push(cur); cur = ''; i += m[1].length - 1; continue; }
+			}
+			cur += ch;
+		}
+		parts.push(cur);
+		function add(name, as) {
+			name = name.trim();
+			var k = normArtist(name);
+			if (!k || seen[k + '|' + as]) return;
+			seen[k + '|' + as] = true;
+			out.push({ name: name, key: k, as: as });
+		}
+		parts.forEach(function (p) {
+			var cv = /^(.*?) *[(] *(?:CV|C[.]V[.]) *[:.]? *(.+?)[)] *$/i.exec(p.trim());
+			if (!cv) { add(p, ''); return; }
+			if (cv[1]) add(cv[1], 'character');
+			cv[2].split(new RegExp(' & |, |' + IDEO_COMMA)).forEach(function (n) { add(n, 'cv'); });
+		});
+		return out;
+	}
 
 	// Text for searching: folded, but words stay apart.
 	function foldText(s) {
@@ -1077,7 +1110,7 @@
 		LENGTH_CLASSES: LENGTH_CLASSES,
 		create: create, load: load, toParts: toParts, fromParts: fromParts, meta: meta,
 		list: list, get: get, playable: playable,
-		normArtist: normArtist, normTitle: normTitle, artistOf: artistOf, channelKey: channelKey,
+		normArtist: normArtist, normTitle: normTitle, people: people, artistOf: artistOf, channelKey: channelKey,
 		parseDuration: parseDuration, lengthClass: lengthClass, decadeOf: decadeOf, firstAdded: firstAdded, lastAdded: lastAdded,
 		genresFromTopics: genresFromTopics, genresOf: genresOf,
 		derive: derive, deriveAll: deriveAll, knownArtists: knownArtists, knownCollector: knownCollector, resolveArtists: resolveArtists,

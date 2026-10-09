@@ -64,6 +64,7 @@
 				<div class="ts-tabs" role="tablist" aria-label="Queue and history">
 					<button class="ts-tab" id="tab-next" type="button" role="tab" aria-selected="true" aria-controls="panel-next">Up next</button>
 					<button class="ts-tab" id="tab-history" type="button" role="tab" aria-selected="false" aria-controls="panel-history" tabindex="-1">Played</button>
+					<button class="ts-tab" id="tab-like" type="button" role="tab" aria-selected="false" aria-controls="panel-like" tabindex="-1" title="Songs like the one that is on">Like this</button>
 					<span class="ts-tabs-sp"></span>
 					<button class="ts-link-btn kit-nothumb" id="btn-save-queue" type="button" title="Save what is queued as a playlist">Save</button>
 					<button class="ts-link-btn kit-nothumb" id="btn-clear-queue" type="button">Clear</button>
@@ -77,6 +78,9 @@
 				<div id="panel-history" role="tabpanel" aria-labelledby="tab-history" hidden>
 					<ol class="ts-qlist" id="history"></ol>
 					<p class="ts-muted ts-qmore" id="history-more"></p>
+				</div>
+				<div id="panel-like" role="tabpanel" aria-labelledby="tab-like" hidden>
+					<div class="ts-like-box" id="like"></div>
 				</div>
 			</section>
 		</div>

@@ -767,6 +767,79 @@
 		if (a.lang && a.lang === b.lang) s += 1;
 		return s;
 	}
+	// How often each other song was played right before or after `id`: neighbouring
+	// entries of the history (skips left out) less than `gapMs` (20 minutes) apart.
+	// -> { otherId: count }
+	function coPlays(history, id, opts) {
+		var gap = (opts && opts.gapMs) || 1200000, out = {};
+		var ms = function (x) { return typeof x === 'number' ? x : Date.parse(x) || 0; };
+		var hs = (history || []).filter(function (e) { return e && e.id && e.kind !== 'skip'; }).slice().sort(function (a, b) { return ms(a.at) - ms(b.at); });
+		for (var i = 0; i < hs.length; i++) {
+			if (hs[i].id !== id) continue;
+			[hs[i - 1], hs[i + 1]].forEach(function (e) {
+				if (!e || e.id === id || Math.abs(ms(e.at) - ms(hs[i].at)) > gap) return;
+				out[e.id] = (out[e.id] || 0) + 1;
+			});
+		}
+		return out;
+	}
+	// Songs like `seed` among `tracks`, each with the reasons why, most telling first.
+	// Other uploads of the same song (S.songKey) and sets are left out; each song comes once.
+	// opts: { history (for coPlays), people(t) -> [{ key, name }] credited, limit (12),
+	// perArtist (2), perWork (2), min (4) }.
+	// -> { close: [{ t, score, why: [[kind, value]] }], work: [tracks of the same work,
+	// OP first], together: [{ t, n }] }. Kinds: 'together' (n), 'singer' (key), 'work',
+	// 'artist', 'genre' (name), 'mood', 'era' (decade), 'scene'; 'singer' carries the name.
+	var ROLE_ORDER = ['OP', 'ED', 'insert', 'theme', 'image', 'OST'];
+	function similar(seed, tracks, opts) {
+		opts = opts || {};
+		var co = coPlays(opts.history, seed.id), ppl = opts.people || function () { return []; };
+		var mine = {}, sg = seed.genres || [], sy = +seed.year || 0, own = songKey(seed), songs = {};
+		ppl(seed).forEach(function (p) { mine[p.key] = true; });
+		var scored = [], work = [], together = [];
+		(tracks || []).forEach(function (c) {
+			if (!c || c.id === seed.id || c.blocked || c.kind === 'clip' || c.kind === 'set') return;
+			var sk = songKey(c);
+			if (sk === own) return;
+			var s = 0, why = [], n = co[c.id] || 0;
+			if (n) { s += Math.min(4, 1.5 * n); why.push(['together', n]); together.push({ t: c, n: n }); }
+			var same = !!(seed.artistKey && c.artistKey === seed.artistKey);
+			var shared = same ? [] : ppl(c).filter(function (p) { return mine[p.key]; });
+			if (shared.length) { s += 2; why.push(['singer', shared[0].name]); }
+			if (seed.work && c.work === seed.work) { s += 2; why.push(['work', c.work]); work.push(c); }
+			if (same) { s += 1.5; why.push(['artist', c.artist]); }
+			var g = '';
+			for (var i = 0; i < sg.length; i++) if ((c.genres || []).indexOf(sg[i]) >= 0) { s += i === 0 ? 3 : 2; if (!g) g = sg[i]; }
+			if (g) why.push(['genre', g]);
+			var md = seed.mood && c.mood ? moodDistance(seed.mood, c.mood) : 2;
+			if (md === 0) { s += 2; why.push(['mood', c.mood]); } else if (md === 1) s += 1; else if (md >= 3) s -= 1;
+			var cy = +c.year || 0;
+			if (sy && cy && Math.abs(sy - cy) <= 2) { s += 1; why.push(['era', Math.floor(cy / 10) * 10]); }
+			if (seed.scene && c.scene === seed.scene) { s += 1; why.push(['scene', c.scene]); }
+			if (seed.lang && c.lang === seed.lang) s += 1;
+			if (c.rating >= 4) s += 0.5;
+			scored.push({ t: c, score: s, why: why, song: sk });
+		});
+		scored.sort(function (a, b) { return b.score - a.score || (a.t.id < b.t.id ? -1 : 1); });
+		var limit = opts.limit || 12, perA = {}, perW = {}, close = [];
+		var maxA = opts.perArtist || 2, maxW = opts.perWork || 2, min = opts.min == null ? 4 : opts.min;
+		for (var j = 0; j < scored.length && close.length < limit; j++) {
+			var x = scored[j];
+			if (x.score < min) break;
+			var ak = artistKey(x.t), wk = workKey(x.t);
+			if (songs[x.song] || (perA[ak] || 0) >= maxA || (wk && (perW[wk] || 0) >= maxW)) continue;
+			songs[x.song] = true;
+			perA[ak] = (perA[ak] || 0) + 1;
+			if (wk) perW[wk] = (perW[wk] || 0) + 1;
+			close.push(x);
+		}
+		var ro = function (t) { var i = ROLE_ORDER.indexOf(t.role); return i < 0 ? ROLE_ORDER.length : i; };
+		var wseen = {};
+		work = work.filter(function (t) { var k = songKey(t); if (wseen[k]) return false; wseen[k] = true; return true; });
+		work.sort(function (a, b) { return ro(a) - ro(b) || String(a.title).localeCompare(String(b.title)); });
+		together.sort(function (a, b) { return b.n - a.n; });
+		return { close: close, work: work, together: together };
+	}
 	// Mood flow: a walk where each next track is drawn among the closest of a
 	// random sample of what is left (opts.sim(a, b), or the labels), never the
 	// same artist or work as the last two. The mood drifts instead of jumping.
@@ -963,7 +1036,7 @@
 		artistRotation: artistRotation, genreBlockList: genreBlockList, genreBlocks: genreBlocks, keepRuns: keepRuns, foldRuns: foldRuns, unfoldRuns: unfoldRuns,
 		limit: limit, build: build, signature: signature, MODES: MODES,
 		firstAdded: firstAdded, addedKeys: addedKeys,
-		workKey: workKey, songKey: songKey, apart: apart, oneVersion: oneVersion, flowOrder: flowOrder, labelSimilarity: labelSimilarity, moodDistance: moodDistance, MOOD_RING: MOOD_RING,
+		workKey: workKey, songKey: songKey, apart: apart, oneVersion: oneVersion, flowOrder: flowOrder, labelSimilarity: labelSimilarity, coPlays: coPlays, similar: similar, moodDistance: moodDistance, MOOD_RING: MOOD_RING,
 		queueInit: queueInit, queue: queue, current: current, upcoming: upcoming
 	};
 });

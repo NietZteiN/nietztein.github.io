@@ -2069,6 +2069,43 @@ describe('yt', async function () {
 // labels (a hand-made reading of the library) and the taste map
 // =============================================================================
 
+describe('recommendations', function () {
+	var L = require('./library.js'), S = require('./shuffle.js');
+	var names = function (c) { return L.people(c).map(function (p) { return p.name + '/' + p.as; }); };
+	eq(names('Yukino Yukinoshita (CV: Saori Hayami) & Yui Yuigahama (CV: Nao Toyama)'), ['Yukino Yukinoshita/character', 'Saori Hayami/cv', 'Yui Yuigahama/character', 'Nao Toyama/cv'], 'people: characters and their voice actors');
+	eq(names('Kessoku Band (CV: A Aoyama, B Suzushiro & C Hasegawa)'), ['Kessoku Band/character', 'A Aoyama/cv', 'B Suzushiro/cv', 'C Hasegawa/cv'], 'people: a band of characters with a list of voice actors');
+	eq(names('Moe Shop feat. TORIENA'), ['Moe Shop/', 'TORIENA/'], 'people: feat. splits the credit');
+	eq(names('Hitori Gotoh' + String.fromCharCode(0xFF08) + 'CV' + String.fromCharCode(0xFF1A) + 'Yoshino Aoyama' + String.fromCharCode(0xFF09)), ['Hitori Gotoh/character', 'Yoshino Aoyama/cv'], 'people: full-width brackets and colon');
+	eq(L.people('').length, 0, 'people: nothing for an empty credit');
+	var h0 = Date.UTC(2026, 0, 1), min = 60000;
+	var hist = [{ id: 'a', at: h0, kind: 'play' }, { id: 'b', at: h0 + 4 * min, kind: 'play' }, { id: 'c', at: h0 + 8 * min, kind: 'skip' }, { id: 'a', at: h0 + 600 * min, kind: 'play' }, { id: 'b', at: h0 + 604 * min, kind: 'play' }, { id: 'd', at: h0 + 900 * min, kind: 'play' }];
+	eq(S.coPlays(hist, 'a'), { b: 2 }, 'coPlays: b was played right after a twice; skips and long gaps do not count');
+	eq(S.coPlays(hist.map(function (e) { return { id: e.id, at: new Date(e.at).toISOString(), kind: e.kind }; }), 'b'), { a: 2 }, 'coPlays: ISO times work too');
+	function tr(id, o) { var t = { id: id, title: o.title || id, artist: o.artist || '', artistKey: L.normArtist(o.artist || ''), genres: o.genres || [], mood: o.mood || '', scene: o.scene || '', lang: o.lang || 'ja', year: o.year || 0, work: o.work || '', role: o.role || '', kind: o.kind || 'song', rating: o.rating || 0 }; return t; }
+	var seed = tr('s', { title: 'Seed Song', artist: 'Aki (CV: Mio Hara)', genres: ['Anison pop', 'Seiyuu & character song'], mood: 'bright', scene: 'anime', work: 'Paper Sky', role: 'ED', year: 2015 });
+	var pool = [seed,
+		tr('op', { title: 'Opening', artist: 'Band X', genres: ['Anime rock'], mood: 'driving', scene: 'anime', work: 'Paper Sky', role: 'OP', year: 2015 }),
+		tr('solo', { title: 'Solo', artist: 'Mio Hara', genres: ['Seiyuu & character song'], mood: 'bright', year: 2016 }),
+		tr('near', { title: 'Near', artist: 'Someone', genres: ['Anison pop'], mood: 'bright', scene: 'anime', year: 2014 }),
+		tr('near2', { title: 'Near Two', artist: 'Someone', genres: ['Anison pop'], mood: 'bright', scene: 'anime', year: 2014 }),
+		tr('near3', { title: 'Near Three', artist: 'Someone', genres: ['Anison pop'], mood: 'bright', scene: 'anime', year: 2014 }),
+		tr('cover', { title: 'Seed Song', artist: 'Aki (CV: Mio Hara)', genres: ['Anison pop'], mood: 'bright', scene: 'anime', work: 'Paper Sky', year: 2020 }),
+		tr('set', { title: 'Medley', artist: 'Someone', genres: ['Anison pop'], mood: 'bright', kind: 'set' }),
+		tr('far', { title: 'Far', artist: 'Other', genres: ['City pop'], mood: 'dark', lang: 'en', year: 1985 })];
+	var people = function (t) { return L.people(t.artist).filter(function (p) { return p.as !== 'character'; }); };
+	var r = S.similar(seed, pool, { people: people, history: [{ id: 's', at: h0, kind: 'play' }, { id: 'far', at: h0 + min, kind: 'play' }, { id: 's', at: h0 + 99 * min, kind: 'play' }, { id: 'far', at: h0 + 100 * min, kind: 'play' }] });
+	var ids = r.close.map(function (x) { return x.t.id; });
+	ok(ids.indexOf('solo') >= 0 && r.close.filter(function (x) { return x.t.id === 'solo'; })[0].why[0][0] === 'singer' && r.close.filter(function (x) { return x.t.id === 'solo'; })[0].why[0][1] === 'Mio Hara', 'similar: the solo song of the voice actor is close, and the first reason is the singer, by name');
+	eq([ids.indexOf('cover'), ids.indexOf('set'), ids.indexOf('s')], [-1, -1, -1], 'similar: another upload of the same song, a set, and the seed itself are left out');
+	eq(ids.filter(function (id) { return /^near/.test(id); }).length, 2, 'similar: one artist fills at most two places');
+	eq([r.work.map(function (t) { return t.id; }), r.together.map(function (x) { return [x.t.id, x.n]; })], [['op'], [['far', 2]]], 'similar: the same work comes as its own list (OP first), and what was played next to it as another');
+	eq(ids.indexOf('far'), -1, 'similar: a song only played next to it is not called close (it is in together)');
+	var r2 = S.similar(seed, pool.concat([tr('mid', { title: 'Mid', artist: 'Mid Artist', genres: ['Anison pop'], mood: 'tender', year: 2001 })]), { people: people, history: [{ id: 's', at: h0, kind: 'play' }, { id: 'mid', at: h0 + min, kind: 'play' }] });
+	var mid = r2.close.filter(function (x) { return x.t.id === 'mid'; })[0];
+	ok(mid && mid.why[0][0] === 'together', 'similar: being played together lifts a song that is close anyway, and is the first reason given');
+	ok(r.close.every(function (x, i) { return i === 0 || r.close[i - 1].score >= x.score; }), 'similar: the closest first');
+});
+
 describe('labels', function () {
 	var L = require('./library.js'), S = require('./shuffle.js'), T = require('./taxonomy.js');
 	function lib3() {

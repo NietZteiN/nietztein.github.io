@@ -1001,3 +1001,15 @@ body.has-pvbar .ts-toast { bottom: calc(var(--ts-bar) + 110px); }
 
 /* adding a found song to a YouTube playlist */
 .ts-addyt.is-done { color: var(--accent); border-color: var(--accent); }
+
+/* songs like this one: the Like this tab and the track page */
+.ts-like-h { margin: 12px 4px 4px; font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-2); }
+.ts-like-why { font-size: 11.5px; color: var(--accent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ts-like .ts-q-x { opacity: 0.7; }
+.ts-like:hover .ts-q-x, .ts-like:focus-within .ts-q-x { opacity: 1; }
+.ts-like-acts { padding: 10px 4px 4px; }
+.ts-like-acts .ts-act { height: 32px; font-size: 12.5px; }
+.ts-like-sec { margin-top: 18px; }
+.ts-like-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 4px 24px; align-items: start; }
+.ts-tab { white-space: nowrap; flex: none; padding: 6px 8px; }
+.ts-tabs .ts-link-btn { white-space: nowrap; }
