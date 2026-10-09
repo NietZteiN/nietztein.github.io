@@ -123,7 +123,9 @@
 			if (ch === '(') depth++;
 			else if (ch === ')' && depth > 0) depth--;
 			if (depth === 0) {
-				var m = /^( & | feat[.] | ft[.] | featuring )/i.exec(s.slice(i));
+				// a comma splits only a list of characters ('A (CV: X), B (CV: Y)'), so names
+				// such as 'Earth, Wind & Fire' keep theirs
+				var m = /^( & | feat[.] | ft[.] | featuring )/i.exec(s.slice(i)) || (/[)] *$/.test(cur) && /^, /.exec(s.slice(i)) ? [', ', ', '] : null);
 				if (m) { parts.push(cur); cur = ''; i += m[1].length - 1; continue; }
 			}
 			cur += ch;
@@ -136,12 +138,24 @@
 			seen[k + '|' + as] = true;
 			out.push({ name: name, key: k, as: as });
 		}
+		// Plain names wait: in 'A, B & C (CV: X, Y & Z)' they are characters, paired in order.
+		var pending = [];
+		function flush() { pending.forEach(function (n) { add(n, ''); }); pending = []; }
 		parts.forEach(function (p) {
 			var cv = /^(.*?) *[(] *(?:CV|C[.]V[.]) *[:.]? *(.+?)[)] *$/i.exec(p.trim());
-			if (!cv) { add(p, ''); return; }
+			if (!cv) { pending.push(p); return; }
+			var voices = cv[2].split(new RegExp(' & |, |' + IDEO_COMMA)).map(function (n) { return n.trim(); }).filter(Boolean), names = [];
+			pending.forEach(function (x) { names = names.concat(x.split(', ')); });
+			if (cv[1] && voices.length > 1 && names.length + 1 === voices.length) {
+				names.concat([cv[1]]).forEach(function (c, i) { add(c, 'character'); add(voices[i], 'cv'); });
+				pending = [];
+				return;
+			}
+			flush();
 			if (cv[1]) add(cv[1], 'character');
-			cv[2].split(new RegExp(' & |, |' + IDEO_COMMA)).forEach(function (n) { add(n, 'cv'); });
+			voices.forEach(function (n) { add(n, 'cv'); });
 		});
+		flush();
 		return out;
 	}
 

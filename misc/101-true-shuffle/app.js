@@ -627,7 +627,7 @@
 		{ key: '', label: 'Home', icon: 'home' }, { key: 'search', label: 'Search', icon: 'search' },
 		{ key: 'library', label: 'Library', icon: 'songs' }, { key: 'mix', label: 'Mix', icon: 'mix' }, { key: 'queue', label: 'Queue', icon: 'queue' }
 	];
-	var SECTION_OF = { channel: 'artists', artist: 'artists', genre: 'genres', family: 'genres', c: 'browse', work: 'works', track: 'songs', list: 'lists' };
+	var SECTION_OF = { person: 'artists', people: 'artists', channel: 'artists', artist: 'artists', genre: 'genres', family: 'genres', c: 'browse', work: 'works', track: 'songs', list: 'lists' };
 	var route = U.parseHash(location.hash);
 	function section() { var p = route.parts[0] || ''; return SECTION_OF[p] || p; }
 
@@ -886,6 +886,8 @@
 		box.appendChild(h('h2', { class: 'ts-now-title', text: trackTitle(t) }));
 		if (t.titleAlt && t.titleAlt !== t.title) box.appendChild(h('p', { class: 'ts-now-alt', text: t.titleAlt }));
 		box.appendChild(artistLinks(t, 'ts-now-artist'));
+		var voices = voiceLinks(t, 'ts-now-voices');
+		if (voices) box.appendChild(voices);
 		if (t.work) {
 			var w = h('p', { class: 'ts-now-work' });
 			w.appendChild(h('a', { href: link('work', t.work), text: t.work }));
@@ -894,6 +896,8 @@
 		}
 		var v = versionWords(t);
 		if (v) box.appendChild(h('p', { class: 'ts-muted ts-now-ver', text: v }));
+		var vers = versionsOf(t);
+		if (vers.length > 1) box.appendChild(h('button', { class: 'ts-link-btn ts-now-vers', text: plural(vers.length, 'version') + ' of this song', aria: { haspopup: 'menu' }, on: { click: function (e) { versionsMenu(t, e.currentTarget); } } }));
 		var chips = h('div', { class: 'ts-chips' });
 		labelChips(t, chips);
 		box.appendChild(chips);
@@ -1211,6 +1215,7 @@
 		if (!one) items.push({ label: 'Label them one by one', icon: 'edit', onSelect: function () { startLabelling(ids); } });
 		var menuAt = at && at.getBoundingClientRect ? (function () { var rr = at.getBoundingClientRect(); return { x: rr.left, y: rr.bottom }; })() : at;
 		items.push({ label: 'Add to playlist' + ELL, icon: 'plus', onSelect: function () { addToList(ids, menuAt); } });
+		if (one && versionsOf(one).length > 1) items.push({ label: 'Other versions (' + versionsOf(one).length + ')' + ELL, icon: 'disc', onSelect: function () { versionsMenu(one, menuAt); } });
 		if (one && !demo && U.YT_ID.test(one.id) && ytTargets().some(function (p) { return !inPlaylist(one.id, p); })) items.push({ label: addLabel() + ' on YouTube' + (ytTargets().length > 1 ? ELL : ''), icon: 'external', onSelect: function () { addToYouTube({ id: one.id, artist: one.artist, title: trackTitle(one), _video: { videoId: one.id } }, menuAt); } });
 		var pl = route.parts[0] === 'list' && listById(route.parts[1]);
 		if (pl && pl.kind === 'manual') items.push({ label: 'Remove from ' + pl.name, icon: 'close', onSelect: function () { removeFromList(pl, ids); } });
@@ -1861,6 +1866,8 @@
 		var fam = query.get('family') || '', sort = query.get('sort') || 'songs', filt = query.get('f') || '';
 		var all = Object.keys(ix.artists).map(function (k) { return ix.artists[k]; });
 		view.appendChild(h('h1', { class: 'ts-h1', text: 'Artists' }));
+		var nVoices = Object.keys(peopleIdx()).length;
+		if (nVoices) view.appendChild(h('p', { class: 'ts-muted ts-lede' }, [h('a', { href: '#/people', text: plural(nVoices, 'voice actor') }), ': the people behind the character songs.']));
 		var bar = h('div', { class: 'ts-filterbar' });
 		var fi = h('input', { class: 'kit-input ts-filter', type: 'search', placeholder: 'Find an artist', value: filt, aria: { label: 'Find an artist' } });
 		fi.addEventListener('input', later(function () { setQuery({ f: fi.value || null }); }, 250));
@@ -1926,6 +1933,7 @@
 		});
 		scores.sort(function (x, y) { return y.s - x.s; });
 		if (scores.length) { sectionHead(view, 'Sounds like'); shelf(view, scores.slice(0, 12).map(function (x) { return artistCard(x.a); })); }
+		artistVoice(view, a);
 		if (!demo) artistMore(view, key, a);
 	}
 
@@ -2239,6 +2247,8 @@
 				U.iconBtn('more', 'More', { on: { click: function (e) { trackMenu(t, e.currentTarget, null); } } })
 			]
 		});
+		var vlinks = voiceLinks(t);
+		if (vlinks) view.appendChild(vlinks);
 		view.appendChild(stars(t));
 		if (isGuess(t)) view.appendChild(guessBox(t));
 		var facts = h('dl', { class: 'ts-facts' });
@@ -2252,6 +2262,7 @@
 		fact('Labels', t.labels ? 'from a labels file' + (Object.keys(t.userEdits).length ? ', with your corrections' : '') : (Object.keys(t.userEdits).length ? 'your corrections' : 'what YouTube says'));
 		fact('Status', !L.playable(t) ? 'cannot be played here' : t.blocked ? 'blocked' : '');
 		view.appendChild(facts);
+		trackVersions(view, t);
 		trackLike(view, t);
 	}
 
@@ -2498,6 +2509,9 @@
 		bars(cols, 'Most songs', Object.keys(ix.artists).map(function (k) { var a = ix.artists[k]; return { name: a.name, href: link('artist', k), value: a.tracks.length }; }).sort(function (a, b) { return b.value - a.value; }).slice(0, 12), 'by artist');
 		bars(cols, 'Most played artists', Object.keys(ix.artists).map(function (k) { var a = ix.artists[k]; return { name: a.name, href: link('artist', k), value: a.plays }; }).sort(function (a, b) { return b.value - a.value; }).slice(0, 12), 'plays counted here');
 		bars(cols, 'Plays per song', s.playsHistogram.map(function (b) { return { name: b.label + (b.label === '1' ? ' play' : ' plays'), value: b.count }; }), 'how many songs were played how often; an even shuffle moves them all right together');
+		var vgs = versionIdx(), pp = peopleIdx();
+		bars(cols, 'Most versions', Object.keys(vgs).filter(function (k) { return vgs[k].length > 1; }).map(function (k) { var g = versionsOf(vgs[k][0]); return { name: trackTitle(g[0]), href: link('track', g[0].id), value: g.length }; }).sort(function (x, y) { return y.value - x.value; }).slice(0, 12), 'one song, several takes');
+		bars(cols, 'Voice actors', Object.keys(pp).map(function (k) { return { name: pp[k].name, href: link('person', k), value: pp[k].roles.length + pp[k].own.length }; }).sort(function (x, y) { return y.value - x.value; }).slice(0, 12), 'as characters and as themselves');
 		bars(cols, 'Biggest works', Object.keys(ix.works).map(function (w) { return { name: w, href: link('work', w), value: ix.works[w].tracks.length }; }).sort(function (a, b) { return b.value - a.value; }).slice(0, 12), 'songs');
 		if (queueMode === 'true' && bag) view.appendChild(h('p', { class: 'ts-muted', text: 'In this true-shuffle round ' + n(bag.pos) + ' of ' + n(bag.order.length) + ' songs have been drawn; none comes again until all have.' }));
 	}
@@ -5270,6 +5284,126 @@
 		inp.focus();
 	}
 
+	// ---- Versions of one song, and voice actors ---------------------------------------------------------
+	// A song's versions share S.songKey (the title and the original artist): the original, covers,
+	// live takes, piano and orchestral arrangements. Voice actors come out of the credits
+	// ('Character (CV: Name)', L.people): each gets a page with every character they sing as,
+	// and what they sing under their own name.
+
+	var vMemo = { ix: null, v: null };
+	function versionIdx() {
+		var ix = idx();
+		if (vMemo.ix === ix) return vMemo.v;
+		var out = {};
+		ix.all.forEach(function (t) { if (t.kind === 'clip' || t.kind === 'set') return; var k = S.songKey(t); (out[k] = out[k] || []).push(t); });
+		vMemo = { ix: ix, v: out };
+		return out;
+	}
+	function isOriginal(t) { return !t.version && !(t.origArtist && t.origArtist !== t.artist); }
+	function versionsOf(t) {
+		var g = (versionIdx()[S.songKey(t)] || [t]).slice();
+		g.sort(function (a, b) { return (isOriginal(b) ? 1 : 0) - (isOriginal(a) ? 1 : 0) || (+a.year || 9999) - (+b.year || 9999) || cmp(trackTitle(a), trackTitle(b)); });
+		return g;
+	}
+	function versionName(t) { return versionWords(t) || (isOriginal(t) ? 'Original' : 'Cover'); }
+	// Put another version on now; the rest of the queue stays.
+	function switchVersion(t) { queueNext([t.id]); if (ctl) ctl.next(); }
+	function versionsMenu(t, at) {
+		var vs = versionsOf(t).filter(function (x) { return L.playable(x); });
+		U.openMenu(at, [{ heading: plural(vs.length, 'version') + ' of ' + trackTitle(t) }].concat(vs.map(function (x) {
+			return { label: versionName(x) + ' ' + DOT + ' ' + trackArtist(x), icon: 'play', checked: x.id === t.id, hint: x.durationSec ? clock(x.durationSec) : '', onSelect: function () { if (x.id !== t.id) switchVersion(x); } };
+		})).concat([{ sep: true }, { label: 'See them all', icon: 'disc', onSelect: function () { location.hash = link('track', t.id); } }]), { label: 'Versions', returnTo: at && at.nodeType ? at : null });
+	}
+	function trackVersions(view, t) {
+		var vs = versionsOf(t);
+		if (vs.length < 2) return;
+		sectionHead(view, 'Versions (' + vs.length + ')');
+		view.appendChild(h('div', { class: 'ts-row-btns' }, [
+			actionBtn('play', 'Play every version', function () { playIds(vs.map(function (x) { return x.id; }), 0, { label: 'Versions of ' + trackTitle(t), href: link('track', t.id) }); }),
+			actionBtn('shuffle', 'Another version', function () { var others = vs.filter(function (x) { return x.id !== t.id && L.playable(x); }); if (others.length) playIds([others[Math.floor(Math.random() * others.length)].id], 0, { label: 'Versions of ' + trackTitle(t), href: link('track', t.id) }); })
+		]));
+		trackList(view, vs, { context: { label: 'Versions of ' + trackTitle(t), href: link('track', t.id) }, extra: function (x) { return h('span', { class: 'ts-like-why', text: ' ' + DOT + ' ' + versionName(x) + (x.id === t.id ? ' (this one)' : '') }); } });
+	}
+
+	var pMemo = { ix: null, v: null };
+	// Voice actors: { key: { key, name, roles: [{ t, character }], own: [tracks] } }, only people
+	// credited as a voice at least once.
+	function peopleIdx() {
+		var ix = idx();
+		if (pMemo.ix === ix) return pMemo.v;
+		var all = {};
+		ix.all.forEach(function (t) {
+			var who = L.people(t.artist), character = '';
+			who.forEach(function (p) {
+				if (p.as === 'character') { character = p.name; return; }
+				var e = all[p.key] || (all[p.key] = { key: p.key, name: p.name, roles: [], own: [] });
+				if (p.as === 'cv') e.roles.push({ t: t, character: character });
+				else e.own.push(t);
+			});
+		});
+		var out = {};
+		Object.keys(all).forEach(function (k) { if (all[k].roles.length) out[k] = all[k]; });
+		pMemo = { ix: ix, v: out };
+		return out;
+	}
+	// 'Voices: A, B' under a credit, each a link to the voice actor's page.
+	function voiceLinks(t, cls) {
+		var ppl = peopleIdx(), cvs = L.people(t.artist).filter(function (p) { return p.as === 'cv' && ppl[p.key]; });
+		if (!cvs.length) return null;
+		var p = h('p', { class: 'ts-voices' + (cls ? ' ' + cls : '') }, [h('span', { class: 'ts-muted', text: cvs.length > 1 ? 'Voices: ' : 'Voice: ' })]);
+		cvs.forEach(function (c, i) { if (i) p.appendChild(document.createTextNode(', ')); p.appendChild(h('a', { href: link('person', c.key), text: c.name })); });
+		return p;
+	}
+	function viewPerson(view, parts) {
+		var p = peopleIdx()[parts[0]];
+		if (!p) { view.appendChild(h('p', { class: 'ts-empty', text: 'No voice actor by that name here.' })); return; }
+		var roleOf = {}, songs = [], seen = {};
+		p.roles.forEach(function (r) { if (!seen[r.t.id]) { seen[r.t.id] = true; songs.push(r.t); roleOf[r.t.id] = r.character; } });
+		var own = p.own.filter(function (t) { return !seen[t.id]; });
+		var chars = {};
+		p.roles.forEach(function (r) { if (r.character) chars[r.character] = (chars[r.character] || 0) + 1; });
+		var everything = songs.concat(own), ctx = { label: p.name, href: link('person', p.key) };
+		var ownKey = own.length && own[0].artistKey;
+		headerBlock(view, {
+			kicker: 'Voice actor', title: p.name, hue: { h: 300, s: 45 }, artNode: everything[0] ? artFor(everything[0], 'ts-hero-art') : null,
+			meta: [plural(songs.length, 'song') + ' as ' + plural(Object.keys(chars).length, 'character'), own.length ? plural(own.length, 'song') + ' under ' + (own.length ? 'their own name' : '') : ''].filter(Boolean).join(' ' + DOT + ' '),
+			actions: [
+				actionBtn('play', 'Play all', function () { playIds(everything.map(function (t) { return t.id; }), 0, ctx); }, true),
+				actionBtn('shuffle', 'Shuffle', function () { playIds(S.trueShuffle(everything.map(function (t) { return t.id; }), S.cryptoRng()), 0, ctx); }),
+				ownKey ? actionBtn('artist', 'Artist page', function () { location.hash = link('artist', ownKey); }) : null
+			]
+		});
+		var cl = h('div', { class: 'ts-chips' });
+		Object.keys(chars).sort(function (a, b) { return chars[b] - chars[a]; }).forEach(function (c) { cl.appendChild(h('span', { class: 'ts-chip' }, [h('span', { text: c }), h('span', { class: 'ts-count', text: n(chars[c]) })])); });
+		if (cl.firstChild) view.appendChild(cl);
+		sectionHead(view, 'As characters');
+		trackList(view, songs, { context: ctx, extra: function (t) { return roleOf[t.id] ? h('span', { class: 'ts-like-why', text: ' ' + DOT + ' as ' + roleOf[t.id] }) : null; } });
+		if (own.length) { sectionHead(view, 'Under their own name'); trackList(view, own, { context: ctx }); }
+	}
+	function viewPeople(view) {
+		var ppl = peopleIdx(), list = Object.keys(ppl).map(function (k) { return ppl[k]; });
+		view.appendChild(h('h1', { class: 'ts-h1', text: 'Voice actors' }));
+		view.appendChild(h('p', { class: 'ts-muted ts-lede', text: 'Everyone credited as a voice in your character songs (Character (CV: Name)), with what they sing under their own name.' }));
+		if (!list.length) { view.appendChild(h('p', { class: 'ts-empty', text: 'No character songs with a voice credit yet.' })); return; }
+		list.sort(function (a, b) { return (b.roles.length + b.own.length) - (a.roles.length + a.own.length) || cmp(a.name, b.name); });
+		grid(view, list.map(function (p) {
+			var first = p.roles[0].t, chars = {};
+			p.roles.forEach(function (r) { if (r.character) chars[r.character] = true; });
+			return card({ round: true, href: link('person', p.key), art: prefs.art && !demo ? U.art(first.id, 300, p.name, 'is-round', true, 45) : U.swatch(300, p.name, 'is-round', 45), title: p.name, sub: plural(p.roles.length + p.own.length, 'song') + ' ' + DOT + ' ' + plural(Object.keys(chars).length, 'character'), play: function () { playIds(p.roles.map(function (r) { return r.t.id; }).concat(p.own.map(function (t) { return t.id; })), 0, { label: p.name, href: link('person', p.key) }); }, playLabel: 'Play ' + p.name });
+		}), 'is-cards');
+	}
+
+	// On an artist page: the songs this artist sings as a character.
+	function artistVoice(view, a) {
+		var p = peopleIdx()[L.normArtist(a.name)];
+		if (!p || !p.roles.length) return;
+		var seen = {}, songs = [], roleOf = {};
+		p.roles.forEach(function (r) { if (!seen[r.t.id]) { seen[r.t.id] = true; songs.push(r.t); roleOf[r.t.id] = r.character; } });
+		sectionHead(view, 'As a voice actor');
+		view.appendChild(h('p', { class: 'ts-muted' }, [plural(songs.length, 'character song') + ' credited to ' + p.name + ' as a voice. ', h('a', { href: link('person', p.key), text: 'Everything by ' + p.name }), '.']));
+		trackList(view, songs.slice(0, 40), { context: { label: p.name + ' as characters', href: link('person', p.key) }, extra: function (t) { return roleOf[t.id] ? h('span', { class: 'ts-like-why', text: ' ' + DOT + ' as ' + roleOf[t.id] }) : null; } });
+	}
+
 	// ---- Keys ----------------------------------------------------------------------------------------------
 
 	function wireKeys() {
@@ -5367,7 +5501,7 @@
 		'': viewHome, search: viewSearch, songs: viewSongs, artists: viewArtists, artist: viewArtist, genres: viewGenres, genre: viewGenre,
 		family: viewFamily, c: viewFacet, browse: viewBrowse, works: viewWorks, work: viewWork, track: viewTrack, mix: viewMix,
 		stats: viewStats, fix: viewFix, settings: viewSettings, library: viewLibrary,
-		lists: viewLists, list: viewList, liked: viewLiked, channel: viewChannel, history: viewHistory, label: viewLabel, map: viewMap, discover: viewDiscover
+		lists: viewLists, list: viewList, liked: viewLiked, channel: viewChannel, person: viewPerson, people: viewPeople, history: viewHistory, label: viewLabel, map: viewMap, discover: viewDiscover
 	};
 	function renderAll() {
 		renderNav();

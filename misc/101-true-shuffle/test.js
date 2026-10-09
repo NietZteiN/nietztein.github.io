@@ -2075,6 +2075,9 @@ describe('recommendations', function () {
 	eq(names('Yukino Yukinoshita (CV: Saori Hayami) & Yui Yuigahama (CV: Nao Toyama)'), ['Yukino Yukinoshita/character', 'Saori Hayami/cv', 'Yui Yuigahama/character', 'Nao Toyama/cv'], 'people: characters and their voice actors');
 	eq(names('Kessoku Band (CV: A Aoyama, B Suzushiro & C Hasegawa)'), ['Kessoku Band/character', 'A Aoyama/cv', 'B Suzushiro/cv', 'C Hasegawa/cv'], 'people: a band of characters with a list of voice actors');
 	eq(names('Moe Shop feat. TORIENA'), ['Moe Shop/', 'TORIENA/'], 'people: feat. splits the credit');
+	eq(names('Taiga Aisaka (CV: Rie Kugimiya), Minori Kushieda (CV: Yui Horie) & Ami Kawashima (CV: Eri Kitamura)'), ['Taiga Aisaka/character', 'Rie Kugimiya/cv', 'Minori Kushieda/character', 'Yui Horie/cv', 'Ami Kawashima/character', 'Eri Kitamura/cv'], 'people: a list of characters, each with its voice');
+	eq(names('Taiga Aisaka, Minori Kushieda & Ami Kawashima (CV: Rie Kugimiya, Yui Horie & Eri Kitamura)'), ['Taiga Aisaka/character', 'Rie Kugimiya/cv', 'Minori Kushieda/character', 'Yui Horie/cv', 'Ami Kawashima/character', 'Eri Kitamura/cv'], 'people: parallel lists of characters and voices are paired in order');
+	eq(names('Earth, Wind & Fire').length, 2, 'people: a comma inside a plain name does not split it');
 	eq(names('Hitori Gotoh' + String.fromCharCode(0xFF08) + 'CV' + String.fromCharCode(0xFF1A) + 'Yoshino Aoyama' + String.fromCharCode(0xFF09)), ['Hitori Gotoh/character', 'Yoshino Aoyama/cv'], 'people: full-width brackets and colon');
 	eq(L.people('').length, 0, 'people: nothing for an empty credit');
 	var h0 = Date.UTC(2026, 0, 1), min = 60000;
