@@ -314,8 +314,48 @@
 		return out;
 	}
 
+	// A journey from one song to another: `steps` songs, each the unused one closest to a point
+	// that slides from the start's vector to the end's, leaning towards the song before so the
+	// walk stays smooth. vecs: unit rows. opts: { steps (20), pull (0.35), skip(i) (left out),
+	// keyOf(i) (an artist: at most maxPerKey (2) times, and not again within gap (3) steps),
+	// workOf(i) (at most maxPerKey times too), sameOf(i) (one per key: a song) }.
+	// -> indexes, the start first and the end last.
+	function journey(vecs, from, to, opts) {
+		opts = opts || {};
+		var n = vecs.length, steps = Math.max(2, Math.min(opts.steps || 20, n)), pull = opts.pull == null ? 0.35 : opts.pull;
+		var a = vecs[from], b = vecs[to], dim = a.length, used = {}, songs = {}, out = [from], prev = from;
+		var key = opts.keyOf || function () { return null; }, work = opts.workOf || function () { return null; }, same = opts.sameOf || function (i) { return i; };
+		var maxPer = opts.maxPerKey || 2, gap = opts.gap == null ? 3 : opts.gap, perKey = {}, perWork = {};
+		function count(i, inc) { var kk = key(i), ww = work(i); if (kk != null) perKey[kk] = (perKey[kk] || 0) + inc; if (ww) perWork[ww] = (perWork[ww] || 0) + inc; }
+		used[from] = used[to] = true;
+		songs[same(from)] = songs[same(to)] = true;
+		count(from, 1); count(to, 1);
+		for (var k = 1; k < steps - 1; k++) {
+			var f = k / (steps - 1), target = new Float32Array(dim), p = vecs[prev], recent = {};
+			out.slice(-gap).forEach(function (j) { var kk = key(j); if (kk != null) recent[kk] = true; });
+			for (var d = 0; d < dim; d++) target[d] = a[d] * (1 - f) + b[d] * f;
+			var best = -1, bestS = -Infinity;
+			for (var i = 0; i < n; i++) {
+				if (used[i] || songs[same(i)] || (opts.skip && opts.skip(i))) continue;
+				var ki = key(i), wi = work(i);
+				if (ki != null && (recent[ki] || (perKey[ki] || 0) >= maxPer)) continue;
+				if (wi && (perWork[wi] || 0) >= maxPer) continue;
+				var s = dot(vecs[i], target) + pull * dot(vecs[i], p);
+				if (s > bestS) { bestS = s; best = i; }
+			}
+			if (best < 0) break;
+			out.push(best);
+			count(best, 1);
+			used[best] = true;
+			songs[same(best)] = true;
+			prev = best;
+		}
+		out.push(to);
+		return out;
+	}
+
 	return {
 		RECIPES: RECIPES, describe: describe, vectors: vectors, labelVectors: labelVectors, nameVectors: nameVectors, timeVectors: timeVectors,
-		knn: knn, knnJob: knnJob, layout: layout, pca2: pca2, regions: regions, dot: dot, unit: unit
+		knn: knn, knnJob: knnJob, layout: layout, pca2: pca2, regions: regions, dot: dot, unit: unit, journey: journey
 	};
 });

@@ -516,7 +516,7 @@
 		if (!ok.length) { say('Nothing playable here.'); return; }
 		if (queueMode === 'true') returnToBag(S.upcoming(ctl.state()));
 		queueMode = 'list';
-		context = { label: ctx.label, href: ctx.href, patch: ctx.patch || {}, list: true };
+		context = { label: ctx.label, href: ctx.href, patch: ctx.patch || {}, list: true, journey: !!ctx.journey };
 		if (!thumb) store.set('context', context);
 		setQueue(ok, true, Math.min(at, ok.length - 1));
 	}
@@ -900,6 +900,7 @@
 		var row = h('div', { class: 'ts-now-actions' });
 		row.appendChild(stars(t));
 		row.appendChild(U.iconBtn('radio', 'Radio from this song', { on: { click: function () { startRadio(t); } } }));
+		row.appendChild(U.iconBtn('map', 'A journey from this song to another', { on: { click: function () { journeyDialog(t); } } }));
 		row.appendChild(U.iconBtn('compass', 'Discover new songs like this', { on: { click: function () { location.hash = '#/discover?seed=' + encodeURIComponent(t.id); } } }));
 		row.appendChild(U.iconBtn('edit', 'Edit details', { on: { click: function () { openEditor([t.id]); } } }));
 		row.appendChild(U.iconBtn('more', 'More', { on: { click: function (e) { trackMenu(t, e.currentTarget, null); } } }));
@@ -1199,6 +1200,7 @@
 		items.push({ label: 'Play next', icon: 'playnext', onSelect: function () { queueNext(ids); } });
 		items.push({ label: 'Add to queue', icon: 'queue', onSelect: function () { queueLater(ids); } });
 		if (one) items.push({ label: 'Start radio', icon: 'radio', onSelect: function () { startRadio(one); } });
+		if (one) items.push({ label: 'Journey from here' + ELL, icon: 'map', onSelect: function () { journeyDialog(one); } });
 		if (one && one.artistKey) items.push({ label: 'Discover new songs like this', icon: 'compass', onSelect: function () { location.hash = '#/discover?seed=' + encodeURIComponent(one.id); } });
 		items.push({ sep: true });
 		if (one && one.artistKey) items.push({ label: 'Go to ' + one.artist, icon: 'artist', onSelect: function () { location.hash = link('artist', one.artistKey); } });
@@ -3402,8 +3404,9 @@
 		var cv = h('canvas', { class: 'ts-map', role: 'img', tabindex: '0', aria: { label: 'A map of ' + plural(tracks.length, 'song') + ': similar songs sit close together. The regions are listed below the map.' } });
 		var tip = h('div', { class: 'ts-maptip', hidden: true });
 		var side = h('div', { class: 'ts-mapside' });
+		var hint = h('p', { class: 'ts-maphint', hidden: !mapState.pickFrom }, [h('span', { text: 'Click the song the journey should end on.' }), h('button', { class: 'ts-link-btn', text: 'Cancel', on: { click: function () { mapState.pickFrom = null; hint.hidden = true; draw(); } } })]);
 		var legendBox = h('div', { class: 'ts-maplegend' });
-		wrap.appendChild(cv); wrap.appendChild(tip); wrap.appendChild(legendBox); wrap.appendChild(side);
+		wrap.appendChild(cv); wrap.appendChild(tip); wrap.appendChild(legendBox); wrap.appendChild(side); wrap.appendChild(hint);
 		view.appendChild(wrap);
 		var regionBox = h('div', { class: 'ts-regions' });
 		view.appendChild(regionBox);
@@ -3485,7 +3488,8 @@
 			var st = ctl ? ctl.state() : null, path = [];
 			var at = {};
 			tracks.forEach(function (t, i) { at[t.id] = i; });
-			if (st && st.items.length) { for (var p = st.index; p < Math.min(st.items.length, st.index + 9); p++) if (at[st.items[p]] != null) path.push(at[st.items[p]]); }
+			var trip = !!(context.journey && st && st.items.length > 1), pickI = mapState.pickFrom && at[mapState.pickFrom] != null ? at[mapState.pickFrom] : -1;
+			if (st && st.items.length) { for (var p = trip ? 0 : st.index; p < (trip ? st.items.length : Math.min(st.items.length, st.index + 9)); p++) if (at[st.items[p]] != null) path.push(at[st.items[p]]); }
 			for (var i = 0; i < tracks.length; i++) {
 				var t = tracks[i], hidden = mapState.hidden[cats.keys[i]] && mapState.color !== 'year' && mapState.color !== 'plays';
 				var dim = hidden || (anyFind && !matches(t, f)) || (mapState.sel.length > 1 && !selSet[i]);
@@ -3495,7 +3499,19 @@
 				if (t.id === cur) curI = i;
 			}
 			ctx2.globalAlpha = 1;
-			if (path.length > 1) {
+			var acc = getComputedStyle(document.body).getPropertyValue('--accent').trim() || '#4c8dff';
+			if (trip && path.length > 1) {
+				var ink2 = dark ? '#ffffff' : '#0d1117', surf2 = dark ? '#13161b' : '#f7f8fa', nowAt = st.index;
+				ctx2.lineJoin = 'round';
+				for (var k2 = 1; k2 < path.length; k2++) {
+					ctx2.strokeStyle = acc; ctx2.globalAlpha = k2 <= nowAt ? 0.35 : 0.95; ctx2.lineWidth = 2.5;
+					ctx2.beginPath(); ctx2.moveTo(sx(path[k2 - 1]), sy(path[k2 - 1])); ctx2.lineTo(sx(path[k2]), sy(path[k2])); ctx2.stroke();
+				}
+				path.forEach(function (i3, k3) { ctx2.globalAlpha = k3 < nowAt ? 0.45 : 1; ctx2.fillStyle = acc; ctx2.beginPath(); ctx2.arc(sx(i3), sy(i3), k3 === 0 || k3 === path.length - 1 ? r + 3 : r + 1, 0, 6.2832); ctx2.fill(); });
+				ctx2.globalAlpha = 1;
+				ctx2.font = '700 12px ' + getComputedStyle(document.body).fontFamily; ctx2.textAlign = 'left';
+				[[path[0], 'Start'], [path[path.length - 1], 'End']].forEach(function (e2) { var x = sx(e2[0]) + r + 7, y = sy(e2[0]) + 4; ctx2.lineWidth = 4; ctx2.strokeStyle = surf2; ctx2.strokeText(e2[1], x, y); ctx2.fillStyle = ink2; ctx2.fillText(e2[1], x, y); });
+			} else if (path.length > 1) {
 				ctx2.strokeStyle = dark ? 'rgba(255,255,255,0.55)' : 'rgba(20,24,30,0.55)';
 				ctx2.lineWidth = 1.5;
 				ctx2.setLineDash([4, 4]);
@@ -3508,6 +3524,10 @@
 			if (curI >= 0) { ring(curI, r + 7, ink, 2); ring(curI, r + 3, surf, 2); }
 			if (mapState.sel.length === 1) ring(mapState.sel[0], r + 5, ink, 2);
 			if (mapState.hover >= 0) ring(mapState.hover, r + 4, ink, 1.5);
+			if (pickI >= 0) {
+				ring(pickI, r + 8, acc, 3);
+				if (mapState.hover >= 0 && mapState.hover !== pickI) { ctx2.strokeStyle = acc; ctx2.lineWidth = 2; ctx2.setLineDash([6, 5]); ctx2.beginPath(); ctx2.moveTo(sx(pickI), sy(pickI)); ctx2.lineTo(sx(mapState.hover), sy(mapState.hover)); ctx2.stroke(); ctx2.setLineDash([]); }
+			}
 			// region names
 			if (entry.done && !anyFind) {
 				ctx2.font = '650 12.5px ' + getComputedStyle(document.body).fontFamily;
@@ -3572,6 +3592,7 @@
 				side.appendChild(ch);
 				var row = h('div', { class: 'ts-row-btns' });
 				row.appendChild(actionBtn('play', 'Play', function () { playIds([t.id], 0, { label: trackTitle(t), href: '#/map' }); }, true));
+				row.appendChild(actionBtn('map', 'Journey from here', function () { mapState.pickFrom = t.id; hint.hidden = false; draw(); cv.focus(); }));
 				row.appendChild(actionBtn('radio', 'Neighbourhood', function () {
 					var near = nearestTo(i, 40).map(function (j) { return tracks[j]; }), rest = near.slice(1);
 					playIds([t.id].concat(S.spreadShuffle(rest, S.cryptoRng(), {})), 0, { label: 'Around ' + trackTitle(t), href: '#/map' });
@@ -3651,6 +3672,10 @@
 				for (var i = 0; i < tracks.length; i++) if (sx(i) >= x0 && sx(i) <= x1 && sy(i) >= y0 && sy(i) <= y1) mapState.sel.push(i);
 				showSide(); draw(); return;
 			}
+			if (!d.moved && mapState.pickFrom) {
+				var jj = hit(d.x0, d.y0);
+				if (jj >= 0 && tracks[jj].id !== mapState.pickFrom && lib.tracks[mapState.pickFrom]) { var fromT = lib.tracks[mapState.pickFrom]; mapState.pickFrom = null; hint.hidden = true; playJourney(fromT, tracks[jj]); draw(); return; }
+			}
 			if (!d.moved) { var j = hit(d.x0, d.y0); mapState.sel = j >= 0 ? [j] : []; showSide(); draw(); }
 		}
 		cv.addEventListener('pointerup', up);
@@ -3666,7 +3691,7 @@
 			else if (e.key === 'ArrowDown') mapState.view = { s: v.s, tx: v.tx, ty: v.ty - step };
 			else if (e.key === '+' || e.key === '=') { zoomBy(1.3); e.preventDefault(); return; }
 			else if (e.key === '-') { zoomBy(1 / 1.3); e.preventDefault(); return; }
-			else if (e.key === 'Escape') { mapState.sel = []; showSide(); }
+			else if (e.key === 'Escape') { mapState.sel = []; mapState.pickFrom = null; hint.hidden = true; showSide(); }
 			else return;
 			e.preventDefault(); e.stopPropagation(); draw();
 		});
@@ -5168,6 +5193,81 @@
 				dzList(nw.body, fresh.slice(0, 12));
 			});
 		}).catch(function (e) { nw.done(); nw.body.appendChild(h('p', { class: 'ts-muted', text: e && e.message || String(e) })); });
+	}
+
+	// ---- Journeys: from one song to another, step by step across the map -----------------------------
+	// E.journey walks the same song vectors the map is drawn from: each next song is the closest to
+	// a point sliding from the start to the end, leaning on the one before, no artist twice in three
+	// steps and none more than twice. The map draws the whole route while it plays.
+
+	function journeyPool(from, to) {
+		return scopeTracks().filter(function (t) { return t.id === from.id || t.id === to.id || (L.playable(t) && !t.blocked && t.kind !== 'clip' && t.kind !== 'set'); });
+	}
+	function journeyRecipe() { return mapState.recipe === 'lm' && !mapState.lm ? 'labels' : mapState.recipe; }
+	function buildJourney(from, to, steps) {
+		var pool = journeyPool(from, to);
+		if (!pool.some(function (t) { return t.id === from.id; })) pool.push(from);
+		if (!pool.some(function (t) { return t.id === to.id; })) pool.push(to);
+		var vecs = E.vectors(pool, journeyRecipe(), { taxonomy: T, firstAdded: L.firstAdded, lm: mapState.lm });
+		var at = {};
+		pool.forEach(function (t, i) { at[t.id] = i; });
+		var path = E.journey(vecs, at[from.id], at[to.id], { steps: steps, keyOf: function (i) { return S.artistKey(pool[i]); }, workOf: function (i) { return S.workKey(pool[i]); }, sameOf: function (i) { return S.songKey(pool[i]); } });
+		return path.map(function (i) { return pool[i].id; });
+	}
+	function journeySteps() { var n = +ToyKit.load('journeySteps', 20); return [10, 20, 30, 50].indexOf(n) >= 0 ? n : 20; }
+	function playJourney(from, to, steps) {
+		if (from.id === to.id) { say('Pick a different song to end on.'); return; }
+		var ids = buildJourney(from, to, steps || journeySteps());
+		playIds(ids, 0, { label: 'Journey: ' + trackTitle(from) + ' to ' + trackTitle(to), href: '#/map', journey: true });
+		if (route.parts[0] === 'map') { if (mapRedraw) mapRedraw(); say('A journey of ' + plural(ids.length, 'song') + ': the route is drawn on the map.'); }
+		else U.toast('A journey of ' + plural(ids.length, 'song') + ', from ' + q(trackTitle(from)) + ' to ' + q(trackTitle(to)) + '.', { action: 'Show the route', onAction: function () { location.hash = '#/map'; } });
+	}
+	// Where to? Search the library, or let it pick somewhere far away.
+	function journeyDialog(from) {
+		var d = U.openDialog({ title: 'A journey from ' + trackTitle(from) });
+		d.body.appendChild(h('p', { class: 'ts-muted', text: 'Pick the song to end on. The songs in between move step by step from one to the other, across the map of your library.' }));
+		var row = h('div', { class: 'ts-inline-form' });
+		var inp = h('input', { class: 'kit-input', type: 'search', placeholder: 'Song, artist or anime', aria: { label: 'Where should the journey end?' } });
+		var len = h('select', { class: 'kit-input', aria: { label: 'How many songs' } });
+		[10, 20, 30, 50].forEach(function (k) { len.appendChild(h('option', { value: String(k), text: k + ' songs' })); });
+		len.value = String(journeySteps());
+		len.addEventListener('change', function () { ToyKit.store('journeySteps', +len.value); });
+		row.appendChild(inp);
+		row.appendChild(len);
+		d.body.appendChild(row);
+		var res = h('ul', { class: 'ts-qlist ts-jlist' });
+		d.body.appendChild(res);
+		function go(t) { d.close(); playJourney(from, t, +len.value); }
+		function show() {
+			clear(res);
+			var qq = inp.value.trim(), found = qq ? L.search(lib, qq) : [];
+			var scope = {};
+			scopeTracks().forEach(function (t) { scope[t.id] = true; });
+			found = found.filter(function (t) { return scope[t.id] && t.id !== from.id && L.playable(t) && t.kind !== 'clip'; }).slice(0, 8);
+			found.forEach(function (t) {
+				var li = h('li', { class: 'ts-q' });
+				var b = h('button', { class: 'ts-q-main', on: { click: function () { go(t); } } });
+				b.appendChild(artFor(t, 'ts-q-art'));
+				b.appendChild(h('span', { class: 'ts-q-text' }, [h('span', { class: 'ts-q-title', text: trackTitle(t) }), h('span', { class: 'ts-q-artist', text: trackArtist(t) + (t.work ? ' ' + DOT + ' ' + t.work : '') })]));
+				li.appendChild(b);
+				res.appendChild(li);
+			});
+			if (qq && !found.length) res.appendChild(h('li', { class: 'ts-muted', text: 'Nothing here matches.' }));
+		}
+		inp.addEventListener('input', show);
+		inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); var b = res.querySelector('.ts-q-main'); if (b) b.click(); } });
+		var acts = h('div', { class: 'ts-row-btns' });
+		acts.appendChild(actionBtn('shuffle', 'Surprise me: somewhere far', function () {
+			var pool = journeyPool(from, from).filter(function (t) { return t.id !== from.id; });
+			if (!pool.length) return;
+			var vecs = E.vectors([from].concat(pool), journeyRecipe(), { taxonomy: T, firstAdded: L.firstAdded, lm: mapState.lm });
+			var far = pool.map(function (t, i) { return [E.dot(vecs[0], vecs[i + 1]), t]; }).sort(function (a, b) { return a[0] - b[0]; });
+			var few = far.slice(0, Math.max(1, Math.round(far.length * 0.12)));
+			go(few[Math.floor(Math.random() * few.length)][1]);
+		}, true));
+		acts.appendChild(actionBtn('map', 'Pick it on the map', function () { d.close(); mapState.pickFrom = from.id; location.hash = '#/map'; }));
+		d.body.appendChild(acts);
+		inp.focus();
 	}
 
 	// ---- Keys ----------------------------------------------------------------------------------------------

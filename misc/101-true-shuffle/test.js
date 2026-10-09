@@ -2196,6 +2196,18 @@ describe('embed', function () {
 	nn.forEach(function (row, i) { for (var k = 0; k < 5; k++) { total++; if (ts[row.ids[k]].genres[0] === ts[i].genres[0]) same++; } });
 	ok(same / total > 0.7, 'knn on labels: ' + Math.round(100 * same / total) + '% of the five nearest share the first genre');
 	ok(nn.every(function (row, i) { return Array.prototype.indexOf.call(row.ids, i) < 0; }), 'knn never lists a track as its own neighbour');
+	// a journey between the two songs furthest apart
+	var fa = 0, fb = 1, low = Infinity;
+	for (var x = 0; x < ts.length; x++) for (var y = x + 1; y < ts.length; y++) { var dd = E.dot(v[x], v[y]); if (dd < low) { low = dd; fa = x; fb = y; } }
+	var key = function (i) { return S.artistKey(ts[i]); };
+	var jr = E.journey(v, fa, fb, { steps: 12, keyOf: key, workOf: function (i) { return S.workKey(ts[i]); }, sameOf: function (i) { return S.songKey(ts[i]); } });
+	eq([jr.length, jr[0], jr[jr.length - 1], new Set(jr).size], [12, fa, fb, 12], 'journey: the asked number of songs, from the start to the end, none twice');
+	var gapOk = jr.every(function (i, k) { return jr.slice(Math.max(0, k - 3), k).every(function (j) { return key(j) !== key(i); }); });
+	var counts = {};
+	jr.forEach(function (i) { counts[key(i)] = (counts[key(i)] || 0) + 1; });
+	ok(gapOk && Object.keys(counts).every(function (k) { return counts[k] <= 2; }), 'journey: no artist again within three steps, nor more than twice');
+	var toEnd = jr.map(function (i) { return E.dot(v[i], v[fb]); });
+	ok(toEnd[toEnd.length - 2] > toEnd[1], 'journey: it gets closer to the end as it goes (' + toEnd[1].toFixed(2) + ' near the start, ' + toEnd[toEnd.length - 2].toFixed(2) + ' near the end)');
 	var lay = E.layout(v, nn, { rand: S.rng('t') });
 	lay.step();
 	ok(lay.done && lay.pos.length === ts.length * 2 && Array.prototype.every.call(lay.pos, isFinite), 'layout: finite positions for every track');
