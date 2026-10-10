@@ -1921,6 +1921,17 @@ describe('yt', async function () {
 		var ac = new AbortController(); ac.abort();
 		await rejects(x.client.me({ signal: ac.signal }), function (e) { return e.code === 'aborted'; }, 'aborted: a signal that has fired stops the call');
 
+		// ---- reading public data with an API key, signed out
+		var kx = session();
+		var keyed = Y.createClient({ getToken: function () { return null; }, getApiKey: function () { return 'test-api-key'; }, endpoints: kx.client.endpoints, sleep: function () { return Promise.resolve(); } });
+		var kp = await keyed.playlistPage('PL_SMALL');
+		eq([kp.items.length > 0, keyed.canRead(), (await keyed.videoBatch(['fake0000001'])).videos.length], [true, true, 1], 'an API key reads a public playlist and video details without a sign-in');
+		await rejects(keyed.playlists(), function (e) { return e.code === 'signed-out'; }, 'the account\'s own lists still need a sign-in, and the key is not sent for them');
+		await rejects(keyed.addToPlaylist('PL_SMALL', 'fake0000500'), function (e) { return e.code === 'signed-out'; }, 'a write never uses the key');
+		var badKey = Y.createClient({ getToken: function () { return null; }, getApiKey: function () { return 'nope'; }, endpoints: kx.client.endpoints, sleep: function () { return Promise.resolve(); } });
+		await rejects(badKey.playlistPage('PL_SMALL'), function (e) { return e.code === 'bad-key'; }, 'a key Google does not know: bad-key, with a sentence for Settings');
+		eq(Y.createClient({ getToken: function () { return null; }, endpoints: kx.client.endpoints }).canRead(), false, 'no sign-in and no key: cannot read');
+
 		// ---- adding to a playlist (50 units each way)
 		var xw = session(), wtok = fake.issueToken({ write: true });
 		var cw = Y.createClient({ getToken: function () { return wtok; }, endpoints: xw.client.endpoints, sleep: function () { return Promise.resolve(); } });

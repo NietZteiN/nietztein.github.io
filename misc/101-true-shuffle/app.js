@@ -192,8 +192,12 @@
 	var ep = Y.endpoints();
 	var auth = Y.createAuth({ clientId: ToyKit.load('clientId', '') || TS.config.clientId, mode: TS.config.signIn, scope: TS.config.scope, redirectUri: TS.config.redirectUri || undefined, endpoints: ep });
 	var back = demo ? { status: 'none' } : auth.handleRedirect();
+	// A browser API key (Settings or config.js) lets public data be read without signing in.
+	function apiKey() { return demo ? '' : String(ToyKit.load('apiKey', '') || TS.config.apiKey || '').trim(); }
+	function canRead() { return !demo && client.canRead(); }
 	var client = Y.createClient({
 		getToken: auth.token,
+		getApiKey: apiKey,
 		endpoints: ep,
 		onSignedOut: function () { auth.forget(); },
 		onQuota: function (units) {
@@ -2598,6 +2602,23 @@
 				say(v ? 'This browser now signs in with that client id.' : 'Back to the client id in config.js.');
 			});
 			acct.appendChild(cf);
+			var kf = h('form', { class: 'ts-inline-form' });
+			var kin = h('input', { class: 'kit-input', id: 'api-key', type: 'password', autocomplete: 'off', spellcheck: 'false', placeholder: 'AIza...', aria: { label: 'YouTube API key for this browser only' } });
+			kin.value = ToyKit.load('apiKey', '') || '';
+			kf.appendChild(h('label', { class: 'ts-muted', for: 'api-key', text: 'YouTube API key (optional, this browser only)' }));
+			kf.appendChild(kin);
+			kf.appendChild(h('button', { class: 'kit-btn small', type: 'submit', text: 'Use' }));
+			kf.addEventListener('submit', function (e) {
+				e.preventDefault();
+				var v = kin.value.trim();
+				if (v && !/^[A-Za-z0-9_-]{30,60}$/.test(v)) { ToyKit.toast('That does not look like an API key (they start with AIza).'); return; }
+				ToyKit.store('apiKey', v || null);
+				if (!v) { renderView(true); say(TS.config.apiKey ? 'Back to the key in config.js.' : 'No API key: channel uploads and YouTube search need a sign-in again.'); return; }
+				setStatus('Checking the key' + ELL);
+				Y.createClient({ getToken: function () { return null; }, getApiKey: function () { return v; }, endpoints: ep, maxRetries: 0 }).videoBatch([(L.list(lib)[0] || {}).id || 'dQw4w9WgXcQ']).then(function () { renderView(true); say('The key works: channel uploads, Discover and YouTube search now work without signing in.'); }, function (err) { ToyKit.store('apiKey', null); renderView(true); fail(err); });
+			});
+			acct.appendChild(kf);
+			acct.appendChild(h('p', { class: 'ts-muted ts-keyhelp', text: 'An API key lets this page read public YouTube data without signing in: a channel\u2019s uploads, YouTube search and video details (adding to a playlist still needs the sign-in). In the same Google Cloud project: APIs & Services > Credentials > Create credentials > API key; then restrict it to YouTube Data API v3 and, under Website restrictions, to ' + location.origin + '/*. It uses the same daily quota as the sign-in.' + (apiKey() ? ' A key is in use' + (ToyKit.load('apiKey', '') ? ' (this browser).' : ' (config.js).') : '') }));
 			var row = h('div', { class: 'ts-row-btns' });
 			if (!signed) { var si = h('button', { class: 'kit-btn primary', text: 'Sign in with Google', disabled: !configured, on: { click: signIn } }); row.appendChild(si); }
 			else row.appendChild(h('button', { class: 'kit-btn', text: 'Disconnect', on: { click: signOut } }));
@@ -3910,7 +3931,7 @@
 		stopPreview();
 		var q2 = DX.youtubeQuery(t);
 		if (demo) { say('The demo cannot search YouTube.'); return; }
-		if (!auth.signedIn()) { window.open('https://www.youtube.com/results?search_query=' + encodeURIComponent(q2), '_blank', 'noopener'); return; }
+		if (!canRead()) { window.open('https://www.youtube.com/results?search_query=' + encodeURIComponent(q2), '_blank', 'noopener'); return; }
 		if (btn) btn.disabled = true;
 		setStatus('Searching YouTube for ' + q(q2) + ELL);
 		(t._video ? Promise.resolve([t._video]) : client.search(q2, { max: 6 })).then(function (results) {
@@ -3963,7 +3984,7 @@
 		headerBlock(view, {
 			kicker: 'Discover', title: seedT ? 'Like ' + trackTitle(seedT) : 'Like ' + a.name, alt: seedT ? 'by ' + a.name : '', hue: hue,
 			artNode: seedT ? artFor(seedT, 'ts-hero-art') : (a.cover && prefs.art && !demo ? U.art(a.cover.id, hue.h, a.name, 'ts-hero-art is-round', true, hue.s) : null),
-			blurb: 'Artists like ' + a.name + ' and their best songs, from Deezer. Preview 30 seconds here; Play finds the song on YouTube' + (auth.signedIn() ? ' (100 quota units a search) and keeps it in the playlist Discovered.' : ' (sign in to play it here; otherwise YouTube opens in a new tab).'),
+			blurb: 'Artists like ' + a.name + ' and their best songs, from Deezer. Preview 30 seconds here; Play finds the song on YouTube' + (canRead() ? ' (100 quota units a search) and keeps it in the playlist Discovered.' : ' (sign in to play it here; otherwise YouTube opens in a new tab).'),
 			actions: [
 				actionBtn('radio', 'Preview radio like this', function () { dzArtistFor(seedKey).then(function (d) { if (!d) { say('Deezer does not know ' + a.name + '.'); return; } return deezer().radio(d.id, 50).then(function (ts) { pvStart(freshOnly(ts), 0, a.name + ' mix'); }); }); }, true),
 				actionBtn('compass', 'Explore ' + a.name + ' on Deezer', function () { dzArtistFor(seedKey).then(function (d) { if (d) location.hash = '#/discover?dz=' + d.id; else say('Deezer does not know ' + a.name + '.'); }); }),
@@ -3994,7 +4015,7 @@
 		}).then(function (out) {
 			if (location.hash !== here) return;
 			clear(box);
-			if (!out.res) { status.textContent = 'Deezer does not know ' + a.name + ' or the artists closest to them (' + out.tried.slice(1).join(', ') + '). ' + (auth.signedIn() ? 'Search YouTube below instead.' : ''); ytSearchBox(view, a, seedT); return; }
+			if (!out.res) { status.textContent = 'Deezer does not know ' + a.name + ' or the artists closest to them (' + out.tried.slice(1).join(', ') + '). ' + (canRead() ? 'Search YouTube below instead.' : ''); ytSearchBox(view, a, seedT); return; }
 			var via = out.from !== seedKey ? ' Deezer did not know ' + a.name + ', so these start from ' + (ix.artists[out.from] || {}).name + ', which sounds closest in your library.' : '';
 			status.textContent = plural(out.res.related.length, 'artist') + ' like ' + (out.from === seedKey ? a.name : (ix.artists[out.from] || {}).name) + (out.res.verified ? '' : ' (Deezer has an artist of that name; it may be another one)') + '.' + via;
 			var newOnes = out.res.related.filter(function (r2) { return !r2.known; }), knownOnes = out.res.related.filter(function (r2) { return r2.known; });
@@ -4019,7 +4040,7 @@
 					var pv = U.iconBtn('play', 'Preview ' + t.title, { cls: 'ts-pv', on: { click: function () { preview(t, pv); } } });
 					pv.disabled = !t.preview;
 					li.appendChild(pv);
-					li.appendChild(h('button', { class: 'kit-btn small', text: auth.signedIn() ? 'Play' : 'YouTube', title: auth.signedIn() ? 'Find it on YouTube and play it here (100 quota units)' : 'Search YouTube in a new tab', on: { click: function (e) { playFound(t, e.currentTarget); } } }));
+					li.appendChild(h('button', { class: 'kit-btn small', text: canRead() ? 'Play' : 'YouTube', title: canRead() ? 'Find it on YouTube and play it here (100 quota units)' : 'Search YouTube in a new tab', on: { click: function (e) { playFound(t, e.currentTarget); } } }));
 					var ab2 = addButton(t);
 					if (ab2) li.appendChild(ab2);
 					if (i === 0) li.appendChild(U.iconBtn('close', 'Not interested in ' + r2.name, { on: { click: function () { hideArtist(r2.name); } } }));
@@ -4034,7 +4055,7 @@
 	}
 	// A YouTube search for more, from the labels (signed in only).
 	function ytSearchBox(view, a, seedT) {
-		if (demo || !auth.signedIn() || view.querySelector('.ts-ytsearch')) return;
+		if (demo || !canRead() || view.querySelector('.ts-ytsearch')) return;
 		var guess = seedT ? [seedT.work && seedT.role ? seedT.work + ' ' + seedT.role : '', seedT.genres[0] || '', T.LANG_NAME[seedT.lang] || ''].filter(Boolean).join(' ') : a.name + ' similar';
 		var sec = h('section', { class: 'ts-ytsearch' });
 		sec.appendChild(h('h2', { class: 'ts-sec-head', text: 'Search YouTube for more' }));
@@ -4497,7 +4518,7 @@
 		var sv = U.iconBtn('plus', 'Save ' + t.title + ' for later', { cls: 'ts-save' + (isSaved(t) ? ' is-on' : ''), on: { click: function () { toggleSaved(t, sv); } } });
 		sv.setAttribute('aria-pressed', isSaved(t) ? 'true' : 'false');
 		li.appendChild(sv);
-		li.appendChild(h('button', { class: 'kit-btn small', text: auth.signedIn() ? 'Play' : 'YouTube', title: auth.signedIn() ? 'Find it on YouTube and play it here (100 quota units)' : 'Search YouTube in a new tab', on: { click: function (e) { playFound(t, e.currentTarget); } } }));
+		li.appendChild(h('button', { class: 'kit-btn small', text: canRead() ? 'Play' : 'YouTube', title: canRead() ? 'Find it on YouTube and play it here (100 quota units)' : 'Search YouTube in a new tab', on: { click: function (e) { playFound(t, e.currentTarget); } } }));
 		var ab = addButton(t);
 		if (ab) li.appendChild(ab);
 		li.appendChild(U.iconBtn('close', 'Not interested in ' + t.artist, { on: { click: function () { hideArtist(t.artist); li.parentNode && li.parentNode.removeChild(li); } } }));
@@ -4709,7 +4730,7 @@
 		bar.appendChild(U.iconBtn('next', 'Next preview', { on: { click: function () { pv.at++; pvPlay(); } } }));
 		var sv = U.iconBtn('plus', 'Save for later', { text: true, cls: 'ts-save' + (isSaved(t) ? ' is-on' : ''), on: { click: function () { toggleSaved(t, sv); } } });
 		bar.appendChild(sv);
-		bar.appendChild(h('button', { class: 'kit-btn small', text: auth.signedIn() ? 'Play on YouTube' : 'Open YouTube', on: { click: function (e) { pvClose(); playFound(t, e.currentTarget); } } }));
+		bar.appendChild(h('button', { class: 'kit-btn small', text: canRead() ? 'Play on YouTube' : 'Open YouTube', on: { click: function (e) { pvClose(); playFound(t, e.currentTarget); } } }));
 		var ab5 = addButton(t);
 		if (ab5) bar.appendChild(ab5);
 		bar.appendChild(U.iconBtn('block', 'Not interested in ' + t.artist, { on: { click: function () { hideArtist(t.artist); var a2 = DX.norm(t.artist); pv.list = pv.list.filter(function (x, i) { return i <= pv.at || DX.norm(x.artist) !== a2; }); pv.at++; pvPlay(); } } }));
@@ -4877,7 +4898,7 @@
 		var cl = h('div', { class: 'ts-chips' });
 		chList.forEach(function (c) { cl.appendChild(h('a', { class: 'ts-chip', href: link('channel', c.id) }, [h('span', { text: c.name }), h('span', { class: 'ts-count', text: plural(c.n, 'song') + ' here' })])); });
 		chans.body.appendChild(cl);
-		chans.body.appendChild(h('p', { class: 'ts-muted', text: 'A channel page lists its uploads on YouTube that you do not have' + (auth.signedIn() ? ' (about 2 quota units for its newest hundred).' : ' (sign in to see them here; otherwise it links to YouTube).') }));
+		chans.body.appendChild(h('p', { class: 'ts-muted', text: 'A channel page lists its uploads on YouTube that you do not have' + (canRead() ? ' (about 2 quota units for its newest hundred).' : ' (sign in, or add a YouTube API key in Settings, to see them here; otherwise it links to YouTube).') }));
 		loadDiscoverState().then(function () { return dzArtistFor(key); }).then(function (d) {
 			if (location.hash !== here) return;
 			if (!d) {
@@ -4924,10 +4945,15 @@
 		});
 		if (mine.length) { sectionHead(view, 'In your library'); trackList(view, sorted(mine, 'added'), { context: { label: name, href: link('channel', id) } }); }
 		var up = dsection(view, 'More uploads on this channel', 'newest first, the ones you do not have');
+		channelExtras(view, id, mine);
 		if (demo || !/^UC[A-Za-z0-9_-]{22}$/.test(id)) { up.done(); up.body.appendChild(h('p', { class: 'ts-muted', text: demo ? 'The demo has no YouTube channels.' : 'This channel cannot be listed.' })); return; }
-		if (!auth.signedIn()) {
+		if (!canRead()) {
 			up.done();
-			up.body.appendChild(h('p', { class: 'ts-muted', text: 'Sign in (Settings) to list this channel\u2019s uploads here and play them, or open it on YouTube.' }));
+			up.body.appendChild(h('p', { class: 'ts-muted', text: 'Listing a channel\u2019s uploads asks YouTube, so it needs either a sign-in (an hour at a time) or a YouTube API key, which works without signing in. Below: more by the artist from Deezer, and what sounds like this channel in your library.' }));
+			up.body.appendChild(h('div', { class: 'ts-row-btns' }, [
+				auth.configured() ? actionBtn('artist', 'Sign in', signIn, true) : null,
+				actionBtn('settings', 'Add an API key', function () { location.hash = '#/settings'; setTimeout(function () { var k = $('api-key'); if (k) { k.scrollIntoView({ block: 'center' }); k.focus(); } }, 300); })
+			]));
 			return;
 		}
 		var here = location.hash;
@@ -5402,6 +5428,31 @@
 		sectionHead(view, 'As a voice actor');
 		view.appendChild(h('p', { class: 'ts-muted' }, [plural(songs.length, 'character song') + ' credited to ' + p.name + ' as a voice. ', h('a', { href: link('person', p.key), text: 'Everything by ' + p.name }), '.']));
 		trackList(view, songs.slice(0, 40), { context: { label: p.name + ' as characters', href: link('person', p.key) }, extra: function (t) { return roleOf[t.id] ? h('span', { class: 'ts-like-why', text: ' ' + DOT + ' as ' + roleOf[t.id] }) : null; } });
+	}
+
+	// ---- A channel page without YouTube: the artist behind it, and what sounds like it ----------------
+
+	function channelExtras(view, id, mine) {
+		var ix = idx(), by = {};
+		mine.forEach(function (t) { if (t.artistKey) by[t.artistKey] = (by[t.artistKey] || 0) + 1; });
+		var top = Object.keys(by).sort(function (a, b) { return by[b] - by[a]; })[0];
+		// mostly one artist's songs: their other songs and releases, from Deezer
+		if (top && by[top] >= Math.max(1, mine.length * 0.6) && ix.artists[top] && !demo) artistMore(view, top, ix.artists[top]);
+		// songs in the library that sound like this channel's, its own left out
+		var score = {}, why = {};
+		mine.slice(0, 6).forEach(function (s) {
+			recsFor(s).close.forEach(function (x) {
+				if (x.t.channelId === id) return;
+				score[x.t.id] = (score[x.t.id] || 0) + x.score;
+				if (!why[x.t.id]) why[x.t.id] = x.why;
+			});
+		});
+		var ids = Object.keys(score).sort(function (a, b) { return score[b] - score[a]; }).slice(0, 14);
+		if (!ids.length) return;
+		sectionHead(view, 'Sounds like this channel');
+		var ctx = { label: 'Like ' + (mine[0] ? mine[0].channel : 'this channel'), href: link('channel', id) };
+		view.appendChild(h('div', { class: 'ts-row-btns' }, [actionBtn('play', 'Play them', function () { playIds(ids, 0, ctx); })]));
+		trackList(view, ids.map(function (i) { return lib.tracks[i]; }), { context: ctx, extra: function (t) { return h('span', { class: 'ts-like-why', text: ' ' + DOT + ' ' + whyWords(why[t.id] || []) }); } });
 	}
 
 	// ---- Keys ----------------------------------------------------------------------------------------------

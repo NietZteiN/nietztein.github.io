@@ -41,6 +41,13 @@
 		// (YouTube API terms: refresh or delete within 30 days).
 		refreshDays: 30,
 
+		// Optional: a browser API key from the same Google Cloud project, restricted
+		// to the YouTube Data API v3 and to this site's address. With it, a
+		// channel's uploads, YouTube search and video details work without signing
+		// in (adding to a playlist still needs the sign-in). Empty: sign in for those.
+		// Settings can also keep one for this browser only.
+		apiKey: '',
+
 		// Google's default daily quota for a project, for the meter.
 		dailyQuota: 10000
 	};

@@ -27,6 +27,10 @@
  * keeps the session and closing the tab ends it), is sent only to the API in
  * an Authorization header, and is revoked on disconnect.
  *
+ * Public data (a channel's uploads, a search, video details) can also be read
+ * without signing in, with a browser API key (createClient({ getApiKey })): the
+ * key goes in the query, nothing else is sent, and writes never use it.
+ *
  * Errors are YTError objects with a `code` the page can switch on:
  *   'signed-out'   no token, or Google no longer accepts it: sign in again
  *   'forbidden'    Google refused (`reason` says which rule)
@@ -34,6 +38,7 @@
  *   'rate'         too many requests even after waiting
  *   'not-found'    no such playlist (or video)
  *   'needs-write'  a write was refused because the sign-in may only read
+ *   'bad-key'      the API key is not valid, or not allowed on this website
  *   'bad-request'  a request Google called invalid (an expired page token, say)
  *   'server'       Google kept answering 5xx
  *   'network'      no answer at all
@@ -377,6 +382,8 @@
 	}
 
 	function describe(status, reason, googleMessage, write) {
+		if (/API key not valid|API_KEY_INVALID/i.test(googleMessage)) return ['bad-key', 'The YouTube API key is not valid. Check it in Settings.'];
+		if (/referr?er|API_KEY_HTTP_REFERRER_BLOCKED/i.test(googleMessage) && status === 403) return ['bad-key', 'The YouTube API key does not allow this website. In Google Cloud, add this site under the key\'s website restrictions.'];
 		if (status === 401) return ['signed-out', 'The sign-in has ended. Sign in again to go on.'];
 		if (status === 403) {
 			if (reason === 'quotaExceeded' || reason === 'dailyLimitExceeded') return ['quota', 'Today\'s YouTube API quota for this Google project is used up. It starts again at midnight Pacific time; what was imported so far is kept.'];
@@ -395,8 +402,8 @@
 		return ['forbidden', 'YouTube answered ' + status + '.'];
 	}
 
-	// opts: { getToken() -> string | null, endpoints, fetch, sleep(ms), now,
-	//         maxRetries (4), onQuota(units, method), onSignedOut() }
+	// opts: { getToken() -> string | null, getApiKey() -> string (public reads when signed out),
+	//         endpoints, fetch, sleep(ms), now, maxRetries (4), onQuota(units, method), onSignedOut() }
 	function createClient(opts) {
 		opts = opts || {};
 		var ep = opts.endpoints || endpoints();
@@ -435,10 +442,11 @@
 			function run() {
 				if (o.signal && o.signal.aborted) return Promise.reject(YTError('aborted', 'Stopped.'));
 				var token = opts.getToken ? opts.getToken() : null;
-				if (!token) return Promise.reject(YTError('signed-out', 'Sign in to read from YouTube.'));
-				var init = { method: verb, headers: { Authorization: 'Bearer ' + token, Accept: 'application/json' }, signal: o.signal };
+				var key = !token && !write && !o.mine && opts.getApiKey ? String(opts.getApiKey() || '').trim() : '';
+				if (!token && !key) return Promise.reject(YTError('signed-out', 'Sign in to read from YouTube.'));
+				var init = { method: verb, headers: token ? { Authorization: 'Bearer ' + token, Accept: 'application/json' } : { Accept: 'application/json' }, signal: o.signal };
 				if (body) { init.headers['Content-Type'] = 'application/json'; init.body = JSON.stringify(body); }
-				return doFetch(url, init).then(function (res) {
+				return doFetch(key ? url + '&key=' + encodeURIComponent(key) : url, init).then(function (res) {
 					spend(method);
 					if (res.status === 204) return {};
 					if (res.ok) return res.json();
@@ -451,7 +459,7 @@
 						}
 						var d = describe(res.status, reason, message, write);
 						var err = YTError(d[0], d[1], { status: res.status, reason: reason, detail: message, method: method });
-						if (d[0] === 'signed-out' && opts.onSignedOut) { try { opts.onSignedOut(); } catch (e2) { /* ignore */ } }
+						if (d[0] === 'signed-out' && token && opts.onSignedOut) { try { opts.onSignedOut(); } catch (e2) { /* ignore */ } }
 						if (d[0] === 'server' || d[0] === 'rate') return again(err);
 						throw err;
 					});
@@ -464,6 +472,7 @@
 			return run();
 		}
 
+		function mineOnly(o) { var c = copy(o || {}); c.mine = true; return c; }
 		// Every page of a list call. -> all items
 		function all(resource, params, o) {
 			var items = [];
@@ -482,13 +491,15 @@
 		var client = {
 			endpoints: ep,
 			get: get,
+			// Can it read public data now (a sign-in, or an API key)?
+			canRead: function () { return !!((opts.getToken && opts.getToken()) || (opts.getApiKey && String(opts.getApiKey() || '').trim())); },
 			// What this client has spent since it was made: { units, requests, byMethod, since }
 			quota: function () { return { units: tally.units, requests: tally.requests, byMethod: copy(tally.byMethod), since: tally.since }; },
 
 			// The signed-in account's channel: { channelId, title, likes, uploads },
 			// or null when the Google account has no YouTube channel. 1 unit.
 			me: function (o) {
-				return get('channels', { part: 'snippet,contentDetails', mine: 'true', maxResults: 5 }, o).then(function (res) {
+				return get('channels', { part: 'snippet,contentDetails', mine: 'true', maxResults: 5 }, mineOnly(o)).then(function (res) {
 					var c = res.items && res.items[0];
 					if (!c) return null;
 					var rel = (c.contentDetails && c.contentDetails.relatedPlaylists) || {};
@@ -499,7 +510,7 @@
 			// The account's own playlists, private ones included.
 			// -> [{ id, title, count, privacy, publishedAt }]. 1 unit per 50.
 			playlists: function (o) {
-				return all('playlists', { part: 'snippet,contentDetails,status', mine: 'true' }, o).then(function (items) {
+				return all('playlists', { part: 'snippet,contentDetails,status', mine: 'true' }, mineOnly(o)).then(function (items) {
 					return items.map(function (p) {
 						return {
 							id: p.id,

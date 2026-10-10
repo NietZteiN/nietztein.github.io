@@ -19,6 +19,8 @@
  *   GET  /youtube/v3/playlists        mine=true: 59 playlists, 50 a page
  *   GET  /youtube/v3/playlistItems    50 a page; PL_BIG has 1,230 items
  *   GET  /youtube/v3/videos           up to 50 ids
+ *   A channel's uploads (UU + 22 characters) answers thirty generated videos.
+ *   (GET calls also take key=test-api-key instead of a token, except mine=true; another key is "not valid")
  *   POST /youtube/v3/playlistItems    adds a video to a playlist (a token with the write scope only)
  *   DELETE /youtube/v3/playlistItems  ?id=: takes an added item out again
  *   GET  /ws/2/artist                 a fake of MusicBrainz's artist search and lookup
@@ -178,7 +180,10 @@ export async function startFake(options = {}) {
 		const auth = /^Bearer (.+)$/.exec(req.headers.authorization || '');
 		const tok = auth && tokens.get(auth[1]);
 		if (sw.expireAfter != null) { if (sw.expireAfter <= 0) return send(res, 401, googleError(401, 'authError', 'Invalid Credentials', 'global')); sw.expireAfter--; }
-		if (!tok || tok.revoked) return send(res, 401, googleError(401, 'authError', 'Invalid Credentials', 'global'));
+		const apiKey = p.get('key');
+		if (!tok && apiKey && apiKey !== 'test-api-key') return send(res, 400, googleError(400, 'badRequest', 'API key not valid. Please pass a valid API key.', 'global'));
+		if (!tok && apiKey && p.get('mine') === 'true') return send(res, 401, googleError(401, 'required', 'Login Required.', 'global'));
+		if ((!tok || tok.revoked) && apiKey !== 'test-api-key') return send(res, 401, googleError(401, 'authError', 'Invalid Credentials', 'global'));
 		if (sw.failNext > 0) { sw.failNext--; return send(res, 503, googleError(503, 'backendError', 'Backend Error', 'global')); }
 		if (sw.rateLimitNext > 0) { sw.rateLimitNext--; return send(res, 403, googleError(403, 'rateLimitExceeded', 'Rate Limit Exceeded', 'usageLimits')); }
 		if (sw.quotaAfter != null) {
@@ -211,6 +216,8 @@ export async function startFake(options = {}) {
 		}
 		if (method === 'playlistItems.list') {
 			const id = p.get('playlistId');
+			// a channel's uploads (UU + the channel id after UC): thirty generated videos
+			if (id && /^UU[A-Za-z0-9_-]{22}$/.test(id) && !playlists[id]) playlists[id] = { title: 'Uploads', privacy: 'public', items: range(5000 + (Math.abs(hash(id)) % 500), 30), hidden: true };
 			if (!id || !playlists[id]) return send(res, 404, googleError(404, 'playlistNotFound', 'The playlist identified with the request\'s playlistId parameter cannot be found.', 'youtube.playlistItem'));
 			if (playlists[id].forbidden) return send(res, 403, googleError(403, 'playlistItemsNotAccessible', 'The request is not properly authorized to retrieve the specified playlist.', 'youtube.playlistItem'));
 			const pg = page(itemsOf(id), p, 5);
