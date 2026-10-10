@@ -557,6 +557,10 @@ To try the real sign-in from this machine before publishing, add `http://127.0.0
 
 Changes to a client can take a few minutes to take effect. Access can be removed at any time at https://myaccount.google.com/permissions.
 
+## Shipping a change
+
+`index.html` loads the page's own scripts and `app.css` with `?v=<date>`. GitHub Pages lets browsers keep a file for ten minutes, and a page that mixes a new `app.js` with an old `yt.js` can break, so bump that stamp (all fourteen at once) whenever any of them changes.
+
 ## Tests
 
 ```
