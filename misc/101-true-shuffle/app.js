@@ -4444,7 +4444,7 @@
 		http: srcHttp, deezer: deezer, libIndex: libIndex, findsMap: findsMap, signIn: signIn,
 		lastfmKey: function () { return String(ToyKit.load('lastfmKey', '') || '').trim(); },
 		similar: function (t) { var r = recsFor(t); return { together: r.together, work: r.work, close: r.close.map(function (x) { return { t: x.t, why: whyWords(x.why) }; }) }; },
-		like: function (id) { toggleLike(lib.tracks[id]); }, liked: function (id) { var t = lib.tracks[id]; return !!(t && (t.rating || 0) >= 4); },
+		like: function (id) { toggleLike(trackOf(id)); }, liked: function (id) { var t = trackOf(id); return !!(t && (t.rating || 0) >= 4); },
 		previewList: function (items, label) { pvStart((items || []).map(function (it) { return { id: it.key, title: it.title, artist: it.artist, preview: it.preview, cover: it.cover, album: it.album, key: it.key, videoId: it.videoId || null, find: it.find || null }; }), 0, label); },
 		preview: function (item, btn) { preview({ id: item.key || item.videoId, title: item.title, preview: item.preview }, btn); },
 		edit: function (ids, fields) { L.editMany(lib, ids, fields); return changed(ids); },
