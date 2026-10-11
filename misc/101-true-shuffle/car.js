@@ -822,18 +822,15 @@
 		if (!h || !U) return;
 		box.appendChild(h('p', { text: 'Car mode: big buttons, the screen kept on, and the steering wheel' + RSQ + 's buttons. It plays only through YouTube' + RSQ + 's player, which stays on screen; there are no 30-second previews in it.' }));
 		box.appendChild(h('div', { class: 'ts-row-btns' }, [U.btn({ icon: 'car', label: 'Open car mode', variant: 'secondary', href: '#/car' })]));
-		function check(key, on, label, write, disabled) {
-			var lab = h('label', { class: 'ts-check' }), cb = h('input', { type: 'checkbox', checked: on, disabled: disabled });
-			cb.addEventListener('change', function () { write(cb.checked); });
-			lab.appendChild(cb);
-			lab.appendChild(h('span', { text: label }));
+		function check(key, on, title, desc, write, disabled) {
+			var lab = U.check ? U.check({ title: title, desc: desc, checked: on, disabled: disabled, onChange: write }) : h('label', { class: 'ts-check' }, [h('input', { type: 'checkbox', checked: on, disabled: disabled, on: { change: function (e) { write(e.target.checked); } } }), h('span', { text: title + '. ' + desc })]);
 			box.appendChild(lab);
-			return cb;
+			return lab.input || lab.querySelector('input');
 		}
-		check(KEYS.fullscreen, fullscreenOn(), 'Full screen when you press Start.', function (v) { kitStore(KEYS.fullscreen, v ? null : false); });
-		check(KEYS.landscape, landscapeOn(), 'Turn the screen sideways when you press Start. Phones allow it only in full screen or in the installed app.', function (v) { kitStore(KEYS.landscape, v ? true : null); });
+		check(KEYS.fullscreen, fullscreenOn(), 'Full screen', 'Car mode fills the screen when you press Start.', function (v) { kitStore(KEYS.fullscreen, v ? null : false); });
+		check(KEYS.landscape, landscapeOn(), 'Turn the screen sideways', 'When you press Start. Phones allow it only in full screen or in the installed app.', function (v) { kitStore(KEYS.landscape, v ? true : null); });
 		var vs = voiceSupported();
-		check(KEYS.voice, voiceOn(), 'Voice commands in car mode: say next, previous, pause, play, like or radio. They use the browser' + RSQ + 's speech recognition, which sends what the microphone hears to Google while car mode is on and showing.' + (vs ? '' : ' This browser has none.'), function (v) { setVoice(v); }, !vs && !voiceOn());
+		check(KEYS.voice, voiceOn(), 'Voice commands', 'Say next, previous, pause, play, like or radio in car mode. They use the browser' + RSQ + 's speech recognition, which sends what the microphone hears to Google while car mode is on and showing.' + (vs ? '' : ' This browser has none.'), function (v) { setVoice(v); }, !vs && !voiceOn());
 
 		box.appendChild(h('h3', { text: 'Install as an app' }));
 		var row = h('div', { class: 'ts-row-btns' });

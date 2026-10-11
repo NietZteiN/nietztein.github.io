@@ -223,6 +223,17 @@
 		b.appendChild(h('span', { text: text }));
 		return b;
 	}
+	// A setting that is on or off: a box, a short title and a line on what it does.
+	// o: { title, desc, checked, disabled, onChange(on) }; the box is the label's `.input`.
+	function check(o) {
+		var cb = h('input', { type: 'checkbox', checked: !!o.checked, disabled: !!o.disabled });
+		if (o.onChange) cb.addEventListener('change', function () { o.onChange(cb.checked); });
+		var text = h('span', { class: 'ts-check-text' }, [h('span', { class: 'ts-check-t', text: o.title })]);
+		if (o.desc) text.appendChild(h('span', { class: 'ts-check-d', text: o.desc }));
+		var lab = h('label', { class: 'ts-check ts-setting' }, [cb, text]);
+		lab.input = cb;
+		return lab;
+	}
 	// A button with an icon and a label (shown, or for screen readers only): the
 	// same component, as an icon button or a ghost one with text.
 	function iconBtn(name, label, opts) {
@@ -539,7 +550,7 @@
 	root.TrueShuffle.ui = {
 		toast: toast, job: job, bus: bus(), safe: safe,
 		h: h, add: add, clear: clear, icon: icon, iconBtn: iconBtn, setIcon: setIcon, PATHS: PATHS, EVENODD: EVENODD,
-		btn: btn, btnState: btnState, split: split, badge: badge,
+		btn: btn, btnState: btnState, split: split, badge: badge, check: check,
 		parseHash: parseHash, link: link,
 		openMenu: openMenu, closeMenu: closeMenu, openDialog: openDialog, dialogOpen: dialogOpen,
 		virtualList: virtualList, art: art, swatch: swatch, initialOf: initialOf, YT_ID: YT_ID

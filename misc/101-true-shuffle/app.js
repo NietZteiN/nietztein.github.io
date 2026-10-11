@@ -2946,37 +2946,19 @@
 
 		// appearance
 		var ap = panel(view, 'Appearance', 'set-look');
-		var artLab = h('label', { class: 'ts-check' });
-		var artCb = h('input', { type: 'checkbox', checked: prefs.art });
-		artCb.addEventListener('change', function () { prefs.art = artCb.checked; ToyKit.store('art', prefs.art); dirty(); renderBar(); renderQueue(); renderNowInfo(); say(prefs.art ? 'Cover art on.' : 'Cover art off.'); });
-		artLab.appendChild(artCb);
-		artLab.appendChild(h('span', { text: 'Show cover art: the videos\' thumbnails, loaded from YouTube\'s image server (i.ytimg.com). Off: coloured squares from the genre.' }));
-		ap.appendChild(artLab);
+		ap.appendChild(U.check({ title: 'Cover art', desc: 'The videos\u2019 thumbnails, from YouTube\u2019s image server (i.ytimg.com). Off: coloured squares from the genre.', checked: prefs.art, onChange: function (on) { prefs.art = on; ToyKit.store('art', on); dirty(); renderBar(); renderQueue(); renderNowInfo(); say(on ? 'Cover art on.' : 'Cover art off.'); } }));
 		var dens = h('div', { class: 'ts-field' }, [h('span', { text: 'Song lists' })]);
 		var seg = h('div', { class: 'ts-seg', role: 'radiogroup', aria: { label: 'Song list density' } });
 		[['comfortable', 'Comfortable'], ['compact', 'Compact']].forEach(function (o2) { var b = h('button', { class: 'ts-seg-b', role: 'radio', aria: { checked: prefs.density === o2[0] ? 'true' : 'false' }, text: o2[1], on: { click: function () { prefs.density = o2[0]; ToyKit.store('density', o2[0]); applyDensity(); renderView(true); } } }); seg.appendChild(b); });
 		dens.appendChild(seg);
 		ap.appendChild(dens);
-		var amLab = h('label', { class: 'ts-check' }), amCb = h('input', { type: 'checkbox', checked: ToyKit.load('ambient', true) !== false });
-		amCb.addEventListener('change', function () { ToyKit.store('ambient', amCb.checked ? null : false); document.body.classList.toggle('has-ambient', amCb.checked); });
-		amLab.appendChild(amCb);
-		amLab.appendChild(h('span', { text: 'A soft glow of the song\u2019s picture behind the video.' }));
-		ap.appendChild(amLab);
+		ap.appendChild(U.check({ title: 'Glow behind the video', desc: 'A soft glow of the song\u2019s picture around the player.', checked: ToyKit.load('ambient', true) !== false, onChange: function (on) { ToyKit.store('ambient', on ? null : false); document.body.classList.toggle('has-ambient', on); } }));
 		ap.appendChild(h('p', { class: 'ts-muted', text: 'Everything bigger or smaller: your browser\u2019s zoom (Ctrl and + or -) scales this page, and the layout follows. The player\u2019s size is under the video: S, M, L, theater and full screen.' }));
 
 		// playback: media keys, a phone's lock screen, a car's buttons
 		var pbp = panel(view, 'Playback', 'set-playback');
-		var mkLab = h('label', { class: 'ts-check' });
-		var mkCb = h('input', { type: 'checkbox', checked: !transport || transport.enabled() });
-		mkCb.addEventListener('change', function () { ToyKit.store('mediaKeys', mkCb.checked ? null : false); if (transport) transport.enable(mkCb.checked); say(mkCb.checked ? 'Media keys and car buttons now control True Shuffle.' : 'Media keys go to YouTube\u2019s player again.'); });
-		mkLab.appendChild(mkCb);
-		mkLab.appendChild(h('span', { text: 'Media keys and car buttons: the keyboard\u2019s media keys, a phone\u2019s lock screen and a car\u2019s steering-wheel buttons control True Shuffle\u2019s queue. For that, a silent sound plays alongside YouTube\u2019s player while it plays (browsers send these buttons only to a page that plays something itself); on a phone it stops the moment the page is hidden.' }));
-		pbp.appendChild(mkLab);
-		var fdLab = h('label', { class: 'ts-check' }), fdCb = h('input', { type: 'checkbox', checked: fadesOn() });
-		fdCb.addEventListener('change', function () { ToyKit.store('fades', fdCb.checked ? null : false); applyVolume(1); });
-		fdLab.appendChild(fdCb);
-		fdLab.appendChild(h('span', { text: 'Fade between songs: the end of a song softens over three seconds and the next comes in gently.' }));
-		pbp.appendChild(fdLab);
+		pbp.appendChild(U.check({ title: 'Media keys and car buttons', desc: 'The keyboard\u2019s media keys, a phone\u2019s lock screen and a car\u2019s steering-wheel buttons control True Shuffle\u2019s queue. For that, a silent sound plays alongside YouTube\u2019s player while it plays (browsers send these buttons only to a page that plays something itself); on a phone it stops the moment the page is hidden.', checked: !transport || transport.enabled(), onChange: function (on) { ToyKit.store('mediaKeys', on ? null : false); if (transport) transport.enable(on); say(on ? 'Media keys and car buttons now control True Shuffle.' : 'Media keys go to YouTube\u2019s player again.'); } }));
+		pbp.appendChild(U.check({ title: 'Fade between songs', desc: 'The end of a song softens over three seconds and the next comes in gently.', checked: fadesOn(), onChange: function (on) { ToyKit.store('fades', on ? null : false); applyVolume(1); } }));
 		pbp.appendChild(h('p', { class: 'ts-muted', text: 'Per song (the song\u2019s menu, Trim and volume): start later, end sooner, louder or softer. Speed: the bar\u2019s More.' }));
 		pbp.appendChild(h('h3', { text: 'What the buttons sent' }));
 		pbp.appendChild(h('ol', { class: 'ts-medialog', id: 'media-log', aria: { live: 'polite' } }));
@@ -2997,7 +2979,7 @@
 
 		// privacy
 		var pv = panel(view, 'Data and privacy', 'set-privacy');
-		pv.appendChild(h('p', { text: 'Everything stays in this browser (IndexedDB): the videos of the lists you imported, with the titles, channels, lengths and topics YouTube reports; your labels, corrections, ratings and blocks; play counts, history, the queue and stations. The sign-in token stays in this tab for at most an hour and is revoked by Disconnect. Nothing is sent to this site, and nothing to anyone but Google (cover art from YouTube\'s image server; artist names to MusicBrainz only if you press that button). YouTube data older than 30 days is refreshed at your next sign-in.' }));
+		pv.appendChild(h('p', { text: 'Everything stays in this browser (IndexedDB): the videos of the lists you imported, with the titles, channels, lengths and topics YouTube reports; your labels, corrections, ratings and blocks; play counts, history, the queue and stations. The sign-in token stays in this tab for at most an hour and is revoked by Disconnect. Nothing is sent to this site. Google gets the sign-in, the YouTube questions and the player, and serves the cover art. Finding music beyond your library asks other services only for what you open (Explore, For you, an artist\u2019s or a song\u2019s page, lyrics): artist, song and work names, without cookies or anything about you, go to Deezer, Apple\u2019s iTunes, AnimeThemes, AniList, MusicBrainz and LRCLIB, and to Last.fm only with your key. Their answers are kept here so a question is not asked twice. YouTube data older than 30 days is refreshed at your next sign-in.' }));
 		pv.appendChild(h('p', null, ['This page uses YouTube API Services. ', h('a', { href: 'https://www.youtube.com/t/terms', rel: 'noopener', text: 'YouTube Terms of Service' }), ' ' + DOT + ' ', h('a', { href: 'https://policies.google.com/privacy', rel: 'noopener', text: 'Google Privacy Policy' }), ' ' + DOT + ' ', h('a', { href: 'https://myaccount.google.com/permissions', rel: 'noopener', text: 'Remove access at Google' })]));
 		var wipeBtn = h('button', { class: 'ts-btn ts-btn--danger ts-btn--md', text: 'Delete everything stored here', disabled: demo });
 		wipeBtn.addEventListener('click', function () {
@@ -3008,6 +2990,11 @@
 			no.focus();
 		});
 		pv.appendChild(wipeBtn);
+		// a jump bar to each section, the one in view lit
+		var jump = h('nav', { class: 'ts-set-jump', aria: { label: 'Settings sections' } }), secs = view.querySelectorAll('section.ts-panel'), chips = [];
+		Array.prototype.forEach.call(secs, function (s, i) { chips.push(jump.appendChild(U.btn({ variant: 'chip', label: s.querySelector('h2').textContent, on: { click: function () { s.scrollIntoView({ block: 'start', behavior: document.documentElement.classList.contains('is-reduced') ? 'auto' : 'smooth' }); s.querySelector('h2').setAttribute('tabindex', '-1'); s.querySelector('h2').focus({ preventScroll: true }); } } }))); chips[i].dataset.sec = s.id; });
+		view.insertBefore(jump, secs[0]);
+		if (window.IntersectionObserver) { var io = new IntersectionObserver(function (es) { if (!jump.isConnected) return io.disconnect(); es.forEach(function (e) { if (e.isIntersecting) chips.forEach(function (c) { var on = c.dataset.sec === e.target.id; c.setAttribute('aria-current', on ? 'true' : 'false'); if (on && jump.scrollWidth > jump.clientWidth) jump.scrollLeft = c.offsetLeft - (jump.clientWidth - c.offsetWidth) / 2; }); }); }, { root: $('main'), rootMargin: '-60px 0px -70% 0px' }); Array.prototype.forEach.call(secs, function (s) { io.observe(s); }); }
 	}
 
 	// ---- Settings plumbing ----------------------------------------------------------------------------------
