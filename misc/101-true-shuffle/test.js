@@ -2468,6 +2468,7 @@ describe('readme', function () {
 		artists: Object.keys(require('./artists.js')),
 		'an artists': Object.keys(require('./artists.js').create({})),
 		explore: Object.keys(require('./explore.js')),
+		car: Object.keys(require('./car.js')),
 		wrapped: Object.keys(require('./wrapped.js')),
 		lyrics: Object.keys(require('./lyrics.js')),
 		quiz: Object.keys(require('./quiz.js')),

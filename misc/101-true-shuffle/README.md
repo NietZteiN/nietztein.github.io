@@ -123,7 +123,7 @@ Every library function that changes something returns the ids (or the track) it 
 
 ## The page
 
-An app shell: the kit's header is the top bar (brand, back and forward, the search box; the kit adds theme, help and the link back to the site), then the sections, the view, and the now-playing panel (YouTube's player, this track's labels and rating, the queue and what played), with the player bar at the bottom. Under 1180 px the sections keep only their icons; under 760 px the page is a phone app: tabs at the bottom, the video docked under the top bar once something plays (it never shrinks below 200 px), the queue as a sheet.
+An app shell: the kit's header is the top bar (brand, back and forward, the search box; the kit adds theme, help and the link back to the site), then the sections, the view, and the now-playing panel (YouTube's player, this track's labels and rating, the queue and what played), with the player bar at the bottom. Under 1180 px the sections keep only their icons; under 760 px the page is a phone app: tabs at the bottom (Home, Search, Discover, Library, Queue), the video docked under the top bar once something plays (it never shrinks below 200 px), the queue as a sheet.
 
 Views, by hash: `#/` home (quick starts, today's mix, moods, families, scenes, artists, works, recently added), `#/search?q=`, `#/songs`, `#/artists`, `#/artist/<key>` (play, shuffle, artist radio, appears in, sounds like), `#/genres`, `#/family/<key>`, `#/genre/<name>`, `#/browse` (moods, scenes, languages, decades), `#/c/<mood|scene|lang|decade|role>/<value>`, `#/works`, `#/work/<name>`, `#/track/<id>`, `#/mix` (the mix builder; saved mixes are stations), `#/stats`, `#/fix` (unsure artists with one-tap readings, unlabelled, duplicates, unplayable, blocked), `#/settings` (YouTube, labels, backup, cover art, MusicBrainz, privacy), `#/library` (the phone's hub).
 
@@ -913,6 +913,75 @@ The Tests paragraph's section list: `artists` (in test/artists.section.js: the s
 **Keys (2026-10-11).** E explores, I edits (it was E), R starts a radio from the playing song, Shift+R repeats (it was R), B saves the playing found song for later. A toast says so once.
 
 **In the demo** nothing is asked of any service: works.js and artists.js invent a franchise and a discography from the demo library, the channel lane uses channel.js's invented uploads, and the Mix and similar lanes say they are not in the demo.
+
+## car.js
+
+`TS.car`: car mode, and installing the page as an app. For a phone in a car: here, Chrome on Android playing over Bluetooth (A2DP and AVRCP) to a 2016 Toyota Camry, which has steering-wheel next and previous buttons but no CarPlay or Android Auto.
+
+**Car mode is a re-layout, not a new player.** `enter(ctx)` adds `body.is-car` and a `#ts-car` box inside `#app`; CSS (injected once as `<style id="ts-car-css">`, on the app's tokens) hides the top bar, the sections, the main view, the player bar and the tabs, makes `#now` `display: contents`, and lays the same `#video` out with the car's controls around it. The iframe never moves in the DOM (moving it reloads it). Car mode is always dark: it sets `<html data-theme="dark">` and puts the reader's theme back on exit, also when the theme changes meanwhile.
+
+| | Portrait | Landscape |
+| --- | --- | --- |
+| Strip | Exit, Test buttons, More; under them Screen on, Signal ok (and the voice line) | one row: Exit, the indicators, Test buttons, More |
+| Player | `min(100%, 400px)` wide, 16:9, never under 210 by 210 | on the left, as wide as the height allows (at most 400) |
+| Song | title 32 px, artist and work 22 px, "Next: ..." | on the right |
+| Buttons | Previous 96, Play or Pause 120, Next 96; Like 80, Radio 80, New songs 80 | the transport on the right; Like, Radio, New songs under the player |
+
+`layoutFor(w, h)` picks it: landscape when the window is wider than tall and at least 600 px wide; `compact` when short (sideways under 380 px tall: smaller strip buttons, tighter gaps; upright under 640). Toasts and dialogs keep off the player in both (`--car-cover-top`, `--car-cover-left`, `--car-toast-top` on the body). A tall window sideways (520 px or more: a tablet, a desktop) centres the whole block in two columns of at most 520 px. An open menu closes when the phone turns. Nothing covers the player: the drive checks `elementFromPoint` at its centre and corners at 390x844, 844x390 and 800x360.
+
+**Getting there.** The player bar's More (Car mode), on a phone the Library hub (`#/library`), Settings > Car, the app icon's Car mode shortcut, or the address `#/car`.
+
+**Start** is the big play button the first time (also the poster's "Press play"). From that tap: the media-key anchor starts (`transport.wake()`); `startPlan` decides: `keep` (it plays already), `resume` (the queue), `radio` (the queue is empty or over: a radio from the song that was on, else the last one played, else any library song), `nothing` (no music yet); the Screen Wake Lock is held; the page goes full screen (Settings, on by default) and turns sideways if asked (off by default; phones allow the lock only in full screen or in the installed app). After that the button plays and pauses.
+
+**The screen stays on.** YouTube's player stops when the screen locks, so car mode keeps a Screen Wake Lock (`navigator.wakeLock.request('screen')`) from the moment it opens. `wakeKeeper({ nav, doc, onChange, retryMs, now, setTimer, clearTimer })` keeps it: `start()` asks; the browser lets the lock go when the page is hidden, and `visibilitychange` asks again when it is shown; a release while the page shows asks again at once (three releases within a second of being granted wait `retryMs` instead, 15 s); a refusal is tried again after `retryMs`; `stop()` lets go. `state()` is `off`, `asking`, `held`, `lost`, `denied` or `unsupported`; `held()`; `asked()` counts the requests.
+
+**The strip says** (`indicators(s)`, pure): "Screen on" while the lock is held, else "Screen may turn off"; "Signal ok", "No signal · waiting 0:42" while the browser is offline (`navigator.onLine` and the `online` and `offline` events; the time counts up), "Weak signal" when the player has been buffering for more than `WEAK_MS` (8 s). No signal wins over weak signal. With voice commands on, a third line: Listening, Voice starting..., Heard: next (for three seconds), Microphone blocked, Voice: trying again, No voice commands here.
+
+**Test buttons** swaps the next-up line for the transport's log (transport.js `log()`, newest first): "Press the wheel's next button", then lines from `logLine(entry)` such as `12:01:33 nexttrack ok`, `... ignored: the page was hidden` or `... not handled`. It needs `ctx.transport`; without it, or with media keys off, it says so.
+
+**Voice commands** (Settings > Car or car mode's More; off by default, ToyKit key `carVoice`) use the Web Speech API (`SpeechRecognition` or `webkitSpeechRecognition`, `en-US`, continuous). The browser sends what the microphone hears to Google while it listens, and the switch says so. It listens only while car mode is on and the page is showing, and starts again after each pause in speech. `parseVoice(text)` turns what was heard into `next`, `previous`, `pause`, `play`, `like` or `radio`, or null: fillers such as "please", "the" and "song" are dropped, at most two words may remain (so talk and sung lyrics do not count), and with two command words the last wins ("play next" is next). Synonyms: skip and forward (next); back, last, prev (previous); stop, wait (pause); resume, continue, unpause (play); love, heart (like). In a browser without a microphone the line says Microphone blocked. Not tried on the phone yet: on some Android phones the music dips while the recogniser listens.
+
+**New songs** cycles the radios' share of new songs, None 0, Some 0.5, Lots 0.8 (`RATIOS`, `nextRatio(v)`, `ratioName(v)`, the ToyKit key `newRatio` that `startRadio` already reads). While a radio plays (`engine.feeder().kind === 'radio'`) the radio goes on from the song that is on with the new share; otherwise it is kept for the next radio. Like and Radio act on the song that is on (`ctx.like`, `ctx.play.radio`).
+
+**No previews in the car.** `previewsOff()` is true while car mode is on: `preview` and `pvStart` in app.js check it and say "No previews in car mode." Entering car mode also sends `U.bus.emit('audio', { by: 'car' })`, which stops a preview that is playing.
+
+**Leaving.** `exit()` (Exit, More > Leave car mode, or Back from `#/car`) stops listening, lets the wake lock go, leaves full screen and the orientation lock if car mode took them, removes `#ts-car`, the classes and the variables, restores the theme, and, when the address is `#/car`, replaces it with `#/` (so Back does not open car mode again). The music goes on.
+
+| Name | What it is |
+| --- | --- |
+| `enter(ctx)` | Turn car mode on. `ctx` is app.js's `pageCtx`; it uses `h`, `U`, `L`, `words`, `ctl()`, `player()`, `trackOf(id)`, `history()`, `lib()`, `play.radio(t)`, `like(id)`, `liked(id)`, `engine()`, `say(text)`, and the car's own `transport()`, `toggle()`, `next()`, `prev()` and `endless()` (without those it uses the controller). Returns false outside a browser. |
+| `exit(opts)` | Turn it off. `{ nav: false }` leaves the address alone. |
+| `active()` | Whether car mode is on. |
+| `refresh()` | Draw it again now (the transport's `onLog` calls it, so Test buttons shows a press at once). |
+| `previewsOff()` | True while car mode is on: the page plays no 30-second previews. |
+| `view(view, ctx)` | The `#/car` page: a title, Open car mode, the help; at `#/car` it turns car mode on, and Back from there turns it off. |
+| `settings(box, ctx)` | Settings > Car: Open car mode; Full screen when you press Start (`carFullscreen`, on); Turn the screen sideways (`carLandscape`, off); Voice commands (`carVoice`, off, with the Google sentence); Install app; In the car. |
+| `install()` | Show the browser's install offer, kept from `beforeinstallprompt` (the page calls `preventDefault()` and keeps the event). Resolves `'accepted'`, `'dismissed'`, `'installed'` or `'unavailable'`. |
+| `installState()` | `'installed'` (running as the app, or just installed), `'ready'` (an offer is kept: show Install app), `'menu'` (no offer: install from the browser's menu). |
+| `HELP`, `HELP_STEPS`, `HELP_NOTES` | "In the car" as one text, as its five steps, and as its three notes. |
+| `indicators(s)` | The strip's words: `{ screen, signal, voice }`, each `{ text, tone: 'ok' 'warn' 'bad' }` or null. |
+| `parseVoice(text)` | A voice command or null. |
+| `layoutFor(w, h)` | `{ name: 'portrait' or 'landscape', compact }`. |
+| `wakeKeeper(opts)` | The wake lock, kept (above). |
+| `logLine(entry)` | One line of the media-key log. |
+| `startPlan(s)` | What Start does: `keep`, `resume`, `radio`, `nothing`, from `{ playerState, items, done, hasSeed }`. |
+| `nextRatio(v)`, `ratioName(v)`, `RATIOS` | The New songs dial. |
+| `KEYS` | The ToyKit keys: `carFullscreen`, `carLandscape`, `carVoice`, and `newRatio`. |
+| `WEAK_MS` | 8000: buffering longer than this is a weak signal. |
+
+**In the car** (`HELP`, shown in the help and in Settings > Car):
+
+1. Pair the phone with the car once: turn on the phone's Bluetooth and add the phone in the car's Bluetooth setup.
+2. In the car, choose BT Audio as the source (press AUDIO, then BT Audio).
+3. Open True Shuffle on the phone: the installed app, or this page in Chrome.
+4. Open Car mode: the player bar's More, or press and hold the app's icon and choose Car mode.
+5. Press Start. The music plays, the screen stays on, and the steering wheel's buttons skip songs.
+
+A page cannot choose where its sound goes: Android sends all media sound to the car while the phone is connected over Bluetooth. YouTube's player stops when the screen locks, so the screen has to stay on; car mode keeps it on while it is showing (a charger helps). If the wheel's buttons do nothing, press Test buttons in car mode and press next on the wheel: every press is listed. Media keys must be on (Settings, Playback).
+
+**Installing the app.** `manifest.webmanifest`: `name` and `short_name` True Shuffle, `id`, `start_url` and `scope` `./`, `display: standalone`, `theme_color` and `background_color` `#0b0d10` (the dark `--ts-chrome`: ds.css has no background token), the icons `icons/192.png`, `icons/512.png` (purpose any: the logo's conic gradient on a dark rounded tile) and `icons/maskable-512.png` (full bleed, the mark inside the safe circle), and two shortcuts: Car mode (`./#/car`) and For you (`./#/for-you`; until For you exists that address shows the home page). index.html links it (`<link rel="manifest">`), with `theme-color` for light and dark and an `apple-touch-icon`. The icons were drawn on a canvas in the headless browser from app.css's `.ts-logo`.
+
+**No service worker.** Chrome on Android has not needed one to install a page since Chrome 108 (112 on desktop): the requirement for a service worker with a `fetch` handler was dropped from installation from the menu ("Revisiting Chrome's installability criteria", developer.chrome.com, updated 2023-12-05), MDN lists none for Chromium (Making PWAs installable, modified 2026-10-06), and Chromium's own `InstallableParams` and `AppBannerManager` (main, read 2026-10-11) check no service worker at all, for the menu or for `beforeinstallprompt`. So there is no `sw.js`; offline, the installed app shows Chrome's own offline page. The Google sign-in's redirect returns to `./`, inside the scope, so it comes back into the installed app; this is still to be tried on the phone.
 
 ## transport.js
 

@@ -696,7 +696,7 @@
 	];
 	var TABS = [
 		{ key: '', label: 'Home', icon: 'home' }, { key: 'search', label: 'Search', icon: 'search' },
-		{ key: 'library', label: 'Library', icon: 'songs' }, { key: 'mix', label: 'Mix', icon: 'mix' }, { key: 'queue', label: 'Queue', icon: 'queue' }
+		{ key: 'discover', label: 'Discover', icon: 'compass' }, { key: 'library', label: 'Library', icon: 'songs' }, { key: 'queue', label: 'Queue', icon: 'queue' }
 	];
 	var SECTION_OF = { person: 'artists', people: 'artists', channel: 'channels', explore: 'discover', artist: 'artists', genre: 'genres', family: 'genres', c: 'browse', work: 'works', track: 'songs', list: 'lists' };
 	var route = U.parseHash(location.hash);
@@ -719,7 +719,7 @@
 		var tb = $('tabbar');
 		clear(tb);
 		TABS.forEach(function (it) {
-			var on = it.key === 'library' ? ['songs', 'artists', 'genres', 'browse', 'works', 'stats', 'fix', 'settings', 'library', 'lists', 'map', 'history', 'label', 'discover'].indexOf(sec) >= 0 : it.key === 'queue' ? document.body.classList.contains('sheet-open') : sec === it.key;
+			var on = it.key === 'library' ? ['songs', 'artists', 'genres', 'browse', 'works', 'stats', 'fix', 'settings', 'library', 'lists', 'map', 'history', 'label', 'channels', 'mix', 'wrapped', 'quiz'].indexOf(sec) >= 0 : it.key === 'queue' ? document.body.classList.contains('sheet-open') : sec === it.key;
 			var a = h('a', { class: 'ts-tab-a' + (on ? ' is-on' : ''), href: it.key === 'queue' ? '#' : '#/' + it.key });
 			a.appendChild(icon(it.icon));
 			a.appendChild(h('span', { text: it.label }));
@@ -913,7 +913,7 @@
 			onPrev: goPrev,
 			onSeek: function (sec) { if (player.state() !== 'idle') player.seek(Math.max(0, sec)); },
 			onSeekBy: function (d) { if (player.state() === 'idle') return; var tm = player.time(); player.seek(Math.max(0, Math.min(tm.duration || 0, tm.current + d))); },
-			onLog: function () { renderMediaLog(); }
+			onLog: function () { renderMediaLog(); if (TS.car) TS.car.refresh(); }
 		});
 	}
 	function mediaMeta(t) {
@@ -2534,7 +2534,7 @@
 			['genres', 'Genres', 'genre', plural(Object.keys(ix.genres).length, 'genre')], ['browse', 'Moods & scenes', 'mood', 'Moods, scenes, languages, decades'],
 			['works', 'Anime, games & stage', 'works', plural(Object.keys(ix.works).length, 'work')], ['stats', 'Your numbers', 'stats', 'What you have and play'],
 			['discover', 'Discover', 'compass', 'New songs like the ones you love'], ['lists', 'Playlists', 'list', plural(lists.length, 'playlist')], ['map', 'Map', 'map', 'Your library as a map of sound'], ['history', 'History', 'history', 'What you played'], ['label', 'Quick labeller', 'edit', plural(idx().all.filter(needsLabel).length, 'song') + ' to label'],
-			moduleReady('wrapped') ? ['wrapped', 'Your year', 'sparkle', 'Your listening, in review'] : null, moduleReady('quiz') ? ['quiz', 'Guess the anime', 'tv', 'A quiz from your openings and endings'] : null,
+			moduleReady('wrapped') ? ['wrapped', 'Your year', 'sparkle', 'Your listening, in review'] : null, moduleReady('quiz') ? ['quiz', 'Guess the anime', 'tv', 'A quiz from your openings and endings'] : null, moduleReady('car') ? ['car', 'Car mode', 'car', 'Big buttons for driving; the screen stays on'] : null,
 			['fix', 'Needs attention', 'fix', ix.needs.unsure ? plural(ix.needs.unsure, 'unsure artist') : 'All good'], ['settings', 'Settings', 'settings', 'Import, labels, backup, privacy']
 		].filter(Boolean);
 		var ul = h('ul', { class: 'ts-hub' });
@@ -2980,6 +2980,9 @@
 		pbp.appendChild(h('ol', { class: 'ts-medialog', id: 'media-log', aria: { live: 'polite' } }));
 		renderMediaLog();
 		pbp.appendChild(h('p', { class: 'ts-muted', text: 'To try it on a PC: play a song, then press the keyboard\u2019s Next key, or open the Windows media overlay (press a volume key) and press Next there. In a car: play a song with the phone on Bluetooth, then press the steering wheel\u2019s skip button.' }));
+
+		// car mode and installing the app (car.js)
+		if (TS.car) TS.car.settings(panel(view, 'Car', 'set-car'), pageCtx);
 
 		// MusicBrainz
 		var mbp = panel(view, 'MusicBrainz', 'set-mb');
@@ -4154,6 +4157,7 @@
 			A.item('sleep', function () { sleepMenu(anchor); }, { label: sleep ? 'Sleep timer' + ELL + ' (' + (sleep.end === 'track' ? 'after this song' : 'until ' + new Date(sleep.at).toTimeString().slice(0, 5)) + ')' : null }),
 			A.item('theater', function () { setTheater(!th); }, { label: th ? 'Leave theater mode' : null }),
 			A.item('fullscreen', toggleFullscreen),
+			TS.car ? { label: 'Car mode', icon: 'car', desc: 'Big buttons, the screen kept on, the steering wheel buttons', onSelect: function () { location.hash = '#/car'; } } : null,
 			A.item('edit', function () { if (cur) openEditor([cur]); }, { disabled: !cur }),
 			A.item('repeat', toggleRepeat, { label: ctl && ctl.state().repeat ? 'Repeat: on' : 'Repeat: off' }),
 			A.item('speed', function () { speedMenu(anchor); }, { label: 'Playback speed' + ELL + ' (' + (player && player.rate && Math.abs(player.rate() - 1) > 0.01 ? player.rate() + String.fromCharCode(0xD7) : 'normal') + ')' }),
@@ -4322,7 +4326,7 @@
 		});
 	}
 	// Endless: when the queue runs out, a radio from the last song carries on.
-	function endlessOn() { return ToyKit.load('endless', true) !== false; }
+	function endlessOn() { return (TS.car && TS.car.active()) || ToyKit.load('endless', true) !== false; }
 	function carryOn() {
 		if (!engine || !endlessOn() || thumb || queueMode === 'true') return false;
 		var st = ctl.state(), last = st.history.length ? st.history[st.history.length - 1] : st.items[st.items.length - 1];
@@ -4434,7 +4438,9 @@
 		similar: function (t) { var r = recsFor(t); return { together: r.together, work: r.work, close: r.close.map(function (x) { return { t: x.t, why: whyWords(x.why) }; }) }; },
 		like: function (id) { toggleLike(lib.tracks[id]); }, liked: function (id) { var t = lib.tracks[id]; return !!(t && (t.rating || 0) >= 4); },
 		preview: function (item, btn) { preview({ id: item.key || item.videoId, title: item.title, preview: item.preview }, btn); },
-		edit: function (ids, fields) { L.editMany(lib, ids, fields); return changed(ids); }
+		edit: function (ids, fields) { L.editMany(lib, ids, fields); return changed(ids); },
+		// car.js: the media keys' transport, and the bar's own play, next, previous and Endless
+		transport: function () { return transport; }, toggle: togglePlay, next: goNext, prev: goPrev, endless: function () { return endlessOn(); }
 	};
 
 	// ---- Discover: songs like this one that are not in the library -----------------------------------
@@ -4465,6 +4471,7 @@
 	}
 	function preview(t, btn) {
 		if (previewing && previewing.id === t.id) { stopPreview(); return; }
+		if (TS.car && TS.car.previewsOff()) { say('No previews in car mode.'); return; }
 		stopPreview();
 		pvClose();
 		if (!t.preview) { say('No preview for this song.'); return; }
@@ -4871,6 +4878,13 @@
 		});
 		p.appendChild(document.createTextNode('. Keys do nothing while the YouTube player itself has the focus.'));
 	}
+	// The help's In the car (car.js)
+	function fillHelpCar() {
+		var tpl = $('help-template'), ol = tpl && tpl.content ? tpl.content.querySelector('#help-car') : null, notes = tpl && tpl.content ? tpl.content.querySelector('#help-car-notes') : null;
+		if (!ol || !TS.car) return;
+		TS.car.HELP_STEPS.forEach(function (s) { ol.appendChild(h('li', { text: s })); });
+		if (notes) notes.textContent = TS.car.HELP_NOTES.join(' ');
+	}
 	function saveQueueAsList() {
 		if (!ctl) return;
 		var st = ctl.state(), ids = st.items.slice(Math.max(0, st.index));
@@ -5183,6 +5197,7 @@
 	// ---- The preview radio: 30-second previews one after another -------------------------------------------
 	var pv = { list: [], at: 0, audio: null, label: '' };
 	function pvStart(list, at, label) {
+		if (TS.car && TS.car.previewsOff()) { say('No previews in car mode.'); return; }
 		list = (list || []).filter(function (t) { return t && t.preview; });
 		if (!list.length) { say('No previews here.'); return; }
 		stopPreview();
@@ -5901,7 +5916,7 @@
 		family: viewFamily, c: viewFacet, browse: viewBrowse, works: viewWorks, work: viewWork, track: viewTrack, mix: viewMix,
 		stats: viewStats, fix: viewFix, settings: viewSettings, library: viewLibrary,
 		lists: viewLists, list: viewList, liked: viewLiked, channel: pageFile('channel'), channels: pageFile('channel'), explore: pageFile('explore'), person: viewPerson, people: viewPeople, history: viewHistory, label: viewLabel, map: viewMap, discover: viewDiscover,
-		lyrics: pageFile('lyrics'), quiz: pageFile('quiz'), wrapped: pageFile('wrapped'), share: pageFile('share'), paste: pageFile('share')
+		car: pageFile('car'), lyrics: pageFile('lyrics'), quiz: pageFile('quiz'), wrapped: pageFile('wrapped'), share: pageFile('share'), paste: pageFile('share')
 	};
 	// A view drawn by a page file (lyrics.js, quiz.js, wrapped.js): its view(view, ctx, parts, query).
 	function pageFile(name) {
@@ -5978,6 +5993,7 @@
 		}
 		player = lazyPlayer();
 		fillHelpKeys();
+		fillHelpCar();
 		wireTransport();
 		wireShell();
 		wireQueue();

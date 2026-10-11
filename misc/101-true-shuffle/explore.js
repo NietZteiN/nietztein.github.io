@@ -490,7 +490,7 @@
 		var st = root.document.createElement('style');
 		st.id = 'ts-explore-css';
 		st.textContent = [
-			'.ts-x-trail{display:flex;flex-wrap:wrap;gap:2px 6px;align-items:center;margin:0 0 6px;font-size:13px;color:var(--text-2)}',
+			'.ts-x-trail{display:flex;flex-wrap:wrap;gap:2px 6px;align-items:center;margin:0 0 10px;font-size:13px;color:var(--text-2)}',
 			'.ts-x-trail a{color:inherit;text-decoration:none;max-width:22ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
 			'.ts-x-trail a:hover{color:var(--text);text-decoration:underline}',
 			'.ts-x-trail .is-here{color:var(--text);font-weight:650}',
@@ -534,7 +534,6 @@
 		var crumbs = step(href, seed.title);
 		var tr = h('nav', { class: 'ts-x-trail', aria: { label: 'Explored' } }, [h('span', { text: 'Explore' })]);
 		crumbs.forEach(function (c) { tr.appendChild(h('span', { aria: { hidden: 'true' }, text: '>' })); tr.appendChild(c.href === href ? h('span', { class: 'is-here', text: c.title, aria: { current: 'page' } }) : h('a', { href: c.href, text: c.title })); });
-		el.appendChild(tr);
 
 		var en = ctx.engine(), lib = ctx.lib(), t = seed.track;
 		var art = t ? ctx.art(t, 'ts-hero-art') : U.art(seed.videoId || '', 210, seed.title, 'ts-hero-art', !!seed.videoId && !ctx.demo && ctx.prefs().art !== false, 45);
@@ -547,7 +546,10 @@
 		if (t) acts.push(ctx.ui.smallBtn('info', 'Song details', function () { ctx.nav(ctx.link('track', t.id)); }));
 		if (seed.videoId && !ctx.demo) acts.push(ctx.ui.smallBtn('external', 'Open on YouTube', function () { root.open('https://www.youtube.com/watch?v=' + encodeURIComponent(seed.videoId), '_blank', 'noopener'); }));
 		var bits = [seed.artist, seed.work ? seed.work + (seed.role ? ' ' + seed.role : '') : '', seed.year ? String(seed.year) : ''].filter(Boolean);
-		ctx.ui.headerBlock(el, { kicker: t ? 'Explore' : 'Explore a found song', title: seed.title || 'A song', meta: bits.join(' ' + W.DOT + ' '), artNode: art, hue: { h: 210, s: 45 }, actions: acts });
+		var hero = ctx.ui.headerBlock(el, { kicker: t ? 'Explore' : 'Explore a found song', title: seed.title || 'A song', meta: bits.join(' ' + W.DOT + ' '), artNode: art, hue: { h: 210, s: 45 }, actions: acts });
+		// the trail sits in the header, above the kicker (the header bleeds over what is above it)
+		var ht = hero && hero.querySelector('.ts-hero-text');
+		if (ht) ht.insertBefore(tr, ht.firstChild);
 
 		var ids = order(seed), jump = h('div', { class: 'ts-x-jump', role: 'navigation', aria: { label: 'Jump to' } });
 		el.appendChild(jump);

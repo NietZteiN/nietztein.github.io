@@ -6,9 +6,13 @@
 <title>True Shuffle</title>
 <meta name="description" content="A music player for your own YouTube playlists and Liked videos: browse by artist, genre, mood and the anime or game a song is from, and shuffle it properly. A demo library runs without signing in.">
 <link rel="icon" href="data:,">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#f3f4f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0b0d10" media="(prefers-color-scheme: dark)">
+<link rel="apple-touch-icon" href="icons/192.png">
 <link rel="stylesheet" href="../_kit/kit.css"><script src="../_kit/kit.js"></script>
-<link rel="stylesheet" href="app.css?v=2026101101">
-<link rel="stylesheet" href="ds.css?v=2026101101">
+<link rel="stylesheet" href="app.css?v=2026101102">
+<link rel="stylesheet" href="ds.css?v=2026101102">
 </head>
 <body class="ts">
 
@@ -138,38 +142,42 @@
 	<h3>What this page stores</h3>
 	<p>Everything stays in this browser (IndexedDB): the imported lists as YouTube reports them, your labels, corrections, ratings, play counts, history, queue and stations. The sign-in token lasts an hour and stays in this tab. Nothing goes to this site. Cover art is loaded from YouTube's image server (i.ytimg.com) once you have a library; it can be switched off in Settings. &ldquo;Delete everything stored here&rdquo; removes all of it; &ldquo;Disconnect&rdquo; revokes this page's access to your YouTube account. YouTube data older than 30 days is refreshed when you next sign in.</p>
 	<p>On a phone, playback stops when the screen locks: YouTube's player does that. The player stays visible while it plays, as YouTube's terms ask.</p>
+	<h3>In the car</h3>
+	<ol id="help-car"></ol>
+	<p id="help-car-notes"></p>
 	<p>This page uses YouTube API Services: <a href="https://www.youtube.com/t/terms" rel="noopener">YouTube Terms of Service</a> &middot; <a href="https://policies.google.com/privacy" rel="noopener">Google Privacy Policy</a> &middot; <a href="https://myaccount.google.com/permissions" rel="noopener">remove access at Google</a></p>
 </template>
 
-<script src="config.js?v=2026101101"></script>
-<script src="parse.js?v=2026101101"></script>
-<script src="library.js?v=2026101101"></script>
-<script src="shuffle.js?v=2026101101"></script>
-<script src="store.js?v=2026101101"></script>
-<script src="player.js?v=2026101101"></script>
-<script src="transport.js?v=2026101101"></script>
-<script src="taxonomy.js?v=2026101101"></script>
-<script src="embed.js?v=2026101101"></script>
-<script src="discover.js?v=2026101101"></script>
-<script src="match.js?v=2026101101"></script>
-<script src="sources.js?v=2026101101"></script>
-<script src="finds.js?v=2026101101"></script>
-<script src="feeder.js?v=2026101101"></script>
-<script src="engine.js?v=2026101101"></script>
-<script src="demo.js?v=2026101101"></script>
-<script src="yt.js?v=2026101101"></script>
-<script src="ui.js?v=2026101101"></script>
-<script src="actions.js?v=2026101101"></script>
-<script src="lyrics.js?v=2026101101"></script>
-<script src="quiz.js?v=2026101101"></script>
-<script src="wrapped.js?v=2026101101"></script>
-<script src="share.js?v=2026101101"></script>
-<script src="channel.js?v=2026101101"></script>
-<script src="lanes.js?v=2026101101"></script>
-<script src="media.js?v=2026101101"></script>
-<script src="works.js?v=2026101101"></script>
-<script src="artists.js?v=2026101101"></script>
-<script src="explore.js?v=2026101101"></script>
-<script src="app.js?v=2026101101"></script>
+<script src="config.js?v=2026101102"></script>
+<script src="parse.js?v=2026101102"></script>
+<script src="library.js?v=2026101102"></script>
+<script src="shuffle.js?v=2026101102"></script>
+<script src="store.js?v=2026101102"></script>
+<script src="player.js?v=2026101102"></script>
+<script src="transport.js?v=2026101102"></script>
+<script src="taxonomy.js?v=2026101102"></script>
+<script src="embed.js?v=2026101102"></script>
+<script src="discover.js?v=2026101102"></script>
+<script src="match.js?v=2026101102"></script>
+<script src="sources.js?v=2026101102"></script>
+<script src="finds.js?v=2026101102"></script>
+<script src="feeder.js?v=2026101102"></script>
+<script src="engine.js?v=2026101102"></script>
+<script src="demo.js?v=2026101102"></script>
+<script src="yt.js?v=2026101102"></script>
+<script src="ui.js?v=2026101102"></script>
+<script src="actions.js?v=2026101102"></script>
+<script src="lyrics.js?v=2026101102"></script>
+<script src="quiz.js?v=2026101102"></script>
+<script src="wrapped.js?v=2026101102"></script>
+<script src="share.js?v=2026101102"></script>
+<script src="channel.js?v=2026101102"></script>
+<script src="lanes.js?v=2026101102"></script>
+<script src="media.js?v=2026101102"></script>
+<script src="works.js?v=2026101102"></script>
+<script src="artists.js?v=2026101102"></script>
+<script src="explore.js?v=2026101102"></script>
+<script src="car.js?v=2026101102"></script>
+<script src="app.js?v=2026101102"></script>
 </body>
 </html>
