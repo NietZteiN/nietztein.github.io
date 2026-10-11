@@ -1274,7 +1274,20 @@
 				"cdn-images.dzcdn.net",
 				"e-cdns-images.dzcdn.net",
 				"cdnt-preview.dzcdn.net",
-				"cdns-preview-d.dzcdn.net"
+				"cdns-preview-d.dzcdn.net",
+				"lrclib.net",
+				"itunes.apple.com",
+				"is1-ssl.mzstatic.com",
+				"is2-ssl.mzstatic.com",
+				"is3-ssl.mzstatic.com",
+				"is4-ssl.mzstatic.com",
+				"is5-ssl.mzstatic.com",
+				"audio-ssl.itunes.apple.com",
+				"api.animethemes.moe",
+				"graphql.anilist.co",
+				"s4.anilist.co",
+				"ws.audioscrobbler.com",
+				"cdns-preview-e.dzcdn.net"
 			],
 			"thumb": {
 				"query": "?thumb=1",
