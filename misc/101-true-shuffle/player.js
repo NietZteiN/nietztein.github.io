@@ -8,6 +8,7 @@
  *     p.on('ready' | 'playing' | 'paused' | 'ended' | 'error' | 'time' | 'state', fn) -> off()
  *     p.load(id, { autoplay, startSec })   p.play()   p.pause()   p.stop()   p.seek(sec)
  *     p.time() -> { current, duration }    p.state()  p.id()      p.destroy()
+ *     p.volume(0..100)  p.muted(bool)  p.rate(0.25..2)   (each also reads back)
  *     p.listened() -> seconds of the loaded track really heard (seeking over a part does not count)
  *
  * 'youtube' is the YouTube IFrame Player. Nothing of YouTube's is fetched
@@ -76,7 +77,7 @@
 		var ev = emitter(), state = 'idle', id = null, current = 0, duration = 0, heard = 0, timer = null, destroyed = false, pending = null;
 		var auto = opts.auto == null ? typeof root.document !== 'undefined' : !!opts.auto;
 		var speed = opts.speed > 0 ? opts.speed : 1, stepMs = opts.stepMs > 0 ? opts.stepMs : 250;
-		var card = null, bar = null, label = null, clock = null, mockVol = 100, mockMuted = false;
+		var card = null, bar = null, label = null, clock = null, mockVol = 100, mockMuted = false, mockRate = 1;
 
 		function fmt(s) { s = Math.max(0, Math.floor(s)); return Math.floor(s / 60) + ':' + (s % 60 < 10 ? '0' : '') + (s % 60); }
 		function draw() {
@@ -101,7 +102,7 @@
 		function startTimer() {
 			if (!auto || timer || destroyed) return;
 			var last = Date.now();
-			timer = setInterval(function () { var now = Date.now(); advance((now - last) * speed); last = now; }, stepMs);
+			timer = setInterval(function () { var now = Date.now(); advance((now - last) * speed * mockRate); last = now; }, stepMs);
 		}
 		function advance(ms) {
 			if (state !== 'playing' || destroyed) return;
@@ -141,6 +142,8 @@
 			listened: function () { return heard; },
 			volume: function (v) { if (v != null) mockVol = Math.max(0, Math.min(100, +v || 0)); return mockVol; },
 			muted: function (m) { if (m != null) mockMuted = !!m; return mockMuted; },
+			// playback speed: 0.25 to 2
+			rate: function (r) { if (r != null) mockRate = Math.max(0.25, Math.min(2, +r || 1)); return mockRate; },
 			state: function () { return state; },
 			id: function () { return id; },
 			tick: function (ms) { advance(ms == null ? stepMs : ms); },
@@ -197,7 +200,7 @@
 		opts = opts || {};
 		var ev = emitter(), state = 'idle', id = null, yt = null, building = null, poll = null, destroyed = false, wanted = null, heard = 0, lastSeen = null;
 		var host = opts.host || 'https://www.youtube-nocookie.com';
-		var vol = null, mute = null;     // what was asked for before the player was ready
+		var vol = null, mute = null, rate = null;     // what was asked for before the player was ready
 
 		function set(s) { if (state !== s) { state = s; ev.emit('state', { id: id, state: s }); } }
 		function fail(code, message, detail) { set('error'); ev.emit('error', { id: id, code: code, message: message || ERROR_TEXT[code] || 'The video cannot be played.', detail: detail || '' }); }
@@ -215,7 +218,7 @@
 		}
 		function onState(e) {
 			var S = root.YT.PlayerState;
-			if (e.data === S.PLAYING) { set('playing'); ev.emit('playing', { id: id }); startPoll(); }
+			if (e.data === S.PLAYING) { set('playing'); ev.emit('playing', { id: id }); startPoll(); if (rate != null && yt && yt.getPlaybackRate && yt.getPlaybackRate() !== rate) { try { yt.setPlaybackRate(rate); } catch (er) { /* not offered */ } } }
 			else if (e.data === S.PAUSED) { stopPoll(); set('paused'); ev.emit('paused', { id: id }); }
 			else if (e.data === S.ENDED) { stopPoll(); set('ended'); ev.emit('ended', { id: id }); }
 			else if (e.data === S.BUFFERING) set('loading');
@@ -254,7 +257,7 @@
 						playerVars: { autoplay: o.autoplay === false ? 0 : 1, playsinline: 1, rel: 0, start: Math.floor(+o.startSec || 0) || undefined, origin: root.location ? root.location.origin : undefined },
 						events: {
 							onReady: function () {
-								try { if (vol != null) yt.setVolume(vol); if (mute === true) yt.mute(); else if (mute === false) yt.unMute(); } catch (e) { /* an old player */ }
+								try { if (vol != null) yt.setVolume(vol); if (mute === true) yt.mute(); else if (mute === false) yt.unMute(); if (rate != null && rate !== 1) yt.setPlaybackRate(rate); } catch (e) { /* an old player */ }
 								ev.emit('ready', {}); resolve(yt);
 							},
 							onStateChange: onState,
@@ -309,6 +312,8 @@
 			// 0 to 100; kept until the player is ready when asked for earlier
 			volume: function (v) { if (v != null) { vol = Math.max(0, Math.min(100, Math.round(+v || 0))); if (yt && yt.setVolume) yt.setVolume(vol); } return yt && yt.getVolume ? yt.getVolume() : (vol == null ? 100 : vol); },
 			muted: function (m) { if (m != null) { mute = !!m; if (yt && yt.mute) { if (mute) yt.mute(); else yt.unMute(); } } return yt && yt.isMuted ? yt.isMuted() : !!mute; },
+			// playback speed (YouTube offers 0.25 to 2); kept across videos
+			rate: function (r) { if (r != null) { rate = Math.max(0.25, Math.min(2, +r || 1)); if (yt && yt.setPlaybackRate) { try { yt.setPlaybackRate(rate); } catch (e) { /* not offered */ } } } return yt && yt.getPlaybackRate ? yt.getPlaybackRate() || 1 : (rate || 1); },
 			state: function () { return state; },
 			id: function () { return id; },
 			destroy: function () { destroyed = true; stopPoll(); ev.clear(); if (yt && yt.destroy) { try { yt.destroy(); } catch (e) { /* gone already */ } } yt = null; }

@@ -11,6 +11,6 @@
 	"status": "live",
 	"kit": true,
 	"data": [],
-	"origins": ["accounts.google.com", "oauth2.googleapis.com", "www.googleapis.com", "www.youtube.com", "www.youtube-nocookie.com", "i.ytimg.com", "musicbrainz.org", "www.google.com", "www.gstatic.com", "ssl.gstatic.com", "fonts.gstatic.com", "jnn-pa.googleapis.com", "cdn.jsdelivr.net", "huggingface.co", "us.aws.cdn.hf.co", "cas-bridge.xethub.hf.co", "cdn-lfs.huggingface.co", "api.deezer.com", "cdn-images.dzcdn.net", "e-cdns-images.dzcdn.net", "cdnt-preview.dzcdn.net", "cdns-preview-d.dzcdn.net"],
+	"origins": ["accounts.google.com", "oauth2.googleapis.com", "www.googleapis.com", "www.youtube.com", "www.youtube-nocookie.com", "i.ytimg.com", "musicbrainz.org", "www.google.com", "www.gstatic.com", "ssl.gstatic.com", "fonts.gstatic.com", "jnn-pa.googleapis.com", "cdn.jsdelivr.net", "huggingface.co", "us.aws.cdn.hf.co", "cas-bridge.xethub.hf.co", "cdn-lfs.huggingface.co", "api.deezer.com", "cdn-images.dzcdn.net", "e-cdns-images.dzcdn.net", "cdnt-preview.dzcdn.net", "cdns-preview-d.dzcdn.net", "lrclib.net", "itunes.apple.com", "is1-ssl.mzstatic.com", "is2-ssl.mzstatic.com", "is3-ssl.mzstatic.com", "is4-ssl.mzstatic.com", "is5-ssl.mzstatic.com", "audio-ssl.itunes.apple.com", "api.animethemes.moe", "graphql.anilist.co", "s4.anilist.co", "ws.audioscrobbler.com", "cdns-preview-e.dzcdn.net"],
 	"thumb": { "query": "?thumb=1", "viewport": [800, 500], "settleMs": 300 }
 }

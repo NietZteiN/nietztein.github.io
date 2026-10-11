@@ -1,0 +1,33 @@
+{
+	"note": "Invented answers in the shape ws.audioscrobbler.com/2.0 gives with format=json. One Last.fm habit kept: a list of one comes as an object, not an array.",
+	"track.getsimilar": {
+		"aoi minato|harbor of small lights": {
+			"similartracks": {
+				"track": [{"name":"Second Current","playcount":51234,"mbid":"","match":1,"url":"https://www.last.fm/music/Kumori+Station/_/Second+Current","streamable":{"#text":"0","fulltrack":"0"},"duration":241,"image":[{"#text":"https://lastfm.freetls.fastly.net/i/u/34s/2a96cbd8b46e442fc41c2b86b821562f.png","size":"small"},{"#text":"https://lastfm.freetls.fastly.net/i/u/64s/2a96cbd8b46e442fc41c2b86b821562f.png","size":"medium"}],"artist":{"name":"Kumori Station","mbid":"","url":"https://www.last.fm/music/Kumori+Station"}},{"name":"Gearsong","playcount":20311,"mbid":"","match":0.81,"url":"https://www.last.fm/music/Hoshizora+Relay/_/Gearsong","streamable":{"#text":"0","fulltrack":"0"},"duration":0,"image":[{"#text":"https://lastfm.freetls.fastly.net/i/u/34s/2a96cbd8b46e442fc41c2b86b821562f.png","size":"small"},{"#text":"https://lastfm.freetls.fastly.net/i/u/64s/2a96cbd8b46e442fc41c2b86b821562f.png","size":"medium"}],"artist":{"name":"Hoshizora Relay","mbid":"","url":"https://www.last.fm/music/Hoshizora+Relay"}},{"name":"Paper Moon Letter","playcount":9120,"mbid":"","match":0.64,"url":"https://www.last.fm/music/Shiori+Kanda/_/Paper+Moon+Letter","streamable":{"#text":"0","fulltrack":"0"},"duration":268,"image":[{"#text":"https://lastfm.freetls.fastly.net/i/u/34s/2a96cbd8b46e442fc41c2b86b821562f.png","size":"small"},{"#text":"https://lastfm.freetls.fastly.net/i/u/64s/2a96cbd8b46e442fc41c2b86b821562f.png","size":"medium"}],"artist":{"name":"Shiori Kanda","mbid":"","url":"https://www.last.fm/music/Shiori+Kanda"}}],
+				"@attr": {"artist":"Aoi Minato"}
+			}
+		},
+		"kumori station|second current": {
+			"similartracks": {
+				"track": {"name":"Harbor of Small Lights","playcount":70011,"mbid":"","match":0.9,"url":"https://www.last.fm/music/Aoi+Minato/_/Harbor+of+Small+Lights","streamable":{"#text":"0","fulltrack":"0"},"duration":252,"image":[{"#text":"https://lastfm.freetls.fastly.net/i/u/34s/2a96cbd8b46e442fc41c2b86b821562f.png","size":"small"},{"#text":"https://lastfm.freetls.fastly.net/i/u/64s/2a96cbd8b46e442fc41c2b86b821562f.png","size":"medium"}],"artist":{"name":"Aoi Minato","mbid":"","url":"https://www.last.fm/music/Aoi+Minato"}},
+				"@attr": {"artist":"Kumori Station"}
+			}
+		}
+	},
+	"artist.getsimilar": {
+		"aoi minato": {
+			"similarartists": {
+				"artist": [{"name":"Kumori Station","mbid":"","match":"1","url":"https://www.last.fm/music/Kumori+Station","image":[{"#text":"https://lastfm.freetls.fastly.net/i/u/34s/2a96cbd8b46e442fc41c2b86b821562f.png","size":"small"},{"#text":"https://lastfm.freetls.fastly.net/i/u/64s/2a96cbd8b46e442fc41c2b86b821562f.png","size":"medium"}],"streamable":"0"},{"name":"Hoshizora Relay","mbid":"","match":"0.734","url":"https://www.last.fm/music/Hoshizora+Relay","image":[{"#text":"https://lastfm.freetls.fastly.net/i/u/34s/2a96cbd8b46e442fc41c2b86b821562f.png","size":"small"},{"#text":"https://lastfm.freetls.fastly.net/i/u/64s/2a96cbd8b46e442fc41c2b86b821562f.png","size":"medium"}],"streamable":"0"}],
+				"@attr": {"artist":"Aoi Minato"}
+			}
+		}
+	},
+	"artist.gettoptracks": {
+		"aoi minato": {
+			"toptracks": {
+				"track": [{"name":"Harbor of Small Lights","playcount":"120034","listeners":"30111","mbid":"","url":"https://www.last.fm/music/Aoi+Minato/_/Harbor+of+Small+Lights","streamable":"0","artist":{"name":"Aoi Minato","mbid":"","url":"https://www.last.fm/music/Aoi+Minato"},"image":[{"#text":"https://lastfm.freetls.fastly.net/i/u/34s/2a96cbd8b46e442fc41c2b86b821562f.png","size":"small"},{"#text":"https://lastfm.freetls.fastly.net/i/u/64s/2a96cbd8b46e442fc41c2b86b821562f.png","size":"medium"}],"@attr":{"rank":"1"}},{"name":"Lanterns Over Water","playcount":"80412","listeners":"21000","mbid":"","url":"https://www.last.fm/music/Aoi+Minato/_/Lanterns+Over+Water","streamable":"0","artist":{"name":"Aoi Minato","mbid":"","url":"https://www.last.fm/music/Aoi+Minato"},"image":[{"#text":"https://lastfm.freetls.fastly.net/i/u/34s/2a96cbd8b46e442fc41c2b86b821562f.png","size":"small"},{"#text":"https://lastfm.freetls.fastly.net/i/u/64s/2a96cbd8b46e442fc41c2b86b821562f.png","size":"medium"}],"@attr":{"rank":"2"}},{"name":"Tidal Lullaby","playcount":"30876","listeners":"9001","mbid":"","url":"https://www.last.fm/music/Aoi+Minato/_/Tidal+Lullaby","streamable":"0","artist":{"name":"Aoi Minato","mbid":"","url":"https://www.last.fm/music/Aoi+Minato"},"image":[{"#text":"https://lastfm.freetls.fastly.net/i/u/34s/2a96cbd8b46e442fc41c2b86b821562f.png","size":"small"},{"#text":"https://lastfm.freetls.fastly.net/i/u/64s/2a96cbd8b46e442fc41c2b86b821562f.png","size":"medium"}],"@attr":{"rank":"3"}}],
+				"@attr": {"artist":"Aoi Minato","page":"1","perPage":"50","totalPages":"1","total":"3"}
+			}
+		}
+	}
+}

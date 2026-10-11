@@ -41,6 +41,10 @@
 		'add-to-playlist': { label: 'Add to playlist' + ELL, icon: 'playlist-add' },
 		'save-as-playlist': { label: 'Save as playlist' + ELL, icon: 'playlist-new' },
 		'add-to-youtube': { label: 'Add to YouTube playlist' + ELL, icon: 'youtube-add' },
+		'preview': { label: 'Preview', icon: 'headphones', desc: 'Thirty seconds, without YouTube' },
+		'save': { label: 'Save for later', icon: 'bookmark' },
+		'unsave': { label: 'Remove from Saved for later', icon: 'bookmark' },
+		'endless': { label: 'Endless', icon: 'infinity', desc: 'When the queue ends, a radio from the last song carries on' },
 		'not-interested': { label: 'Not interested', icon: 'eye-off' },
 		'remove': { label: 'Remove from queue', icon: 'minus-circle', key: 'Delete' },
 		'remove-from-list': { label: 'Remove from playlist', icon: 'minus-circle' },
@@ -50,6 +54,10 @@
 		'edit': { label: 'Edit details' + ELL, icon: 'edit', key: 'E', desc: 'Edit the playing song' },
 		'label-each': { label: 'Label them one by one', icon: 'tag' },
 		'details': { label: 'Song details', icon: 'info' },
+		'trim': { label: 'Trim and volume' + ELL, icon: 'scissors', desc: 'Start later, end sooner, louder or softer: this song only' },
+		'speed': { label: 'Playback speed' + ELL, icon: 'speed' },
+		'share': { label: 'Share the queue as a link', icon: 'share', desc: 'Anyone with the link can play these songs, no sign-in' },
+		'paste': { label: 'Paste a list of songs' + ELL, icon: 'paste' },
 		'rating': { label: 'Rating' + ELL, icon: 'star' },
 		'retry-play': { label: 'Try playing again', icon: 'retry' },
 		'go-artist': { label: 'Go to artist', icon: 'artist' },
@@ -74,7 +82,7 @@
 		'more': { label: 'More actions', icon: 'more' }
 	};
 	// Icons that several actions share, because they are one family.
-	var SHARED = { play: 1, shuffle: 1, 'minus-circle': 1, block: 1, target: 1, search: 1, retry: 1 };
+	var SHARED = { play: 1, shuffle: 1, 'minus-circle': 1, block: 1, target: 1, search: 1, retry: 1, bookmark: 1 };
 
 	// The keys, in the order the shortcuts list shows them.
 	var KEY_ORDER = ['palette', 'play-pause', 'next', 'previous', 'reshuffle', 'order', 'repeat', 'like', 'mute', 'volume', 'seek', 'theater', 'fullscreen', 'queue', 'edit', 'search', 'shortcuts'];

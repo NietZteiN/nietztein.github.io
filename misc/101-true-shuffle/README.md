@@ -12,10 +12,16 @@ Toy 101. A music player for one listener's YouTube playlists and Liked videos: s
 | `player.js` | One player interface over the YouTube IFrame player and a mock; the controller that walks a queue. | YouTube half |
 | `taxonomy.js` | The taste map: genres in families, and the names of the other labels. | no |
 | `discover.js` | Related artists and their best songs from Deezer, through a sandboxed JSONP frame. | frame only |
+| `match.js` | Is it the same song: keys across scripts and spellings, the evidence two songs share, the library's copy of a found song, the best upload of a song. | no |
+| `sources.js` | The free sources of new songs (AnimeThemes, AniList, iTunes, Last.fm, YouTube oEmbed and lists, Deezer) and the network and cache layer under them: per-source lines, retries, the breaker, a cache with time limits. Every answer becomes a find. | no |
+| `finds.js` | Found songs: light tracks the queue can hold (the registry), keeping one, and the cost ladder that finds a song's YouTube video (the resolver). | no |
+| `feeder.js` | What keeps the queue fed: a list of found songs in order, or an endless radio. | no |
+| `engine.js` | The discovery engine: the one object the page calls about songs the library does not have. | no |
+| `share.js` | A queue as a link anyone can open (`#/share`), and a pasted list of songs (`#/paste`). | the pages only |
 | `embed.js` | Embeddings of the tracks, nearest neighbours, the 2D layout of the map, its regions. | no |
 | `demo.js` | An invented library of 160 tracks for `?demo=1` and `?thumb=1`, labelled. | no |
 | `yt.js` | Google sign-in, the YouTube Data API client, the resumable import, the refresh, MusicBrainz. | sign-in redirect only |
-| `test.js` | `node misc/101-true-shuffle/test.js`: over 1,000 checks, PASS and FAIL lines, exit 1 on failure. | no |
+| `test.js` | `node misc/101-true-shuffle/test.js`: over 1,700 checks, PASS and FAIL lines, exit 1 on failure. | no |
 | `test/fake-youtube.mjs` | A local fake of the Google endpoints, for tests. | no |
 | `toy.json` | The manifest (`"status": "wip"` until the page exists). | |
 | `ui.js` | The page's small parts: DOM builder, icons, one button component, router, menus, dialogs, virtual list, cover art, toasts, progress chips, an event bus, the player-safe zone. | yes |
@@ -24,7 +30,7 @@ Toy 101. A music player for one listener's YouTube playlists and Liked videos: s
 | `ds.css` | The design system: tokens, the button, badges, progress chips, the player-safe zone, touch screens. | yes |
 | `index.html`, `app.js`, `app.css` | The page. | yes |
 
-Everything is UMD: in the browser each file adds one member to `window.TrueShuffle` (`config`, `parse`, `library`, `shuffle`, `store`, `player`, `demo`, `yt`); in Node each is a CommonJS module. The sources are plain ASCII (other characters are written as escapes), old-style (`var`, `function`, one IIFE), tabs.
+Everything is UMD: in the browser each file adds one member to `window.TrueShuffle` (`config`, `parse`, `library`, `shuffle`, `store`, `player`, `demo`, `yt`, and since 2026-10-10 `transport`, `actions`, `match`, `sources`, `finds`, `feeder`, `engine` and `share`); in Node each is a CommonJS module. The sources are plain ASCII (other characters are written as escapes), old-style (`var`, `function`, one IIFE), tabs.
 
 ```html
 <script src="config.js"></script>
@@ -37,14 +43,23 @@ Everything is UMD: in the browser each file adds one member to `window.TrueShuff
 <script src="taxonomy.js"></script>
 <script src="embed.js"></script>
 <script src="discover.js"></script>
+<script src="match.js"></script>       <!-- needs parse, library -->
+<script src="sources.js"></script>     <!-- needs discover -->
+<script src="finds.js"></script>       <!-- needs library -->
+<script src="feeder.js"></script>
+<script src="engine.js"></script>
 <script src="demo.js"></script>        <!-- needs library, shuffle -->
 <script src="yt.js"></script>          <!-- needs parse, library -->
 <script src="ui.js"></script>
 <script src="actions.js"></script>
+<script src="lyrics.js"></script>
+<script src="quiz.js"></script>
+<script src="wrapped.js"></script>
+<script src="share.js"></script>
 <script src="app.js"></script>
 ```
 
-Loading these contacts no host. Nothing reaches Google, YouTube or MusicBrainz until the reader presses Sign in, Import, Play or the genre button (checked in a browser: a plain load makes requests to the page's own server only).
+Loading these contacts no host. Nothing reaches Google, YouTube, MusicBrainz, AnimeThemes, AniList, iTunes, Last.fm, LRCLIB or Deezer until the reader presses Sign in, Import, Play or the genre button, or opens a page that needs one of them (checked in a browser: a plain load makes requests to the page's own server only).
 
 ## The page in one screen
 
@@ -121,6 +136,23 @@ Every collection has Play (in order) and Shuffle (its filters as a plan, in the 
 
 **Media keys and car buttons.** A browser sends the keyboard's media keys, a phone's lock-screen buttons and a car's steering-wheel buttons (Bluetooth AVRCP) only to a frame that plays something itself (Chromium's `MediaSessionImpl::ComputeFrameForRouting`, read on 2026-10-10). The only player was YouTube's cross-origin iframe, so next and previous never reached the page. transport.js adds an anchor: a looping, unmuted `<audio>` of digital silence, built in memory, that plays while YouTube's player plays and pauses with it; the page then owns the Media Session (title, artist, the work or the playlist as album, artwork, position) and its play, pause, next, previous and seek handlers. On a phone it pauses the moment the page is hidden and ignores everything but pause while hidden. Settings > Playback switches it (`mediaKeys`) and lists the last twenty buttons received, for trying it: the PC's media keys or the Windows media overlay, or a car's steering wheel.
 
+**Found songs play like library songs (2026-10-10, Phase 2).** A song from Discover, an artist's other songs, a channel's uploads, the YouTube search or Saved for later is a find (sources.js). It plays now, plays next or goes to the queue like a library song, and what was coming stays. Its row has Preview (when there is one), Save for later, Play and More (Play next, Add to queue, Add to YouTube playlist, Not interested, Open on YouTube).
+
+- **Finding the video.** engine.js finds the song's YouTube video the cheapest way first (finds.js's resolver), and the Play button shows a cost badge when that will take a YouTube search (100 units). Without a key or a sign-in, such a song opens a YouTube search in a new tab, as before.
+- **Light tracks.** A find is not added to the library: it plays as a light track (`transient`) that the bar, the queue and the now-playing panel show like any other.
+- **Keeping a find.** It joins the library, in the playlist Discovered, when it is liked or kept, or after it has been finished twice.
+- **Saved for later** has Play all.
+- **Feeders.** A list of finds, or a radio, plays through a feeder (feeder.js), which looks songs up a few ahead. The queue shows the ones still being found ("Finding...", "Coming up"), and the line under the queue says what the radio does.
+- **Endless** (on by default; the bar's More switches it, and it is remembered as `endless`). When the queue runs out, a radio from the last song carries on instead of "That was the last track". Start radio is the same endless radio. Its share of new songs (`newRatio`, 0.5) matters once a radio has sources of new songs; until then it plays your library.
+- **The bar's More** also says how much of today's YouTube allowance is used: a song search costs 100 units, and 1,500 are kept for imports and adds.
+
+**Playback extras (2026-10-10).**
+- **Trim and volume.** A song's menu (and the bar's More, for the song that is on) has Trim and volume: start later, end sooner, louder or softer, for that song only. It is kept under the store key `songprefs` as `{ id: { start, end, vol } }`. `load` starts at `start`; the time event moves on at `end`; `vol` (50 to 150%) scales the base volume.
+- **Fades** (Settings > Playback, on by default, `fades`). The last three seconds of a song soften and the first one and a half come in gently. This is done with the player's volume, so the volume slider keeps showing the base volume.
+- **Speed.** The bar's More sets the playback speed (0.75 to 1.5x; the player's `rate`). A badge by the time says when the speed is not normal; it lasts for the session.
+- **Ambient glow** (Settings > Appearance, `ambient`). The song's thumbnail, blurred, glows behind the video, never over it; not on phones.
+- **History as CSV.** Settings > Backup saves the listening history as a CSV file.
+
 **When you added them (#/c/added/<year or year-month>).** `S.firstAdded(track)` is when a track first came into the library (its earliest playlist addition) and `S.addedKeys(track)` its year and month as keys (`['2021', '2021-05']`, UTC). `select` takes `added` (those keys) and `addedFrom`, `addedTo` (ISO days, both included); the plan carries them, so smart playlists and Focus can be "added in 2021" or "added between March and June 2025". Browse shows a tile per year and a column per month (each opens that month); a year or month page has Play, Shuffle, Focus and Save as playlist, and chips for its months and the years around it. The mix builder has year and month rows and a date range; the playlists page suggests one per year with 40 songs or more; the home page shows songs added around this time in earlier years; Your numbers has songs added per year.
 
 **Discover, the hub (#/discover).** Without a seed the page is a hub: explore any artist on Deezer by name; a preview radio from your taste (the Deezer artist mixes of six of your top artists, songs you have left out, artists spread apart); "Because you like X" for five top artists (related artists you lack, each with its own preview radio); new releases from your artists (the last two years); more songs by your artists that are not in the library; picks from Deezer playlists of your top genres; and songs saved for later (`discover:saved`). `#/discover?dz=<id>` is any artist on Deezer: top songs, releases (a release opens its tracks), related artists to follow, an artist mix. The preview radio plays 30-second previews one after another in a bar above the player, with save, play on YouTube and not interested. `createDeezer` also has `artist`, `albums` (newest first, through `albumOf`), `albumTracks`, `radio`, `searchPlaylists` and `playlistTracks`; `trackOf` carries `artistId`; `img` keeps only Deezer's image hosts. Requests leave at least 125 ms apart and a "quota exceeded" answer (Deezer allows 50 requests in 5 seconds) waits and tries again; the Deezer ids of library artists are kept (`discover:ids`), as are recent seeds (`discover:recent`).
@@ -150,6 +182,292 @@ The owner's labels ship with the page as `labels.json` (the public Music playlis
 ## embed.js
 
 `TS.embed`: `RECIPES`, `vectors(tracks, recipe, { taxonomy, firstAdded, lm })` (unit-length `Float32Array` rows; `labelVectors`, `nameVectors`, `timeVectors` are the parts), `describe(track, taxonomy)` (the sentence the language model reads), `knn(vecs, k)` and `knnJob(vecs, k)` (the same in slices: `step(budgetMs)` until `done`), `layout(vecs, nn, { rand, epochs })` (a UMAP-like layout from the first two principal components, `pca2`; `step(budgetMs)`, `pos`), `regions(pos, tracks, k, rand)` (k-means on the layout, each `{ x, y, name, mood, size, members }`), `dot`, `unit`. Pure; the seeded random source makes the same map every time. `journey(vecs, from, to, { steps, pull, keyOf, workOf, sameOf, maxPerKey, gap, skip })`: the songs between two, each the unused one closest to a point sliding from the start's vector to the end's and leaning on the one before (`pull`), no key (an artist) again within `gap` (3) steps or more than `maxPerKey` (2) times, no work more than twice, one song per `sameOf`; the start first and the end last.
+
+## match.js
+
+`TS.match`: is this the same song? A song reaches the page from the library (a YouTube upload with a parsed or labelled title), from the free music services (clean titles, often in another script) and from YouTube's searches and lists (raw upload titles). This file says when two of them are the same song, when they are the same recording, and which upload of a song to play. Pure; it reads parse.js and library.js.
+
+```js
+var M = TS.match;
+M.sameSong(track, find)                 // -> { score, why, same, sameRecording }
+M.inLibrary(M.index(tracks), find)      // -> { id, score, why, sameRecording } | null
+M.bestVideo(videos, find)               // -> { video, score, why, alts } | null
+M.query(find)                           // -> 'Glass Orchard ガラスノマチ'
+```
+
+**Keys.**
+
+| Name | What it does |
+| --- | --- |
+| `fold(s)` | discover.js `norm`: no case, accents, spaces or punctuation, "&" is "and", a leading "the" dropped; letters and digits of every script stay. Its NFKD also takes the sound marks off kana (ガ folds to カ), so kana are read as romaji before folding, never after. |
+| `kana(s)` | Katakana to hiragana (U+30A1 to U+30F6); the rest as it is. |
+| `romaji(s)` | Kana to Hepburn romaji in lower case; every other character kept, kanji too (they are never romanised). Digraphs (kya, sha, cha, ja), loanword sounds (fa, ti, di, tu, du, wi, we, wo, va, she, che, je, tsa, ye, kwa, dyu, fyu), the small tsu doubling the next consonant (tch before chi, dropped at the end), the long mark repeating the vowel (raamen), n before a vowel or y written plain n, を read o, the iteration marks, half-width katakana. The table is one ASCII string of readings in code point order from U+3041. |
+| `loose(s)` | `fold`, then the spellings romanisations disagree on made one: long vowels (ou, oo, oh before a consonant or at the end, uu, aa, ii, ee, ei: one vowel), wo is o, Hepburn against Kunrei (shi si, chi ti, tsu tu, fu hu, ji zi, then sh sy, ch ty, j zy), m before b, p or m is n, cch is tch. "Toukyou", "Tōkyō", "Tohkyoh" and "Tokyo" are all `tokyo`; "Shinjuku" and "Sinzyuku" are `sinzyuku`. |
+| `baseTitle(s)` | The song's title without decoration. Brackets and dash tails that name a version, a medium, a credit or a place in a show go: TV size, TV ver., TV edit, short and full versions, off vocal, instrumental, karaoke, MV, PV, official video or audio, lyric video, lyrics, audio, HD, 4K, remastered, covered by, feat. and ft. (also without brackets), every recording word parse.js knows (live, piano, remix ...), "from" a film, and OP, ED, NCOP, Opening, Ending and their Japanese words. Lenticular tags go, a ~subtitle~ (tilde or wave dash) goes, and corner brackets or quotation marks around the whole title come off. A bracket that only names an anime stays: "Blue Signal (Starfall Odyssey)". So does a dash tail with a / or | of its own ("Blue Signal / THE FIRST TAKE" holds more than decoration). "Op. 9" is not OP. When nothing would be left, the title as it was. |
+| `titleKeys(title, alt, raw)` | The keys a title is known by, each once: `fold(baseTitle(title))`, `fold(title)`, `fold(baseTitle(alt))`, the loose key of each base (kana read as romaji first), both halves of a "窓 (Mado)" title, and, given `raw` (an upload's title, or a track's `{ title, channel }`), the title parse.js reads there, unless the upload's title holds the cleaner title already. For an upload's own keys, pass its title both ways: `titleKeys(video.title, '', { title: video.title, channel: video.channel })` adds "Ai" for "Neon Abacus - Ai (Official Video)". Keys under two characters are dropped, except one kanji. |
+| `artistKeys(credit, native, aliasOf)` | The keys an artist credit is known by: the whole credit first, each person in it (library.js `people`: "A & B", "A feat. B", the character and the voice actor of "Character (CV: Name)"), the native name, each folded and loose (kana read as romaji), and what `aliasOf(name)` (optional) calls each of them. |
+| `signature(x, { aliasOf })` | What a track or a found song is matched by: `{ t: titleKeys, a: artistKeys, v: videoId or null, d: durationSec or 0, ver, w: fold(work), r: role }`, plus `tf` and `tl` (the fold and the loose title keys) and `aw` (the whole-credit artist keys). `v` is `x.videoId`, else `x.id` when that is a YouTube id. `ver` is `x.version`, else the versions the title's tails name ("(TV Size)" gives `'tv-size'`). A track's `artistKey` and a find's `people` count as artist keys. |
+
+**The same song.** `sameSong(a, b)` takes tracks, finds or signatures and adds the evidence up; `same` is a score of `SAME` (5) or more.
+
+| Evidence | Points | `why` |
+| --- | --- | --- |
+| A fold title key in common | +4 | `title` |
+| Else a loose title key in common | +3 | `title-loose` |
+| Else one key inside the other, both of 6 characters or more | +1.5 | `title-part` |
+| Else nothing in common: the score is 0 and nothing else counts | 0 | `no-title` |
+| The same credit (a whole-credit key in common) | +3 | `artist` |
+| Else a person in common, a voice actor too | +2.5 | `person` |
+| Else, both artists known | -3 | `other-artist` |
+| The same work; the same role | +1.5; +0.5 | `work`, `role` |
+| Versions that differ (cover, live, remix, instrumental, karaoke, piano ...) | -2 | `other-version` |
+| Lengths within 4 s; over 40 s apart unless one is a TV size, short, edit or extended cut | +1; -1.5 | `length`, `length-off` |
+| The same video | 99 | `video` |
+
+`sameRecording` is `same`, the same versions and the lengths unknown or within 4 s. A cut (TV size, short, edit, extended) costs nothing but is never the same recording; a remaster is the same recording. An equal title by another known artist scores 1, so two different songs called "Hikari" stay apart; a character song and the voice actor's own upload meet (4 + 2.5). `STRONG` (7) is sure enough to act on without asking.
+
+**The library.** `index(tracks, { aliasOf })` takes a list or `{ id: track }` and returns `{ title: { key: [ids] }, video: { videoId: true }, sig: { id: signature }, tracks: { id: track }, artist: { key: [ids] } }` (and `aliasOf`). Building it for 1,855 tracks takes about 100 ms the first time and 35 ms after: the string steps remember their answers (20,000 at most), which are only read. `inLibrary(index, find)` is the library's copy of a found song: the track whose video the find names (score 99), else the best track whose `sameSong` reaches `SAME`, the same recording first, then one that plays (`L.playable`, and not blocked), then the higher score. It returns `{ id, score, why, sameRecording }` or null; a caller that must play exactly the find's recording checks `sameRecording`.
+
+**Uploads.** `scoreVideo(video, find)` scores one upload (`{ videoId, title, channel, channelId, durationSec }`) for a find; `bestVideo(videos, find, { min })` returns the highest score (the first of equal ones) as `{ video, score, why, alts }`, `alts` being the next three that also reach `min`, or null when the best is under `min` (`MIN_VIDEO`, 5). This replaces discover.js `bestVideo`, which always returned something.
+
+| Evidence | Points | `why` |
+| --- | --- | --- |
+| The artist's Topic channel | +6 | `topic` |
+| Else a channel named as the artist | +3 | `channel` |
+| An Official or VEVO channel | +1 | `official` |
+| A title key of the find in the upload's title (a Latin key under four letters, or any under three, as whole words) | +4 | `title` |
+| Without that, the score is at most 0 | | `no-title` |
+| The artist in the upload's title | +1.5 | `artist-in-title` |
+| Each version the find asks for (its `version`, or its title's tails) that the upload's title shows, 4 at most | +2 | `version` |
+| The find asks for a version the upload's title does not show; the three channel points are not given then | -3 | `not-version` |
+| Each of cover, sung by, utattemita, karaoke, nightcore, sped up, slowed, 8D, hours, loop, reaction, instrumental, off vocal, live (also THE FIRST TAKE), TV size, short, that the find does not ask for; 6 at most | -3 | `cover`, `karaoke`, `nightcore`, `sped-up`, `slowed`, `8d`, `hour`, `loop`, `reaction`, `instrumental`, `live`, `tv-size` |
+| Lyrics | -1 | `lyrics` |
+| The length within 5 s; over 30 s off | +2; -2 | `length`, `length-off` |
+
+The song's own words (its base title and its artist) are taken out of the upload's title before the version words are read, so "Live Wire Heart" is not a live version. A cover word costs nothing when the find asks for an arrangement the upload shows (a piano version is usually somebody's piano cover). So the artist's Topic upload beats the official video, which beats a lyrics video, a cover and a nightcore; a find asking for a piano version takes the piano upload, and finds nothing rather than the original.
+
+**Works and searches.** `workScore(work, { name, synonyms })` (or a name) says how well a work label names an anime, 0 to 1: 1 for an equal fold or loose key with the name or a synonym, 0.8 when one holds the other (both 4 or more), else the share of letter trigrams the loose keys have in common. `query(find)` is what to type into a YouTube search: the artist and the base title, the Japanese title instead when the find has one in `titleAlt` and its title is romaji; at most 100 characters.
+
+**What it cannot do.** Kanji are never romanised: a kanji title meets the same kanji, or the song's `titleAlt`. Katakana loanwords do not meet their English spelling (コネクト is `konekuto`, not Connect): of the 183 labelled anime songs whose title has kana and no kanji and whose `titleAlt` is in Latin letters, 61 meet it without the `titleAlt`, and the rest are loanwords and translations, which only `titleAlt` bridges. The particle は is read ha, so "kimi wa" written in kana meets "kimi ha" only. Fold keys lose kana sound marks (ガラス and カラス fold alike); the loose keys keep them.
+
+The `match` test section (293 checks) has 122 kana rows (both syllabaries, digraphs, the small tsu, long marks, n, loanword sounds), 14 groups of romanisation styles, 55 base titles, the cases of `sameSong` (kana and romaji, Kunrei and Hepburn, the TV size, a cover, the "Hikari" trap, voice actors, no title), the index and `inLibrary`, a ranking of uploads (Topic, official video, lyrics, cover, nightcore), a piano find, works and queries, and purity (frozen inputs, the same answers twice, any library order). It also reads labels.json: every labelled anime song with a `titleAlt` (592) must find itself from that `titleAlt` and its artist, at least 95% of them (all do).
+
+## sources.js
+
+`TS.sources`: where new songs come from, and the network and the cache under every source. Each source answers a browser on another origin (CORS), so the page needs no server. Nothing is asked until a page calls a client, and a client is only made when a page needs it.
+
+```js
+var S = TS.sources;
+var http = S.createHttp({ hosts: S.endpointsFor(Y.endpoints()) });   // the local fake under ?api=
+var cache = S.createCache({ store: store });
+S.animeThemes(http, cache).series('some_series').then(function (s) { /* s.anime[i].themes: finds */ });
+```
+
+**The network.** `createHttp({ fetch, now, sleep, onLine, hosts })` gives `http`:
+
+| Call | What it does |
+| --- | --- |
+| `get(host, path, { query, signal })` | One GET; resolves with the answer's JSON. `host` is a key of `HOSTS` or a base address of its own. `query` values that are null or empty are left out. A `path` may be a full address on the source's own base (a "next page" link); any other site is refused. |
+| `post(host, path, body, { signal })` | One POST of `body` as JSON (AniList's GraphQL). |
+| `stats()` | `{ host: { sent, failed, queued, active, down } }`: tries sent, tries that failed (no answer, 5xx, a rate limit), what waits in line, what is in flight, whether the breaker holds the line closed. |
+| `now()` | The clock it was given. |
+
+`HOSTS` (copy it with `endpointsFor`):
+
+| Source | Base | `gap` (ms between starts) | `at` (at once) | `tries` | Notes |
+| --- | --- | --- | --- | --- | --- |
+| `animethemes` | `https://api.animethemes.moe` | 700 | 1 | 3 | 90 requests a minute |
+| `anilist` | `https://graphql.anilist.co` | 1,000 | 1 | 2 | 30 a minute at present |
+| `itunes` | `https://itunes.apple.com` | 3,100 | 1 | 2 | `pauseOn: [403, 429]`, `pauseMs: 60000`: Apple's "too many" holds the whole line a minute |
+| `lastfm` | `https://ws.audioscrobbler.com/2.0` | 250 | 2 | 2 | `errors`: Last.fm's error numbers in the body (6 not-found, 10 and 26 auth, 29 rate, 8, 11 and 16 server); `rateMs: 30000` after error 29; `authText` |
+| `oembed` | `https://www.youtube.com` | 150 | 3 | 1 | |
+| `vndb` | `https://api.vndb.org/kana` | 1,500 | 1 | 2 | nothing calls it yet |
+
+Each source has its own line: requests leave in order, `gap` apart, at most `at` at once.
+- **429** waits `Retry-After` (seconds or a date), else 1 s, 2 s, 4 s, and tries again; the whole line waits with it. A `Retry-After` over two minutes is not waited for: the request fails with `'rate'`.
+- **5xx and no answer at all** wait 1 s, 2 s, 4 s (2^n x 1 s) and try again, up to `tries` in all.
+- **404 and 410** are `'not-found'`; **401 and 403** `'auth'`; any other 4xx `'bad'`. None of these is tried again.
+- **The breaker:** three failures in a row (no answer or a 5xx; rate limits do not count) close the line for a minute. What waits in it, and every new request, fails at once with `'down'`.
+- **Offline:** while `onLine()` is false (by default `navigator.onLine`), a request fails at once with `'offline'`, and so does one whose turn comes then.
+- **Shared requests:** identical requests in flight (method, address and body) share one answer. Callers must not change the JSON they get.
+- **Abort:** a caller's `signal` takes a request that has not been sent out of the line, and the caller is told `'aborted'`. When the last caller of a request in flight gives up, the request is cut off.
+- **What is sent:** `credentials: 'omit'` (no cookies), `referrerPolicy: 'no-referrer'`, an `Accept: application/json` header and nothing else (and `Content-Type` with a POST). The questions carry artist, song and work names only. The Last.fm key goes only to Last.fm, and is never part of a cache key.
+
+Errors are `SourceError` objects (`isSourceError(e)`): `e.code` is one of `'network' 'offline' 'rate' 'server' 'not-found' 'bad' 'auth' 'aborted' 'down'`; `e.message` is a sentence that names the source ("AnimeThemes is not answering; trying again in a minute."); `e.host`, `e.status` and `e.body` (the answer, when there was one) are for the curious.
+
+`endpointsFor(ep)` gives the hosts map: copies of `HOSTS`, or, when `ep` (from `Y.endpoints()`) is the local fake, every base pointed at it: `<fake>/animethemes`, `/anilist`, `/itunes`, `/lastfm`, `/vndb`, and oEmbed at the fake's own `/oembed`.
+
+**The cache.** `createCache({ store, now, memoryMax })` keeps answers in the store's cache (store.js, below) behind an in-memory front of the `memoryMax` (300) most recent entries. Without a store it lives in memory only.
+
+| Call | What it does |
+| --- | --- |
+| `get(key)` | The value, or `undefined` when there is none. `null` is a stored "no". |
+| `getMany(keys)` | `{ key: value }` for the keys that are there, in the order asked. |
+| `put(key, value, ttlMs)` | Keep it `ttlMs`. **Anything under `yt:` or `oe:` is kept 30 days at most, whatever was asked** (YouTube's terms). |
+| `wrap(key, ttlMs, fn, { negTtlMs, signal })` | The cached value, else `fn()`'s, kept for `ttlMs` (or `ttlMs(value)` when it is a function). A `SourceError` `'not-found'` from `fn`, or a `null` result, is kept as a "no" for `negTtlMs` (default: `ttlMs`, at most 7 days) and resolves `null`. Calls for one key at the same time share one `fn()`; a caller whose signal fires is told `'aborted'`, and one still waiting on the shared work starts it again. |
+| `range(prefix)` | `[{ key, value, exp, at }]` for the unexpired keys under `prefix`. |
+| `sweep({ maxRows, maxBytes })` | Expired entries go, then the store keeps to its limits (store.js `cacheSweep`). Run it when the page starts. |
+| `clear(prefix)`, `remove(keys)` | Forget a prefix (everything without one), or exact keys. |
+| `stats()` | `{ hits, misses, rows }` (rows: the in-memory front). |
+| `now()` | The clock it was given. |
+
+`TTL` (milliseconds), with the keys each client uses:
+
+| Kind | Time | Key |
+| --- | --- | --- |
+| `oembed`, `oembedNo` | 30 days, 7 days | `oe:<videoId>` |
+| `ytRes`, `ytResNo` | 30 days, 7 days | `yt:res:<find key>` (finds.js); `yt:v:<videoId>` (ytLists `videos`); `yt:q:<kind>:<words>` (searches) |
+| `listRD`, `listUU`, `listPL` | 2 days, 6 hours, 7 days | `yt:list:<list id>` |
+| `atSearch`, `atAnimeAiring`, `atAnime`, `atSeries`, `atArtist`, `atSeason`, `atTrack` | 7, 14, 180, 30, 30, 1 and 90 days | `at:q:...`, `at:anime:<slug>` (14 days while it airs: this season or the last), `at:series:<slug>`, `at:artist:<slug>`, `at:season:<year>:<season>`; `atTrack` is for "which anime is this song from" |
+| `alSeason` | 1 day | `al:season:<year>:<season>:<perPage>` |
+| `itSearch`, `itArtist`, `itAlbums`, `itAlbum` | 30, 7, 3 and 90 days | `it:q:...`, `it:artist:<id>:songs:...`, `it:artist:<id>:albums:...`, `it:album:<id>:...` |
+| `lfm` | 14 days | `lfm:sim:...`, `lfm:art:...`, `lfm:top:...` |
+| `dz` | 7 days | `dz:<Deezer path>` |
+
+**The find.** `find(fields)` returns a find with every field of the shape filled: strings are strings, numbers numbers, a `cover` that fails `okImage` or a `preview` that fails `okPreview` becomes `''`, empty `ids` are dropped, and `key` is made when missing. Fields outside the shape are kept.
+
+```js
+{ key, videoId: null, title: '', titleAlt: '', artist: '', artistNative: '', people: [], album: '', albumId: '',
+  work: '', workKey: '', series: '', seriesKey: '', role: '', seq: 0, season: null, year: 0, durationSec: 0, version: '',
+  cover: '', preview: '', channel: '', channelId: '', source: '', ids: {}, why: [], score: 0, at: 0 }
+```
+
+- **Keys:** `at:song:<id>` (AnimeThemes), `it:track:<id>` (iTunes), `dz:track:<id>` (Deezer), `lfm:<artist>|<title>` (Last.fm, both folded as discover.js `norm` folds), `v:<videoId>` (when only a video is known). A find with no id at all gets the name form.
+- `artist` is a credit library.js `people()` reads: `'A & B'`, or `'Character (CV: Singer)'` for a singer credited as a part. `people` lists the singers' own names.
+- `season` is `{ year, season }` with `season` one of `'winter' 'spring' 'summer' 'fall'`; `seasonAt(ms)` gives the season a moment falls in (UTC).
+- `seq` is a theme's sequence (OP2 is 2), or a track's number on its album.
+- `role` is `'OP'`, `'ED'` or `'insert'`.
+- `okImage(url)`: only `https://is<n>-ssl.mzstatic.com/` (Apple), `https://s4.anilist.co/`, `https://i.ytimg.com/`, `https://e-cdns-images.dzcdn.net/` and `https://cdn-images.dzcdn.net/`. `okPreview(url)`: only `https://audio-ssl.itunes.apple.com/`, `https://cdnt-preview.dzcdn.net/` and `https://cdns-preview-<x>.dzcdn.net/`. Both are true or false.
+
+**The clients.** Each takes the http and the cache, keeps its answers for the times above, and gives finds or plain objects, never a source's own JSON. Every call takes an options object with `signal`.
+
+| Client | Calls |
+| --- | --- |
+| `oEmbed(http, cache)` | `video(id)` -> `{ id, title, channel, channelId (when the author is /channel/UC...), handle (when it is /@...), ok: true }` or `{ id, ok: false, reason: 'not-embeddable' \| 'not-found' }` (401 means the owner does not allow embedding, or the video is private). `videos(ids)`: four at a time, answers in the order asked; rejects with the first error that is not an answer. No quota. |
+| `animeThemes(http, cache)` | `search(q, types)` -> `{ anime: [{ slug, name, year, season }], series: [{ slug, name }], songs: [{ id, title, artists, credit, anime: [{ slug, name, year, season, role, seq, themeId }] }], artists: [{ slug, name }] }` (`types`: some of `'anime' 'series' 'songs' 'artists'`). `anime(slug)` -> `{ slug, name, year, season, format, series: [slugs], resources: { anilist, mal }, synonyms, themes: [find] }` or `null`. `series(slug)` -> `{ slug, name, anime: [{ slug, name, year, season, themes }] }`, oldest first. `artist(slug)` -> `{ slug, name, songs: [find] }`, newest first. `season(year, season)` -> `[{ slug, name, year, season, format, resources, themes }]`, following `links.next`. |
+| `aniList(http, cache)` | `season(year, season, { perPage })` (50 at most) -> `[{ id, idMal, title: { romaji, english, native }, popularity, cover, format, startDate: { year, month, day } }]`, most popular first, adult titles left out. |
+| `iTunes(http, cache)` | `searchArtist(name)` -> `[{ id, name, genre, link, country }]`; `artistSongs(id, { limit })` -> `[find]`; `albums(id)` -> `[{ id, title, date, type, trackCount, cover, artist, genre, link }]`, newest first; `albumTracks(collectionId)` -> `[find]`, disc by disc; `searchAlbums(term, { limit })` -> albums. Options: `country` (default: `JP` for a name in Japanese script, else `US`; pass the `country` an artist was found in), `name`. |
+| `lastFm(http, cache, getKey)` | `available()` (is there a key); `similarTracks(artist, title, { limit })` -> `[find]` scored by match; `similarArtists(name, { limit })` -> `[{ name, match }]`; `topTracks(name, { limit })` -> `[find]`. Without a key each rejects with `'auth'` and sends nothing. |
+| `ytLists(client, cache)` | Through yt.js's client (a key or a sign-in): `uploads(channelId, { max })` (100) -> `[find]` with `videoId`, `source: 'ytuploads'` and `addedAt`; `playlist(id, { max })` (200) -> `[find]`, `source: 'ytplaylist'`; `videos(ids)` -> `{ videos, missing }` (videoBatch, 1 unit per 50, each video kept 30 days, a missing one 7); `searchVideos(q, { max, category })` and `searchPlaylists(q, { max })` (100 units each, kept 30 days; a later search for fewer is answered from the cache). A list is read 50 a page (1 unit each) and kept with where it stopped, so a longer read goes on from there. Answers from the cache cost nothing: count units with the client's `onQuota`, not by estimate. |
+| `deezerFinds(dz, cache)` | discover.js's `createDeezer` as finds (`source: 'deezer'`, `dz:track:<id>`), with the lasting cache `dz:<path>` (7 days) in front of its memory cache: `related(artistId)` -> `[{ id, name, picture, fans }]`, `top(artistId, n)`, `albums(artistId)` (typed as iTunes albums are), `albumTracks(album)`, `radio(artistId, n)`, `searchArtists(name)`. A Deezer failure is a `SourceError` `'network'` ("Deezer did not answer."). |
+
+Theme finds carry `work` (the anime's name), `workKey` (`at:anime:<slug>`), `series` and `seriesKey` (`at:series:<slug>`) when the anime has one, `ids: { at: themeId, anilist, mal }`, and the same `key` (`at:song:<song id>`) wherever a song is used again, so a page can show it once. The real AnimeThemes refuses `include=anime.animethemes.song.artists` on `/series` (422, seen 2026-10-10): `series()` reads the series with its anime, then each anime on its own (each cached), and remembers the refusal for the session.
+
+What was seen of these sources on 2026-10-10 (with `test/fixtures-check.mjs`): iTunes answers `text/javascript` with blank lines before the JSON, and `collectionType` is `Album` for singles too (the name ends " - Single" or " - EP"); Last.fm sends a list of one as an object; AniList and Last.fm answer with CORS; AnimeThemes, behind Cloudflare, refuses Node's own User-Agent (a browser's is fine).
+
+## finds.js
+
+`TS.finds`: what turns a find (a song the library does not have; the shape is in sources.js) into something the queue can hold.
+
+**The registry.** `registry(lib, { L, now })` returns a registry:
+
+| Call | What it does |
+| --- | --- |
+| `add(find, video)` | A light track for a find that has a YouTube id (`video`: `{ videoId, title, channel, channelId, durationSec, publishedAt }`). It is made by library.js `upsert` on a shadow library that shares the real one's aliases, profiles and channel rules, so parse.js reads it like an import. A structured find's artist, title, work and role win, as labels do. The track carries `transient: true` and `foundVia: { source, key, why }`. `null` without an id. |
+| `get(id)`, `has(id)`, `find(id)`, `ids()` | A light track, and the find behind it. |
+| `drop(ids)`, `keepOnly(ids)` | Forget finds; `keepOnly` returns what it dropped. |
+| `setDuration(id, sec)` | What the player measured. |
+| `listened(id, info)` | A listen, counted the way library.js `recordPlay` counts it. |
+| `toJSON()` | Plain data, for the store key `finds:queue`. |
+
+`registryFrom(lib, json, opts)` reads it back.
+
+**Keeping a find.** `promote(lib, reg, id, { L, playlistId, now })` moves a find into the library, in the local playlist `DISCOVERED` (`local:discovered`, "Discovered"), and out of the registry. It returns the ids to write. `FOUND` (`local:found`) is the shadow library's playlist.
+
+**The resolver.** `resolver(deps)` finds a YouTube id for a find that has none, cheapest way first (`RUNGS`, `COST`):
+
+| Rung | Where it looks | Units | When |
+| --- | --- | --- | --- |
+| known | the find carries an id (a Mix, an upload, the library) | 0 | always |
+| cache | `yt:res:<key>` (30 days; "not found" 7 days) | 0 | always |
+| library | match.js `inLibrary` (the user's own upload first) | 0 | always |
+| pool | a video any list or search returned | 0 | always |
+| topic | the artist's Topic channel uploads (learnt from "X - Topic" channels), then the pool again | 1 per 50 | `allow: 'cheap'` or `'search'`, within the automatic allowance |
+| search | one YouTube search, match.js `bestVideo` with its minimum | 101 | `allow: 'search'` (a press on Play), within today's allowance less the reserve |
+
+- **`deps`**: `{ M (match.js), cache, index(), lists: { uploads(channelId, { max }) }, canList(), search(q, { max }), canSearch(), budget: { left(), autoLeft(), spend(units, auto) }, topicChannels(), now }`.
+- **Calls**:
+  - `prepare(finds)` reads the cache once.
+  - `estimate(finds)` is synchronous: `{ perFind: { key: { rung, units, status } }, ready, cheap, search, blocked, units }`. The status is `ready`, `cheap`, `search`, `needs-key`, `over-budget` or `not-found`.
+  - `resolve(find, { allow })` returns `{ videoId, rung, units, video }`, or `{ none, rung, reason }`, where the reason is `needs-search`, `needs-key`, `over-budget` or `not-found`.
+  - `learn(videos)`, `forget(videoId)` (the player refused it), `topicOf(name)` and `known()`.
+
+## feeder.js
+
+`TS.feeder`: what keeps the queue fed. The controller asks for more synchronously (`onNeedMore`). A feeder answers from a buffer of songs that are ready (a library id, or a find with a light track) and fills the buffer in the background, so the queue only ever holds playable ids.
+
+`create(spec, deps)` returns a feeder.
+- **`spec`**: `{ kind: 'list' | 'radio', label, href, seed, finds, ratio, ahead, allow, searchCap }`.
+- **`deps`**: `{ resolver, registry, providers: { name: fn(ctx) -> Promise<[find]> }, familiar(seedId, n, avoid), track(id), heard(find), hidden(find), songKey, artistOf, workOf, rand, now, onReady(), onStatus(status), maxWaitMs (8,000), askEveryMs (30,000) }`.
+
+| Call | What it does |
+| --- | --- |
+| `take(n)` | Up to `n` ready ids, at once, and fills again. |
+| `fill()` | Keeps `ahead` (3) songs ready. |
+| `peek(n)` | `[{ id, find, status: 'ready' \| 'finding' \| 'waiting' \| 'failed', why }]`: what the queue panel shows as coming up. |
+| `feedback(id, 'play' \| 'skip' \| 'like' \| 'unplayable')` | A quick skip weakens a radio's provider (x0.85), a like strengthens it (x1.2). |
+| `status()` | `{ kind, label, href, phase: 'filling' \| 'ready' \| 'starved' \| 'exhausted' \| 'stopped', buffered, pending, ratio, newShare, taken, searched }` |
+| `snapshot()`, `restore(snap, deps)`, `stop()` | The store key `feeder` holds the snapshot. |
+
+**A list** plays in order, a few ahead, and skips a song that cannot be found.
+
+**A radio** never ends. Each slot is a new song or a familiar one by `ratio`, decided by `blend(counts, ratio)`, which makes up a shortfall later. A radio never plays:
+- the same artist as the last two;
+- the same work as the last one;
+- a song already played this session.
+
+When the queue is waiting, a new song that is not ready within `maxWaitMs` gives way to a familiar one, and the late song is kept for later. After two unplayable new songs in a row the next song is familiar, so the controller's five-error halt cannot trip.
+
+## engine.js
+
+`TS.engine.create(opts)`: the one object the page calls about songs the library does not have. It joins finds.js, feeder.js and sources.js's cache to the page's queue.
+
+- **What it stores:** `finds:queue` (the registry), `finds:saved`, `finds:hidden`, `finds:heard` (at most 3,000), `feeder` (the running feeder) and `quota:auto` (what it spent by itself today, at most 300 units).
+- **The reserve:** it leaves 1,500 units of the day for imports, refreshes and adds.
+
+| Call | What it does |
+| --- | --- |
+| `start()` | Reads the store. It contacts nothing. |
+| `relink()` | A replaced library: the registry reads names the new way. |
+| `track(id)`, `find(id)`, `isFound(id)` | The light track and the find behind it. |
+| `play(find \| [finds], { mode: 'now' \| 'next' \| 'later' \| 'from', index, label, href })` | Resolves (a press, so a search is allowed) and hands the id to the page's `playNow`, `queueNext` or `queueLater`; `'from'` is `list`. |
+| `list(finds, opts)` | A list feeder (up to 10 searches per press). |
+| `radio(seedId, { ratio, label, href })` | A radio feeder. |
+| `feeder()`, `take(n)`, `peek(n)`, `stopFeeder()`, `starved()` | The running feeder. |
+| `listened(id, info)` | Counts a listen. A find finished `keepAfterPlays` (2) times joins the library. |
+| `unplayable(id, code)` | The player refused a song: the resolver forgets it and the feeder hears about it. |
+| `keep(id)` | Promote a find now (a like, Keep). |
+| `save(find)`, `unsave(key)`, `saved()`, `isSaved(key)` | Saved for later. |
+| `hide(kind, value)` | Returns `undo()`. `kind` is `artist`, `song`, `work` or `channel`. Also `isHidden(find)` and `hidden()`. |
+| `estimate(finds)`, `resolve(find, { allow })` | What playing would take; finding an id. |
+| `quota()` | `{ used, daily, reserve, left, auto: { used, cap }, resetsAt }` |
+| `on('feeder' \| 'saved' \| 'hidden' \| 'quota' \| 'library', fn)`, `persist()`, `started()` | Events and saving. |
+
+`opts` takes:
+- the modules `L, S, M, F, Fd, Src`;
+- `lib()`, a getter, because an import replaces the library;
+- `store`, `cache`, `client`, `canRead()`, `demo`, `thumb`, `now`, `rand`;
+- `quota: { used(), daily() }`, `reserve`, `autoCap`, `pacificDay`;
+- `familiar(seedId, n, avoid)`, `index()`, `topicChannels()`, `queueIds()`, `providers`, `keepAfterPlays`;
+- `app: { playNow, queueNext, queueLater, startFeeder(feeder, ids, ctx), onLibrary(ids, meta) }`.
+
+## share.js
+
+`TS.share`: a queue as a link anyone can open, and a pasted list as songs. Neither needs a sign-in or a key: the titles come from YouTube's oEmbed, and the songs play as finds.
+
+| Name | What it is |
+| --- | --- |
+| `link(ids, title, base)` | `base#/share?ids=a.b.c&t=Title`: each valid video id once, at most `MAX` (100), and a title of at most 120 characters. |
+| `decode(query)` | `{ ids, title }` from the address's query. Anything that is not a video id is dropped. |
+| `videoIdOf(text)` | The id in a YouTube address (watch, youtu.be, shorts, embed, live) or a bare id; otherwise `''`. |
+| `parseList(text)` | One song a line: `{ videoId }` for a link, otherwise `{ artist, title }` from "Artist - Title" (any dash), "Title / Artist" or "Title by Artist". Numbering and bullets are dropped. |
+| `titles(ids)` | oEmbed for each id, four at a time: `{ id: { title, channel } \| null }`. Null is a video that is gone or cannot be played on other sites (401). |
+| `view(view, ctx, parts, query)` | The pages `#/share` and `#/paste`. |
+| `configure({ fetch })` | The tests' fetch. |
+
+- **Where it is:** the bar's More has "Share the queue as a link" (the playing song and what comes after it). The palette has that and "Paste a list of songs".
+- **What it costs:** a shared song has its id, so it plays free. A pasted line without a link goes through the resolver: a search (100 units) unless the library or an earlier search has it. Play all looks songs up as it goes, at most 10 searches a press.
+- **Privacy:** the requests carry no cookies and no referrer.
 
 ## transport.js
 
@@ -198,10 +516,23 @@ The core does what it can; the rest is the page's.
 | No sound while the player is hidden. | transport.js's media-key anchor plays silence, only while YouTube's player plays, so that media keys and car buttons reach the page; on a phone it pauses the moment the page is hidden and ignores play, next, previous and seeking until the page is visible again. It never plays YouTube's sound and cannot keep it going. |
 | A visible link to the YouTube Terms of Service and to Google's Privacy Policy. | The page: `Y.TERMS.youtubeTerms`, `Y.TERMS.googlePrivacy`. Put them in the footer and in the help, and say "This page uses YouTube API Services". |
 | A way to delete all stored data and to revoke access. | The page offers both: `store.wipe()` (and `ToyKit.store(key, null)` for anything it kept through the kit), and `auth.signOut()`. Also link `Y.TERMS.googlePermissions`, where Google lets the user remove access himself. |
-| Stored API data is refreshed or deleted within 30 days. | At each sign-in: `if (L.stale(lib, Date.now(), TS.config.refreshDays).length) Y.refreshInto({ client, lib, store })`. `L.stats(lib).staleCount` is for a banner when he has not signed in for a month: offer "sign in to refresh" or "delete". |
+| Stored API data is refreshed or deleted within 30 days. | sources.js's cache keeps anything from YouTube (keys under `yt:` and `oe:`) 30 days at most, whatever a caller asks. At each sign-in: `if (L.stale(lib, Date.now(), TS.config.refreshDays).length) Y.refreshInto({ client, lib, store })`. `L.stats(lib).staleCount` is for a banner when he has not signed in for a month: offer "sign in to refresh" or "delete". |
 | "What this page stores." | A short plain note in the help and the footer. The bench's wording can be reused: the imported lists with titles, channels, lengths and topics as YouTube reports them; his corrections, tags, ratings, play counts, history and queues; all in this browser only (IndexedDB); the sign-in token for the tab's session only (sessionStorage); nothing sent anywhere but to Google. |
 
 When a video plays, YouTube's iframe contacts hosts of its own that are not in `toy.json` (seen on 2026-10-05: `*.googlevideo.com`, `yt3.ggpht.com`, `www.gstatic.com`, `ssl.gstatic.com`, `www.google.com`, `jnn-pa.googleapis.com`, `fonts.gstatic.com`). The smoke gate never plays anything, so it does not see them; a drive script that plays a real video needs them in `extraAllowedHosts`.
+
+**Other sites (since 2026-10-10).** The page may also contact these, only when a page or a press asks, and they are in `toy.json`:
+
+- `api.animethemes.moe` (AnimeThemes)
+- `graphql.anilist.co` (AniList), and `s4.anilist.co` for its covers (pictures)
+- `itunes.apple.com` (the iTunes Search API), `is1-ssl.mzstatic.com` to `is5-ssl.mzstatic.com` for artwork (okImage allows any `is<n>-ssl`; in practice 1 to 5), `audio-ssl.itunes.apple.com` for 30-second previews
+- `ws.audioscrobbler.com` (Last.fm; only with the listener's own key)
+- `lrclib.net` (synced lyrics, lyrics.js)
+- `www.youtube.com` for oEmbed (already listed for the IFrame API), `i.ytimg.com` (already listed)
+- Deezer, already listed: `api.deezer.com` (through the sandboxed frame), `cdn-images.dzcdn.net`, `e-cdns-images.dzcdn.net`, `cdnt-preview.dzcdn.net`, `cdns-preview-d.dzcdn.net`; okPreview also allows other `cdns-preview-<x>.dzcdn.net`, so add `cdns-preview-e.dzcdn.net` (and the others if the smoke gate reports them)
+- not yet: `api.vndb.org` (`HOSTS.vndb` exists; nothing calls it)
+
+`music.apple.com` appears only as links the reader opens (iTunes `link`), not as a request. Covers come from AniList, never from AnimeThemes' own image host.
 
 ## Addresses
 
@@ -435,14 +766,22 @@ If the browser refuses IndexedDB, `open()` resolves with an in-memory store whos
 | `get(key, fallback)`, `set(key, value)`, `remove(key)`, `keys(prefix)`, `entries(prefix)` | Small named records. `set(key, null)` removes. |
 | `addHistory(entry)`, `getHistory({ limit, since })`, `clearHistory()` | One record per listen, newest first: `{ id, at, kind: 'play'|'skip', listenedSec }`. |
 | `loadLibrary()`, `saveLibraryMeta(meta)` | The parts `L.fromParts()` takes; `L.meta(lib)` to save. |
-| `exportAll(now)` | One object: `{ format: 'true-shuffle-export', version, exportedAt, tracks, playlists, kv, history }`. `ToyKit.download('true-shuffle.json', JSON.stringify(data), 'application/json')`. |
+| `exportAll(now)` | One object: `{ format: 'true-shuffle-export', version, exportedAt, tracks, playlists, kv, history }`. `ToyKit.download('true-shuffle.json', JSON.stringify(data), 'application/json')` (the cache and import progress are left out). |
 | `importAll(data, { mode })` | `'replace'` (default) or `'merge'`. Rejects with a sentence, changing nothing, if the file is not an export (`checkExport(data)` is the check; `FORMAT`, `FORMAT_VERSION`). Reload the library afterwards. |
-| `wipe()` | Deletes everything stored; the store stays usable. |
+| `wipe()` | Deletes everything stored, the cache included; the store stays usable. |
 | `destroy()` | `wipe()` and removes the database; the store cannot be used afterwards. |
-| `usage()` | `{ tracks, playlists, kv, history, bytes }` (`bytes` null where the browser does not say). |
+| `usage()` | `{ tracks, playlists, kv, history, bytes }` (`bytes` null where the browser does not say), and, while the cache holds anything, `cache` (its rows) and `cacheBytes`. |
+| `cacheGet(keys, { now, rows })` | `{ key: value }` for the keys that are there; an expired row counts as missing. With `rows`: `{ key: { value, exp, at } }`. `now` defaults to `Date.now()`. |
+| `cachePut(rows)` | `rows`: `[{ key, value, exp, at }]`; `at` defaults to now, and `size` (the value's length as JSON, with the key) is stored too. A row without a key or an expiry refuses the lot. |
+| `cacheRange(prefix)` | `[{ key, value, exp, at }]`, unexpired, in key order. |
+| `cacheDelete(keys)` | |
+| `cacheSweep({ now, maxRows, maxBytes })` | Expired rows go first, then the rows nearest to expiry until there are at most `maxRows` (5,000) and `maxBytes` (12 MB). -> `{ expired, evicted, rows, bytes }`. |
+| `cacheClear(prefix)` | The rows under `prefix`; all of them without one. |
 | `close()` | |
 
-Keys in use: `library` (the meta), `queue`, `plan`, `quota` (`{ day, units }`), `bag:<signature>`, `import:<playlist id>` (written by `importInto`; left out of exports). Nothing about his music is ever written anywhere else.
+**The cache (database version 2).** `DB_VERSION` is 2: a fifth object store, `cache` (key path `key`, an index on `exp`), holds other sites' answers for sources.js. It is not the listener's data: `exportAll` leaves it out, `importAll` leaves it alone, `wipe()` empties it, `destroy()` drops it with the database. Opening a version 1 database runs the upgrade, which only creates `cache` and its index; the four data stores are not touched. A tab still holding the old version closes its connection when the new one asks (`onversionchange`), so the upgrade is not blocked; that tab's store then answers "The store is closed." Checked in Chrome on 2026-10-10: a version 1 database of 3,000 tracks, 5 playlists, kv records and 20 listens, written by the old store.js and opened by the new one while the old page held it, exported byte for byte the same; the cache calls behaved on IndexedDB as on the in-memory twin.
+
+Keys in use: `library` (the meta), `queue`, `plan`, `quota` (`{ day, units }`), `bag:<signature>`, `import:<playlist id>` (written by `importInto`; left out of exports); since 2026-10-10 also `queue:hand` (songs queued by hand), `rating:beforeLike`, `songprefs` (trim and volume per song), and engine.js's `finds:queue`, `finds:saved`, `finds:hidden`, `finds:heard`, `feeder` and `quota:auto`. Nothing about his music is ever written anywhere else.
 
 ## player.js
 
@@ -452,6 +791,7 @@ var p = TS.player.create({ kind: 'mock', container: box, durationOf: fn, errorOf
 
 p.on(name, fn) -> off()
 p.load(id, { autoplay, startSec }) -> Promise      p.play()  p.pause()  p.stop()  p.seek(sec)
+p.volume(0..100)  p.muted(bool)  p.rate(0.25..2)   (each also reads back; the YouTube player keeps the rate across videos)
 p.time() -> { current, duration }   p.listened() -> seconds really heard   p.state()   p.id()   p.destroy()
 ```
 
@@ -521,13 +861,17 @@ var client = Y.createClient({ getToken: auth.token, getApiKey, endpoints, onQuot
 client.sources()      -> { me, sources: [{ id, title, count, privacy, special }] }   // Liked videos first; private playlists included
 client.me()           -> { channelId, title, likes, uploads } | null
 client.playlists()    -> [{ id, title, count, privacy, publishedAt }]
-client.playlistPage(playlistId, pageToken) -> { items: [{ videoId, addedAt, position, title, unavailable }], nextPageToken, total }
+client.playlistPage(playlistId, pageToken) -> { items: [{ videoId, addedAt, position, title, channel, channelId, unavailable }], nextPageToken, total }
 client.videoBatch(ids)                     -> { videos: [records for L.upsert], missing: [ids] }     // at most 50
+client.search(q, { max, category })      -> [{ videoId, title, channel, channelId, publishedAt }]    // 100 units; max 1 to 25 (5)
+client.searchPlaylists(q, { max })       -> [{ playlistId, title, channel, channelId, publishedAt }] // 100 units; max 1 to 25 (10)
 client.addToPlaylist(playlistId, videoId) -> { itemId, playlistId, videoId, addedAt, position }   // 50 units; needs WRITE_SCOPE
 client.removeFromPlaylist(itemId)          -> true                                                  // 50 units (the undo)
 client.canRead()      -> can it read public data now (a sign-in, or an API key)
 client.quota()        -> { units, requests, byMethod, since }      client.get(resource, params)   client.endpoints
 ```
+
+`search` finds embeddable videos in Music (category 10) unless `category` says otherwise: another category id, or `null` or `''` for every category. Official anime channels put their creditless openings and endings under Film & Animation (category 1), so a search for those needs `category: null`. `searchPlaylists` finds playlists (`type=playlist`); an album on YouTube Music is one, its id starting `OLAK5uy_`. Both are `search.list`, `Y.UNITS['search.list']` (100 units), counted through `onQuota` like every call. A playlist item's `channel` and `channelId` are its video's owner's (`''` for a deleted or private video).
 
 Every list call costs one quota unit, a failed one included, and each is counted (`onQuota`); `Y.UNITS` lists the dearer ones (a search 100, adding to or removing from a playlist 50). Signed out, `getApiKey()` (a browser API key) lets the public reads go ahead with `key=` in the query and no other credential: a playlist page (a channel's uploads), a search, video details; the account's own lists (`mine=true`) and every write still need the sign-in, and a key Google refuses, or one not allowed on this website, is `bad-key`. Writes are never retried, so a song cannot be added twice by a retry; a write refused for want of the scope is `needs-write`. `Y.tallyQuota(saved, units, now)` keeps a per-day tally `{ day, units }` for the store, starting again when `Y.pacificDay(now)` changes (Google resets at midnight Pacific). The default allowance is 10,000 units a day per Google project (`TS.config.dailyQuota`). The meter counts only what this page spent. 5xx answers, rate limits and network failures are retried up to four times with a doubling wait from half a second. `toVideo(item)` turns a `videos.list` item into a library record (the description is read for a release date and dropped; YouTube's own tags are not kept).
 
@@ -631,14 +975,30 @@ A probe page outside the repo, driven by `scripts/qa/drive.mjs` with visible pla
 ## Tests
 
 ```
-node misc/101-true-shuffle/test.js                  over 700 checks, a few seconds
+node misc/101-true-shuffle/test.js                  over 1,700 checks, a few seconds
 node misc/101-true-shuffle/test.js parse shuffle    only those sections
+node misc/101-true-shuffle/test.js sources cache        the network layer, the clients, the cache
+node misc/101-true-shuffle/test/fixtures-check.mjs      by hand: are the fixtures still shaped like the real answers?
 node misc/101-true-shuffle/test/fake-youtube.mjs --port 8791     the fake, to click against
 ```
 
-Sections: `parse` (the table, statelessness, 484 odd inputs), `library`, `shuffle` (uniformity by chi-square, the bag across serialise and restore, the spread over 600 random libraries, seeds, limits, 4,000 random queue actions on frozen states), `store` (the in-memory twin), `player` (the mock and the controller), `demo`, `yt` (the sign-in round trip through the fake's real HTTP redirect, typed errors, retries, quota, the 1,230-item import, four kinds of interruption and resume, refresh, MusicBrainz), `readme` (every exported name is in this file).
+Sections: `parse` (the table, statelessness, 484 odd inputs), `library`, `shuffle` (uniformity by chi-square, the bag across serialise and restore, the spread over 600 random libraries, seeds, limits, 4,000 random queue actions on frozen states), `store` (the in-memory twin), `player` (the mock and the controller), `demo`, `yt` (the sign-in round trip through the fake's real HTTP redirect, typed errors, retries, quota, the 1,230-item import, four kinds of interruption and resume, refresh, MusicBrainz), `lint` (app.js as text: no two top-level functions with one name, one song never replaces the queue, one button component, a line ratchet; index.html's `?v=` stamps), `transport`, `actions` (`A.check`), `match`, `finds`, `feeder`, `engine`, `share`, `sources` (in test/sources.section.js: the lines on a fake clock: gaps, places, Retry-After, backoff, the breaker, offline, shared requests, abort, what is sent; the find and the allowlists; every client against the fixtures; yt.js's `search` categories and `searchPlaylists`, and ytLists, against the fake over HTTP; Deezer as finds) and `cache` (in test/cache.section.js: store.js's cache calls on the in-memory twin; `createCache`'s time limits, the 30-day cap on `yt:` and `oe:`, the in-memory front, `wrap`'s "no", the sweep). The IndexedDB half of the cache and the version 1 to 2 upgrade were checked in a browser (store.js above), `readme` (every exported name is in this file). Since 2026-10-10 a section may live in its own file, `test/<name>.section.js`, which test.js loads.
 
 The fake serves the OAuth redirect, revoke, `channels`, `playlists` (59, two pages), `playlistItems` (PL_BIG has 1,230 items: 1,200 videos, 30 listed twice, 29 deleted, 12 private, 32 not embeddable; PL_PRIVATE; PL_SMALL; PL_EMPTY; LL; PL_FORBIDDEN answers 403), `videos`, MusicBrainz's two calls, all with CORS. Switches (`fake.set({...})` or `POST /__control`): `quotaAfter`, `failNext`, `rateLimitNext`, `expireAfter`, `deny`, `noChannel`, `gone`, `shrink`, `latencyMs`.
+
+The fake also answers `search.list` (`type=video` and `type=playlist`, from `test/fixtures/youtube-search.json`, 100 units each; `videoCategoryId` and `videoEmbeddable=true` are honoured), `videos` and `playlistItems` for those fixture videos and lists, and the free sources of sources.js, from invented data in `test/fixtures/`:
+
+| Route | Answers |
+| --- | --- |
+| `GET /oembed?url=...&format=json` | The generated videos and the fixture ones; 401 for one that cannot be embedded (`fake0000037`, `fakeS000004`) or is private, 404 for a deleted or unknown id. Topic channels' authors are `/channel/UC...`, others `/@handle`. |
+| `GET /animethemes/search`, `/anime/<slug>`, `/anime` (a season, with `links.next`), `/series/<slug>`, `/artist/<slug>` | `animethemes.json`: eight invented anime (a three-entry series, Lumen Tide, with a song used again in its film; this season's four; one opening without a song). Includes it does not know answer 422, as the real API does; the nested include on `/series` is one of them. |
+| `POST /anilist` | The season query, from `anilist-season.json` (Fall 2026; other seasons have none). |
+| `GET /itunes/search`, `/itunes/lookup` | `itunes.json`: artists, albums (a single, an EP, an album listed twice, a compilation, one without a suffix) and songs, as `text/javascript` with blank lines first, as Apple sends them. |
+| `GET /lastfm/?method=` | `lastfm.json`: `track.getsimilar`, `artist.getsimilar`, `artist.gettoptracks`; error 10 without `api_key`, error 6 for what it does not know. |
+
+More switches: `sourceFail: { host: n }` (the next n answer 503), `sourceRate: { host: n }` (429 with `Retry-After: 1`; iTunes 403; Last.fm error 29), `atNestedSeries` (take the nested include), `atPageSize: n` (a smaller page, to see `links.next`). `fake.sources` is the same fake without a server: `createSourceFake().fetch` answers these routes in-process, at any origin, and `loadFixtures()` reads the fixtures.
+
+`test/fixtures-check.mjs` (by hand, not part of test.js) asks the real AnimeThemes (a search, an anime, a series, an artist, this season), AniList (this season), iTunes (an artist search, the artist's albums, an album's songs) and YouTube oEmbed (YouTube's own sample video) through sources.js's own clients, asks the fake the same kind of questions, and compares the shapes. A key sources.js reads that the real answer lacks or types differently fails it (exit 1); other differences are printed as notes. It never calls the YouTube Data API (quota) or Last.fm (a key), sends nothing about the listener, and says "fixtures-check" as its User-Agent. On 2026-10-10 every source matched, and the nested include on `/series` was still refused.
 
 **Checking in a browser.** These ran on 2026-10-05 against the bench with `scripts/qa/drive.mjs` (the script is outside the repo):
 

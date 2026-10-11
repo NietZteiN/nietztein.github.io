@@ -1,0 +1,170 @@
+{
+	"note": "Invented anime, songs and artists for test/fake-youtube.mjs, in the shape api.animethemes.moe gives (checked 2026-10-10).",
+	"anime": [
+		{
+			"id": 90001,
+			"name": "Lumen Tide",
+			"media_format": "TV",
+			"season": "Spring",
+			"slug": "lumen_tide",
+			"synopsis": "An invented story: two girls keep the last lighthouse of a drowned town lit.",
+			"year": 2019,
+			"animethemes": [
+				{"id":91001,"sequence":null,"slug":"OP1","type":"OP","song":{"id":92001,"title":"Harbor of Small Lights","artists":[{"id":93001,"name":"Aoi Minato","slug":"aoi_minato","information":null,"artistsong":{"id":94001,"alias":null,"as":null,"member_alias":null,"member_as":null,"relevance":null}}]}},
+				{"id":91002,"sequence":null,"slug":"ED1","type":"ED","song":{"id":92002,"title":"Paper Moon Letter","artists":[{"id":93003,"name":"Shiori Kanda","slug":"shiori_kanda","information":null,"artistsong":{"id":94002,"alias":null,"as":"Mio Asahina","member_alias":null,"member_as":null,"relevance":1}},{"id":93004,"name":"Rena Ogura","slug":"rena_ogura","information":null,"artistsong":{"id":94003,"alias":null,"as":"Kaede Tsukishima","member_alias":null,"member_as":null,"relevance":2}}]}},
+				{"id":91003,"sequence":null,"slug":"IN1","type":"IN","song":{"id":92003,"title":"Tidal Lullaby","artists":[{"id":93001,"name":"Aoi Minato","slug":"aoi_minato","information":null,"artistsong":{"id":94004,"alias":null,"as":null,"member_alias":null,"member_as":null,"relevance":null}}]}}
+			],
+			"series": [
+				{"id":95001,"name":"Lumen Tide","slug":"lumen_tide"}
+			],
+			"resources": [
+				{"id":96002,"external_id":800001,"link":"https://myanimelist.net/anime/800001","site":"MyAnimeList","animeresource":{"as":null}},
+				{"id":96003,"external_id":900001,"link":"https://anilist.co/anime/900001","site":"AniList","animeresource":{"as":null}}
+			],
+			"animesynonyms": [
+				{"id":97001,"text":"Lumitide","language":null},
+				{"id":97002,"text":"\u30EB\u30FC\u30E1\u30F3\u30BF\u30A4\u30C9","language":null}
+			]
+		},
+		{
+			"id": 90002,
+			"name": "Lumen Tide 2nd Season",
+			"media_format": "TV",
+			"season": "Fall",
+			"slug": "lumen_tide_2nd_season",
+			"synopsis": "An invented second season: the lighthouse gets a radio.",
+			"year": 2021,
+			"animethemes": [
+				{"id":91004,"sequence":1,"slug":"OP1","type":"OP","song":{"id":92004,"title":"Second Current","artists":[{"id":93002,"name":"Kumori Station","slug":"kumori_station","information":null,"artistsong":{"id":94005,"alias":null,"as":null,"member_alias":null,"member_as":null,"relevance":null}}]}},
+				{"id":91005,"sequence":2,"slug":"OP2","type":"OP","song":{"id":92005,"title":"Lanterns Over Water","artists":[{"id":93001,"name":"Aoi Minato","slug":"aoi_minato","information":null,"artistsong":{"id":94006,"alias":null,"as":null,"member_alias":null,"member_as":null,"relevance":null}}]}},
+				{"id":91006,"sequence":null,"slug":"ED1","type":"ED","song":{"id":92006,"title":"Paper Moon Letter -Reprise-","artists":[{"id":93003,"name":"Shiori Kanda","slug":"shiori_kanda","information":null,"artistsong":{"id":94007,"alias":null,"as":"Mio Asahina","member_alias":null,"member_as":null,"relevance":null}}]}}
+			],
+			"series": [
+				{"id":95001,"name":"Lumen Tide","slug":"lumen_tide"}
+			],
+			"resources": [
+				{"id":96004,"external_id":800002,"link":"https://myanimelist.net/anime/800002","site":"MyAnimeList","animeresource":{"as":null}},
+				{"id":96005,"external_id":900002,"link":"https://anilist.co/anime/900002","site":"AniList","animeresource":{"as":null}}
+			],
+			"animesynonyms": [
+				{"id":97003,"text":"Lumen Tide S2","language":null}
+			]
+		},
+		{
+			"id": 90003,
+			"name": "Lumen Tide: The Far Shore",
+			"media_format": "Movie",
+			"season": "Summer",
+			"slug": "lumen_tide_the_far_shore",
+			"synopsis": "An invented film that ends the story across the bay.",
+			"year": 2023,
+			"animethemes": [
+				{"id":91007,"sequence":null,"slug":"OP1","type":"OP","song":{"id":92001,"title":"Harbor of Small Lights","artists":[{"id":93001,"name":"Aoi Minato","slug":"aoi_minato","information":null,"artistsong":{"id":94008,"alias":null,"as":null,"member_alias":null,"member_as":null,"relevance":null}}]}},
+				{"id":91008,"sequence":null,"slug":"ED1","type":"ED","song":{"id":92007,"title":"The Far Shore","artists":[{"id":93001,"name":"Aoi Minato","slug":"aoi_minato","information":null,"artistsong":{"id":94009,"alias":null,"as":null,"member_alias":null,"member_as":null,"relevance":null}}]}}
+			],
+			"series": [
+				{"id":95001,"name":"Lumen Tide","slug":"lumen_tide"}
+			],
+			"resources": [
+				{"id":96006,"external_id":800003,"link":"https://myanimelist.net/anime/800003","site":"MyAnimeList","animeresource":{"as":null}},
+				{"id":96007,"external_id":900003,"link":"https://anilist.co/anime/900003","site":"AniList","animeresource":{"as":null}}
+			],
+			"animesynonyms": []
+		},
+		{
+			"id": 90004,
+			"name": "Clockwork Meadow",
+			"media_format": "TV",
+			"season": "Fall",
+			"slug": "clockwork_meadow",
+			"synopsis": "An invented farm where the crops are made of gears.",
+			"year": 2026,
+			"animethemes": [
+				{"id":91009,"sequence":null,"slug":"OP1","type":"OP","song":{"id":92008,"title":"Gearsong","artists":[{"id":93005,"name":"Hoshizora Relay","slug":"hoshizora_relay","information":null,"artistsong":{"id":94010,"alias":null,"as":null,"member_alias":null,"member_as":null,"relevance":null}}]}},
+				{"id":91010,"sequence":null,"slug":"ED1","type":"ED","song":{"id":92009,"title":"Rust and Roses","artists":[{"id":93002,"name":"Kumori Station","slug":"kumori_station","information":null,"artistsong":{"id":94011,"alias":null,"as":null,"member_alias":null,"member_as":null,"relevance":null}}]}},
+				{"id":91011,"sequence":null,"slug":"IN1","type":"IN","song":{"id":92014,"title":"\u3072\u304B\u308A\u306E\u5730\u56F3","artists":[{"id":93001,"name":"Aoi Minato","slug":"aoi_minato","information":null,"artistsong":{"id":94012,"alias":null,"as":null,"member_alias":null,"member_as":null,"relevance":null}}]}}
+			],
+			"series": [],
+			"resources": [
+				{"id":96008,"external_id":800004,"link":"https://myanimelist.net/anime/800004","site":"MyAnimeList","animeresource":{"as":null}},
+				{"id":96009,"external_id":900004,"link":"https://anilist.co/anime/900004","site":"AniList","animeresource":{"as":null}}
+			],
+			"animesynonyms": [
+				{"id":97004,"text":"Haguruma no Harappa","language":null},
+				{"id":97005,"text":"\u6B6F\u8ECA\u306E\u539F\u3063\u3071","language":null}
+			]
+		},
+		{
+			"id": 90005,
+			"name": "Starlit Bakery",
+			"media_format": "TV",
+			"season": "Fall",
+			"slug": "starlit_bakery",
+			"synopsis": "An invented bakery that opens only at night.",
+			"year": 2026,
+			"animethemes": [
+				{"id":91012,"sequence":null,"slug":"OP1","type":"OP","song":{"id":92010,"title":"Sugar Orbit","artists":[{"id":93006,"name":"Mika Hoshino","slug":"mika_hoshino","information":null,"artistsong":{"id":94013,"alias":null,"as":"Lulu Amane","member_alias":null,"member_as":null,"relevance":null}}]}},
+				{"id":91013,"sequence":null,"slug":"ED1","type":"ED","song":{"id":92011,"title":"Crumbs of Moonlight","artists":[{"id":93005,"name":"Hoshizora Relay","slug":"hoshizora_relay","information":null,"artistsong":{"id":94014,"alias":null,"as":null,"member_alias":null,"member_as":null,"relevance":null}}]}}
+			],
+			"series": [],
+			"resources": [
+				{"id":96010,"external_id":800005,"link":"https://myanimelist.net/anime/800005","site":"MyAnimeList","animeresource":{"as":null}},
+				{"id":96011,"external_id":900005,"link":"https://anilist.co/anime/900005","site":"AniList","animeresource":{"as":null}}
+			],
+			"animesynonyms": []
+		},
+		{
+			"id": 90006,
+			"name": "Iron Tulip",
+			"media_format": "TV",
+			"season": "Fall",
+			"slug": "iron_tulip",
+			"synopsis": "An invented garden of machines.",
+			"year": 2026,
+			"animethemes": [
+				{"id":91014,"sequence":null,"slug":"OP1","type":"OP","song":{"id":92012,"title":"Petal Engine","artists":[{"id":93002,"name":"Kumori Station","slug":"kumori_station","information":null,"artistsong":{"id":94015,"alias":null,"as":null,"member_alias":null,"member_as":null,"relevance":null}},{"id":93001,"name":"Aoi Minato","slug":"aoi_minato","information":null,"artistsong":{"id":94016,"alias":null,"as":null,"member_alias":null,"member_as":null,"relevance":null}}]}}
+			],
+			"series": [],
+			"resources": [
+				{"id":96012,"external_id":800006,"link":"https://myanimelist.net/anime/800006","site":"MyAnimeList","animeresource":{"as":null}},
+				{"id":96013,"external_id":900006,"link":"https://anilist.co/anime/900006","site":"AniList","animeresource":{"as":null}}
+			],
+			"animesynonyms": []
+		},
+		{
+			"id": 90007,
+			"name": "Moss Garden Detective",
+			"media_format": "ONA",
+			"season": "Fall",
+			"slug": "moss_garden_detective",
+			"synopsis": "An invented detective whose only clue is moss. Its opening has no song listed yet.",
+			"year": 2026,
+			"animethemes": [
+				{"id":91015,"sequence":null,"slug":"OP1","type":"OP","song":null}
+			],
+			"series": [],
+			"resources": [
+				{"id":96015,"external_id":900007,"link":"https://anilist.co/anime/900007","site":"AniList","animeresource":{"as":null}}
+			],
+			"animesynonyms": []
+		},
+		{
+			"id": 90008,
+			"name": "Seventh Lantern",
+			"media_format": "TV",
+			"season": "Summer",
+			"slug": "seventh_lantern",
+			"synopsis": "An invented festival with one lantern too many.",
+			"year": 2026,
+			"animethemes": [
+				{"id":91016,"sequence":null,"slug":"OP1","type":"OP","song":{"id":92013,"title":"Seventh Flame","artists":[{"id":93004,"name":"Rena Ogura","slug":"rena_ogura","information":null,"artistsong":{"id":94017,"alias":null,"as":null,"member_alias":null,"member_as":null,"relevance":null}}]}}
+			],
+			"series": [],
+			"resources": [
+				{"id":96016,"external_id":800008,"link":"https://myanimelist.net/anime/800008","site":"MyAnimeList","animeresource":{"as":null}},
+				{"id":96017,"external_id":900008,"link":"https://anilist.co/anime/900008","site":"AniList","animeresource":{"as":null}}
+			],
+			"animesynonyms": []
+		}
+	]
+}

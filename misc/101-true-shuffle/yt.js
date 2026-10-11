@@ -537,7 +537,9 @@
 			},
 
 			// One page (50) of a playlist. -> { items: [{ videoId, addedAt,
-			// position, title, unavailable }], nextPageToken, total }. 1 unit.
+			// position, title, channel, channelId, unavailable }], nextPageToken,
+			// total }. 1 unit. channel and channelId are the video's owner's
+			// ('' for a deleted or private video).
 			playlistPage: function (playlistId, pageToken, o) {
 				return get('playlistItems', { part: 'snippet,contentDetails,status', playlistId: playlistId, maxResults: 50, pageToken: pageToken || '' }, o).then(function (res) {
 					return {
@@ -548,22 +550,38 @@
 							var id = cd.videoId || (sn.resourceId && sn.resourceId.videoId) || '';
 							// A deleted or private video is still listed, without its owner.
 							var unavailable = !sn.videoOwnerChannelTitle && !cd.videoPublishedAt;
-							return { videoId: id, addedAt: sn.publishedAt || null, position: sn.position, title: sn.title || '', unavailable: unavailable };
+							return { videoId: id, addedAt: sn.publishedAt || null, position: sn.position, title: sn.title || '', channel: sn.videoOwnerChannelTitle || '', channelId: sn.videoOwnerChannelId || '', unavailable: unavailable };
 						}).filter(function (it) { return it.videoId; })
 					};
 				});
 			},
 
-			// The details of up to 50 videos. -> { videos: [library records],
-			// missing: [ids YouTube did not return] }. 1 unit.
-			// Videos for a query (100 quota units): [{ videoId, title, channel, channelId, publishedAt }].
-			// Only embeddable music videos.
+			// Videos for a query (100 quota units): [{ videoId, title, channel,
+			// channelId, publishedAt }]. Only embeddable videos, and only Music
+			// (category 10) unless o.category says otherwise: another category
+			// id, or null or '' for every category (official anime channels put
+			// their creditless openings and endings under Film & Animation).
+			// o: { max (1 to 25, default 5), category, signal }
 			search: function (query, o) {
 				o = o || {};
-				return get('search', { part: 'snippet', q: String(query || ''), type: 'video', videoEmbeddable: 'true', videoCategoryId: '10', maxResults: Math.max(1, Math.min(25, o.max || 5)) }, o).then(function (res) {
+				var category = o.category === undefined ? '10' : o.category == null ? '' : String(o.category);
+				return get('search', { part: 'snippet', q: String(query || ''), type: 'video', videoEmbeddable: 'true', videoCategoryId: category, maxResults: Math.max(1, Math.min(25, o.max || 5)) }, o).then(function (res) {
 					return (res.items || []).filter(function (it) { return it.id && it.id.videoId; }).map(function (it) {
 						var sn = it.snippet || {};
 						return { videoId: it.id.videoId, title: sn.title || '', channel: sn.channelTitle || '', channelId: sn.channelId || '', publishedAt: sn.publishedAt || null };
+					});
+				});
+			},
+			// Playlists for a query (100 quota units, the price of any search):
+			// [{ playlistId, title, channel, channelId, publishedAt }]. An album
+			// on YouTube Music is one (its id starts OLAK5uy_).
+			// o: { max (1 to 25, default 10), signal }
+			searchPlaylists: function (query, o) {
+				o = o || {};
+				return get('search', { part: 'snippet', q: String(query || ''), type: 'playlist', maxResults: Math.max(1, Math.min(25, o.max || 10)) }, o).then(function (res) {
+					return (res.items || []).filter(function (it) { return it.id && it.id.playlistId; }).map(function (it) {
+						var sn = it.snippet || {};
+						return { playlistId: it.id.playlistId, title: sn.title || '', channel: sn.channelTitle || '', channelId: sn.channelId || '', publishedAt: sn.publishedAt || null };
 					});
 				});
 			},
@@ -578,6 +596,8 @@
 			},
 			// Take an added item out again (50 units). itemId: from addToPlaylist.
 			removeFromPlaylist: function (itemId, o) { return call('DELETE', 'playlistItems', { id: itemId }, null, o).then(function () { return true; }); },
+			// The details of up to 50 videos. -> { videos: [library records],
+			// missing: [ids YouTube did not return] }. 1 unit.
 			videoBatch: function (ids, o) {
 				if (!ids.length) return Promise.resolve({ videos: [], missing: [] });
 				if (ids.length > 50) return Promise.reject(YTError('bad-request', 'At most 50 videos can be asked for at once.'));

@@ -132,10 +132,14 @@
 		'check-circle': 'M12 2.5a9.5 9.5 0 1 1 0 19 9.5 9.5 0 0 1 0-19zm4.3 5.6-5.6 5.6-2.9-2.9-1.4 1.4 4.3 4.3 7-7z',
 		medal: 'M7 2h4l1 2.8L13 2h4l-2.6 6.3a6.5 6.5 0 1 1-4.8 0zm5 8.5a4.5 4.5 0 1 0 0 9 4.5 4.5 0 0 0 0-9z',
 		leaf: 'M20 3.5c-.9 9.4-5.6 14.5-13 14.5-.7 0-1.4-.1-2.1-.3L3 20.5l-1.4-1.4 2.1-2.1A9.6 9.6 0 0 1 3 13c0-6 6-9.5 17-9.5zM6 15.3c2.9-2.8 6-5 9.3-6.4-4.1.7-7.3 2.9-9.3 6.4z',
-		tag: 'M3 3h8.2l9.8 9.8L12.8 21 3 11.2zm4.5 2.5a2 2 0 1 0 0 4 2 2 0 0 0 0-4z'
+		tag: 'M3 3h8.2l9.8 9.8L12.8 21 3 11.2zm4.5 2.5a2 2 0 1 0 0 4 2 2 0 0 0 0-4z',
+		scissors: 'M6 3a3 3 0 0 1 2.8 4.1L11 9.3l7.6-7.6 1.4 1.4-15.7 15.7a3 3 0 1 1-1.4-1.4L5.2 15.2A3 3 0 1 1 6 3zm0 2a1 1 0 1 0 0 2 1 1 0 0 0 0-2zm0 12a1 1 0 1 0 0 2 1 1 0 0 0 0-2zm7.6-5.2 6.4 6.4-1.4 1.4-6.4-6.4z',
+		speed: 'M3 6l8 6-8 6zm9 0l8 6-8 6z',
+		share: 'M17 2.5a3.5 3.5 0 1 1-2.6 5.8L9.2 11a3.5 3.5 0 0 1 0 2l5.2 2.7a3.5 3.5 0 1 1-.9 1.8l-5.2-2.7a3.5 3.5 0 1 1 0-5.6l5.2-2.7A3.5 3.5 0 0 1 17 2.5zm0 2a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm-11 6a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm11 6a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z',
+		paste: 'M9 2h6a1 1 0 0 1 1 1v1h3v18H5V4h3V3a1 1 0 0 1 1-1zm1 2v2h4V4zM7 6v14h10V6h-1v2H8V6zm2 5h6v2H9zm0 4h6v2H9z'
 	};
 	// Shapes drawn as outlines (a hole inside a filled shape) use the even-odd rule.
-	var EVENODD = { reshuffle: 1, blend: 1, infinity: 1, bookmark: 1, 'playlist-new': 1, 'youtube-add': 1, 'eye-off': 1, 'minus-circle': 1, trash: 1, info: 1, versions: 1, album: 1, channel: 1, ytmix: 1, target: 1, car: 1, 'check-circle': 1, medal: 1, tag: 1 };
+	var EVENODD = { share: 1, paste: 1, scissors: 1, reshuffle: 1, blend: 1, infinity: 1, bookmark: 1, 'playlist-new': 1, 'youtube-add': 1, 'eye-off': 1, 'minus-circle': 1, trash: 1, info: 1, versions: 1, album: 1, channel: 1, ytmix: 1, target: 1, car: 1, 'check-circle': 1, medal: 1, tag: 1 };
 	var NS = 'http://www.w3.org/2000/svg';
 	function icon(name, cls) {
 		var svg = document.createElementNS(NS, 'svg');

@@ -1,0 +1,18 @@
+{
+	"note": "Invented: what graphql.anilist.co answers to sources.js season query (Page.media) for FALL 2026.",
+	"season": "FALL",
+	"year": 2026,
+	"response": {
+		"data": {
+			"Page": {
+				"media": [
+					{"id":900004,"idMal":800004,"title":{"romaji":"Haguruma no Harappa","english":"Clockwork Meadow","native":"\u6B6F\u8ECA\u306E\u539F\u3063\u3071"},"popularity":48210,"coverImage":{"medium":"https://s4.anilist.co/file/anilistcdn/media/anime/cover/small/fx900004-Clockwork.jpg"},"format":"TV","startDate":{"year":2026,"month":10,"day":3}},
+					{"id":900005,"idMal":800005,"title":{"romaji":"Hoshizora Bakery","english":"Starlit Bakery","native":"\u661F\u7A7A\u30D9\u30FC\u30AB\u30EA\u30FC"},"popularity":30500,"coverImage":{"medium":"https://s4.anilist.co/file/anilistcdn/media/anime/cover/small/fx900005-Bakery.jpg"},"format":"TV","startDate":{"year":2026,"month":10,"day":5}},
+					{"id":900006,"idMal":800006,"title":{"romaji":"Kurogane no Tulip","english":"Iron Tulip","native":"\u9244\u306E\u30C1\u30E5\u30FC\u30EA\u30C3\u30D7"},"popularity":21877,"coverImage":{"medium":"https://s4.anilist.co/file/anilistcdn/media/anime/cover/small/fx900006-Tulip.jpg"},"format":"TV","startDate":{"year":2026,"month":10,"day":9}},
+					{"id":900007,"idMal":null,"title":{"romaji":"Kokeniwa Tantei","english":null,"native":"\u82D4\u5EAD\u63A2\u5075"},"popularity":9050,"coverImage":{"medium":"https://s4.anilist.co/file/anilistcdn/media/anime/cover/small/fx900007-Moss.jpg"},"format":"ONA","startDate":{"year":2026,"month":10,"day":20}},
+					{"id":900009,"idMal":800009,"title":{"romaji":"Shiokaze Relay","english":"Sea Breeze Relay","native":"\u6F6E\u98A8\u30EA\u30EC\u30FC"},"popularity":7001,"coverImage":{"medium":"https://img.example.org/not-anilist/cover.jpg"},"format":"TV","startDate":{"year":2026,"month":10,"day":null}}
+				]
+			}
+		}
+	}
+}

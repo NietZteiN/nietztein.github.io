@@ -1025,3 +1025,19 @@ body.has-pvbar .ts-toast { bottom: calc(var(--ts-bar) + 110px); }
 	#btn-reshuffle, #btn-repeat { display: none; }
 	.ts-volrange { width: 64px; }
 }
+
+/* ---------- The queue: a feeder's songs still being found ---------- */
+.ts-q.is-pending { opacity: 0.72; }
+.ts-q.is-pending .ts-grip { visibility: hidden; }
+.ts-q.is-pending .ts-q-main { cursor: default; }
+.ts-q-state { display: inline-flex; align-items: center; gap: 6px; flex: none; padding: 0 8px; font-size: 12px; font-weight: 600; color: var(--text-2); white-space: nowrap; }
+
+/* ---------- The ambient glow behind the video ---------- */
+.ts-video { isolation: isolate; }
+/* The glow sits on the video's own box and spreads by its blur alone: a blur's spill is not scrollable overflow, an offset box is (the panel would scroll sideways). */
+body.has-ambient .ts-video::before { content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: var(--ambient, none) center / cover no-repeat; filter: blur(46px) saturate(1.5); opacity: 0.45; transition: opacity var(--dur-slow, 400ms); }
+:root[data-theme="light"] body.has-ambient .ts-video::before { opacity: 0.3; }
+@media (max-width: 760px) { body.has-ambient .ts-video::before { display: none; } }
+
+/* ---------- Playback speed badge ---------- */
+.ts-rate-badge { border: 1px solid var(--accent); background: var(--accent-soft); color: var(--accent); border-radius: 999px; font: 700 11px var(--font-mono); padding: 1px 6px; cursor: pointer; flex: none; }

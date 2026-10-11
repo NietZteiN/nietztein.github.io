@@ -131,7 +131,7 @@
 	// ---- The index: what the views count, rebuilt after every change ------------------------------
 
 	var memo = null;
-	function dirty() { memo = null; scopeMemo = null; }
+	function dirty() { memo = null; scopeMemo = null; libIx = null; }
 	function knownGenres() { var g = {}; L.list(lib).forEach(function (t) { t.genres.forEach(function (x) { g[x] = true; }); }); return Object.keys(g); }
 	function idx() {
 		if (memo) return memo;
@@ -261,7 +261,7 @@
 	// A player that builds the real one (YouTube, or the mock) on the first
 	// load(), so nothing is fetched from YouTube before the reader presses Play.
 	function lazyPlayer() {
-		var real = null, subs = [], wantVol = ToyKit.load('volume', null), wantMute = ToyKit.load('muted', false);
+		var real = null, subs = [], wantVol = ToyKit.load('volume', null), wantMute = ToyKit.load('muted', false), wantRate = 1;
 		function make() {
 			if (real) return real;
 			document.body.classList.add('has-player');
@@ -272,9 +272,9 @@
 			if (demo || mockOnLocal()) {
 				real = P.create({
 					kind: 'mock', container: box, auto: !thumb, speed: speed,
-					durationOf: function (id) { var t = lib.tracks[id]; return t && t.durationSec ? t.durationSec : 180; },
+					durationOf: function (id) { var t = trackOf(id); return t && t.durationSec ? t.durationSec : 180; },
 					errorOf: function (id) { return mockErrors[id]; },
-					titleOf: function (id) { var t = lib.tracks[id]; return t ? trackArtist(t) + ' ' + NDASH + ' ' + trackTitle(t) : id; }
+					titleOf: function (id) { var t = trackOf(id); return t ? trackArtist(t) + ' ' + NDASH + ' ' + trackTitle(t) : id; }
 				});
 			} else {
 				real = P.create({ kind: 'youtube', container: box });
@@ -282,6 +282,7 @@
 			subs.forEach(function (s) { s.off = real.on(s.name, s.fn); });
 			if (real.volume && wantVol != null) real.volume(wantVol);
 			if (real.muted && wantMute) real.muted(true);
+			if (real.rate && wantRate !== 1) real.rate(wantRate);
 			return real;
 		}
 		return {
@@ -291,7 +292,12 @@
 				subs.push(s);
 				return function () { subs = subs.filter(function (x) { return x !== s; }); if (s.off) s.off(); };
 			},
-			load: function (id, o) { return make().load(id, o); },
+			load: function (id, o) {
+				var sp = songPref(id), opt = o ? Object.assign({}, o) : {};
+				if (sp && sp.start > 0 && !(opt.startSec > 0)) opt.startSec = sp.start;
+				endDone = null;
+				return make().load(id, opt);
+			},
 			play: function () { if (real) real.play(); },
 			pause: function () { if (real) real.pause(); },
 			stop: function () { if (real) real.stop(); },
@@ -303,11 +309,18 @@
 			real: function () { return real; },
 			volume: function (v) { if (v != null) wantVol = v; return real && real.volume ? real.volume(v) : (wantVol == null ? 100 : wantVol); },
 			muted: function (m) { if (m != null) wantMute = !!m; return real && real.muted ? real.muted(m) : !!wantMute; },
+			rate: function (r) { if (r != null) wantRate = r; return real && real.rate ? real.rate(r) : (wantRate || 1); },
+			// the volume heard now (the song's own volume and a fade), not the one the slider sets
+			effective: function (v) { if (real && real.volume) real.volume(v); },
 			destroy: function () { if (real) real.destroy(); }
 		};
 	}
 
 	var refusals = [], pauseOnStart = false;
+	// This song only: start later, end sooner, louder or softer (kv songprefs: { id: { start, end, vol } }).
+	var songPrefs = {}, endDone = null;
+	function songPref(id) { return songPrefs[id] || null; }
+	function saveSongPrefs() { if (store && !thumb) store.set('songprefs', songPrefs); }
 	function makeController(state) {
 		if (ctl) ctl.destroy();
 		ctl = P.controller({
@@ -322,7 +335,8 @@
 			onListened: function (id, info) {
 				refusals = [];
 				var t = L.recordPlay(lib, id, info);
-				if (!t) return;
+				if (!t) { if (engine && engine.isFound(id)) { engine.listened(id, info); queueSync(); } return; }
+				if (engine && queueMode === 'feeder') engine.listened(id, info);
 				store.putTracks([t]);
 				var he = { id: id, at: info.at, kind: info.completed || (t.durationSec && info.listenedSec >= t.durationSec / 2) ? 'play' : 'skip', listenedSec: info.listenedSec };
 				store.addHistory(he);
@@ -334,6 +348,8 @@
 			onUnplayable: function (id, code) {
 				var t = L.markUnplayable(lib, id, code, now());
 				if (t) store.putTracks([t]);
+				if (engine) engine.unplayable(id, code);
+				if (!t) t = trackOf(id);
 				refusals.push(code);
 				if (refusals.length > 5) refusals.shift();
 				if (queueMode === 'true' && bag) ensureBag().catch(fail);
@@ -341,9 +357,14 @@
 				say('Skipped ' + q(trackTitle(t)) + ': ' + (P.ERROR_TEXT[code] || 'it cannot be played.'));
 			},
 			onError: function (id, code, message, detail) { refusals.push(0); if (refusals.length > 5) refusals.shift(); setStatus(message || 'This track could not be played.'); if (code === 'api' || code === 'too-small') { playerFailed = true; blockedHelp(message || 'The player could not start.', detail || code); } },
-			onNeedMore: function () { return queueMode === 'true' && bag ? bagDraw(5) : []; },
+			onNeedMore: function () {
+				if (queueMode === 'feeder' && engine && engine.feeder()) return engine.take(5);
+				return queueMode === 'true' && bag ? bagDraw(5) : [];
+			},
 			onHalt: function (reason) {
 				pauseOnStart = false;
+				if (reason === 'finished' && queueMode === 'feeder' && engine && engine.feeder()) { feederStarved(); return; }
+				if (reason === 'finished' && carryOn()) return;
 				if (reason === 'finished') say('That was the last track. Press Shuffle again for more.');
 				else if (reason === 'errors') say(haltReason());
 				else { say('The YouTube player could not be started here.'); if (!playerFailed) blockedHelp('The YouTube player could not be loaded.'); playerFailed = false; }
@@ -373,7 +394,7 @@
 	// Keep the track that is on, replace what comes after it.
 	function replaceUpcoming(ids, play) {
 		var cur = ctl.current(), started = player.id() != null, fromBag = queueMode === 'true';
-		queueMode = plan.mode === 'true' ? 'true' : 'plan';
+		setQueueMode(plan.mode === 'true' ? 'true' : 'plan');
 		if (context.list) { context = Object.keys(context.patch || {}).length ? { label: context.label, href: context.href, patch: context.patch } : { label: 'Your library', href: '#/songs', patch: {} }; if (!thumb) store.set('context', context); }
 		if (cur != null && started && !play) {
 			if (fromBag) returnToBag(S.upcoming(ctl.state()));
@@ -484,7 +505,7 @@
 				var started = player.id() != null, up = S.upcoming(ctl.state());
 				if (!started && ctl.current() != null) up = up.concat([ctl.current()]);
 				if (queueMode === 'true') returnToBag(up);
-				queueMode = 'true';
+				setQueueMode('true');
 				var played = S.bagPlayed(bag), rest = S.trueShuffle(S.bagRemaining(bag), bagRand);
 				var gone = bag.gone;
 				bag = { v: 1, order: played.concat(rest), pos: played.length, cycle: bag.cycle, last: bag.last };
@@ -529,7 +550,7 @@
 		if (store && !thumb && Object.keys(hand).length !== was) store.set('queue:hand', Object.keys(hand));
 	}
 	function markHand(ids) { ids.forEach(function (id) { hand[id] = true; }); if (store && !thumb) store.set('queue:hand', Object.keys(hand)); }
-	function playableId(id) { var t = lib.tracks[id]; return !!t && L.playable(t) && !t.blocked; }
+	function playableId(id) { var t = trackOf(id); return !!t && L.playable(t) && !t.blocked; }
 
 	// Play a list in its order, starting at index. Songs queued by hand stay
 	// right after the one that starts.
@@ -540,7 +561,7 @@
 		at = Math.min(at, ok.length - 1);
 		var mine = handUpcoming().filter(function (id) { return ok.indexOf(id) < 0; });
 		if (queueMode === 'true') returnToBag(S.upcoming(ctl.state()).filter(function (id) { return mine.indexOf(id) < 0; }));
-		queueMode = 'list';
+		setQueueMode('list');
 		context = { label: ctx.label, href: ctx.href, patch: ctx.patch || {}, list: true, journey: !!ctx.journey };
 		if (!thumb) store.set('context', context);
 		setQueue(ok.slice(0, at + 1).concat(mine, ok.slice(at + 1)), true, at);
@@ -551,26 +572,26 @@
 		ids = ids.filter(playableId);
 		if (!ids.length) { say('Nothing playable here.'); return; }
 		var st = ctl ? ctl.state() : null;
-		if (!st || !st.items.length || st.done || ctl.current() == null) { playFrom(ids, 0, ctx || { label: trackTitle(lib.tracks[ids[0]]), href: link('track', ids[0]) }); return; }
+		if (!st || !st.items.length || st.done || ctl.current() == null) { playFrom(ids, 0, ctx || { label: trackTitle(trackOf(ids[0])), href: lib.tracks[ids[0]] ? link('track', ids[0]) : '#/' }); return; }
 		showDock();
 		if (ids.length === 1 && ids[0] === ctl.current()) { if (player.state() !== 'playing') ctl.resume(); return; }
 		ctl.playNow(ids);
 	}
 	function queueNext(ids) {
-		ids = ids.filter(function (id) { return lib.tracks[id] && L.playable(lib.tracks[id]); });
+		ids = ids.filter(function (id) { return trackOf(id) && L.playable(trackOf(id)); });
 		if (!ids.length) { say('Nothing playable in that choice.'); return; }
 		markHand(ids);
 		if (ctl.current() == null) setQueue(ids, false); else ctl.insert(ids, 0);
-		U.toast(ids.length === 1 ? trackTitle(lib.tracks[ids[0]]) + ' plays next.' : plural(ids.length, 'track') + ' play next.');
+		U.toast(ids.length === 1 ? trackTitle(trackOf(ids[0])) + ' plays next.' : plural(ids.length, 'track') + ' play next.');
 	}
 	// After the other songs queued by hand, before the rest of what is coming.
 	function queueLater(ids) {
-		ids = ids.filter(function (id) { return lib.tracks[id] && L.playable(lib.tracks[id]); });
+		ids = ids.filter(function (id) { return trackOf(id) && L.playable(trackOf(id)); });
 		if (!ids.length) { say('Nothing playable in that choice.'); return; }
 		var after = handRun();
 		markHand(ids);
 		if (ctl.current() == null) setQueue(ids, false); else ctl.insert(ids, after);
-		U.toast(ids.length === 1 ? trackTitle(lib.tracks[ids[0]]) + ' added to the queue.' : plural(ids.length, 'track') + ' added to the queue.');
+		U.toast(ids.length === 1 ? trackTitle(trackOf(ids[0])) + ' added to the queue.' : plural(ids.length, 'track') + ' added to the queue.');
 	}
 
 	// Radio: songs that sound like this one. Shared genres count most, then
@@ -597,6 +618,12 @@
 	}
 	function startRadio(t) {
 		if (!t) return;
+		if (engine && !thumb) {
+			// the song itself first (unless it is on), then the radio
+			if (!(ctl && ctl.current() === t.id)) playNow([t.id]);
+			engine.radio(t.id, { ratio: +ToyKit.load('newRatio', 0.5), label: 'Radio: ' + trackTitle(t), href: lib.tracks[t.id] ? link('track', t.id) : '#/' });
+			return;
+		}
 		playFrom(radioIds(t), 0, { label: 'Radio: ' + trackTitle(t), href: link('track', t.id) });
 	}
 	function artistRadio(key) {
@@ -658,6 +685,8 @@
 		{ key: 'liked', label: 'Liked songs', icon: 'heart' },
 		{ key: 'mix', label: 'Mix builder', icon: 'mix' },
 		{ key: 'history', label: 'History', icon: 'history' },
+		{ key: 'wrapped', label: 'Your year', icon: 'sparkle', needs: 'wrapped' },
+		{ key: 'quiz', label: 'Guess the anime', icon: 'tv', needs: 'quiz' },
 		{ key: 'stats', label: 'Your numbers', icon: 'stats' },
 		{ key: 'label', label: 'Quick labeller', icon: 'edit' },
 		{ key: 'fix', label: 'Needs attention', icon: 'fix', badge: true },
@@ -671,11 +700,14 @@
 	var route = U.parseHash(location.hash);
 	function section() { var p = route.parts[0] || ''; return SECTION_OF[p] || p; }
 
+	// A page file that has arrived (a stub, marked stub: true, waits for its real version).
+	function moduleReady(name) { var m = TS[name]; return !!(m && m.view && !m.stub); }
 	function renderNav() {
 		var ul = $('nav'), sec = section(), need = idx().needs.unsure;
 		clear(ul);
 		NAV.forEach(function (it) {
 			if (it.sep) { ul.appendChild(h('li', { class: 'ts-nav-sep', text: it.sep })); return; }
+			if (it.needs && !moduleReady(it.needs)) return;
 			var a = h('a', { class: 'ts-nav-a' + (sec === it.key ? ' is-on' : ''), href: '#/' + it.key, aria: { current: sec === it.key ? 'page' : null } });
 			a.appendChild(icon(it.icon));
 			a.appendChild(h('span', { class: 'ts-nav-label', text: it.label }));
@@ -755,7 +787,7 @@
 	// ---- The player bar ------------------------------------------------------------------------------
 
 	function renderBar() {
-		var box = $('bar-track'), id = ctl ? ctl.current() : null, t = id ? lib.tracks[id] : null;
+		var box = $('bar-track'), id = ctl ? ctl.current() : null, t = id ? trackOf(id) : null;
 		clear(box);
 		if (t) {
 			box.appendChild(artFor(t, 'ts-bar-art'));
@@ -771,6 +803,9 @@
 		renderTransport();
 		renderPoster(t);
 		mediaMeta(t);
+		var vb = $('video');
+		if (vb) vb.style.setProperty('--ambient', t && prefs.art && !demo && U.YT_ID.test(t.id) ? 'url(https://i.ytimg.com/vi/' + t.id + '/mqdefault.jpg)' : 'none');
+		document.body.classList.toggle('has-ambient', ToyKit.load('ambient', true) !== false);
 	}
 	function renderTransport() {
 		var st = player ? player.state() : 'idle', playing = st === 'playing' || st === 'loading';
@@ -788,7 +823,7 @@
 	var seeking = false;
 	function renderTime() {
 		var tm = player ? player.time() : { current: 0, duration: 0 };
-		var id = ctl && ctl.current(), t = id && lib.tracks[id];
+		var id = ctl && ctl.current(), t = id && trackOf(id);
 		var dur = tm.duration || (t && t.durationSec) || 0;
 		$('time-cur').textContent = clock(tm.current);
 		$('time-dur').textContent = clock(dur);
@@ -914,10 +949,17 @@
 		if (t.lang === 'inst') box.appendChild(chip('Instrumental', link('c', 'lang', 'inst')));
 		if (t.decade) box.appendChild(chip(t.yearSource === 'upload' ? 'Uploaded ' + t.year : String(t.year), link('c', 'decade', t.decade)));
 	}
+	// The Lyrics tab: lyrics.js draws it for the song that is on, and follows the time.
+	function renderLyricsTab(force) {
+		var box = $('lyrics');
+		if (!box || $('panel-lyrics').hidden || !TS.lyrics) return;
+		TS.lyrics.panel(box, pageCtx, { id: ctl ? ctl.current() : null, force: !!force });
+	}
 	function renderNowInfo() {
 		renderHeart();
 		renderExploreTab();
-		var box = $('nowinfo'), id = ctl ? ctl.current() : null, t = id ? lib.tracks[id] : null;
+		renderLyricsTab();
+		var box = $('nowinfo'), id = ctl ? ctl.current() : null, t = id ? trackOf(id) : null;
 		clear(box);
 		if (!t) {
 			box.appendChild(h('p', { class: 'ts-muted ts-now-empty', text: L.list(lib).length ? 'Nothing is playing. Press play for a true shuffle of everything, or pick a song, artist, genre or mood.' : 'No music yet. Try the demo, or sign in under Settings.' }));
@@ -966,6 +1008,12 @@
 		})(i);
 		return wrap;
 	}
+	// How the next songs are chosen, in a few words, after "Playing from".
+	function queueWord() {
+		var fs0 = feederNow();
+		if (fs0) return fs0.kind === 'radio' ? (fs0.ratio >= 0.7 ? 'mostly new songs' : fs0.ratio > 0 ? 'some new songs' : 'songs you know') : 'in order';
+		return queueMode === 'list' ? 'in order' : modeName(plan.mode).toLowerCase();
+	}
 	function renderQueue() {
 		if (!ctl) return;
 		var st = ctl.state(), list = $('queue'), up = S.upcoming(st), base = st.index + 1;
@@ -973,11 +1021,11 @@
 		if (context.label && st.items.length) {
 			$('queue-context').appendChild(document.createTextNode('Playing from '));
 			$('queue-context').appendChild(h('a', { href: context.href || '#/', text: context.label }));
-			$('queue-context').appendChild(document.createTextNode(' ' + DOT + ' ' + (queueMode === 'list' ? 'in order' : modeName(plan.mode).toLowerCase())));
+			$('queue-context').appendChild(document.createTextNode(' ' + DOT + ' ' + queueWord()));
 		}
 		clear(list);
 		up.slice(0, 80).forEach(function (id, k) {
-			var t = lib.tracks[id], at = base + k;
+			var t = trackOf(id), at = base + k;
 			if (!t) return;
 			var li = h('li', { class: 'ts-q', data: { index: at, id: id } });
 			var grip = h('button', { class: 'ts-grip', aria: { label: 'Move ' + trackTitle(t) + ': drag, or arrow keys; Delete removes it' }, data: { index: at } }, icon('grip'));
@@ -989,12 +1037,26 @@
 			li.appendChild(U.iconBtn('close', 'Remove ' + trackTitle(t) + ' from the queue', { cls: 'ts-q-x', on: { click: function () { ctl.remove(at); } } }));
 			list.appendChild(li);
 		});
-		$('queue-more').textContent = up.length > 80 ? 'and ' + n(up.length - 80) + ' more' : (up.length ? (queueMode === 'true' ? 'The true shuffle draws more as it goes.' : '') : (st.items.length ? 'Nothing after this track.' : 'The queue is empty.'));
+		// a feeder's songs still being found: after the queue, "coming up"
+		if (queueMode === 'feeder' && engine && engine.feeder()) {
+			engine.peek(6).filter(function (p) { return p.status !== 'ready'; }).slice(0, 4).forEach(function (p) {
+				var f = p.find || {}, li2 = h('li', { class: 'ts-q is-pending' });
+				li2.appendChild(h('span', { class: 'ts-grip', aria: { hidden: 'true' } }));
+				var box2 = h('span', { class: 'ts-q-main' });
+				box2.appendChild(U.swatch(trackHue(f).h, f.title || '?', 'ts-q-art'));
+				box2.appendChild(h('span', { class: 'ts-q-text' }, [h('span', { class: 'ts-q-title', text: f.title || 'A song' }), h('span', { class: 'ts-q-artist', text: (f.artist || '') })]));
+				li2.appendChild(box2);
+				li2.appendChild(h('span', { class: 'ts-q-state' }, p.status === 'failed' ? [h('span', { text: 'Not on YouTube' })] : p.status === 'finding' ? [h('span', { class: 'ts-spin', aria: { hidden: 'true' } }), h('span', { text: 'Finding' + ELL })] : [h('span', { text: 'Coming up' })]));
+				list.appendChild(li2);
+			});
+		}
+		var fst = queueMode === 'feeder' && engine ? engine.feeder() : null;
+		$('queue-more').textContent = up.length > 80 ? 'and ' + n(up.length - 80) + ' more' : fst ? (fst.kind === 'radio' ? 'The radio finds more as it goes' + (fst.ratio ? ', about ' + Math.round(fst.ratio * 100) + '% of it new to you.' : '.') : (fst.phase === 'exhausted' ? '' : 'More of the list is looked up as it plays.')) : (up.length ? (queueMode === 'true' ? 'The true shuffle draws more as it goes.' : (engine && endlessOn() ? 'Then a radio from the last song carries on (Endless).' : '')) : (st.items.length ? (engine && endlessOn() ? 'Then a radio from this song carries on (Endless).' : 'Nothing after this track.') : 'The queue is empty.'));
 		var hl = $('history');
 		clear(hl);
 		var hist = st.history.slice().reverse();
 		hist.slice(0, 50).forEach(function (id) {
-			var t = lib.tracks[id];
+			var t = trackOf(id);
 			if (!t) return;
 			var li = h('li', { class: 'ts-q' });
 			var main = h('button', { class: 'ts-q-main', title: 'Play it next', on: { click: function () { queueNext([id]); } } });
@@ -1054,28 +1116,38 @@
 			if (d.to !== d.from) ctl.move(d.from, d.to); else renderQueue();
 		});
 		list.addEventListener('pointercancel', function () { drag = null; renderQueue(); });
-		var tabs = [$('tab-next'), $('tab-history'), $('tab-like')];
+		var tabs = [$('tab-next'), $('tab-history'), $('tab-like'), $('tab-lyrics')];
 		function pick(i) {
 			tabs.forEach(function (t, k) { t.setAttribute('aria-selected', k === i ? 'true' : 'false'); t.tabIndex = k === i ? 0 : -1; });
 			$('panel-next').hidden = i !== 0;
 			$('panel-history').hidden = i !== 1;
 			$('panel-like').hidden = i !== 2;
-			$('btn-save-queue').hidden = i !== 0;
-			$('btn-clear-queue').hidden = i !== 0;
+			$('panel-lyrics').hidden = i !== 3;
+			$('btn-queue-more').hidden = i !== 0;
 			ToyKit.store('queueTab', i);
 			if (i === 2) renderExploreTab(true);
+			if (i === 3) renderLyricsTab(true);
 		}
 		tabs.forEach(function (t, i) {
 			t.addEventListener('click', function () { pick(i); });
-			t.addEventListener('keydown', function (e) { if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); var k = (i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length; pick(k); tabs[k].focus(); } });
+			t.addEventListener('keydown', function (e) { if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); var k = i; do { k = (k + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length; } while (tabs[k].hidden && k !== i); pick(k); tabs[k].focus(); } });
 		});
+		$('tab-lyrics').hidden = !moduleReady('lyrics');
 		var tab0 = +ToyKit.load('queueTab', 0);
-		if (tab0 > 0 && tab0 < tabs.length) pick(tab0);
-		$('btn-save-queue').addEventListener('click', saveQueueAsList);
-		$('btn-clear-queue').addEventListener('click', function () { var was = S.upcoming(ctl.state()); if (queueMode === 'true') returnToBag(was); ctl.clearUpcoming(); U.toast('Cleared what was coming next.', { action: 'Undo', onAction: function () {
+		if (tab0 > 0 && tab0 < tabs.length && !tabs[tab0].hidden) pick(tab0);
+		U.setIcon($('btn-queue-more'), 'more');
+		$('btn-queue-more').addEventListener('click', function (e) {
+			var up = ctl ? S.upcoming(ctl.state()).length : 0;
+			U.openMenu(e.currentTarget, [
+				A.item('save-as-playlist', saveQueueAsList, { disabled: !up && !(ctl && ctl.current()) }),
+				demo ? null : A.item('share', shareQueue, { disabled: !(ctl && ctl.current()) }),
+				A.item('clear-queue', clearUpcoming, { disabled: !up, desc: 'What comes next; the song that is on keeps playing' })
+			], { label: 'The queue', returnTo: e.currentTarget });
+		});
+		function clearUpcoming() { var was = S.upcoming(ctl.state()); if (queueMode === 'true') returnToBag(was); ctl.clearUpcoming(); U.toast('Cleared what was coming next.', { action: 'Undo', onAction: function () {
 			if (queueMode === 'true' && bag) { var pl = S.bagPlayed(bag), back = was.filter(function (id) { return pl.indexOf(id) < 0 && bag.order.indexOf(id) >= 0; }), rest = S.bagRemaining(bag).filter(function (id) { return was.indexOf(id) < 0; }), gone = bag.gone; bag = { v: 1, order: pl.concat(back, rest), pos: pl.length + back.length, cycle: bag.cycle, last: bag.last }; if (gone && gone.length) bag.gone = gone.slice(); saveBag(); }
 			ctl.playNext(was);
-		} }); });
+		} }); }
 	}
 	function isPhone() { return !!(window.matchMedia && window.matchMedia('(max-width: 760px)').matches); }
 	// Q and the Queue button: on a phone the sheet; on a wider window the queue folds
@@ -1091,7 +1163,7 @@
 	function renderQueueFold() {
 		var f = $('queue-fold');
 		if (!f || !ctl) return;
-		var up = S.upcoming(ctl.state()), t = up.length ? lib.tracks[up[0]] : null;
+		var up = S.upcoming(ctl.state()), t = up.length ? trackOf(up[0]) : null;
 		f.textContent = t ? 'Up next: ' + trackTitle(t) + (up.length > 1 ? ' ' + DOT + ' ' + n(up.length - 1) + ' more' : '') : 'Show the queue';
 		f.setAttribute('aria-label', 'Show the queue' + (t ? ': up next, ' + trackTitle(t) : ''));
 	}
@@ -1302,11 +1374,73 @@
 		items.push(A.item('edit', function () { openEditor(ids); }, { label: one ? null : 'Edit ' + n(ids.length) + ' tracks' + ELL }));
 		if (!one) items.push(A.item('label-each', function () { startLabelling(ids); }));
 		items.push(A.item('rating', function () { ratingMenu(ids, menuAt); }, { label: 'Rating' + ELL + (one && one.rating ? ' (' + one.rating + ')' : '') }));
+		if (one) items.push(A.item('trim', function () { trimDialog(one); }, { label: songPref(one.id) ? 'Trim and volume' + ELL + ' (set)' : null }));
 		var blocked = ids.every(function (id) { return lib.tracks[id].blocked; });
 		items.push(A.item(blocked ? 'unblock' : 'block', function () { blockIds(ids, !blocked); }, { label: blocked ? null : 'Block (never shuffle)' }));
 		if (ids.some(function (id) { return lib.tracks[id].playerError; })) items.push(A.item('retry-play', function () { changed(L.clearPlayerErrors(lib, ids)); say('Will be tried again.'); }));
 		if (one && !demo && U.YT_ID.test(one.id)) items.push(A.item('open-youtube', function () { window.open('https://www.youtube.com/watch?v=' + one.id, '_blank', 'noopener'); }));
 		U.openMenu(at, items, { label: one ? 'Actions for ' + trackTitle(one) : 'Actions for ' + n(ids.length) + ' tracks', returnTo: at && at.nodeType ? at : document.activeElement });
+	}
+	// Trim and volume: this song only.
+	function trimDialog(t) {
+		if (!t) return;
+		var sp = songPref(t.id) || {}, d = U.openDialog({ title: 'Trim and volume: ' + trackTitle(t) });
+		var f = h('form', { class: 'ts-edit' });
+		function parse(s) { s = String(s || '').trim(); if (!s) return 0; var m = /^(\d+):(\d{1,2})$/.exec(s); return m ? +m[1] * 60 + +m[2] : Math.max(0, +s || 0); }
+		function field(label, value, hint) {
+			var inp = h('input', { class: 'kit-input', type: 'text', inputmode: 'numeric', value: value ? clock(value) : '', placeholder: hint, aria: { label: label } });
+			var now2 = U.btn({ label: 'Now', size: 'sm', title: 'The time the song is at' });
+			now2.addEventListener('click', function () { if (ctl && ctl.current() === t.id) inp.value = clock(player.time().current); else say('Play the song first to set it from where it is.'); });
+			f.appendChild(h('label', { class: 'ts-field' }, [h('span', { text: label }), h('div', { class: 'ts-inline-form' }, [inp, now2])]));
+			return inp;
+		}
+		var start = field('Start at', sp.start, '0:00 (from the beginning)');
+		var end = field('End at', sp.end, 'its end');
+		var volIn = h('input', { type: 'range', min: '50', max: '150', step: '5', value: String(sp.vol || 100), class: 'ts-range', aria: { label: 'This song\u2019s volume' } });
+		var volOut = h('span', { class: 'ts-muted', text: (sp.vol || 100) + '%' });
+		volIn.addEventListener('input', function () { volOut.textContent = volIn.value + '%'; });
+		f.appendChild(h('label', { class: 'ts-field' }, [h('span', { text: 'Volume (this song)' }), h('div', { class: 'ts-inline-form' }, [volIn, volOut])]));
+		f.appendChild(h('p', { class: 'ts-muted', text: 'For a long talking intro or outro, a quiet upload, a loud one. The rest of the app is not changed.' }));
+		var row = h('div', { class: 'ts-row-btns' });
+		row.appendChild(U.btn({ label: 'Save', variant: 'primary', type: 'submit' }));
+		var reset = U.btn({ label: 'Back to the whole song', variant: 'ghost' });
+		reset.addEventListener('click', function () { delete songPrefs[t.id]; saveSongPrefs(); applyVolume(null); d.close(); say('The whole song again, at the usual volume.'); });
+		row.appendChild(reset);
+		f.appendChild(row);
+		f.addEventListener('submit', function (e) {
+			e.preventDefault();
+			var s0 = parse(start.value), e0 = parse(end.value), v0 = +volIn.value || 100;
+			if (e0 && e0 <= s0 + 5) { say('The end has to come at least five seconds after the start.'); return; }
+			if (!s0 && !e0 && v0 === 100) delete songPrefs[t.id]; else songPrefs[t.id] = { start: s0 || 0, end: e0 || 0, vol: v0 };
+			saveSongPrefs();
+			applyVolume(null);
+			if (ctl && ctl.current() === t.id && s0 && player.time().current < s0) player.seek(s0);
+			d.close();
+			say('Saved for this song' + (s0 ? ': it starts at ' + clock(s0) : '') + (e0 ? (s0 ? ', ends at ' : ': it ends at ') + clock(e0) : '') + (v0 !== 100 ? (s0 || e0 ? ', ' : ': ') + v0 + '% volume' : '') + '.');
+		});
+		d.body.appendChild(f);
+	}
+	// The queue (the song that is on and what comes) as a link anyone can open.
+	function shareQueue() {
+		if (!ctl || !TS.share) return;
+		if (demo) { say('The demo songs are invented, so they cannot be shared.'); return; }
+		var st = ctl.state(), ids = st.items.slice(Math.max(0, st.index));
+		if (!ids.length) { say('The queue is empty.'); return; }
+		var url = TS.share.link(ids, context && context.label ? context.label : 'Songs from True Shuffle', location.origin + location.pathname);
+		function done() { U.toast('Link copied: ' + n(Math.min(ids.length, TS.share.MAX)) + ' songs. Anyone can open it and play them.'); }
+		if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done, function () { window.prompt('Copy this link:', url); });
+		else window.prompt('Copy this link:', url);
+	}
+	// Playback speed: from the bar's More.
+	function speedMenu(at) {
+		var cur = player && player.rate ? player.rate() : 1;
+		U.openMenu(at, [{ heading: 'Playback speed' }].concat([0.75, 1, 1.25, 1.5].map(function (r) { return { label: r === 1 ? 'Normal' : r + String.fromCharCode(0xD7), checked: Math.abs(cur - r) < 0.01, onSelect: function () { player.rate(r); renderRate(); say(r === 1 ? 'Normal speed.' : 'Playing at ' + r + String.fromCharCode(0xD7) + '.'); } }; })), { label: 'Playback speed', focusChecked: true });
+	}
+	function renderRate() {
+		var r = player && player.rate ? player.rate() : 1, b = $('rate-badge');
+		if (!b) { b = h('button', { class: 'ts-rate-badge', id: 'rate-badge', type: 'button', title: 'Back to normal speed', on: { click: function () { player.rate(1); renderRate(); } } }); $('seekbox').appendChild(b); }
+		b.textContent = r + String.fromCharCode(0xD7);
+		b.hidden = Math.abs(r - 1) < 0.01;
 	}
 	// Rating, one small menu: five stars to one, or none.
 	function ratingMenu(ids, at) {
@@ -1811,6 +1945,7 @@
 			sectionHead(view, 'Around this time in earlier years', { href: link('c', 'added', new Date(S.firstAdded(bk[0])).toISOString().slice(0, 7)), text: 'That month' });
 			shelf(view, bk.map(function (t, i) { var c = trackCard(t, bIds, i, { label: 'Around this time, earlier years', href: '#/' }); var sub = c.querySelector('.ts-card-sub'); if (sub) sub.textContent = trackArtist(t) + ' ' + DOT + ' added ' + addedName(new Date(S.firstAdded(t)).toISOString().slice(0, 7)); return c; }));
 		}
+		if (TS.wrapped && TS.wrapped.homeLanes && !thumb) { try { TS.wrapped.homeLanes(view, pageCtx); } catch (e) { if (window.console) console.error(e); } }
 		var recent = sorted(music, 'added').slice(0, 18), rIds = recent.map(function (t) { return t.id; });
 		if (recent.length) { sectionHead(view, 'Recently added', { href: '#/songs?sort=added' }); shelf(view, recent.map(function (t, i) { return trackCard(t, rIds, i, { label: 'Recently added', href: '#/songs?sort=added' }); })); }
 		var neg = S.neglected(music, thumb ? S.rng('home') : S.rng(ToyKit.daily()), now()).slice(0, 18).map(function (id) { return lib.tracks[id]; });
@@ -1850,6 +1985,7 @@
 		var moods = T.MOODS.filter(function (m) { return ix.moods[m[0]] && Parse.fold(m[1]).indexOf(f) >= 0; });
 		var scenes = T.SCENES.filter(function (s) { return ix.scenes[s[0]] && Parse.fold(s[1]).indexOf(f) >= 0; });
 		view.appendChild(h('h1', { class: 'ts-h1', text: 'Results for ' + q(qtext) }));
+		if (TS.lyrics && TS.lyrics.searchSection && !demo) { try { TS.lyrics.searchSection(view, pageCtx, qtext); } catch (e) { if (window.console) console.error(e); } }
 		if (!songs.length && !artists.length && !works.length && !genres.length && !moods.length && !scenes.length) { view.appendChild(h('p', { class: 'ts-empty', text: 'Nothing found. Search knows titles in any script, romaji, artists, anime and games, genres and moods.' })); return; }
 		var top = h('div', { class: 'ts-search-top' });
 		if (artists[0] && (Parse.fold(artists[0].name) === f || !songs.length)) top.appendChild(artistCard(artists[0]));
@@ -2759,6 +2895,7 @@
 		bk.appendChild(h('p', { class: 'ts-muted', id: 'usage', text: '' }));
 		var br = h('div', { class: 'ts-row-btns' });
 		br.appendChild(h('button', { class: 'ts-btn ts-btn--secondary ts-btn--md', disabled: demo, on: { click: exportAll } }, [icon('download'), ' Export everything']));
+		br.appendChild(h('button', { class: 'ts-btn ts-btn--secondary ts-btn--md', disabled: demo, on: { click: exportHistoryCsv } }, [icon('download'), ' Listening history (CSV)']));
 		var ifile = h('input', { class: 'kit-sr', type: 'file', id: 'import-file', accept: 'application/json,.json', disabled: demo });
 		ifile.addEventListener('change', function () { var f = ifile.files[0]; if (f) importFile(f); ifile.value = ''; });
 		br.appendChild(ifile);
@@ -2783,6 +2920,11 @@
 		[['comfortable', 'Comfortable'], ['compact', 'Compact']].forEach(function (o2) { var b = h('button', { class: 'ts-seg-b', role: 'radio', aria: { checked: prefs.density === o2[0] ? 'true' : 'false' }, text: o2[1], on: { click: function () { prefs.density = o2[0]; ToyKit.store('density', o2[0]); applyDensity(); renderView(true); } } }); seg.appendChild(b); });
 		dens.appendChild(seg);
 		ap.appendChild(dens);
+		var amLab = h('label', { class: 'ts-check' }), amCb = h('input', { type: 'checkbox', checked: ToyKit.load('ambient', true) !== false });
+		amCb.addEventListener('change', function () { ToyKit.store('ambient', amCb.checked ? null : false); document.body.classList.toggle('has-ambient', amCb.checked); });
+		amLab.appendChild(amCb);
+		amLab.appendChild(h('span', { text: 'A soft glow of the song\u2019s picture behind the video.' }));
+		ap.appendChild(amLab);
 		ap.appendChild(h('p', { class: 'ts-muted', text: 'Everything bigger or smaller: your browser\u2019s zoom (Ctrl and + or -) scales this page, and the layout follows. The player\u2019s size is under the video: S, M, L, theater and full screen.' }));
 
 		// playback: media keys, a phone's lock screen, a car's buttons
@@ -2793,6 +2935,12 @@
 		mkLab.appendChild(mkCb);
 		mkLab.appendChild(h('span', { text: 'Media keys and car buttons: the keyboard\u2019s media keys, a phone\u2019s lock screen and a car\u2019s steering-wheel buttons control True Shuffle\u2019s queue. For that, a silent sound plays alongside YouTube\u2019s player while it plays (browsers send these buttons only to a page that plays something itself); on a phone it stops the moment the page is hidden.' }));
 		pbp.appendChild(mkLab);
+		var fdLab = h('label', { class: 'ts-check' }), fdCb = h('input', { type: 'checkbox', checked: fadesOn() });
+		fdCb.addEventListener('change', function () { ToyKit.store('fades', fdCb.checked ? null : false); applyVolume(1); });
+		fdLab.appendChild(fdCb);
+		fdLab.appendChild(h('span', { text: 'Fade between songs: the end of a song softens over three seconds and the next comes in gently.' }));
+		pbp.appendChild(fdLab);
+		pbp.appendChild(h('p', { class: 'ts-muted', text: 'Per song (the song\u2019s menu, Trim and volume): start later, end sooner, louder or softer. Speed: the bar\u2019s More.' }));
 		pbp.appendChild(h('h3', { text: 'What the buttons sent' }));
 		pbp.appendChild(h('ol', { class: 'ts-medialog', id: 'media-log', aria: { live: 'polite' } }));
 		renderMediaLog();
@@ -3024,7 +3172,17 @@
 			bag = null; bagKey = '';
 			dirty();
 			return Promise.all([loadSettings(), loadHistory()]);
-		}).then(startQueue).then(renderAll);
+		}).then(startEngine).then(startQueue).then(renderAll);
+	}
+	// The listening history as a spreadsheet: one row a listen.
+	function exportHistoryCsv() {
+		store.getHistory({}).then(function (rows) {
+			function cell(v) { v = v == null ? '' : String(v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }
+			var out = ['when,kind,seconds heard,title,artist,anime or work,role,video'];
+			rows.forEach(function (r) { var t = trackOf(r.id); out.push([new Date(r.at).toISOString(), r.kind, r.listenedSec || 0, t ? trackTitle(t) : '', t ? trackArtist(t) : '', t ? t.work || '' : '', t ? t.role || '' : '', r.id].map(cell).join(',')); });
+			ToyKit.download('true-shuffle-history-' + new Date().toISOString().slice(0, 10) + '.csv', out.join('\n') + '\n', 'text/csv');
+			say(plural(rows.length, 'listen') + ' saved as a CSV file.');
+		}).catch(fail);
 	}
 	function wipe() {
 		if (ctl) ctl.destroy();
@@ -3960,8 +4118,13 @@
 			A.item('fullscreen', toggleFullscreen),
 			A.item('edit', function () { if (cur) openEditor([cur]); }, { disabled: !cur }),
 			A.item('repeat', toggleRepeat, { label: ctl && ctl.state().repeat ? 'Repeat: on' : 'Repeat: off' }),
+			A.item('speed', function () { speedMenu(anchor); }, { label: 'Playback speed' + ELL + ' (' + (player && player.rate && Math.abs(player.rate() - 1) > 0.01 ? player.rate() + String.fromCharCode(0xD7) : 'normal') + ')' }),
+			cur ? A.item('trim', function () { trimDialog(trackOf(cur)); }) : null,
+			cur ? A.item('share', shareQueue) : null,
 			A.item('reshuffle', reshuffle),
+			engine ? A.item('endless', toggleEndless, { label: endlessOn() ? 'Endless: on' : 'Endless: off' }) : null,
 			{ sep: true },
+			engine && !demo ? (function () { var qq = engine.quota(); return { label: 'YouTube today: ' + n(qq.used) + ' of ' + n(qq.daily) + ' units', desc: 'A search for a song uses 100; ' + n(qq.left) + ' left for finding songs (' + n(qq.reserve) + ' kept for imports and adds). It starts again at ' + qq.resetsAt + '.', icon: 'meter', disabled: true }; })() : null,
 			A.item('shortcuts', showShortcuts)
 		], { label: 'More player controls', alignRight: true });
 	}
@@ -3973,6 +4136,187 @@
 		say(on ? 'Repeat on: the queue starts again when it ends.' : 'Repeat off.');
 	}
 	function renderRepeat() { var b = $('btn-repeat'); if (b && ctl) { var on = !!ctl.state().repeat; b.classList.toggle('is-on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); } }
+
+	// ---- The discovery engine (engine.js): found songs in the queue, feeders, Endless ------------------
+	// A found song plays like a library song (now, next, later); it joins the library only
+	// when it is liked, kept or finished twice. A feeder keeps the queue fed (a list of found
+	// songs in order, or an endless radio); Endless starts a radio from the last song when
+	// the queue runs out.
+
+	var engine = null, libIx = null, srcCache = null;
+	function trackOf(id) { return (id && lib.tracks[id]) || (engine && id ? engine.track(id) : null) || null; }
+	function setQueueMode(m) { if (queueMode === 'feeder' && m !== 'feeder' && engine) engine.stopFeeder(); queueMode = m; }
+	function libIndex() { if (!libIx && TS.match) libIx = TS.match.index(L.list(lib), {}); return libIx; }
+	// "Artist - Topic" channels in the library: where each artist's songs are.
+	function topicChannels() {
+		var out = {};
+		L.list(lib).forEach(function (t) { var m = /^(.*) - Topic$/.exec(t.channel || ''); if (m && t.channelId) out[TS.match.fold(m[1])] = t.channelId; });
+		return out;
+	}
+	// Library songs like a seed, for a radio's familiar slots.
+	function familiarIds(seedId, n, avoid) {
+		var seed = trackOf(seedId), seen = {};
+		(avoid || []).forEach(function (id) { seen[id] = true; });
+		var ids = seed ? radioIds(seed, 160).slice(1) : [];
+		if (ids.length < n) ids = ids.concat(S.trueShuffle(scopeTracks().filter(function (t) { return L.playable(t) && !t.blocked && t.kind !== 'clip'; }).map(function (t) { return t.id; }), S.cryptoRng()));
+		return ids.filter(function (id) { if (seen[id]) return false; seen[id] = true; return true; }).slice(0, n);
+	}
+	function startEngine() {
+		if (!TS.engine || !TS.match || !TS.sources || !TS.finds || !TS.feeder) return null;
+		srcCache = TS.sources.createCache({ store: thumb ? null : store, now: now });
+		// Other sites' answers that have expired go, and the cache keeps to its limits (once a load, after the page has settled).
+		if (!thumb) setTimeout(function () { srcCache.sweep({}).catch(function () {}); }, 8000);
+		engine = TS.engine.create({
+			L: L, S: S, M: TS.match, F: TS.finds, Fd: TS.feeder, Src: TS.sources,
+			lib: function () { return lib; }, store: store, cache: srcCache, client: demo ? null : client,
+			canRead: canRead, demo: demo, thumb: thumb, now: now, rand: thumb ? S.rng('engine') : S.cryptoRng(),
+			quota: { used: function () { return quota && quota.day === Y.pacificDay(Date.now()) ? quota.units || 0 : 0; }, daily: function () { return TS.config.dailyQuota || 10000; } },
+			pacificDay: Y.pacificDay,
+			familiar: familiarIds, index: libIndex, topicChannels: topicChannels,
+			queueIds: function () { if (!ctl) return []; var st = ctl.state(); return st.items.slice(Math.max(0, st.index)).concat(st.history.slice(-20)); },
+			app: { playNow: playNow, queueNext: queueNext, queueLater: queueLater, startFeeder: startFeeder, onLibrary: function (ids, meta) { changed(ids, meta); } }
+		});
+		var redraw = later(function () { renderQueue(); renderModePill(); }, 100);
+		engine.on('feeder', redraw);
+		return engine.start().catch(function (e) { engine = null; if (window.console) console.warn('The discovery engine could not start: ' + (e && e.message)); });
+	}
+	// The engine has a feeder's first songs: play them as the page's queue.
+	function startFeeder(fd, ids, ctx) {
+		if (!ids.length) { say('Nothing could be found to play.'); return; }
+		var st = ctl.state(), started = player.id() != null && ctl.current() != null && !st.done;
+		var mine = handUpcoming().filter(function (id) { return ids.indexOf(id) < 0; });
+		if (queueMode === 'true') returnToBag(S.upcoming(st).filter(function (id) { return mine.indexOf(id) < 0; }));
+		queueMode = 'feeder';
+		context = { label: ctx.label || 'Radio', href: ctx.href || '#/', patch: {}, list: true, feeder: true };
+		if (!thumb) store.set('context', context);
+		showDock();
+		if (ctx.radio && started) {
+			// a radio from the song that is on: it stays, the radio comes after it
+			ctl.clearUpcoming();
+			ctl.enqueue(mine.concat(ids));
+		} else if (ctx.radio && st.done) {
+			// the queue ran out: the radio carries on (a finished queue plays what it is given)
+			ctl.enqueue(ids);
+		} else setQueue(ids.slice(0, 1).concat(mine, ids.slice(1)), true, 0);
+		renderQueue();
+	}
+	// A feeder's queue ran dry: more as soon as there is more.
+	function feederStarved() {
+		var st0 = engine.feeder();
+		engine.starved().then(function (ids) {
+			if (ids.length) { ctl.enqueue(ids); return; }
+			var st1 = engine.feeder();
+			if (st1 && st1.kind === 'list' && st1.phase === 'exhausted') { engine.stopFeeder(); queueMode = 'list'; if (!carryOn()) say('That was the last song of ' + q(st0 ? st0.label : 'the list') + '.'); return; }
+			say('Looking for more songs' + ELL);
+			setTimeout(function () { if (queueMode === 'feeder' && engine.feeder() && ctl.state().done) feederStarved(); }, 4000);
+		});
+	}
+	// Endless: when the queue runs out, a radio from the last song carries on.
+	function endlessOn() { return ToyKit.load('endless', true) !== false; }
+	function carryOn() {
+		if (!engine || !endlessOn() || thumb || queueMode === 'true') return false;
+		var st = ctl.state(), last = st.history.length ? st.history[st.history.length - 1] : st.items[st.items.length - 1];
+		var t = trackOf(last);
+		if (!t) return false;
+		engine.radio(t.id, { ratio: +ToyKit.load('newRatio', 0.5), label: 'Radio: ' + trackTitle(t), href: lib.tracks[t.id] ? link('track', t.id) : '#/' }).then(function (ids) { if (ids.length) say('The queue ended: a radio from ' + q(trackTitle(t)) + ' carries on.'); });
+		return true;
+	}
+	function toggleEndless() { var on = !endlessOn(); ToyKit.store('endless', on ? null : false); say(on ? 'Endless on: when the queue ends, a radio from the last song carries on.' : 'Endless off: playback stops when the queue ends.'); renderQueue(); }
+	// A row of Discover, a search hit or an upload, as a find.
+	function findOf(t) {
+		if (!t) return null;
+		if (t.key && 'videoId' in t) return t;
+		var Src = TS.sources;
+		if (t.videoId) return Src.find({ key: 'v:' + t.videoId, videoId: t.videoId, title: t.title || '', artist: t.artist || '', channel: t.channel || '', source: 'saved' });
+		if (t._video) return Src.find({ key: 'v:' + t._video.videoId, videoId: t._video.videoId, title: t._video.title || t.title, artist: t.artist || '', channel: t._video.channel || '', channelId: t._video.channelId || '', source: 'ytsearch' });
+		if (lib.tracks[t.id]) return Src.find({ key: 'v:' + t.id, videoId: t.id, title: trackTitle(lib.tracks[t.id]), artist: trackArtist(lib.tracks[t.id]), source: 'library' });
+		return Src.find({ key: 'dz:track:' + t.id, title: t.title, artist: t.artist, album: t.album || '', cover: t.cover || '', preview: t.preview || '', durationSec: t.duration || 0, source: 'deezer', ids: { dz: t.id } });
+	}
+	// Play a find now (or next, or later). Without a key or a sign-in, a song the
+	// library and the cache do not know opens a YouTube search in a new tab.
+	function playFind(f, btn, mode) {
+		if (!f) return Promise.resolve(null);
+		var known = !!f.videoId || (TS.match && TS.match.inLibrary(libIndex(), f));
+		if (!known && !canRead()) {
+			if (demo) { say('The demo cannot search YouTube.'); return Promise.resolve(null); }
+			window.open('https://www.youtube.com/results?search_query=' + encodeURIComponent(TS.match.query(f)), '_blank', 'noopener');
+			say('Finding songs on YouTube here needs a sign-in or an API key (Settings), so YouTube opened in a new tab.');
+			return Promise.resolve(null);
+		}
+		if (btn) U.btnState(btn, { busy: true });
+		var job = U.job(f.videoId ? 'Opening ' + q(f.title || 'the song') + ELL : 'Finding ' + q(f.title) + ' on YouTube' + ELL);
+		return engine.play(f, { mode: mode || 'now' }).then(function (r) {
+			if (btn) U.btnState(btn, { busy: false });
+			job.done();
+			if (r && r.videoId) { if ((mode || 'now') === 'now') say('Playing ' + q(f.title || trackTitle(trackOf(r.videoId))) + (f.artist ? ' by ' + f.artist : '') + '.'); return r; }
+			var why = r && r.reason;
+			say(why === 'over-budget' ? 'Today\u2019s YouTube allowance for finding songs is used up; it starts again at midnight Pacific time.' : why === 'needs-key' ? 'Finding songs on YouTube needs a sign-in or an API key (Settings).' : 'YouTube found nothing that is surely ' + q(f.title) + '.');
+			return r;
+		}, function (err) { if (btn) U.btnState(btn, { busy: false }); job.done(); onApiError(err); });
+	}
+	// What playing a found song takes: 0 (it is known), 100 (a YouTube search), or 'tab'
+	// (no key and no sign-in: a YouTube search in a new tab).
+	function playCost(t) {
+		if (t._video || t.videoId || lib.tracks[t.id]) return 0;
+		var f = engine ? findOf(t) : null;
+		if (f && (f.videoId || TS.match.inLibrary(libIndex(), f))) return 0;
+		return canRead() ? 100 : 'tab';
+	}
+	// The buttons of a found song's row: Preview, Save for later, Play (with its cost), More.
+	function findButtons(li, t, list) {
+		if (t.preview) {
+			var pv = U.iconBtn('headphones', 'Preview ' + t.title, { cls: 'ts-pv', on: { click: function () { if (list) pvStart(list, list.indexOf(t), 'Previews'); else preview(t, pv); } } });
+			li.appendChild(pv);
+		}
+		var sv = U.btn({ icon: 'bookmark', label: 'Save ' + (t.title || 'it') + ' for later', iconOnly: true, variant: 'icon', pressed: isSaved(t), cls: 'ts-save' });
+		sv.addEventListener('click', function () { toggleSaved(t, sv); });
+		li.appendChild(sv);
+		var cost = playCost(t);
+		var pb = U.btn({ icon: cost === 'tab' ? 'external' : 'play', label: cost === 'tab' ? 'YouTube' : 'Play', variant: 'primary', size: 'sm', cost: cost === 100 ? 100 : null, title: cost === 'tab' ? 'Search YouTube in a new tab (finding songs here needs a sign-in or an API key)' : cost === 100 ? 'Find it on YouTube and play it here (uses 100 of today\u2019s YouTube units)' : 'Play it now; what was coming stays after it' });
+		pb.addEventListener('click', function () { playFound(t, pb); });
+		li.appendChild(pb);
+		var more = U.iconBtn('more', 'More for ' + (t.title || 'this song'), { on: { click: function (e) { findMenu(t, e.currentTarget); } } });
+		more.setAttribute('aria-haspopup', 'menu');
+		more.setAttribute('aria-expanded', 'false');
+		li.appendChild(more);
+		// a song found before costs nothing: the badge goes once the cache says so
+		if (cost === 100 && engine) engine.estimate([findOf(t)]).then(function (est) { var e = est.perFind[findOf(t).key]; if (e && e.status === 'ready') U.btnState(pb, { cost: null }); }, function () { /* keep the badge */ });
+	}
+	// The menu for a found song: play, queue, keep, hide.
+	function findMenu(t, at) {
+		var f = findOf(t);
+		if (!f) return;
+		var items = [{ heading: f.title || 'This song' }];
+		items.push(A.item('play', function () { playFind(f, null, 'now'); }));
+		items.push(A.item('play-next', function () { playFind(f, null, 'next'); }));
+		items.push(A.item('add-to-queue', function () { playFind(f, null, 'later'); }));
+		if (f.preview) items.push(A.item('preview', function () { pvStart([t], 0, f.title || 'Preview'); }));
+		items.push(A.item(isSaved(t) ? 'unsave' : 'save', function () { toggleSaved(t, null); }));
+		if (!demo && ytTargets().length) items.push(A.item('add-to-youtube', function () { addToYouTube(t, at); }));
+		if (f.artist) items.push(A.item('not-interested', function () { hideArtist(f.artist); }, { label: 'Not interested in ' + f.artist }));
+		if (t._video || t.videoId) items.push(A.item('open-youtube', function () { window.open('https://www.youtube.com/watch?v=' + (t.videoId || t._video.videoId), '_blank', 'noopener'); }));
+		U.openMenu(at, items, { label: 'Actions for ' + (f.title || 'this song') });
+	}
+
+	// ---- What page files may use: a narrow view of the app ---------------------------------------------
+	// lyrics.js, quiz.js, wrapped.js (and later explore.js, foryou.js, car.js) draw with this,
+	// never with app.js's own variables, so they can live in files of their own.
+	var pageCtx = {
+		h: h, U: U, A: A, T: T, L: L, S: S, icon: icon, clear: clear, link: link,
+		lib: function () { return lib; }, idx: idx, trackOf: trackOf, now: now, demo: demo, thumb: thumb,
+		words: { title: trackTitle, artist: trackArtist, plural: plural, clock: clock, q: q, n: n, longTime: longTime, DOT: DOT, ELL: ELL, NDASH: NDASH },
+		art: artFor, hue: trackHue,
+		play: { now: playNow, from: playFrom, next: queueNext, later: queueLater, radio: function (t) { startRadio(t); }, find: function (f, mode) { return playFind(f, null, mode); } },
+		player: function () { return player; }, ctl: function () { return ctl; }, current: function () { return ctl ? trackOf(ctl.current()) : null; },
+		history: function () { return histCache; },
+		engine: function () { return engine; }, cache: function () { return srcCache; },
+		say: say, fail: fail, job: U.job, bus: U.bus,
+		nav: function (hash) { location.hash = hash; }, route: function () { return route; },
+		redraw: function () { renderView(true); },
+		ui: { headerBlock: headerBlock, actionBtn: actionBtn, smallBtn: smallBtn, trackList: trackList, sectionHead: sectionHead, card: card, trackCard: trackCard, shelf: shelf, grid: grid, chip: chip },
+		store: function () { return store; }, prefs: function () { return prefs; },
+		edit: function (ids, fields) { L.editMany(lib, ids, fields); return changed(ids); }
+	};
 
 	// ---- Discover: songs like this one that are not in the library -----------------------------------
 	// Related artists and their best songs from Deezer (through the sandboxed
@@ -4030,9 +4374,10 @@
 		btn.setAttribute('aria-label', 'Stop the preview');
 	}
 	// Find the song on YouTube and play it; it joins the "Discovered" playlist.
-	function playFound(t, btn) {
+	function playFound(t, btn, mode) {
 		stopPreview();
 		var q2 = DX.youtubeQuery(t);
+		if (engine) { playFind(findOf(t), btn, mode); return; }
 		if (demo) { say('The demo cannot search YouTube.'); return; }
 		if (!canRead()) { window.open('https://www.youtube.com/results?search_query=' + encodeURIComponent(q2), '_blank', 'noopener'); return; }
 		if (btn) U.btnState(btn, { busy: true });
@@ -4141,13 +4486,7 @@
 					var tx = h('span', { class: 'ts-q-text' }, [h('span', { class: 'ts-q-title', text: t.title + (t.version ? ' ' + t.version : '') }), h('span', { class: 'ts-q-artist', text: t.artist + (t.album ? ' ' + DOT + ' ' + t.album : '') })]);
 					li.appendChild(tx);
 					if (!r2.known) li.appendChild(h('span', { class: 'ts-tag', text: 'New artist' }));
-					var pv = U.iconBtn('play', 'Preview ' + t.title, { cls: 'ts-pv', on: { click: function () { preview(t, pv); } } });
-					pv.disabled = !t.preview;
-					li.appendChild(pv);
-					li.appendChild(h('button', { class: 'ts-btn ts-btn--secondary ts-btn--sm', text: canRead() ? 'Play' : 'YouTube', title: canRead() ? 'Find it on YouTube and play it here (100 quota units)' : 'Search YouTube in a new tab', on: { click: function (e) { playFound(t, e.currentTarget); } } }));
-					var ab2 = addButton(t);
-					if (ab2) li.appendChild(ab2);
-					if (i === 0) li.appendChild(U.iconBtn('close', 'Not interested in ' + r2.name, { on: { click: function () { hideArtist(r2.name); } } }));
+					findButtons(li, t, null);
 					list.appendChild(li);
 				});
 			});
@@ -4176,9 +4515,7 @@
 					var li = h('li', { class: 'ts-drow' });
 					if (prefs.art) li.appendChild(U.art(it.videoId, 210, it.title, 'ts-q-art', true));
 					li.appendChild(h('span', { class: 'ts-q-text' }, [h('span', { class: 'ts-q-title', text: it.title }), h('span', { class: 'ts-q-artist', text: it.channel })]));
-					li.appendChild(h('button', { class: 'ts-btn ts-btn--secondary ts-btn--sm', text: 'Play', on: { click: function (ev) { playFound({ id: it.videoId, artist: it.channel.replace(/ - Topic$/, ''), title: it.title, _video: it }, ev.currentTarget); } } }));
-					var ab3 = addButton({ id: it.videoId, artist: it.channel.replace(/ - Topic$/, ''), title: it.title, _video: it });
-					if (ab3) li.appendChild(ab3);
+					findButtons(li, { id: it.videoId, artist: it.channel.replace(/ - Topic$/, ''), title: it.title, _video: it }, null);
 					res.appendChild(li);
 				});
 				if (!res.firstChild) res.appendChild(h('li', { class: 'ts-muted', text: 'Nothing new: everything found is already in your library.' }));
@@ -4238,10 +4575,13 @@
 	// The order mode is the heart of the page, so it is a labelled control in
 	// the player bar, in the queue and on every Shuffle button.
 
-	function modeLabel() { return queueMode === 'list' ? 'In list order' : modeName(plan.mode); }
+	// The feeder that chooses the next songs (a radio, a list of found songs), if one does.
+	function feederNow() { return queueMode === 'feeder' && engine ? engine.feeder() : null; }
+	function modeLabel() { var fs0 = feederNow(); if (fs0) return fs0.kind === 'radio' ? 'Radio' : 'In list order'; return queueMode === 'list' ? 'In list order' : modeName(plan.mode); }
 	function fillModePill(b) {
 		clear(b);
-		b.appendChild(icon(queueMode === 'list' ? 'list' : modeIcon(plan.mode)));
+		var fs0 = feederNow();
+		b.appendChild(icon(fs0 ? (fs0.kind === 'radio' ? 'radio' : 'list') : queueMode === 'list' ? 'list' : modeIcon(plan.mode)));
 		b.appendChild(h('span', { class: 'ts-modepill-label', text: modeLabel() }));
 		b.appendChild(icon('down', 'ts-modepill-caret'));
 		b.setAttribute('aria-label', 'How the next songs are chosen: ' + modeLabel() + '. Change');
@@ -4278,14 +4618,18 @@
 		clear(box);
 		var st = ctl.state();
 		if (!st.items.length) return;
-		var pill = h('button', { class: 'ts-modepill is-small', aria: { haspopup: 'menu' } });
-		fillModePill(pill);
-		pill.addEventListener('click', function () { modeMenu(pill); });
-		box.appendChild(pill);
+		// While a feeder chooses (a radio, a list of found songs), the shuffle order does not apply.
+		var fs0 = feederNow();
+		if (!fs0) {
+			var pill = h('button', { class: 'ts-modepill is-small', aria: { haspopup: 'menu' } });
+			fillModePill(pill);
+			pill.addEventListener('click', function () { modeMenu(pill); });
+			box.appendChild(pill);
+		}
 		var secs2 = 0;
-		up.forEach(function (id) { secs2 += (lib.tracks[id] && lib.tracks[id].durationSec) || 0; });
-		box.appendChild(h('span', { class: 'ts-muted', text: queueMode === 'true' ? 'endless' : plural(up.length, 'song') + (secs2 ? ' ' + DOT + ' ' + longTime(secs2) + ' left' : '') }));
-		box.appendChild(U.iconBtn('shuffle', 'Shuffle what comes next again', { on: { click: reshuffle } }));
+		up.forEach(function (id) { var tt = trackOf(id); secs2 += (tt && tt.durationSec) || 0; });
+		box.appendChild(h('span', { class: 'ts-muted', text: queueMode === 'true' || (fs0 && fs0.kind === 'radio') ? 'endless' : plural(up.length, 'song') + (secs2 ? ' ' + DOT + ' ' + longTime(secs2) + ' left' : '') }));
+		if (!fs0) box.appendChild(U.iconBtn('shuffle', 'Shuffle what comes next again', { on: { click: reshuffle } }));
 	}
 
 	// ---- The player's size: presets, theater, full screen ---------------------------------------------
@@ -4322,7 +4666,7 @@
 	// ---- Volume and like ------------------------------------------------------------------------------------
 
 	function renderVolume() {
-		var v = player ? player.volume() : 100, m = player ? player.muted() : false, r = $('vol');
+		var v = baseVolume(), m = player ? player.muted() : false, r = $('vol');
 		if (!r) return;
 		r.value = m ? 0 : v;
 		r.style.setProperty('--p', (m ? 0 : v) + '%');
@@ -4336,8 +4680,31 @@
 		player.volume(v);
 		if (v > 0 && player.muted()) player.muted(false);
 		ToyKit.store('volume', v);
+		applyVolume(null);
 		ToyKit.store('muted', false);
 		renderVolume();
+	}
+	function baseVolume() { var v = ToyKit.load('volume', null); return v == null ? 100 : Math.max(0, Math.min(100, +v)); }
+	// What plays: the base volume, times this song's own volume, times a fade (0 to 1).
+	var fadeNow = 1;
+	function applyVolume(fade) {
+		if (fade != null) fadeNow = fade;
+		if (!player || !player.effective) return;
+		var id = ctl && ctl.current(), sp = id ? songPref(id) : null, factor = sp && sp.vol ? sp.vol / 100 : 1;
+		player.effective(Math.round(Math.max(0, Math.min(100, baseVolume() * factor * fadeNow))));
+	}
+	function fadesOn() { return ToyKit.load('fades', true) !== false; }
+	var FADE_IN = 1.5, FADE_OUT = 3;
+	// Every half second: a song's end point, and the fades at the start and the end.
+	function timeExtras(e) {
+		if (!e || !ctl || e.id !== ctl.current()) return;
+		var sp = songPref(e.id);
+		if (sp && sp.end > 0 && e.current >= sp.end - 0.3 && endDone !== e.id) { endDone = e.id; ctl.next(); return; }
+		var end = sp && sp.end > 0 ? sp.end : e.duration, start = sp && sp.start > 0 ? sp.start : 0;
+		if (!fadesOn() || !(end > 12)) { if (fadeNow !== 1) applyVolume(1); return; }
+		var left = end - e.current, into = e.current - start;
+		var f = left < FADE_OUT ? Math.max(0.05, left / FADE_OUT) : into < FADE_IN ? Math.max(0.2, into / FADE_IN) : 1;
+		if (Math.abs(f - fadeNow) > 0.04 || (f === 1 && fadeNow !== 1)) applyVolume(f);
 	}
 	function toggleMute() { var m = !player.muted(); player.muted(m); ToyKit.store('muted', m); renderVolume(); say(m ? 'Muted.' : 'Sound on.'); }
 	function liked(t) { return !!t && (t.rating || 0) >= 4; }
@@ -4348,6 +4715,7 @@
 	function saveBeforeLike() { if (store && !thumb) store.set('rating:beforeLike', beforeLike); }
 	function toggleLike(t) {
 		if (!t) return;
+		if (t.transient && engine) { engine.keep(t.id); t = lib.tracks[t.id] || t; if (t.transient) return; }
 		var was = t.rating || 0, on = !liked(t), keep = beforeLike[t.id], to;
 		if (on) { to = 5; if (was < 4) beforeLike[t.id] = was; }
 		else { to = keep != null ? keep : 3; delete beforeLike[t.id]; }
@@ -4368,7 +4736,7 @@
 		return b;
 	}
 	function renderHeart() {
-		var b = $('btn-like'), t = ctl && ctl.current() && lib.tracks[ctl.current()];
+		var b = $('btn-like'), t = ctl && ctl.current() && trackOf(ctl.current());
 		if (!b) return;
 		b.disabled = !t;
 		U.setIcon(b, 'heart');
@@ -4416,8 +4784,8 @@
 			return i === f.length && f.length > 2 ? 5 : 0;
 		}
 		function add(kind, name, sub, run, iconName, weight) { var s2 = score(name); if (s2 > 0) out.push({ kind: kind, name: name, sub: sub, run: run, icon: iconName, s: s2 + (weight || 0) }); }
-		ACTIONS().forEach(function (a2) { add('Action', a2[0], a2[1], a2[2], a2[3], 8); });
-		NAV.forEach(function (it) { if (!it.sep) add('Page', it.label, '', function () { location.hash = '#/' + it.key; }, it.icon, 6); });
+		ACTIONS().filter(Boolean).forEach(function (a2) { add('Action', a2[0], a2[1], a2[2], a2[3], 8); });
+		NAV.forEach(function (it) { if (!it.sep && !(it.needs && !moduleReady(it.needs))) add('Page', it.label, '', function () { location.hash = '#/' + it.key; }, it.icon, 6); });
 		add('Page', 'Liked songs', '', function () { location.hash = '#/liked'; }, 'heart', 6);
 		if (!f) return out.sort(function (a2, b2) { return b2.s - a2.s; }).slice(0, 14);
 		lists.forEach(function (li) { add('Playlist', li.name, li.kind === 'smart' ? 'smart' : 'hand-picked', function () { location.hash = link('list', li.id); }, 'list', 4); });
@@ -4444,6 +4812,11 @@
 			['Discover songs like the playing one', '', function () { var t = ctl && ctl.current(); location.hash = '#/discover' + (t ? '?seed=' + encodeURIComponent(t) : ''); }, 'compass'],
 			['Leave focus', focus ? listById(focus) && listById(focus).name : 'not focused', function () { setFocus(null); }, 'close'],
 			['Save the queue as a playlist', '', saveQueueAsList, 'plus'],
+			['Share the queue as a link', '', shareQueue, 'share'],
+			['Paste a list of songs', 'Artist - Title lines or YouTube links', function () { location.hash = '#/paste'; }, 'paste'],
+			moduleReady('quiz') ? ['Guess the anime', 'a quiz from your openings and endings', function () { location.hash = '#/quiz'; }, 'tv'] : null,
+			moduleReady('wrapped') ? ['Your year', 'your listening, in review', function () { location.hash = '#/wrapped'; }, 'sparkle'] : null,
+			moduleReady('lyrics') ? ['Lyrics of the playing song', 'big, for singing along', function () { location.hash = '#/lyrics'; }, 'list'] : null,
 			['Keyboard shortcuts', '?', showShortcuts, 'keyboard'],
 			['Switch light or dark', '', function () { ToyKit.setTheme(ToyKit.theme() === 'dark' ? 'light' : 'dark'); }, 'mood']
 		];
@@ -4612,11 +4985,11 @@
 			return { key: k, a: a, s: a.plays * 3 + likes * 5 + a.tracks.length + (ix.artists[k].scene === 'vtuber' ? -2 : 0) };
 		}).filter(function (x) { return x.a.tracks.length >= 2 || x.a.plays; }).sort(function (x, y) { return y.s - x.s; }).slice(0, n);
 	}
-	function isSaved(t) { return dzSaved.some(function (s2) { return s2.id === t.id; }); }
+	function isSaved(t) { var v = t.videoId || (t._video && t._video.videoId); return dzSaved.some(function (s2) { return s2.id === t.id || (v && s2.videoId === v); }); }
 	function toggleSaved(t, btn) {
 		var was = isSaved(t);
 		if (was) dzSaved = dzSaved.filter(function (s2) { return s2.id !== t.id; });
-		else dzSaved.unshift({ id: t.id, title: t.title, artist: t.artist, artistId: t.artistId, preview: t.preview, cover: t.cover, album: t.album, savedAt: Date.now() });
+		else dzSaved.unshift({ id: t.id, title: t.title, artist: t.artist, artistId: t.artistId, preview: t.preview, cover: t.cover, album: t.album, videoId: t.videoId || (t._video && t._video.videoId) || '', channel: (t._video && t._video.channel) || t.channel || '', savedAt: Date.now() });
 		kvSet('discover:saved', dzSaved);
 		if (btn) { btn.classList.toggle('is-on', !was); btn.setAttribute('aria-pressed', was ? 'false' : 'true'); }
 		U.toast(was ? 'Removed from Saved for later.' : 'Saved for later: ' + t.title + '.', { action: 'Undo', onAction: function () { toggleSaved(t, btn); } });
@@ -4638,16 +5011,7 @@
 		var who = t.artistId ? h('a', { href: '#/discover?dz=' + t.artistId, text: t.artist }) : h('span', { text: t.artist });
 		li.appendChild(h('span', { class: 'ts-q-text' }, [h('span', { class: 'ts-q-title', text: t.title + (t.version ? ' ' + t.version : '') }), h('span', { class: 'ts-q-artist' }, [who, t.album ? ' ' + DOT + ' ' + t.album : ''])]));
 		if (!knownArtistName(t.artist)) li.appendChild(h('span', { class: 'ts-tag', text: 'New artist' }));
-		var pv = U.iconBtn('play', 'Preview ' + t.title, { cls: 'ts-pv', on: { click: function () { if (list) pvStart(list, list.indexOf(t), 'Previews'); else preview(t, pv); } } });
-		pv.disabled = !t.preview;
-		li.appendChild(pv);
-		var sv = U.iconBtn('plus', 'Save ' + t.title + ' for later', { cls: 'ts-save' + (isSaved(t) ? ' is-on' : ''), on: { click: function () { toggleSaved(t, sv); } } });
-		sv.setAttribute('aria-pressed', isSaved(t) ? 'true' : 'false');
-		li.appendChild(sv);
-		li.appendChild(h('button', { class: 'ts-btn ts-btn--secondary ts-btn--sm', text: canRead() ? 'Play' : 'YouTube', title: canRead() ? 'Find it on YouTube and play it here (100 quota units)' : 'Search YouTube in a new tab', on: { click: function (e) { playFound(t, e.currentTarget); } } }));
-		var ab = addButton(t);
-		if (ab) li.appendChild(ab);
-		li.appendChild(U.iconBtn('close', 'Not interested in ' + t.artist, { on: { click: function () { hideArtist(t.artist); li.parentNode && li.parentNode.removeChild(li); } } }));
+		findButtons(li, t, list);
 		return li;
 	}
 	function dzList(box, tracks, empty) {
@@ -4720,7 +5084,9 @@
 		var newRel = dsection(view, 'New from artists you have', 'releases from the last two years');
 		var more = dsection(view, 'More by artists you have', 'their best songs that are not in your library');
 		var genres = dsection(view, 'From playlists of your genres');
-		var savedSec = h('section', { class: 'ts-dsec ts-dsaved' }, [h('div', { class: 'ts-sec-head' }, [h('h2', { text: 'Saved for later' }), h('span', { class: 'ts-muted', text: plural(dzSaved.length, 'song') })])]);
+		var savedHead = h('div', { class: 'ts-sec-head' }, [h('h2', { text: 'Saved for later' }), h('span', { class: 'ts-muted', text: plural(dzSaved.length, 'song') })]);
+		if (engine && dzSaved.length) savedHead.appendChild(smallBtn('play', 'Play all', function () { engine.list(dzSaved.map(findOf), { label: 'Saved for later', href: '#/discover' }); }));
+		var savedSec = h('section', { class: 'ts-dsec ts-dsaved' }, [savedHead]);
 		view.appendChild(savedSec);
 		dzList(savedSec, dzSaved.slice(), 'Press + on any song to keep it here.');
 		// find the top artists on Deezer, then fill the sections
@@ -5092,10 +5458,7 @@
 				var li = h('li', { class: 'ts-drow' });
 				li.appendChild(prefs.art ? U.art(it.videoId, 0, it.title, 'ts-q-art', true, 0) : U.swatch(0, it.title, 'ts-q-art', 0));
 				li.appendChild(h('span', { class: 'ts-q-text' }, [h('span', { class: 'ts-q-title', text: it.title }), h('span', { class: 'ts-q-artist', text: (it.addedAt ? String(it.addedAt).slice(0, 10) + ' ' + DOT + ' ' : '') + name })]));
-				li.appendChild(h('button', { class: 'ts-btn ts-btn--secondary ts-btn--sm', text: 'Play', title: 'Play it here; it joins the playlist Discovered', on: { click: function (e) { playFound({ id: it.videoId, artist: name, title: it.title, _video: { videoId: it.videoId, title: it.title, channel: name } }, e.currentTarget); } } }));
-				var ab4 = addButton({ id: it.videoId, artist: name, title: it.title, _video: { videoId: it.videoId, title: it.title, channel: name } });
-				if (ab4) li.appendChild(ab4);
-				li.appendChild(U.iconBtn('external', 'Open on YouTube', { on: { click: function () { window.open('https://www.youtube.com/watch?v=' + it.videoId, '_blank', 'noopener'); } } }));
+				findButtons(li, { id: it.videoId, artist: name, title: it.title, _video: { videoId: it.videoId, title: it.title, channel: name, channelId: id } }, null);
 				ul.appendChild(li);
 			});
 			up.body.appendChild(ul);
@@ -5316,7 +5679,7 @@
 	function renderExploreTab(force) {
 		var box = $('like');
 		if (!box || $('panel-like').hidden) return;
-		var id = ctl ? ctl.current() : null, t = id ? lib.tracks[id] : null;
+		var id = ctl ? ctl.current() : null, t = id ? trackOf(id) : null;
 		var key = (t ? t.id : '') + '|' + (recMemo.ix === idx() ? 'same' : 'new');
 		if (!force && likeShown === key && box.firstChild) return;
 		likeShown = key;
@@ -5600,7 +5963,7 @@
 			else if (k === 'q' || k === 'Q') toggleQueue();
 			else if (k === 'o' || k === 'O') modeMenu($('btn-mode'));
 			else if (k === 'r' || k === 'R') toggleRepeat();
-			else if (k === 'l' || k === 'L') toggleLike(ctl && lib.tracks[ctl.current()]);
+			else if (k === 'l' || k === 'L') toggleLike(ctl && trackOf(ctl.current()));
 			else if (k === 'm' || k === 'M') toggleMute();
 			else if (k === 't' || k === 'T') setTheater(!document.body.classList.contains('is-theater'));
 			else if (k === 'f' || k === 'F') toggleFullscreen();
@@ -5654,7 +6017,7 @@
 		wireResizer();
 		U.setIcon($('btn-bar-more'), 'more');
 		$('btn-bar-more').addEventListener('click', function (e) { barMoreMenu(e.currentTarget); });
-		$('btn-like').addEventListener('click', function () { toggleLike(ctl && lib.tracks[ctl.current()]); });
+		$('btn-like').addEventListener('click', function () { toggleLike(ctl && trackOf(ctl.current())); });
 		$('btn-mute').addEventListener('click', toggleMute);
 		$('vol').addEventListener('input', function () { setVolume(+$('vol').value); });
 		$('vol').addEventListener('wheel', function (e) { e.preventDefault(); setVolume((player.muted() ? 0 : player.volume()) + (e.deltaY < 0 ? 5 : -5)); }, { passive: false });
@@ -5667,8 +6030,8 @@
 		var seek = $('seek');
 		seek.addEventListener('input', function () { seeking = true; $('time-cur').textContent = clock(+seek.value); });
 		seek.addEventListener('change', function () { seeking = false; player.seek(+seek.value); });
-		player.on('state', function (e) { renderTransport(); renderTime(); if (e && (e.state === 'playing' || e.state === 'paused')) playerMessage(null); if (e && e.state === 'playing' && pv.audio && !pv.audio.paused) { pv.audio.pause(); pvRender(); } if (e && e.state === 'playing') { if (previewAudio) stopPreview(); if (pauseOnStart) { pauseOnStart = false; ctl.pause(); say('Sleep timer: paused after the track.'); } } });
-		player.on('time', function (e) { renderTime(); if (transport && e) transport.position({ duration: e.duration, position: e.current }); });
+		player.on('state', function (e) { if (e && e.state === 'playing') applyVolume(fadesOn() ? fadeNow : 1); renderTransport(); renderTime(); if (e && (e.state === 'playing' || e.state === 'paused')) playerMessage(null); if (e && e.state === 'playing' && pv.audio && !pv.audio.paused) { pv.audio.pause(); pvRender(); } if (e && e.state === 'playing') { if (previewAudio) stopPreview(); if (pauseOnStart) { pauseOnStart = false; ctl.pause(); say('Sleep timer: paused after the track.'); } } });
+		player.on('time', function (e) { timeExtras(e); renderTime(); if (transport && e) transport.position({ duration: e.duration, position: e.current }); if (TS.lyrics && TS.lyrics.tick && e) TS.lyrics.tick(e.current, e.id); });
 		window.addEventListener('hashchange', onRoute);
 	}
 
@@ -5678,8 +6041,17 @@
 		'': viewHome, search: viewSearch, songs: viewSongs, artists: viewArtists, artist: viewArtist, genres: viewGenres, genre: viewGenre,
 		family: viewFamily, c: viewFacet, browse: viewBrowse, works: viewWorks, work: viewWork, track: viewTrack, mix: viewMix,
 		stats: viewStats, fix: viewFix, settings: viewSettings, library: viewLibrary,
-		lists: viewLists, list: viewList, liked: viewLiked, channel: viewChannel, person: viewPerson, people: viewPeople, history: viewHistory, label: viewLabel, map: viewMap, discover: viewDiscover
+		lists: viewLists, list: viewList, liked: viewLiked, channel: viewChannel, person: viewPerson, people: viewPeople, history: viewHistory, label: viewLabel, map: viewMap, discover: viewDiscover,
+		lyrics: pageFile('lyrics'), quiz: pageFile('quiz'), wrapped: pageFile('wrapped'), share: pageFile('share'), paste: pageFile('share')
 	};
+	// A view drawn by a page file (lyrics.js, quiz.js, wrapped.js): its view(view, ctx, parts, query).
+	function pageFile(name) {
+		return function (view, parts, query) {
+			var mod = TS[name];
+			if (!mod || !mod.view) { view.appendChild(h('p', { class: 'ts-empty', text: 'This page could not be loaded.' })); return; }
+			mod.view(view, pageCtx, parts, query);
+		};
+	}
 	function renderAll() {
 		renderNav();
 		renderView(true);
@@ -5691,7 +6063,8 @@
 	}
 	function loadSettings() {
 		if (thumb) return Promise.resolve();
-		return Promise.all([store.get('plan', null), store.get('presets', []), store.get('quota', null), store.get('context', null), store.get('lists', null), store.get('focus', null), store.get('queue:hand', []), store.get('rating:beforeLike', {})]).then(function (r) {
+		return Promise.all([store.get('plan', null), store.get('presets', []), store.get('quota', null), store.get('context', null), store.get('lists', null), store.get('focus', null), store.get('queue:hand', []), store.get('rating:beforeLike', {}), store.get('songprefs', {})]).then(function (r) {
+			songPrefs = r[8] && typeof r[8] === 'object' ? r[8] : {};
 			beforeLike = r[7] && typeof r[7] === 'object' ? r[7] : {};
 			hand = {};
 			(Array.isArray(r[6]) ? r[6] : []).forEach(function (id) { hand[id] = true; });
@@ -5710,11 +6083,11 @@
 		return store.get('queue', null).then(function (saved) {
 			var ok = saved && Array.isArray(saved.items) && saved.items.length;
 			if (ok) {
-				var items = saved.items.filter(function (id) { return lib.tracks[id]; });
+				var items = saved.items.filter(function (id) { return trackOf(id); });
 				var at = items.indexOf(saved.items[saved.index | 0]);
 				if (at < 0) at = Math.min(Math.max(-1, saved.index | 0), items.length);
-				makeController({ items: items, index: items.length ? Math.max(0, Math.min(at, items.length - 1)) : -1, history: (saved.history || []).filter(function (id) { return lib.tracks[id]; }), done: false, repeat: !!saved.repeat });
-				queueMode = context.list ? 'list' : plan.mode === 'true' ? 'true' : 'plan';
+				makeController({ items: items, index: items.length ? Math.max(0, Math.min(at, items.length - 1)) : -1, history: (saved.history || []).filter(function (id) { return trackOf(id); }), done: false, repeat: !!saved.repeat });
+				queueMode = context.feeder && engine && engine.feeder() ? 'feeder' : context.list ? 'list' : plan.mode === 'true' ? 'true' : 'plan';
 				return queueMode === 'true' ? ensureBag() : null;
 			}
 			makeController(S.queueInit());
@@ -5763,7 +6136,7 @@
 			}
 			if (s.fallback) say('This browser will not let the page keep data (' + (s.reason || 'storage refused') + '), so nothing will be remembered after this tab closes.');
 			return s.loadLibrary().then(function (parts) { lib = L.fromParts(parts); });
-		}).then(loadSettings).then(function () { return Promise.all([loadHistory(), loadLM()]); }).then(startQueue).then(function () {
+		}).then(loadSettings).then(function () { return Promise.all([loadHistory(), loadLM()]); }).then(startEngine).then(startQueue).then(function () {
 			dirty();
 			renderAll();
 			renderView(false);
@@ -5800,6 +6173,12 @@
 	hook.setFocus = function (id) { setFocus(id); };
 	hook.createSmart = function (name, patch) { var li = { id: newId(), name: name, kind: 'smart', patch: patch }; lists.push(li); saveLists(); return li.id; };
 	Object.defineProperty(hook, 'transport', { get: function () { return transport; } });
+	Object.defineProperty(hook, 'engine', { get: function () { return engine; } });
+	hook.trackOf = function (id) { return trackOf(id); };
+	hook.findOf = function (t) { return findOf(t); };
+	hook.playFind = function (f, mode) { return playFind(f, null, mode); };
+	hook.queueMode = function () { return queueMode; };
+	hook.pageCtx = pageCtx;
 	hook.playIds = playFrom;
 	hook.playFrom = playFrom;
 	hook.playNow = playNow;
