@@ -19,6 +19,11 @@ Toy 101. A music player for one listener's YouTube playlists and Liked videos: s
 | `engine.js` | The discovery engine: the one object the page calls about songs the library does not have. | no |
 | `share.js` | A queue as a link anyone can open (`#/share`), and a pasted list of songs (`#/paste`). | the pages only |
 | `channel.js` | A YouTube channel as a place to find music: every upload, the artist read from each title, the ones new to you first; the channels that find music for you (`#/channel/<id>`, `#/channels`). | the pages only |
+| `lanes.js` | A lane: one titled section that loads its own data and is never blank (loading, ready, empty, error, unavailable). | yes |
+| `media.js` | One song row, card and menu for library tracks and found songs alike: source, why, in library, the cost of Play. | yes |
+| `works.js` | Which anime a song is from (AnimeThemes, checked against the library), and the franchise's every opening, ending and insert. | no |
+| `artists.js` | An artist on iTunes, Deezer and AnimeThemes (checked against the library): top songs, albums, EPs, singles, anime songs. | no |
+| `explore.js` | Explore: any song as a door to more music: its anime, YouTube Mix, artist and albums, songs like it, its channel, the library's own (`#/explore/<id>`, the now-playing panel's Explore tab). | the pages only |
 | `wrapped.js` | Your year: the year in review (`#/wrapped`) and the home page's On this day, Rediscover old favourites and the nudge to like a song. | the page half |
 | `lyrics.js` | The words of the song that is on, from LRCLIB: the Lyrics tab, the karaoke page, finding a song by a line of its words. | the views only |
 | `quiz.js` | Guess the anime: a few seconds of an opening or an ending from the library (Apple's 30-second previews), four anime to choose from. | the page only |
@@ -34,7 +39,7 @@ Toy 101. A music player for one listener's YouTube playlists and Liked videos: s
 | `ds.css` | The design system: tokens, the button, badges, progress chips, the player-safe zone, touch screens. | yes |
 | `index.html`, `app.js`, `app.css` | The page. | yes |
 
-Everything is UMD: in the browser each file adds one member to `window.TrueShuffle` (`config`, `parse`, `library`, `shuffle`, `store`, `player`, `demo`, `yt`, and since 2026-10-10 `transport`, `actions`, `match`, `sources`, `finds`, `feeder`, `engine`, `share`, `wrapped`, `lyrics`, `quiz` and `channel`); in Node each is a CommonJS module. The sources are plain ASCII (other characters are written as escapes), old-style (`var`, `function`, one IIFE), tabs.
+Everything is UMD: in the browser each file adds one member to `window.TrueShuffle` (`config`, `parse`, `library`, `shuffle`, `store`, `player`, `demo`, `yt`, and since 2026-10-10 `transport`, `actions`, `match`, `sources`, `finds`, `feeder`, `engine`, `share`, `wrapped`, `lyrics`, `quiz`, `channel`, `lanes`, `media`, `works`, `artists` and `explore`); in Node each is a CommonJS module. The sources are plain ASCII (other characters are written as escapes), old-style (`var`, `function`, one IIFE), tabs.
 
 ```html
 <script src="config.js"></script>
@@ -61,6 +66,11 @@ Everything is UMD: in the browser each file adds one member to `window.TrueShuff
 <script src="wrapped.js"></script>
 <script src="share.js"></script>
 <script src="channel.js"></script>      <!-- needs parse, sources, player, ui -->
+<script src="lanes.js"></script>        <!-- needs ui, media -->
+<script src="media.js"></script>        <!-- needs ui, actions -->
+<script src="works.js"></script>        <!-- needs match, library, sources -->
+<script src="artists.js"></script>      <!-- needs match, library, sources -->
+<script src="explore.js"></script>      <!-- needs channel, lanes, media, works, artists -->
 <script src="app.js"></script>
 ```
 
@@ -123,7 +133,7 @@ Every collection has Play (in order) and Shuffle (its filters as a plan, in the 
 
 **Shuffle options.** The plan carries `apart` (default on: `S.apart` keeps songs of one work, like one artist, from playing back to back in every order but the true shuffle and the rotations), `oneVersion` (one version of each song, `S.songKey`, per build or per bag round) and `text`. The order modes gain `flow` (`S.flowOrder`, Mood flow): a walk where each song leads to a near one by `S.labelSimilarity` (shared genres, `S.moodDistance` on `S.MOOD_RING`, scene, language), never the same artist or `S.workKey` as the last two.
 
-**Songs like this one.** The queue panel has a third tab, Like this, beside Up next and Played: songs like the one that is on, following it as the queue moves (the chosen tab is remembered). The track page shows the same, roomier, under Because you like this, with Play them and Queue them next, and new songs from Deezer close to the artist (with Add). `S.similar(seed, tracks, { history, people, limit, perArtist, perWork, min })` scores the library against the song from its labels (shared genres, the first counting most; the same mood; the era within two years; the scene; the language), the people credited (`people(t)`, here `L.people` without the characters, so a character song and the voice actor's solo single meet: "also sung by"), the same work and artist, and how often the two were played next to each other (`S.coPlays(history, id, { gapMs })`, skips left out, 20 minutes apart at most); other uploads of the same song (`S.songKey`) and sets are left out, and no artist or work fills more than two places. It returns `{ close: [{ t, score, why }], work, together }`: `why` lists the reasons, most telling first, and the page shows two of them in words ("also from Oregairu · also bright"). The work's other songs come OP first.
+**Songs like this one.** The queue panel's third tab, Explore (it was Like this until 2026-10-11), beside Up next and Played, shows explore.js's lanes for the song that is on, following it as the queue moves (the chosen tab is remembered). The track page shows its library, anime and similar lanes. `S.similar(seed, tracks, { history, people, limit, perArtist, perWork, min })` scores the library against the song from its labels (shared genres, the first counting most; the same mood; the era within two years; the scene; the language), the people credited (`people(t)`, here `L.people` without the characters, so a character song and the voice actor's solo single meet: "also sung by"), the same work and artist, and how often the two were played next to each other (`S.coPlays(history, id, { gapMs })`, skips left out, 20 minutes apart at most); other uploads of the same song (`S.songKey`) and sets are left out, and no artist or work fills more than two places. It returns `{ close: [{ t, score, why }], work, together }`: `why` lists the reasons, most telling first, and the page shows two of them in words ("also from Oregairu · also bright"). The work's other songs come OP first.
 
 **Journeys.** From any song (its menu, or the map icon in the now playing panel): pick the song to end on (search, Surprise me: one of the furthest 12%, or click it on the map) and how many songs (10 to 50, remembered); `E.journey` on the map's own vectors (`mapState.recipe`, the labels when the language model is not loaded) finds the way, and it plays in order as `Journey: A to B` (the context carries `journey`). On the map, a selected song has Journey from here: the start is ringed, a dashed line follows the pointer, and a click on another dot sets off. While a journey plays the map draws the whole route, Start to End, the steps already played faded.
 
@@ -133,7 +143,7 @@ Every collection has Play (in order) and Shuffle (its filters as a plan, in the 
 
 **The map (#/map).** `embed.js` turns the tracks of the scope into vectors by one of `E.RECIPES`: Sound (the labels), Names (character trigrams of titles, artists and works, hashed), Taste timeline (labels and when each song was added), Blend, and Language model (multilingual MiniLM through transformers.js 4.3.1 from jsDelivr and the model from Hugging Face, about 120 MB, only after the reader asks; the vectors are kept, quantised, under `lm:vectors`). The page finds 15 neighbours each and lays the graph out in slices so it animates, then names k-means regions by their commonest genre or work. Colour by genre family, mood, scene or language (the eight validated categorical hues in a fixed order; the rest fold into Other) or by year and plays (one blue ramp). Drag, scroll or pinch, click a dot (play, play its neighbourhood), Shift-drag a box (shuffle, save as playlist); the legend fades categories; the regions are listed under the map as buttons for the keyboard. The queue's next tracks are drawn as a path.
 
-**Discover (#/discover?seed=<track> or ?artist=<key>).** Songs that are not in the library yet. `discover.js` asks Deezer's public API (no key) for the seed artist, its related artists and their top songs. Deezer sends no CORS header, only JSONP, which runs the server's script; so `sandboxTransport()` runs it in a hidden iframe with `sandbox="allow-scripts"` and no same origin: the frame cannot read this page, its storage or the sign-in token, accepts only `https://api.deezer.com/` addresses, and posts plain JSON back, which the page checks (only Deezer's own picture and preview hosts are used) and shows as text. `createDeezer({ transport })` (`searchArtists`, `related`, `top`, cached), `findArtist(dz, names, titles)` (the artist whose top songs include a title the library has; with titles to check and none matching, another artist of the same name is refused), `suggest(dz, { names, titles, known, hidden, perArtist, artists })` (the related artists, the seed and hidden ones left out, those the library lacks first, each with its top songs), `norm`, `youtubeQuery`, `bestVideo(results, track)` (the Topic channel first, covers last), `API`. When Deezer does not know the artist the page tries the three library artists that sound closest. A preview plays 30 seconds in the page (the YouTube player pauses). Play, when signed in, runs one `client.search(query, { max })` (`SEARCH_UNITS`, 100 quota units; every other call costs one) and one `videoBatch`, adds the video to the local playlist `local:discovered` ("Discovered") with the artist and title as labels, and plays it; signed out, it opens a YouTube search in a new tab. **Add** puts the song at the end of one of the account's own YouTube playlists (`client.addToPlaylist`, 50 quota units, plus the search when the video is not known yet): the first time, a dialog explains and the page signs in again asking for `Y.WRITE_SCOPE` as well, keeping the add in sessionStorage (`toy.101-true-shuffle.pendingAdd`) and finishing it when Google sends the reader back. The song joins the library under that playlist; the toast's Undo takes it out again on YouTube (`removeFromPlaylist`). With several playlists a menu asks which (the last one used comes first; one the song is already in is greyed out). Add is on Discover's rows, the artist page's other songs, a channel's uploads, the YouTube search results, the preview bar, and, for a song in the library but not in a playlist (one played from Discover), the track menu and the track page. "Not interested" keeps an artist out (`discover:hidden`). The page also lists songs like the seed from the library that were played at most once, and, signed in, a YouTube search box prefilled from the labels.
+**Discover (#/discover).** Songs that are not in the library yet. Since 2026-10-11 `#/discover?seed=<track>` goes to Explore and `?artist=<key>` to the artist's page, whose artist and similar lanes replaced Deezer's other songs and releases there. `discover.js` asks Deezer's public API (no key) for the seed artist, its related artists and their top songs. Deezer sends no CORS header, only JSONP, which runs the server's script; so `sandboxTransport()` runs it in a hidden iframe with `sandbox="allow-scripts"` and no same origin: the frame cannot read this page, its storage or the sign-in token, accepts only `https://api.deezer.com/` addresses, and posts plain JSON back, which the page checks (only Deezer's own picture and preview hosts are used) and shows as text. `createDeezer({ transport })` (`searchArtists`, `related`, `top`, cached), `findArtist(dz, names, titles)` (the artist whose top songs include a title the library has; with titles to check and none matching, another artist of the same name is refused), `suggest(dz, { names, titles, known, hidden, perArtist, artists })` (the related artists, the seed and hidden ones left out, those the library lacks first, each with its top songs), `norm`, `youtubeQuery`, `bestVideo(results, track)` (the Topic channel first, covers last), `API`. A preview plays 30 seconds in the page (the YouTube player pauses). Play, when signed in, runs one `client.search(query, { max })` (`SEARCH_UNITS`, 100 quota units; every other call costs one) and one `videoBatch`, adds the video to the local playlist `local:discovered` ("Discovered") with the artist and title as labels, and plays it; signed out, it opens a YouTube search in a new tab. **Add** puts the song at the end of one of the account's own YouTube playlists (`client.addToPlaylist`, 50 quota units, plus the search when the video is not known yet): the first time, a dialog explains and the page signs in again asking for `Y.WRITE_SCOPE` as well, keeping the add in sessionStorage (`toy.101-true-shuffle.pendingAdd`) and finishing it when Google sends the reader back. The song joins the library under that playlist; the toast's Undo takes it out again on YouTube (`removeFromPlaylist`). With several playlists a menu asks which (the last one used comes first; one the song is already in is greyed out). Add is on Discover's rows, the artist page's other songs, a channel's uploads, the YouTube search results, the preview bar, and, for a song in the library but not in a playlist (one played from Discover), the track menu and the track page. "Not interested" keeps an artist out (`discover:hidden`).
 
 **Controls (third pass).** The shuffle order is a labelled pill in the player bar (O), in the queue under "Playing from", next to Shuffle everything on the home page, and every Shuffle button is split: the main part shuffles in the current order, the caret picks another; the order menu describes each order and toggles keeping works apart and one version per song. Under the video: S, M and L sizes, theater mode (T: a wide player, the sections as icons) and full screen (F); the panel's edge still drags. Volume and mute (M, - and =; `p.volume(0..100)` and `p.muted(bool)` on both players, remembered); a heart likes a song (rating 5; L), and #/liked lists what is rated 4 or more (`minRating` in the plan). Ctrl+K opens a palette over pages, actions, playlists, artists, works, genres, moods, scenes, years and songs; ? lists the keys. Blocking, removing from a playlist, clearing the queue and liking can be undone from the toast. Long pages keep a compact header with Play. Song lists can be compact (Settings).
 
@@ -148,7 +158,7 @@ Every collection has Play (in order) and Shuffle (its filters as a plan, in the 
 - **Keeping a find.** It joins the library, in the playlist Discovered, when it is liked or kept, or after it has been finished twice.
 - **Saved for later** has Play all.
 - **Feeders.** A list of finds, or a radio, plays through a feeder (feeder.js), which looks songs up a few ahead. The queue shows the ones still being found ("Finding...", "Coming up"), and the line under the queue says what the radio does.
-- **Endless** (on by default; the bar's More switches it, and it is remembered as `endless`). When the queue runs out, a radio from the last song carries on instead of "That was the last track". Start radio is the same endless radio. Its share of new songs (`newRatio`, 0.5) matters once a radio has sources of new songs; until then it plays your library.
+- **Endless** (on by default; the bar's More switches it, and it is remembered as `endless`). When the queue runs out, a radio from the last song carries on instead of "That was the last track". Start radio is the same endless radio. About half its songs (`newRatio`, 0.5) are new, from free sources only (app.js `radioProviders`, feeder.js providers), never a search: the seed song's YouTube Mix, read on the player between two songs (`mixAtBoundary`: the next song waits up to 6 s for the ids, then their titles come from oEmbed; kept 2 days); the seed's channel's other uploads; and the seed artist's Topic channel, their songs as YouTube Music has them (each list 1 unit for 50 with a sign-in or a key, kept 6 hours, and none once the day's automatic allowance is spent). The demo's radios take their new songs from channel.js's invented uploads.
 - **The bar's More** also says how much of today's YouTube allowance is used: a song search costs 100 units, and 1,500 are kept for imports and adds.
 
 **Playback extras (2026-10-10).**
@@ -388,13 +398,15 @@ What was seen of these sources on 2026-10-10 (with `test/fixtures-check.mjs`): i
 | library | match.js `inLibrary` (the user's own upload first) | 0 | always |
 | pool | a video any list or search returned | 0 | always |
 | topic | the artist's Topic channel uploads (learnt from "X - Topic" channels), then the pool again | 1 per 50 | `allow: 'cheap'` or `'search'`, within the automatic allowance |
+| group | an album's own YouTube list (`resolveGroup`): one playlist search, a YouTube Music album (`OLAK5uy_`) with the album's title first, read 50 at a time, its songs matched through the pool | 101 for the whole album | a press on an album's Play all or Shuffle, from `GROUP_MIN` (4) songs that need finding |
 | search | one YouTube search, match.js `bestVideo` with its minimum | 101 | `allow: 'search'` (a press on Play), within today's allowance less the reserve |
 
-- **`deps`**: `{ M (match.js), cache, index(), lists: { uploads(channelId, { max }) }, canList(), search(q, { max }), canSearch(), budget: { left(), autoLeft(), spend(units, auto) }, topicChannels(), now }`.
+- **`deps`**: `{ M (match.js), cache, index(), lists: { uploads(channelId, { max }), playlist(listId, { max }) }, canList(), search(q, { max }), searchPlaylists(q, { max }), canSearch(), budget: { left(), autoLeft(), spend(units, auto) }, topicChannels(), now }`.
 - **Calls**:
   - `prepare(finds)` reads the cache once.
   - `estimate(finds)` is synchronous: `{ perFind: { key: { rung, units, status } }, ready, cheap, search, blocked, units }`. The status is `ready`, `cheap`, `search`, `needs-key`, `over-budget` or `not-found`.
   - `resolve(find, { allow })` returns `{ videoId, rung, units, video }`, or `{ none, rung, reason }`, where the reason is `needs-search`, `needs-key`, `over-budget` or `not-found`.
+  - `resolveGroup(finds, { query, title })` returns `{ resolved, units, list, reason }`: the group rung above; the reason is `few`, `needs-key`, `over-budget` or `no-list` when it did nothing. Afterwards each matched song resolves free (the cache rung).
   - `learn(videos)`, `forget(videoId)` (the player refused it), `topicOf(name)` and `known()`.
 
 ## feeder.js
@@ -445,6 +457,7 @@ When the queue is waiting, a new song that is not ready within `maxWaitMs` gives
 | `save(find)`, `unsave(key)`, `saved()`, `isSaved(key)` | Saved for later. |
 | `hide(kind, value)` | Returns `undo()`. `kind` is `artist`, `song`, `work` or `channel`. Also `isHidden(find)` and `hidden()`. |
 | `estimate(finds)`, `resolve(find, { allow })` | What playing would take; finding an id. |
+| `resolveGroup(finds, { query, title })` | An album's own YouTube list looked up once (the resolver's group rung), before its songs are played. |
 | `quota()` | `{ used, daily, reserve, left, auto: { used, cap }, resetsAt }` |
 | `on('feeder' \| 'saved' \| 'hidden' \| 'quota' \| 'library', fn)`, `persist()`, `started()` | Events and saving. |
 
@@ -708,6 +721,198 @@ Checked in a browser on 2026-10-10 with `scripts/qa/drive.mjs` (the script and a
 - **Below:** as before, when the channel's songs are mostly one artist's, their other songs and releases from Deezer, and what sounds like the channel in your library (app.js `channelExtras`).
 
 **`#/channels`** (Channels, under Artists in the sections): the channels that find music for you as cards (each card's play shuffles your songs from it), then the artists' own channels. The home page shows the first ten curators, and the now-playing panel links the song's channel when it is one.
+
+## lanes.js
+
+`TS.lanes`: a lane is one titled section of a page that loads its own data and is never blank: a skeleton while it loads, then its songs (rows, cards, or rows in groups), or words for why there are none. Explore's lanes, the song page's and the artist page's are lanes.
+
+| Name | What it is |
+| --- | --- |
+| `mount(el, ctx, spec)` | A lane in `el`: `{ node, reload(), state(), data(), destroy() }`. `spec`: `{ id, title, sub, badge (a ui.js badge kind), layout: 'rows' \| 'cards' \| 'groups', load(signal) -> Promise<data>, unavailable() -> null \| { text, fix: { label, icon, run(lane) } }, empty, limit, seeAll: { href, label }, actions(data) -> [nodes], render(body, data), row (media.js options), lazy, key, source, compact, grid, maxAgeMs, isEmpty(data), onFix(kind, lane) }`. `data` is a list of items, or `{ items, groups: [{ title, sub, items }], note, sub, total, more }`; items are library tracks, finds or media.js items. |
+| `STATES` | `loading` (a skeleton of the layout, `aria-busy`), `ready`, `empty` (the spec's sentence), `error` (`explain` and its fix), `unavailable` (what the lane needs first: a sign-in, a key, a press; its fix runs, then the lane asks again). The lane's node carries `data-state`. |
+| `explain(error, { now, online, source, noAuto, timeZone })` | Any error in words for the listener: `{ code, text, fix: { label, kind: 'retry' \| 'signin' \| 'key' \| 'settings' } \| null, retryMs }`. sources.js `SourceError` codes (offline, rate and down with "asked again in a minute", network, server, not-found, auth), yt.js `YTError` codes (signed-out, quota with its reset at midnight Pacific in the listener's own time, bad-key), aborted. |
+| `forget(keyOrPrefix)` | Forget the lanes kept in memory (all without an argument). With a `key`, the same lane again in a session paints at once from memory (`maxAgeMs` bounds it). |
+| `MARGIN` | 600: a lazy lane loads when it comes this many pixels near the screen (IntersectionObserver; at once without one). |
+
+A load is aborted (AbortController) when its lane is destroyed or leaves the page, and an answer that comes late is dropped. A fix of `kind` runs the spec's `onFix`, then the page's `ctx.fix`, then `ctx.signIn` (signin), else Settings. The CSS is one `<style id="ts-lanes-css">` on the app's tokens; nothing is fixed or covers the player.
+
+## media.js
+
+`TS.media`: one song row, one song card and one song menu for library tracks and found songs alike. A row says where the song came from (a source badge), why it is here (the why line), whether the library has it (a check) and what playing it takes (a badge on Play). Every title goes in as text, never as markup.
+
+| Name | What it is |
+| --- | --- |
+| `item(trackOrFind, ctx)` | One shape for a library track, a find, or `{ t, why }`: `{ key, videoId, title, artist, work, role, album, cover, preview, durationSec, source, why, mine (a library id or null), track, find, kind, ... }`. |
+| `row(ctx, item, opts)`, `list(ctx, items, opts)` | A `<li>` (art, title, artist, role chip, the why line, the source badge, the check, the length; Play with its cost, Play next, More), and an `<ol>` of them. On touch screens the buttons are always shown and a long press opens the menu. |
+| `card(ctx, item, opts)` | A card (art, title, line, a play button over the art). |
+| `menu(ctx, item, at, opts)` | Play now, Play next, Add to queue, Save for later or Saved, Preview (with a preview), Not interested (engine.js `hide`, with an Undo), Go to the artist, work or channel when known, Explore, Open on YouTube. |
+| `play(ctx, item, mode, opts)`, `playFrom(ctx, items, index, context)` | A library song through `ctx.play.now`/`next`/`later`; a find through `ctx.play.find(find, mode)`; from an index on, as the page's queue. |
+| `whyText(item, max, ctx)` | The reasons (`why`: `[[kind, value]]`) as one line, at most `max` (2): "OP2 of Clannad . on Low Tide". |
+| `sourceBadge(item)` | `[kind, text]` for its source (AnimeThemes: Anime, AniList: Airing, a Mix, a channel, iTunes, Deezer, Last.fm, Shared ...), or null for the library. |
+| `cost(ctx, item, estimate)` | What Play takes: 0 (known), 1 (a cheap lookup), 100 (a YouTube search), or `'tab'` (no key and no sign-in: YouTube's own search opens in a new tab, and the button says YouTube). |
+
+`opts`: `{ context: { label, href } (what the queue says is playing), list (Play from here plays the rest after it), compact (the now-playing panel: three icons at most), index (a number column), onPlay(item, mode), badge, why, sub, preview, menuItems(item), onHide(item, kind, undo), go, href }`. Preview is `ctx.preview(item, button)` (app.js: the 30-second preview); without it there is no preview button.
+
+## works.js
+
+`TS.works`: which anime a song in the library is from, checked against the listener's own songs, and that anime's whole franchise of songs (every opening, ending and insert across its seasons and films), with the ones the library has marked. Explore's anime lane reads it.
+
+```js
+var works = TS.works.create({ at, it, M, L, index, tracks, map, now });   // at, it: sources.js animeThemes and iTunes clients
+works.workOf(track, { signal })      // -> Promise<null | { kind: 'anime', anime: { slug, name, year, season, format }, series, sure, via: 'label' | 'title' | 'user', candidates }>
+works.franchise(found, { signal })   // -> Promise<null | { title, series, entries, songs, have, total, current }>
+works.reject(track, slug)            // "Not this one": remembered; workOf offers the next candidate
+works.confirm(track, slug)           // the listener says it is this one
+works.demo(track, lib)               // -> { found, franchise } | null: invented from the demo library, asks nothing
+works.soundtracks(track, { signal }) // -> Promise<null | { work, albums, have, total, sure }>: a game's, a visual novel's or a stage work's albums on iTunes
+```
+
+- **A song with a work label** is looked up by its label: AnimeThemes is asked for anime and series of that name (its synonyms count: "Oregairu"), the first `TOP` (3) anime are read, and one is **verified** when one of its themes is a library song of that work (match.js `sameSong`, `SAME` or more, over every way a track can meet a theme: `probes`). When none is, a series the label names (Monogatari) lends its entries, then the song's own title is tried. Unverified, the best candidate comes back with `sure: false`.
+- **A song without a label** (`titleLookable`: an anime scene, or no scene and Japanese or no language) is looked up by its title and `titleAlt` (`titleQueries`): an AnimeThemes song counts when match.js says it is the same song and the artist is part of the evidence (`titleMatches`), so an equal title by another artist never does.
+- **Kept** in the page's map (`keysOf`: `work:<fold(work)>`, `song:<id>`): `fresh` says an answer is good for `KEEP_MS` (90 days), "found nothing" for `KEEP_NONE_MS` (30 days); the listener's own choice always. Without a map, for the session.
+- **The franchise** (`assemble`): the entries in airing order (`orderEntries`; crossovers, `isCrossover`, after the franchise's own), each entry's themes OP, ED, inserts by number (`orderThemes`). Each theme gains `entry`, `mine` (`mineIn`: match.js `inLibrary` over the library, then over `extraIndex`, its covers as the songs they cover and its unsure uploads as the parser read them; `mineHow` is `recording`, `version` or `cover`), `alsoIn` (the later entries that use it again; the song is listed once, in its first entry), `firstIn` and `current` (the song the lane was opened from).
+- **Soundtracks** (`albumsFor`): iTunes albums with the work's name in their title, from an artist the library credits for the work, or else of a soundtrack, anime or game genre (iTunes also finds The Beatles' "White Album" for "White Album 2").
+- Pure helpers, each tested: `workTracks(tracks, work, M)` (the library's tracks of a work, its spellings read loosely), `workKind(tracks)` (the commonest scene of `WORK_SCENES` among them), `titleLookable`, `titleQueries`, `probes`, `verify(themes, tracks, trackId, o)`, `rankCandidates`, `bestSeries(list, work, M)`, `titleMatches`, `fresh`, `keysOf`, `isCrossover`, `orderEntries`, `orderThemes`, `assemble`, `extraIndex`, `mineIn`, `albumsFor`, `demoFranchise(track, lib, o)` (the demo's invented franchise: its library songs and invented missing themes, shaped like real ones, `videoId` null).
+
+## artists.js
+
+`TS.artists`: an artist or band of the library on iTunes, Deezer and AnimeThemes, checked against the listener's own songs, with their top songs, their releases (albums, EPs, singles and compilations, and how many songs of each the library has) and the anime songs they sang. It feeds Explore's "artist or band" lane and its album dialog. It asks only the clients it is given (sources.js); `demo` asks nothing.
+
+```js
+var artists = TS.artists.create({
+	it: S.iTunes(http, cache), dz: S.deezerFinds(TS.discover.createDeezer({ transport: TS.discover.sandboxTransport() }), cache), at: S.animeThemes(http, cache),
+	M: TS.match, L: TS.library, index: function () { return libIndex(); }, tracks: function () { return L.list(lib); },
+	map: { get: function (k) { return store.get(k); }, set: function (k, v) { return store.set(k, v); } }, now: function () { return Date.now(); }
+});
+artists.find('yorushika', { signal: ctl.signal }).then(function (found) {      // null: no store knows them
+	return artists.discography(found, { signal: ctl.signal });                 // { top, albums, eps, singles, compilations, anime, errors }
+}).then(function (d) { return artists.albumTracks(d.albums[0]); });            // { tracks, have, total }
+```
+
+| Name | What it is |
+| --- | --- |
+| `create(deps)` | The artists object. `deps`: `it` (sources.js `iTunes(http, cache)`), `dz` (`deezerFinds(dz, cache)` or null), `at` (`animeThemes(http, cache)` or null), `M` (match.js), `L` (library.js), `index()` (match.js `index` of the library, for `mine`), `tracks()` (the library's tracks, a list or a map), `map` (`{ get(key) -> Promise<value or undefined>, set(key, value) -> Promise }`, a lasting kv; null keeps everything for the session), `now()`. A source left out is never asked. |
+| `storeFor(name, native, tracks)` | The iTunes store to look in first: `'JP'` for a name or native name in Japanese script, or when most of the tracks (more than half) are Japanese (`lang` `'ja'`, or no `lang` and a title in Japanese script) or from an anime, a game or a visual novel (`scene` `'anime'`, `'game'`, `'vn'`); otherwise `'US'`. |
+| `albumType(album)` | `'album'`, `'ep'`, `'single'` or `'compilation'`, for a title (a string) or `{ title, trackCount, type, source }` (`type`: what the source said; `source: 'deezer'`, or `stated: true`, means the source states its types, so its "album" stands whatever the count). The rule is below. |
+| `mergeAlbums(lists, M)` | Albums from several lists (iTunes's, then Deezer's) as one list, newest first, each release once. `M` is optional (with it, base titles meet too). Plain albums or the iTunes and Deezer clients' own (given a `source`) are typed on the way. Pure: the lists given are left as they were. |
+| `verify(titles, tracks, M)` | Does a store's artist have one of our songs? `titles`: its song or release titles (strings, finds or albums); `tracks`: the library's songs by the artist. `{ sure, score, hits: [{ id, title, as }] }`. A title of seven letters or more counts 1, a shorter one 0.5, a generic one nothing; 1 is sure. In `find`, a store's artist named as ours whose only common title is a short one is sure too when the library has just that one song by them (Kalafina's "Magia"). |
+| `namedAlike(name, ours, M)` | Is a store's artist named as ours (any name of `ours`)? An equal fold or loose key: case, spaces, accents, a leading "the" and romanisation do not matter, kana are read as romaji ("Yorushika" meets its katakana); "Aoi Minato Trio" is not "Aoi Minato". |
+| `RECHECK_MS`, `MISS_MS` | 90 days (a store's artist is looked for again), 30 days (how long "not there" is believed). |
+| `SONGS`, `DZ_TOP`, `TOP`, `ITUNES_MAX` | 100 iTunes songs and 50 Deezer top songs read for an artist (the check and Top songs share each answer), 30 top songs given, 8 iTunes requests at most in one `find`. |
+
+**The calls.**
+
+| Call | What it does |
+| --- | --- |
+| `find(who, { signal, sources })` | `who`: a library artist key, or `{ key, name, native }` (a name alone is folded into a key). The artist on each source, from what is kept when nothing is due, else by asking the sources that are (at once; each on its own line). `sources` (optional, some of `'itunes'`, `'deezer'`, `'animethemes'`) asks only those now and gives the others as they stand, so a lane that needs only Deezer's artist does not wait for iTunes. `-> Promise<found or null>`: null when no source has them (or `who` names nobody). When nothing is found and a source failed, it rejects with that source's `SourceError`. |
+| `discography(found, { signal })` | `-> Promise<{ top: [find], albums, eps, singles, compilations: [album], anime: [find], errors }>`, each list of releases newest first. |
+| `albumTracks(album, { signal, from })` | `-> Promise<{ tracks: [find], have, total }>`: the release's songs, each with `seq`, `disc` and `mine`; `have`: how many library songs it holds (each once); `total`: its songs. `from: 'itunes' or 'deezer'` reads that store's copy first. |
+| `reject(who, source, id)` | "Not this artist": that source's artist (`source` `'itunes'`, `'deezer'` or `'animethemes'`; `id` its id, or its slug on AnimeThemes) is never chosen for this one again; the source is asked again on the next `find`. `-> Promise<found or null>`, as it now stands, nothing asked. |
+| `confirm(who, source, id)` | "Yes, this one": that source's artist is the one, and sure, from now on, and never looked for again. `id` may be a candidate itself. Confirming takes back a rejection of it. `-> Promise<found or null>`. |
+| `demo(artistKey, lib)` | For `?demo=1`: the demo library's artist (demo.js) with invented releases, top songs and anime songs, as `{ found, discography }` shaped exactly as the real ones; null when the library has no such artist. No network, and the same answer every time for the same artist. |
+
+A `SourceError` from the sources (or one of this file's own, with `host: 'artists'`: `'aborted'`, `'bad'` for a source that is not one of the three, `'not-found'` for a release no source can read) is what a call rejects with.
+
+**What `find` gives.**
+
+```js
+{ key, name, native,
+  itunes: { id, name, country, sure, why, link, genre } | null,     // country: the store it was found in
+  deezer: { id, name, sure, why, picture, fans } | null,
+  animethemes: { slug, name, sure, why } | null,
+  sure,                                                              // one of the sources is sure
+  candidates: [{ source, id, name, alike, country, genre, link }     // iTunes's; Deezer's carry picture and fans
+               ...],                                                 // AnimeThemes's: id is the slug
+  at,                                                                // when the sources were last asked (0: never)
+  errors: [{ source, code, message }] }                              // sources that failed this time
+```
+
+`why` says what made a source's artist sure: `'title'` (one of their songs is ours), `'album'` (one of their releases is named as one of our songs), `'twin'` (their releases are the sure store's), `'confirmed'` (the listener said so); `''` with `sure: false` is an equal name only (probable). `candidates` are the other artists the sources gave that are named alike (`alike: true`, first) or whose name holds ours or is held by it, the chosen ones and the rejected ones left out: for a "Not this artist" choice.
+
+**Finding, in order.**
+- **iTunes** is asked in `storeFor`'s store, then in the other; in each, by the name, then by the native name. Of the artists named alike (`namedAlike`), the songs of two at most are read per store and name (`artistSongs`, `SONGS`, kept 7 days), the first whose titles `verify` is sure of is taken. Without one, the releases of the first artist named alike are read once (`albums`, kept 3 days, and the discography's anyway). Without one either, the first artist named alike is probable. At most `ITUNES_MAX` requests in all (sources.js spaces them 3.1 s apart); usually two (a search and the songs). With no library songs to check against (a name alone), the first artist named alike is taken at once, probable.
+- **Deezer** the same way, by the name then the native name: of the artists named alike (three at most), the first whose top songs (`DZ_TOP`) or releases hold one of ours; else the one of that name with the most fans, probable.
+- **AnimeThemes**: the artists search (`search(q, ['artists'])`), by the name then the native name; the first named alike is taken, and their songs (`artist(slug)`, kept 30 days and wanted for the discography anyway) say whether it is sure.
+- **The twin check:** when one of iTunes and Deezer is sure and the other only probable, their release lists are compared (as `verify` counts); a title they share makes the probable one sure too (`why: 'twin'`).
+- **`verify`:** each of our songs met (a title key in common: match.js `titleKeys` and `signature`, and the title with every bracket taken out, so "Blue Signal (Starfall Odyssey)" is also "Blue Signal") adds the strength of its best key once; one song uploaded twice counts once. A key of two kanji or Hangul or more, or of seven letters or more (kana counted as romaji), is worth 1; a shorter one 0.5; Intro, Outro, Interlude, Opening, Ending, Theme and the like 0. Sure at 1: one telling title is enough, a short one ("Home") needs another song. This is the guard against the namesake: an artist of the same name with none of our titles is never sure.
+- **The library's songs by the artist** are those with the artist's key, and those with the artist among the people of their credit (`L.people`: duets, "feat.", voice actors), so a duet counts as evidence and as `mine`.
+
+**What is kept.** Under `artist:<key>` in `map` (else for the session): `{ key, name, itunes, deezer, animethemes, sure, at, no: ['itunes:<id>', 'deezer:<id>', 'animethemes:<slug>'], yes: { source: { id, name, country, ... } }, checked: { source: ms }, cands }`.
+- A source is asked again when it never was, when its artist was found `RECHECK_MS` (90 days) ago or more, or when it had nobody `MISS_MS` (30 days) ago or more. "Not there" is never kept for ever.
+- A source that fails (no answer, a rate limit, a server error) is left as it was and asked again on the next `find`; the others' answers are kept. An abort keeps nothing.
+- The listener's answers win: a confirmed artist is used as it is and its source is never asked again; a rejected one is never chosen or offered, whatever a later check finds. Answers given while a `find` is on its way still win when it ends.
+- Without `map` everything lasts for the session (the object's lifetime). The sources' own cache (sources.js) still keeps their answers.
+
+**Releases.** iTunes's `albums` (when its artist is used) and Deezer's `albums` (likewise), typed and made one list:
+- **The type (`albumType`), in order:** a compilation when the source says so (iTunes's collection type, Deezer's "compile") or the title reads like one (Best of, The Best, Greatest Hits, Anthology, Retrospective, The Essentials, The Singles, Singles 1990-2000, B-Sides, Rarities, The Collection, Complete Works; besuto, zenshuu, sakuhinshuu in Japanese); then the title's " - Single" or " - EP"; then "EP" as a word or "mini album" (and mini arubamu); then what the source said (single, EP; album only from a source that states its types, Deezer); then the count: 1 to 3 songs a single, 4 to 6 an EP unless the title says album, more (or unknown) an album. iTunes calls every release a collection of type Album and its client calls up to three songs a single itself, so a plain "Album" from iTunes never stands against the count. Each release says what decided (`typedBy`: `'name'`, `'store'`, `'count'` or `'guess'`).
+- **One release (`mergeAlbums`):** two entries are one when a title key meets (the fold of the title, or of its base title) and their dates are at most two days apart (time zones), or they share the year and the type; a release joins the entry of its own type first. So an album and its title song's single stay apart, and a release one store lists twice (clean and explicit) is one. The first list's entry leads (its id, key, link and cover; within one store the one with more songs); the other store's id joins `ids`; a type from a title or a store beats one from a count; a compilation stays one.
+- **Which sources:** the sure ones, or all when none is sure; AnimeThemes whenever it has the artist.
+- **`guest`:** a release credited to someone else (not our names, not the stores' names for the artist, not the credit most of iTunes's releases carry, which is how a kanji credit is recognised) is a guest appearance, still listed in its group.
+- **`have`:** null until `albumTracks` has read the release in this session (`haveFrom: 'tracks'`), unless the library's own `album` field names it (`haveFrom: 'library'`, a lower bound).
+- **Top songs:** iTunes's `artistSongs` (Apple ranks them by popularity), then Deezer's `top`, each song once (its base title and version), no instrumental or karaoke, `TOP` at most; each with `mine`.
+- **Anime songs:** AnimeThemes's `artist(slug).songs`, newest first, each with its `work`, `workKey`, `role`, `seq` and `season`, and `mine`.
+- **`mine`** is match.js `inLibrary`'s track id when it is the same song and not another version of it (a TV size or other cut is ours; an instrumental, a live take or a remix is not), else null.
+- **`errors`:** a part that failed (`{ source, code, message }`); the rest is given. When every part fails, the call rejects with the first error.
+
+The album (every release has the same fields):
+
+```js
+{ key: 'it:album:<id>' | 'dz:album:<id>', id, title, year, date, type, typedBy, trackCount, cover, link,
+  source: 'itunes' | 'deezer', have: n | null, haveFrom: '' | 'tracks' | 'library',
+  ids: { itunes, deezer }, country, artist, genre, guest }
+```
+
+**An album's songs.** `albumTracks` reads the release's own source (iTunes's `albumTracks` in the store it was found in, kept 90 days; or Deezer's), or `from`; when that fails and the other store has the release too, the other's copy. `seq` is the song's number on its disc (Deezer's songs are numbered in order), `disc` counts the discs, and the count is remembered for the release's `have` in later discographies. A release that carries its songs (`tracks`, the demo's) is answered from them.
+
+**The demo.** `demo(artistKey, lib)` builds, around the demo library's own songs by that artist (most played first): three singles (two of them its most played songs; a Japanese artist's with the instrumental as well), one to three albums of ten songs with three of ours each, two EPs, and a best-of once there are ten songs or more; years across the library's own years. Top songs are twelve from those releases, two of ours (most played first) to one invented; an anime artist (Kumori Station in the demo) gets AnimeThemes songs for their works and two invented anime. Every song is a sources.js find with `videoId` null, an `it:track:<n>` or `at:song:<n>` key, `mine` (the library's id for ours, null for an invented one) and `demo: true`; invented titles use words demo.js never uses, so they never meet a library song. Ids are invented numbers (9,000,000,000 and up on iTunes). `found` has a namesake among its candidates for "Not this artist". `discography` and `albumTracks` answer the demo's artist from memory afterwards, and an object that did not make it gives an empty discography rather than ask a source for invented ids.
+
+**Tests.** The `artists` section (test/artists.section.js, 81 checks): `storeFor`; `albumType` over 29 names; `mergeAlbums` (dates two days apart, an album and its single, a release listed twice, the type that wins, purity); `verify` (a bracket, a short title, generic titles, kana and romaji, one song uploaded twice); `namedAlike`; `find` against the fixtures through the in-process fake (the Japanese store first, two iTunes requests, the namesake trap on Deezer, AnimeThemes, candidates, what is kept, only some sources, a name alone is probable, the twin check) and against a fake of iTunes's stores (two artists of one name, an equal name with none of our titles, the other store, the native name, a release as evidence, nobody); the time limits (30 and 90 days, another session, no map); corrections; failures; abort before and in flight (iTunes, and Deezer, which takes no signal); `discography` (groups, merging, `have`, top songs, anime songs and duets, guest appearances, one more iTunes request after `find`); `albumTracks` (instrumentals, discs, Deezer, `from`, the other store when one fails); the demo (the same answer, the shapes, no network).
+
+### Lines for the rest of README.md
+
+The file table, after `channel.js`:
+
+| `artists.js` | An artist or band on iTunes, Deezer and AnimeThemes, checked against the library's songs: their top songs, albums, EPs, singles and compilations (how many songs of each you have), the anime songs they sang; invented ones for the demo. | no |
+
+The UMD list: add `artists` after `channel`. The script order, after `channel.js` (before `app.js`):
+
+```html
+<script src="artists.js"></script>      <!-- needs match, library, sources -->
+```
+
+The Tests paragraph's section list: `artists` (in test/artists.section.js: the store, typing and merging releases, the check against the library, the cache's time limits, corrections, abort, the demo).
+
+## explore.js
+
+`TS.explore`: any song, from the library or found, as a door to more music. `#/explore/<library id>` (or `#/explore/find/<find key>` for a found song) shows its lanes, the most specific first; each is a lanes.js lane that loads on its own and says why when it cannot (never blank).
+
+| Lane | What it shows | From |
+| --- | --- | --- |
+| `work` | Its anime or series: every opening, ending and insert song of the franchise, a group per season or film, "You have 3 of 11", filters (All, Missing, Yours, Openings, Endings, Inserts), Play yours (free), Add the missing to the queue, and "Not this anime" when the match is only probable | works.js (AnimeThemes) |
+| `mix` | YouTube's Mix of the song: read through a visible YouTube player only when asked ("Read the YouTube Mix"), the titles from oEmbed, Play the Mix | channel.js `readList`, sources.js `oEmbed` |
+| `artist` | The artist or band: tabs for top songs, albums and EPs, singles, and anime songs they sang; an album card opens its songs (Play all, Shuffle, Add to queue); "Not this artist" when the match is only probable | artists.js (iTunes, Deezer, AnimeThemes) |
+| `similar` | Songs like it by other artists: Last.fm's similar tracks with the listener's key (Settings), else Deezer's related artists' top songs; for an artist page, artists like them | sources.js `lastFm`, `deezerFinds` |
+| `channel` | The uploads of its YouTube channel the library does not have, with a link to the channel's page; signed out, the channel's own page reads them | channel.js, sources.js `ytLists` |
+| `library` | The library's own songs close to it: played together, from the same work, sounding close (shuffle.js `similar`) | the library |
+
+| Name | What it is |
+| --- | --- |
+| `parseSeed(route)` | `{ kind: 'track', id }` for `#/explore/<id>`, `{ kind: 'find', key }` for `#/explore/find/<key>`, else null. |
+| `seedOf(ref, ctx)` | The song behind a route as one shape for a library track and a found song: `{ kind, id, track, find, videoId, title, artist, sure, artistKey, native, titleAlt, work, role, year, channel, channelId, scene, lang, durationSec }`; null when it is not known. |
+| `order(seed)` | The lanes it has, in this order: `work` (a work label, an anime scene, or a Japanese song with no scene), `mix` (a video), `artist` (an artist), `similar`, `channel` (not the artist's Topic channel), `library` (a library song). |
+| `remember(find)`, `recall(key)` | A found song has no page of its own: exploring it keeps it for the session (sessionStorage). |
+| `hrefOf(item)` | Where exploring an item goes: a library song by its id, a found song by its key, an artist seed to the artist's page. |
+| `trail()` | The songs explored last (at most five), shown as crumbs at the top of the page. |
+| `artistSeed(artist)`, `section(el, ctx, seed, laneIds)` | Some lanes inside another page: the song page shows `library`, `work` and `similar`; an artist page (and a channel page of mostly one artist) `artist` and `similar`. |
+| `view(view, ctx, parts, query)` | The page: the trail, the song (Play, Start radio, Like or Save for later, Song details, Open on YouTube), chips to jump to each lane, the lanes. `?lane=<id>` scrolls to one. |
+| `panel(box, ctx, { id, force })` | The now-playing panel's Explore tab (it replaced Like this): the same lanes, three rows each with See all, no Mix. It follows the song that is on, or stays pinned to one (the target button); it never rebuilds under the pointer: a song change then shows "Now playing changed, Show X". |
+| `LANES` | The lane ids, most specific first. |
+
+**Getting there.** The compass on the now-playing panel, Explore in a song's menu, E (the playing song; in a list, the focused one), the palette ("Explore the playing song"), and `#/discover?seed=<id>`, which now redirects here (`#/discover?artist=<key>` goes to the artist's page, which shows the artist and similar lanes).
+
+**Keys (2026-10-11).** E explores, I edits (it was E), R starts a radio from the playing song, Shift+R repeats (it was R), B saves the playing found song for later. A toast says so once.
+
+**In the demo** nothing is asked of any service: works.js and artists.js invent a franchise and a discography from the demo library, the channel lane uses channel.js's invented uploads, and the Mix and similar lanes say they are not in the demo.
 
 ## transport.js
 
@@ -1033,7 +1238,10 @@ p.on(name, fn) -> off()
 p.load(id, { autoplay, startSec }) -> Promise      p.play()  p.pause()  p.stop()  p.seek(sec)
 p.volume(0..100)  p.muted(bool)  p.rate(0.25..2)   (each also reads back; the YouTube player keeps the rate across videos)
 p.time() -> { current, duration }   p.listened() -> seconds really heard   p.state()   p.id()   p.destroy()
+p.readList(listId, { index, retries, retryMs }) -> Promise<[ids]>   (cues a list on this player and reads its ids; between songs only)
 ```
+
+`readList` is how a radio reads a YouTube Mix (`'RD' + videoId`) for free: the list is cued on the player that is already on the page (a cue stops what plays, so the controller calls it only between two songs, through `onBoundary`), `getPlaylist()` is polled, and an empty read is cued again from the next item (README, "What was found about YouTube lists"). While it reads, the cue's state changes are not passed on, so the page does not see a pause; the next `load()` returns the player to single videos. The mock answers from `opts.lists` (`{ listId: [ids] }`).
 
 | Event | Data | |
 | --- | --- | --- |
@@ -1056,7 +1264,8 @@ var ctl = TS.player.controller({
 	onError(id, code, message),        // anything else
 	onNeedMore(state) -> ids,          // two tracks or fewer left: return more (the bag)
 	onHalt(reason),                    // 'finished', 'errors' (five failures in a row), 'player'
-	maxErrors, now
+	onBoundary(id, state) -> promise,  // a song ended: a promise holds the next one until it settles (a Mix read), at most boundaryMs (6 s); a press meanwhile wins
+	maxErrors, boundaryMs, now
 });
 ctl.load(ids, index)  ctl.next()  ctl.previous()  ctl.jump(index)  ctl.playNext(ids)  ctl.playNow(ids)  ctl.insert(ids, after)  ctl.enqueue(ids)
 ctl.remove(indexOrId)  ctl.move(from, to)  ctl.clearUpcoming()  ctl.setRepeat(bool)

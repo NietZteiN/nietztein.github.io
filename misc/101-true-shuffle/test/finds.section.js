@@ -93,6 +93,27 @@ module.exports = function (h) {
 			lists: { uploads: function () { var items = [{ videoId: V(20), title: 'Crooked Parade' }]; items.units = 0; return Promise.resolve(items); } } });
 		var cached = await res3.resolve({ key: 'a', title: 'Crooked Parade', artist: 'Tin Lighthouse Trio' }, { allow: 'cheap' });
 		h.eq([cached.videoId, cached.units, budget3.spent.auto], [V(20), 0, 0], 'resolve: an uploads read the caller says was cached costs nothing');
+
+		// ---- the group rung: an album's own list, one search ----
+		var albumSongs = ['Paper Garden', 'Night Signal', 'Salt Harbor', 'Quiet Engine', 'Blue Ferry'];
+		var albumFinds = albumSongs.map(function (s, i) { return { key: 'it:track:' + (100 + i), title: s, artist: 'Copper Sea', album: 'Low Tide' }; });
+		var asked = [], listsRead = [], budget4 = budgetOf(1000, 300);
+		var res4 = F.resolver({
+			M: M, cache: memCache(), index: function () { return M.index([]); }, budget: budget4,
+			searchPlaylists: function (q) { asked.push(q); return Promise.resolve([{ playlistId: 'PLmixed000', title: 'Copper Sea mix' }, { playlistId: 'OLAK5uy_lowtide', title: 'Low Tide' }, { playlistId: 'PLlowtide2', title: 'Low Tide (fan list)' }]); },
+			lists: { playlist: function (id) { listsRead.push(id); return Promise.resolve(albumSongs.map(function (s, i) { return { videoId: V(40 + i), title: s, channel: 'Copper Sea - Topic', channelId: 'UCcopper' }; })); } },
+			search: function () { throw new Error('no single searches'); }
+		});
+		var g = await res4.resolveGroup(albumFinds, { query: 'Copper Sea Low Tide', title: 'Low Tide' });
+		h.eq([g.resolved, g.units, g.list, asked, listsRead, budget4.spent.units], [5, 101, 'OLAK5uy_lowtide', ['Copper Sea Low Tide'], ['OLAK5uy_lowtide'], 100], 'resolveGroup: one playlist search, the album\'s own list (YouTube Music first), every song matched');
+		var after = await res4.resolve(albumFinds[3], { allow: 'free' });
+		h.eq([after.videoId, after.rung], [V(43), 'cache'], 'resolveGroup: then each song plays free');
+		var few = await res4.resolveGroup(albumFinds.slice(0, 3).map(function (f) { return Object.assign({}, f, { key: f.key + 'b' }); }), { title: 'Low Tide' });
+		h.eq([few.resolved, few.reason, asked.length], [0, 'few', 1], 'resolveGroup: fewer than ' + F.GROUP_MIN + ' songs are not worth a search');
+		var noKey = await F.resolver({ M: M, index: function () { return M.index([]); }, budget: budgetOf(1000, 300) }).resolveGroup(albumFinds, { title: 'Low Tide' });
+		h.eq(noKey.reason, 'needs-key', 'resolveGroup: no search without a sign-in or a key');
+		var res5 = F.resolver({ M: M, index: function () { return M.index([]); }, budget: budgetOf(1000, 300), searchPlaylists: function () { return Promise.resolve([{ playlistId: 'PLx', title: 'Something else' }]); }, lists: { playlist: function () { throw new Error('not read'); } }, search: function () {} });
+		h.eq((await res5.resolveGroup(albumFinds, { title: 'Low Tide' })).reason, 'no-list', 'resolveGroup: no list with the album\'s title, nothing read');
 		res.forget(V(30));
 		var after = await res.resolve({ key: 'b', title: 'Counting Backwards', artist: 'Neon Abacus' }, { allow: 'free' });
 		h.ok(after.none || after.videoId !== V(30), 'forget: a video the player refused is not chosen again');

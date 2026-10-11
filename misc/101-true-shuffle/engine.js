@@ -81,7 +81,8 @@
 				index: function () { return opts.index ? opts.index() : M.index([]); },
 				topicChannels: opts.topicChannels || null,
 				// What a read really cost, from the client's own count: a cached read costs nothing.
-				lists: lists ? { uploads: function (ch, o) { var before = opts.quota ? +opts.quota.used() || 0 : 0; return lists.uploads(ch, o).then(function (items) { var out = (items || []).slice(); if (opts.quota) out.units = Math.max(0, (+opts.quota.used() || 0) - before); return out; }); } } : null,
+				searchPlaylists: opts.client && opts.client.searchPlaylists ? function (q, o) { return opts.client.searchPlaylists(q, o); } : null,
+				lists: lists ? { playlist: function (id, o) { var before = opts.quota ? +opts.quota.used() || 0 : 0; return lists.playlist(id, o).then(function (items) { var out = (items || []).slice(); if (opts.quota) out.units = Math.max(0, (+opts.quota.used() || 0) - before); return out; }); }, uploads: function (ch, o) { var before = opts.quota ? +opts.quota.used() || 0 : 0; return lists.uploads(ch, o).then(function (items) { var out = (items || []).slice(); if (opts.quota) out.units = Math.max(0, (+opts.quota.used() || 0) - before); return out; }); } } : null,
 				canList: canRead,
 				search: opts.client ? function (q, o) { return opts.client.search(q, o); } : null,
 				canSearch: canRead,
@@ -259,6 +260,8 @@
 			},
 			isHidden: isHidden,
 			hidden: function () { return JSON.parse(JSON.stringify(hidden)); },
+			// An album or another group: its own YouTube list looked up once (finds.js resolveGroup).
+			resolveGroup: function (finds, o) { return res.prepare(finds).then(function () { return res.resolveGroup(finds, o); }); },
 			estimate: function (finds) { return res.prepare(finds).then(function () { return res.estimate(finds); }); },
 			resolve: function (f, o) { return res.resolve(f, o || { allow: 'free' }); },
 			quota: quota,

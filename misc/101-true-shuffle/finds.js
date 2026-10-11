@@ -48,6 +48,7 @@
 	var DISCOVERED = 'local:discovered';  // the real library's playlist for kept finds
 	var RUNGS = ['known', 'cache', 'library', 'pool', 'topic', 'group', 'search'];
 	var COST = { known: 0, cache: 0, library: 0, pool: 0, topic: 1, group: 101, search: 101 };
+	var GROUP_MIN = 4;     // the group rung is worth a search from this many unresolved songs
 	var DAY = 86400000;
 	var YT_ID = /^[A-Za-z0-9_-]{11}$/;
 
@@ -228,6 +229,19 @@
 			if (cache && find.key) cache.put('yt:res:' + find.key, videoId ? { videoId: videoId } : null, videoId ? 30 * DAY : 7 * DAY);
 		}
 		function found(rung, units, video) { return { videoId: video.videoId, rung: rung, units: units, video: video }; }
+		// The group's own list among a playlist search's answers: one whose title is the
+		// group's, a YouTube Music album (OLAK5uy_) first.
+		function pickList(lists, title) {
+			var want = M.fold(M.baseTitle ? M.baseTitle(title) : title), best = null, top = 0;
+			(lists || []).forEach(function (l) {
+				var t = M.fold(l.title || ''), s = 0;
+				if (!want || !t) return;
+				if (t === want) s += 6; else if (t.indexOf(want) >= 0 || (t.length >= 4 && want.indexOf(t) >= 0)) s += 4; else return;
+				if (/^OLAK5uy_/.test(l.playlistId || '')) s += 3;
+				if (s > top) { top = s; best = l; }
+			});
+			return best;
+		}
 		var api = {
 			// Warm the memory from the cache (one read), so estimate() is right.
 			prepare: function (finds) {
@@ -295,6 +309,29 @@
 					});
 				});
 			},
+			// The group rung: an album's own YouTube list, found with one playlist search
+			// (100 units, on a press) and read 50 at a time (1 unit), its songs then matched
+			// to the finds through the pool. From GROUP_MIN unresolved songs on.
+			// o: { query, title } -> Promise<{ resolved, units, list, reason }>
+			resolveGroup: function (finds, o) {
+				o = o || {};
+				var need = (finds || []).filter(function (f) { return f && f.key && !f.videoId && !memo[f.key]; });
+				if (need.length < GROUP_MIN) return Promise.resolve({ resolved: 0, units: 0, reason: 'few' });
+				if (!deps.searchPlaylists || !canSearch()) return Promise.resolve({ resolved: 0, units: 0, reason: 'needs-key' });
+				if (budget().left() < COST.group) return Promise.resolve({ resolved: 0, units: 0, reason: 'over-budget' });
+				budget().spend(100, false);
+				return deps.searchPlaylists(o.query || o.title || '', { max: 5 }).then(function (lists) {
+					var best = pickList(lists, o.title || o.query || '');
+					if (!best || !deps.lists || !deps.lists.playlist) return { resolved: 0, units: 100, reason: 'no-list' };
+					return deps.lists.playlist(best.playlistId, { max: 200 }).then(function (items) {
+						var units = 100 + (items && typeof items.units === 'number' ? items.units : Math.ceil(Math.max(1, (items || []).length) / 50));
+						learn((items || []).map(function (x) { return { videoId: x.videoId, title: x.title, channel: x.channel, channelId: x.channelId }; }));
+						var n = 0;
+						need.forEach(function (f) { var p = fromPool(f); if (p) { remember(f, p.video.videoId); n++; } });
+						return { resolved: n, units: units, list: best.playlistId };
+					});
+				});
+			},
 			learn: learn,
 			// The player refused this video: the next resolve takes the next-best one.
 			forget: function (videoId) {
@@ -310,6 +347,6 @@
 
 	return {
 		registry: registry, registryFrom: registryFrom, promote: promote, resolver: resolver,
-		RUNGS: RUNGS, COST: COST, FOUND: FOUND, DISCOVERED: DISCOVERED
+		RUNGS: RUNGS, COST: COST, GROUP_MIN: GROUP_MIN, FOUND: FOUND, DISCOVERED: DISCOVERED
 	};
 });

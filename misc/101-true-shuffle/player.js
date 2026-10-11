@@ -144,6 +144,8 @@
 			muted: function (m) { if (m != null) mockMuted = !!m; return mockMuted; },
 			// playback speed: 0.25 to 2
 			rate: function (r) { if (r != null) mockRate = Math.max(0.25, Math.min(2, +r || 1)); return mockRate; },
+			// A list's ids: opts.lists[listId] (tests), else none.
+			readList: function (listId) { var l = opts.lists && opts.lists[listId]; return Promise.resolve(Array.isArray(l) ? l.slice() : []); },
 			state: function () { return state; },
 			id: function () { return id; },
 			tick: function (ms) { advance(ms == null ? stepMs : ms); },
@@ -198,7 +200,7 @@
 	//         host (default 'https://www.youtube-nocookie.com'), timeoutMs }
 	function createYouTube(opts) {
 		opts = opts || {};
-		var ev = emitter(), state = 'idle', id = null, yt = null, building = null, poll = null, destroyed = false, wanted = null, heard = 0, lastSeen = null;
+		var ev = emitter(), state = 'idle', id = null, yt = null, building = null, poll = null, destroyed = false, wanted = null, heard = 0, lastSeen = null, reading = false;
 		var host = opts.host || 'https://www.youtube-nocookie.com';
 		var vol = null, mute = null, rate = null;     // what was asked for before the player was ready
 
@@ -217,6 +219,7 @@
 			}, 500);
 		}
 		function onState(e) {
+			if (reading) return;          // a list being read (readList): its cue is not the song's state
 			var S = root.YT.PlayerState;
 			if (e.data === S.PLAYING) { set('playing'); ev.emit('playing', { id: id }); startPoll(); if (rate != null && yt && yt.getPlaybackRate && yt.getPlaybackRate() !== rate) { try { yt.setPlaybackRate(rate); } catch (er) { /* not offered */ } } }
 			else if (e.data === S.PAUSED) { stopPoll(); set('paused'); ev.emit('paused', { id: id }); }
@@ -279,8 +282,38 @@
 			// Resolves once the player has been given the video; what happens
 			// then arrives as events. Rejects (and fires 'error' with code
 			// 'too-small' or 'api') if the player could not be built.
+			// A list's ids (a Mix 'RD' + videoId, an uploads list), read by cueing it on this
+			// player: only between songs, since a cue stops what plays (README, "What was found
+			// about YouTube lists"). An empty read (the cued item cannot be embedded) is cued
+			// again from the next item. The next load() returns the player to single videos.
+			// -> Promise<[ids]> ([] when none)
+			readList: function (listId, o) {
+				o = o || {};
+				if (!yt || !yt.cuePlaylist || !yt.getPlaylist) return Promise.resolve([]);
+				reading = true;
+				return new Promise(function (resolve) {
+					var tries = 0, since = Date.now(), over = false, retries = o.retries == null ? 2 : o.retries;
+					function finish(ids) { if (over) return; over = true; reading = false; resolve(ids); }
+					function cue(i) { try { yt.cuePlaylist({ listType: 'playlist', list: listId, index: i }); return true; } catch (e) { finish([]); return false; } }
+					if (!cue(o.index || 0)) return;
+					(function check() {
+						if (over) return;
+						var ids = null;
+						try { ids = yt.getPlaylist(); } catch (e) { ids = null; }
+						if (ids && ids.length) { finish(ids.filter(function (x) { return /^[A-Za-z0-9_-]{11}$/.test(String(x)); })); return; }
+						if (Date.now() - since > (o.retryMs || 1500)) {
+							if (tries >= retries) { finish([]); return; }
+							tries++;
+							since = Date.now();
+							if (!cue((o.index || 0) + tries)) return;
+						}
+						setTimeout(check, 120);
+					})();
+				});
+			},
 			load: function (videoId, o) {
 				o = o || {};
+				reading = false;
 				id = videoId;
 				wanted = { id: videoId, o: o };
 				heard = 0;
@@ -341,6 +374,8 @@
 	//   opts.onNeedMore(state)       the queue is about to run out; return ids to add
 	//                                (how an endless true shuffle draws from its bag)
 	//   opts.onHalt(reason)          playback stopped by itself: 'finished', 'errors', 'player'
+	//   opts.onBoundary(id, state)   a song ended; a promise returned holds the next one until it
+	//                                settles (at most opts.boundaryMs, 6 s): a Mix read on the player
 	//   opts.now()                   the clock (default Date.now)
 	//   opts.maxErrors               consecutive failed tracks before giving up (default 5)
 	// Methods: load(ids, index), next(), previous(), jump(index), playNext(ids),
@@ -405,6 +440,16 @@
 		offs.push(player.on('playing', function () { errorsInARow = 0; }));
 		offs.push(player.on('ended', function (e) {
 			if (e.id !== playingId) return;
+			// Between two songs the page may read something on the player first (a Mix):
+			// the next song waits for it, at most boundaryMs (6 s). A press meanwhile wins.
+			var hold = opts.onBoundary ? call(opts.onBoundary, e.id, state) : null;
+			if (hold && typeof hold.then === 'function') {
+				var gone = false;
+				var go = function () { if (gone || dead) return; gone = true; if (playingId === e.id) dispatch({ type: 'next' }, 'ended', true); };
+				hold.then(go, go);
+				if (root.setTimeout) root.setTimeout(go, opts.boundaryMs > 0 ? opts.boundaryMs : 6000);
+				return;
+			}
 			dispatch({ type: 'next' }, 'ended', true);
 		}));
 		offs.push(player.on('error', function (e) {

@@ -33,8 +33,8 @@
 		'order': { label: 'Shuffle order', icon: 'shuffle', key: 'O', desc: 'Choose how the next songs are picked' },
 		'play-next': { label: 'Play next', icon: 'queue-next' },
 		'add-to-queue': { label: 'Add to queue', icon: 'queue-add' },
-		'radio': { label: 'Start radio', short: 'Radio', icon: 'radio', desc: 'Songs like this one, one after another' },
-		'discover': { label: 'Discover new songs like this', short: 'Discover', icon: 'compass' },
+		'radio': { label: 'Start radio', short: 'Radio', icon: 'radio', key: 'R', desc: 'A radio from the playing song' },
+		'explore': { label: 'Explore', icon: 'compass', key: 'E', desc: 'Explore the playing song: its anime, its artist\'s albums, songs like it' },
 		'journey': { label: 'Journey from here' + ELL, icon: 'route' },
 		'versions': { label: 'Other versions' + ELL, icon: 'versions' },
 		'like': { label: 'Like', icon: 'heart', key: 'L', desc: 'Like the playing song' },
@@ -42,7 +42,7 @@
 		'save-as-playlist': { label: 'Save as playlist' + ELL, icon: 'playlist-new' },
 		'add-to-youtube': { label: 'Add to YouTube playlist' + ELL, icon: 'youtube-add' },
 		'preview': { label: 'Preview', icon: 'headphones', desc: 'Thirty seconds, without YouTube' },
-		'save': { label: 'Save for later', icon: 'bookmark' },
+		'save': { label: 'Save for later', icon: 'bookmark', key: 'B', desc: 'Save the playing found song for later' },
 		'unsave': { label: 'Remove from Saved for later', icon: 'bookmark' },
 		'endless': { label: 'Endless', icon: 'infinity', desc: 'When the queue ends, a radio from the last song carries on' },
 		'not-interested': { label: 'Not interested', icon: 'eye-off' },
@@ -51,7 +51,7 @@
 		'clear-queue': { label: 'Clear queue', icon: 'clear-all' },
 		'block': { label: 'Block', icon: 'block', desc: 'Never shuffle it' },
 		'unblock': { label: 'Unblock', icon: 'block' },
-		'edit': { label: 'Edit details' + ELL, icon: 'edit', key: 'E', desc: 'Edit the playing song' },
+		'edit': { label: 'Edit details' + ELL, icon: 'edit', key: 'I', desc: 'Edit the playing song' },
 		'label-each': { label: 'Label them one by one', icon: 'tag' },
 		'details': { label: 'Song details', icon: 'info' },
 		'trim': { label: 'Trim and volume' + ELL, icon: 'scissors', desc: 'Start later, end sooner, louder or softer: this song only' },
@@ -66,7 +66,7 @@
 		'open-youtube': { label: 'Open on YouTube', icon: 'external' },
 		'focus': { label: 'Focus on this', icon: 'target' },
 		'stop-focus': { label: 'Stop focusing', icon: 'target' },
-		'repeat': { label: 'Repeat', icon: 'repeat', key: 'R', desc: 'Repeat the queue' },
+		'repeat': { label: 'Repeat', icon: 'repeat', key: 'Shift+R', desc: 'Repeat the queue' },
 		'queue': { label: 'Show or hide the queue', icon: 'queue', key: 'Q' },
 		'theater': { label: 'Theater mode', icon: 'theater', key: 'T' },
 		'fullscreen': { label: 'Full screen', icon: 'fullscreen', key: 'F' },
@@ -85,9 +85,9 @@
 	var SHARED = { play: 1, shuffle: 1, 'minus-circle': 1, block: 1, target: 1, search: 1, retry: 1, bookmark: 1 };
 
 	// The keys, in the order the shortcuts list shows them.
-	var KEY_ORDER = ['palette', 'play-pause', 'next', 'previous', 'reshuffle', 'order', 'repeat', 'like', 'mute', 'volume', 'seek', 'theater', 'fullscreen', 'queue', 'edit', 'search', 'shortcuts'];
+	var KEY_ORDER = ['palette', 'play-pause', 'next', 'previous', 'reshuffle', 'order', 'explore', 'radio', 'repeat', 'like', 'save', 'mute', 'volume', 'seek', 'theater', 'fullscreen', 'queue', 'edit', 'search', 'shortcuts'];
 	var KEYMAP = KEY_ORDER.map(function (k) { return { keys: VOCAB[k].key, does: VOCAB[k].desc || VOCAB[k].label, action: k }; }).concat([
-		{ keys: 'In a list', does: String.fromCharCode(0x2191) + ' ' + String.fromCharCode(0x2193) + ' move, Enter play from there, Space select, E edit, Shift+F10 menu, Ctrl+A all' },
+		{ keys: 'In a list', does: String.fromCharCode(0x2191) + ' ' + String.fromCharCode(0x2193) + ' move, Enter play from there, Space select, E explore, I edit, Shift+F10 menu, Ctrl+A all' },
 		{ keys: 'In the queue', does: 'Arrow keys on a grip move a song, Delete removes it' },
 		{ keys: 'Quick labeller', does: '1' + String.fromCharCode(0x2013) + '6 mood, Enter save, ' + String.fromCharCode(0x2190) + ' ' + String.fromCharCode(0x2192) + ' back and skip, P play' }
 	]);
