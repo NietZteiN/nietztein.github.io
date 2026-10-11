@@ -101,7 +101,8 @@
 .ts-btn--ghost:hover:not(:disabled), .ts-btn--icon:hover:not(:disabled) { background: var(--ts-hover); color: var(--heading); }
 .ts-btn--chip { --btn-h: 30px; padding: 0 12px; border-color: var(--border); background: var(--surface); color: var(--text); font-size: 12.5px; }
 .ts-btn--chip:hover:not(:disabled) { border-color: var(--border-strong); background: var(--ts-hover); }
-.ts-btn--chip[aria-pressed="true"] { background: var(--heading); color: var(--bg); border-color: var(--heading); }
+/* pressed stays pressed under the pointer (the hover rule above is more specific) */
+.ts-btn--chip[aria-pressed="true"], .ts-btn--chip[aria-pressed="true"]:hover:not(:disabled) { background: var(--heading); color: var(--bg); border-color: var(--heading); }
 .ts-btn--danger { border-color: var(--kit-warn-line); color: var(--kit-warn); }
 .ts-btn--danger:hover:not(:disabled) { background: var(--kit-warn-bg, var(--ts-hover)); }
 .ts-btn--ghost[aria-pressed="true"], .ts-btn--icon[aria-pressed="true"], .ts-btn--ghost.is-on, .ts-btn--icon.is-on { color: var(--accent); }
@@ -168,3 +169,6 @@
 	.ts-btn.is-busy::before, .ts-spin { animation-duration: 2.4s; }
 }
 html.is-reduced .ts-btn.is-busy::before, html.is-reduced .ts-spin { animation-duration: 2.4s; }
+
+/* a primary button that is a link: app.css gives every link in the page its text colour */
+.ts a.ts-btn--primary, .ts a.ts-btn--primary:hover { color: var(--ts-play-ink); }

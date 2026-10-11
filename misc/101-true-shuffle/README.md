@@ -19,6 +19,8 @@ Toy 101. A music player for one listener's YouTube playlists and Liked videos: s
 | `engine.js` | The discovery engine: the one object the page calls about songs the library does not have. | no |
 | `share.js` | A queue as a link anyone can open (`#/share`), and a pasted list of songs (`#/paste`). | the pages only |
 | `wrapped.js` | Your year: the year in review (`#/wrapped`) and the home page's On this day, Rediscover old favourites and the nudge to like a song. | the page half |
+| `lyrics.js` | The words of the song that is on, from LRCLIB: the Lyrics tab, the karaoke page, finding a song by a line of its words. | the views only |
+| `quiz.js` | Guess the anime: a few seconds of an opening or an ending from the library (Apple's 30-second previews), four anime to choose from. | the page only |
 | `embed.js` | Embeddings of the tracks, nearest neighbours, the 2D layout of the map, its regions. | no |
 | `demo.js` | An invented library of 160 tracks for `?demo=1` and `?thumb=1`, labelled. | no |
 | `yt.js` | Google sign-in, the YouTube Data API client, the resumable import, the refresh, MusicBrainz. | sign-in redirect only |
@@ -31,7 +33,7 @@ Toy 101. A music player for one listener's YouTube playlists and Liked videos: s
 | `ds.css` | The design system: tokens, the button, badges, progress chips, the player-safe zone, touch screens. | yes |
 | `index.html`, `app.js`, `app.css` | The page. | yes |
 
-Everything is UMD: in the browser each file adds one member to `window.TrueShuffle` (`config`, `parse`, `library`, `shuffle`, `store`, `player`, `demo`, `yt`, and since 2026-10-10 `transport`, `actions`, `match`, `sources`, `finds`, `feeder`, `engine`, `share` and `wrapped`); in Node each is a CommonJS module. The sources are plain ASCII (other characters are written as escapes), old-style (`var`, `function`, one IIFE), tabs.
+Everything is UMD: in the browser each file adds one member to `window.TrueShuffle` (`config`, `parse`, `library`, `shuffle`, `store`, `player`, `demo`, `yt`, and since 2026-10-10 `transport`, `actions`, `match`, `sources`, `finds`, `feeder`, `engine`, `share`, `wrapped`, `lyrics` and `quiz`); in Node each is a CommonJS module. The sources are plain ASCII (other characters are written as escapes), old-style (`var`, `function`, one IIFE), tabs.
 
 ```html
 <script src="config.js"></script>
@@ -53,8 +55,8 @@ Everything is UMD: in the browser each file adds one member to `window.TrueShuff
 <script src="yt.js"></script>          <!-- needs parse, library -->
 <script src="ui.js"></script>
 <script src="actions.js"></script>
-<script src="lyrics.js"></script>
-<script src="quiz.js"></script>
+<script src="lyrics.js"></script>      <!-- needs match, sources, ui -->
+<script src="quiz.js"></script>        <!-- needs library, sources, ui -->
 <script src="wrapped.js"></script>
 <script src="share.js"></script>
 <script src="app.js"></script>
@@ -518,6 +520,165 @@ Wr.homeLanes(view, ctx)                                   // the home page, befo
 **The home page's lanes** (`homeLanes`, each only when it has something): On this day (up to six songs played on this day in earlier years, then songs added on it: "added 3 years ago"), Rediscover old favourites (`rediscover`, 12 at most, with Play all), and one nudge card, "You play X a lot. Like it?", whose heart rates the song 5 (`ctx.edit`, Undo in the toast) and whose Not now puts it off for 30 days (`ToyKit.store('nudgeDismissed', { id: until })`). Once a nudge is answered no other one comes until the page is loaded again.
 
 Tests: the `wrapped` section (48 checks): every pure function on an invented history (a streak across the end of January, the last second of a year and of a month, February 29 on the 28th of a year without one and on a leap year's 28th, skips left out of the tops, unknown ids, the 180-day and 6-play thresholds and the 90% full play, frozen inputs, 5,000 listens in a few ms).
+
+## lyrics.js
+
+`TS.lyrics`: the words of the song that is on, from [LRCLIB](https://lrclib.net/) (open, no key, CORS for every origin). Lyrics from LRCLIB, with thanks: the page says so in the Lyrics tab, on the karaoke page and under every search for words.
+
+- **The Lyrics tab** (the now-playing panel's fourth tab, `panel`): the song's title and artist, "Lyrics from LRCLIB", and its words. Timed words light the line being sung; the panel keeps that line in view (it scrolls only when the line leaves the middle of the panel) and stops following for 4 seconds after a scroll by hand (wheel, touch, keys, the scroll bar). A click on a line plays the song from there. **Romaji** (shown when the words have kana) adds each line's kana read as Hepburn romaji (match.js `romaji`; kanji stay), remembered as `lyricsRomaji`. The timing stepper moves the words half a second sooner or later (Shift: five seconds; the middle button puts them back), remembered per video id in `lyricsOffset` (`{ videoId: seconds }`, 300 songs at most). Pressing either from the panel's tools leaves the panel where it is. Other states: a skeleton while looking, "No lyrics found for this song." with **Search lyrics** (`#/lyrics?q=<title>`), plain words (shown untimed), an instrumental, a failure with **Try again**. The demo's songs are invented, so the demo shows a note and asks nothing; a thumbnail asks nothing either.
+- **The karaoke page (`#/lyrics`, `view`)**: the song that is on, big. The line being sung stays in the centre, the next two dimmer, the rest faint; a sticky bar keeps **Song details** (or Home), the song's name once its title has scrolled away, Romaji and the timing stepper in reach. It follows the player to the next song. With reduced motion it jumps instead of gliding. Nothing playing: a note and a form to find a song by its words.
+- **Finding a song by its words (`#/lyrics?q=<words>`)**: up to 20 songs, one row per song, each with its artist, album and length, the line that holds the words (those words marked; small words such as "the" are not, and "lanterns" finds "lantern"), **In your library** when match.js `inLibrary` finds the library's copy, and **Play**. Play hands `{ key: 'lrc:<id>', title, artist, album, durationSec, source: 'lrclib' }` to the engine (`ctx.play.find(find, 'now')`), which finds the YouTube video: the badge says 100 units unless the song is in the library or found before.
+- **On the search page (`searchSection`)**: for three words or more (or 12 characters), a small box "Songs with these words (lyrics)" whose **Search lyrics** button lists up to five such songs. The search page never waits for LRCLIB.
+
+**What is sent.** Nothing until the Lyrics tab is open with a song, the karaoke page is open, or words are searched. Then the song's artist, title and length (or the words), to `https://lrclib.net/api/get` and `/api/search`, without cookies (`credentials: 'omit'`) or a referrer (`referrerPolicy: 'no-referrer'`), naming the app in the `Lrclib-Client` header that LRCLIB asks browsers to send (its CORS answer allows it; it costs a preflight). One request at a time, at least 300 ms apart (`GAP_MS`); a 429 waits as long as LRCLIB's `Retry-After` asks. Answers, "none" too, are kept 30 days (`TTL_MS`) in sources.js's cache under `ly:<videoId>` (else `ly:<artist>|<title>`, folded), so a song is looked up once a month at most.
+
+**Finding the record.** `queryFor(track)` gives up to four lookups, best first: the artist (or the guessed artist) with the base title (match.js `baseTitle`), then with the `titleAlt` (often the Japanese title), the artist's native name with the `titleAlt`, then a cover's `origArtist`; each with the length when it is known. The client asks `api/get` with each until one gives timed words within 3 seconds of the track's length, then `api/search` with the lookup that found something (else the first; when that finds nothing, once more with the original artist), and `pick` chooses:
+
+| Evidence | Points |
+| --- | --- |
+| The same title (match.js `sameSong`: fold keys; kana read as romaji; the `titleAlt` too) | +4; a loose key +3; a title inside the other +1, then only with the same credit |
+| Another title | not this song |
+| The same artist credit (the native name, a cover's original artist too) | +3; a person in the credit +2 |
+| Another known artist | not this song |
+| Timed words; plain words; an instrumental with none | +3; +1; +0.5 |
+| The length within 3 s; 8 s; 15 s; unknown; further | +4; +2.5; +1; +1; -2 |
+| A track with no artist at all | only a record within 3 s of its length |
+
+Ties go to LRCLIB's order. Timed words for a cut more than 45 seconds longer or shorter than the track (a TV size against the full song) are kept as plain words (`otherCut`).
+
+| Name | What it is |
+| --- | --- |
+| `parseLrc(text)` | LRC text to `{ lines: [{ t, text }], offset, tags }`: `[mm:ss]`, `[mm:ss.xx]`, `[mm:ss.xxx]` and `[mm:ss:xx]`; several stamps on a line give it at each time; `[offset:+/-ms]` is applied (a positive offset shows the words sooner; no time under 0) and returned in ms; `[ar:]`, `[ti:]` and other tags in `tags`; a stamp without words is a spacer (`text: ''`); untimed lines and word stamps (`<mm:ss.xx>`) are dropped; sorted by time, equal times in the order written. |
+| `lineAt(lines, seconds)` | The line being sung: the last one that has started (binary search); -1 before the first. |
+| `romajiLine(text)` | A line's kana in romaji, Japanese commas, stops and quotes in Latin form; `''` without kana. |
+| `queryFor(track)` | The lookups, `[{ artist_name, track_name, duration }]` (above). |
+| `pick(results, track)` | The best LRCLIB record for the track, or null (above). |
+| `answerOf(record, track)` | `{ synced: lines \| null, plain: text \| null, instrumental, otherCut, source: { id, artist, title, duration } }`; plain words made from the timed ones when LRCLIB has none. |
+| `cacheKey(track)` | `'ly:<videoId>'`, else `'ly:<artist>\|<title>'` folded; `''` for nothing. |
+| `snippet(text, words)` | The line that holds most of the words (and the next when it is short), at most 160 characters; `''` when none. |
+| `toFind(hit)` | A search row as a find (sources.js `find` shape), key `lrc:<id>`. |
+| `createClient({ fetch, cache, now, wait, gapMs, base, client })` | `{ get(track), search(words) }`. `get` resolves the answer, or null for none, and rejects on a failure (`code`: `offline`, `timeout`, `busy` (429), `http`, `bad-answer`), which is not kept; one lookup in flight per song. `search` resolves `[{ id, title, artist, album, duration, snippet, synced, instrumental }]`, one row per song, the timed record kept; the same words within ten minutes are not asked again. `cache` is sources.js `createCache(...)`, else a Map; `fetch` defaults to `configure`'s, else the browser's; `client: ''` sends no header. |
+| `configure({ fetch })` | The fetch every client made without one uses (drive scripts; `null` for the browser's again). It also forgets what the page was told. |
+| `panel(box, ctx, { id, force })` | The Lyrics tab for video `id` (app.js `renderLyricsTab`). The same song again does nothing; `force` redraws from what is known, asking again only after a failure. |
+| `tick(seconds, id)` | The player's time (app.js, on every `time` event): lights the line in each view of that song without a redraw, and lights the next line on time between two events. The karaoke page follows a new `id`. |
+| `view(view, ctx, parts, query)` | `#/lyrics` and `#/lyrics?q=`. |
+| `searchSection(view, ctx, q)` | The box on the search page. |
+| `API`, `GAP_MS`, `TTL_MS` | `https://lrclib.net/api/`, 300, 30 days. |
+
+The CSS is one `<style id="ts-lyrics-css">` the module adds once, in the page's tokens; buttons are ui.js `btn`. Nothing it draws is fixed or covers the player.
+
+The `lyrics` test section (100 checks) has the LRC cases (every stamp form, several stamps, offsets both ways, tags, spacers, order, CRLF, a byte order mark, word stamps), `lineAt` against a plain scan of 300 random lyrics, romaji lines, the lookups, `pick` (timed before plain, the length, another artist, the Japanese title and native name, a katakana title, a cover's original artist, a TV size, a person in the credit, no artist), `answerOf`, `cacheKey`, `snippet`, `toFind`, and the client against a fake LRCLIB: 404s then the search, a hit that needs no search, plain then timed, a cover searched again under its original artist, "none" kept 30 days in sources.js's cache and asked again after, a Map without a cache, one lookup in flight, failures not kept, 429 and `Retry-After`, the fetch options and the header, the search rows, requests 300 ms apart (a fake clock and the real one), and `configure`.
+
+**Checked in a browser** (2026-10-10, `scripts/qa/drive.mjs` on `?demo=1` with a fake LRCLIB through `configure`): the demo note without a fetch; one `api/get` with the right artist, title and length, no cookies, no referrer, the header; the lit line matching `lineAt` at five times and after `tick(4000)` on the mock; a redraw keeping the nodes and asking nothing; a click on a line seeking to it; the stepper (+0.5 s moves the words, `lyricsOffset` written, reset); romaji on and off, the panel staying put and the button keeping the focus; a scroll by hand holding the panel 4 seconds; the karaoke page centring the line (0 px off) with the next two dimmer, following a tick and the next song; `#/lyrics?q=` rows with marked words, In your library and the cost badge, Play on the library's copy playing it; the search page's box asking nothing until pressed; both themes and 390 by 844 without sideways scroll, with no console errors.
+
+**Not done.** LRCLIB itself was only probed by hand (`api/get` and `api/search` shapes, CORS, about 0.2 to 0.4 s an answer); a real lookup in the page needs a signed-in library. Word-by-word timing (`hasWordSync`, `lyricsfile`) is not used. Kanji have no reading. An upload whose video starts long before the song (a music video's intro) needs the stepper, Shift for five-second steps.
+
+## quiz.js
+
+`TS.quiz`: Guess the anime (`#/quiz`, "Guess the anime" in the sections). A few seconds of an opening or an ending from the library, four anime to choose from, `ROUNDS` (10) rounds. There is no video, since YouTube's player would show the anime. The clip is the 30-second preview that Apple's iTunes Search gives for the song, played in an Audio element while YouTube's player is paused.
+
+**The previews are Apple's.** They come from the iTunes Search API (`ITUNES`, `https://itunes.apple.com/search`: no key, CORS, about 20 requests a minute), from Japan's store, and play from `audio-ssl.itunes.apple.com`. After each answer the page credits the clip ("a preview from Apple's iTunes Search") and links the song on Apple Music. Requests leave 3.1 s apart, without cookies or a referrer, and carry only the artist and title of the song asked about. A 403 or 429 holds them all for a minute. Nothing is asked before Start is pressed.
+
+**The pool.** `pool(tracks, { inserts, aliases })` takes a list or `{ id: track }` and keeps the songs a game can ask about:
+- the song plays (`L.playable`) and is not blocked;
+- it is a song, not a clip or a set;
+- it has a sure artist (so its preview can be matched) and a work;
+- it is an opening or an ending (`role` OP or ED), or an insert song with `inserts`.
+
+It returns `{ works: [{ name, key, scene, year, ids, aliases }], byWork, byId, ids, songs, ok, need, inserts }`.
+- **Works.** Spellings that fold alike (match.js `loose`) are one work, named the commonest way.
+- **Scene and year.** A work's `scene` is the commonest scene that names a kind of work (anime, vn, game, film, tv, stage, touhou) among its own recordings: a cover's utaite or vtuber scene says who sings it, not what it is from. Its `year` is the earliest year its own recordings have from a label, an edit, a release date or a title; an upload's year does not count, and 0 means unknown.
+- **Aliases.** A typed answer may use any spelling found in the labels, the names passed in `aliases` (`{ work: [names] }`), and the main title of "Main: Subtitle", "Main - Subtitle" or "Main (Season 2)" when it is four letters or more. labels.json has no table of work names; `aliases` is where one would go.
+- **Enough.** `ok` needs `MIN_WORKS` (4) works. The page reads the scope the views read (`ctx.idx().all`), so Focus narrows the quiz too. With fewer works it says what is missing and links the quick labeller and Anime, games & stage.
+
+**A round.** `makeRound(pool, rand, { level, avoid })` returns `{ id, work, scene, year, song, title, artist, role, roleLabel, choices, answer, level, clipSec, startSec }`, or null when nothing is left.
+- **The song.** A work is drawn evenly among those with a song left, works not asked yet first, then one of its songs.
+- **`avoid`** is a list of ids, or `{ ids, songs, works }`; `songs` are `S.songKey`s, so another upload of a song asked already does not come.
+- **The clip** starts at `startSec`, somewhere in the preview's first 20 seconds.
+- **Seeded.** The same `rand` (`S.rng(seed)`) gives the same round, whatever order the library came in.
+
+`choicesFor(answer, works, rand, level)` returns the four names, the answer once at a random place:
+
+| `LEVELS` | Clip | The other three |
+| --- | --- | --- |
+| `easy` | 10 s | Any other works. |
+| `normal` | 7 s | The answer's scene first, then any. |
+| `hard` | 4 s | The answer's scene within three years first, then its scene, then any. The name can be typed. |
+
+Easy and Normal keep works of the same franchise (one name inside the other, five letters or more: "Starfall Odyssey Zero") for last; Hard allows one. `roleLabel(track)` is `'OP'`, `'ED'` or `'Insert song'`. When the upload's title numbers it ("Opening 2", "NCED3") and agrees with the role, the number is added: `'OP2'`. `typed(text, round, pool)` is the choice a typed answer names: match.js `workScore` of 0.8 or more against a choice's names, one choice clearly best. Otherwise it is -1, and the page asks for more of the name.
+
+**Previews.** `searchTerms(track)` gives at most two terms:
+- the artist's native name and the Japanese title, when the labels have them (Japan's store lists songs so);
+- then the original artist, for a cover;
+- else the names as the library has them.
+
+Decoration comes off the title (match.js `baseTitle`). `searchUrl(term, country)` is `ITUNES?term=...&country=JP&media=music&entity=song&limit=5`. `pickPreview(results, track, { ok })` returns the result that is the song as `{ url, title, artist, durationSec, score, link }`, or null:
+- the result must be a song;
+- its preview must be at Apple's preview host (`ok` replaces that check, for a test serving its own audio);
+- match.js `sameSong` must say it is the same song (folded title and artist when match.js is missing);
+- the highest score wins, the first of equal ones.
+
+A cover with no preview of its own may take the original recording's, marked `original`, and the page says so.
+
+**The score.** `score(state, correct, ms)` returns a new `{ points, right, wrong, streak, best, last }`; `score(null)` is a new game's. A right answer is 100 points, plus up to 50 for speed: all 50 within 2 s of the clip starting, none after 15 s. A wrong answer ends the streak.
+
+**A game.** `createGame(opts)` is the state machine the page drives and the tests run against a fake iTunes.
+- **`opts`**: `{ tracks or pool, level, rand, rounds, inserts, aliases, fetch, gapMs, pauseMs, retryMs, line, cache, memo, previewOk, country, now }`.
+- **Phases**: idle, loading, question, answered, then question again, and so on, ending in summary. On the side: empty (fewer than four works) and error.
+- **Looking ahead.** The round on screen and the next two are looked up ahead, so a round is usually ready when Next is pressed.
+- **Songs without a preview** are left out for the game; their work may still come. After 15 in a row it gives up.
+- **Failures.** Three failed lookups in a row are an error with a sentence for the reader.
+- **Running out.** When the pool runs out of songs with previews, the summary comes early.
+- **The cache.** `cache` is sources.js `createCache` (the page passes `ctx.cache()`). It keeps a found preview under `qz:it:<country>:<artist>:<title>` for 30 days, and "no preview" for 7.
+
+| Call | What it does |
+| --- | --- |
+| `start()` | Looks the first rounds up. Resolves with the state once the first round is there (or empty, or error). |
+| `round()` | The current round, a copy, with its `preview`. |
+| `answer(choice, ms)` | An index into the choices, or a work's name, and how long it took. Returns the round with `chosen`, `right`, `points`, `ms`; null when no question is open (one answer a round). |
+| `next()` | The next round, or the summary after the last. Resolves once it is there. |
+| `skip()` | The clip would not play: another song takes the round, and the preview is forgotten. |
+| `retry()` | After an error, look again. |
+| `stop()` | No more lookups. |
+| `state()` | `{ phase, level, total, index, played, score, error, skipped, tried, asked, waitMs, round }` |
+| `ready()` | Resolves with the state once it is not loading. |
+| `pool()` | The game's pool. |
+| `summary()` | `{ level, rounds, played, right, wrong, points, best, skipped, missed: [round], history: [round] }` |
+| `on(fn)` | `fn(state)` after every change. Returns `off()`. |
+
+**The page.** app.js routes `#/quiz` to `view(view, ctx, parts, query)`, which draws with `ctx` (pageCtx) only. `#/quiz?level=hard` picks the level.
+- **Setup.** The level, insert songs or not, and Start.
+- **A round.** The compact header says the round. A score line shows dots per round, points, the streak and the best streak. The clip box has Play again and Give me 5 more seconds (a playing clip runs on; a stopped one goes on from where it stopped). Then four big choices, two by two and one column on a phone, and on Hard the field to type the name.
+- **After the answer.** Right or wrong, with the right choice marked, the song with its role and its work, the clip's credit, Next round, and Play the full song (`ctx.play.now`, which keeps the queue). A playing clip runs on a little.
+- **The summary.** The score, the best streak, new bests, Play again, Change difficulty, and the songs missed, each with Play, plus Queue the ones I missed (`ctx.play.later`).
+- **Keys.** 1 to 4 choose, Space plays the clip again, Enter goes on. A text field keeps its keys, and a focused button outside the game keeps Space and Enter. The verdict and each round are announced through a polite live region; the focus moves to the question, then to Next round.
+- **The clip and the app's player.** YouTube's player is paused when a clip starts (`ctx.player().pause()`). The clip stops when the page is left (hashchange, pagehide), when the app's player starts, or when the bus says another part of the page plays (`ctx.bus` `'audio'`; the quiz sends `{ by: 'quiz' }`).
+- **A browser that refuses sound.** When it wants a press first, the page says so and Play the clip starts it.
+- **One Audio element.** It serves every round; a clip that will not load gives its round to another song.
+- **Stored.** In the kit's localStorage: `quizBest` (`{ streak, points: { easy, normal, hard }, games }`), `quizLevel` and `quizInserts`.
+- **The style** is one injected `<style id="ts-quiz-css">` on the app's tokens. Nothing in it is fixed-position.
+
+`configure({ fetch, gapMs, pauseMs, rand, previewOk, forget })` is for tests and drive scripts: a stub for iTunes, no gap, a seeded game, an audio server of their own. `game()` is the running game, or null.
+
+The `quiz` test section (86 checks) covers:
+- the pool's rules, spellings, covers' scenes, upload years and aliases;
+- the choices on 150 seeds for every work and level (four different works, the answer once, the scene on Normal, the years on Hard, franchises);
+- seeded rounds in any library order;
+- `pickPreview` against decoys, other hosts, videos, kana titles and native names;
+- the score and typed answers;
+- whole games against a fake iTunes: ten rounds by index and by name, a song without a preview never asked, one request per song, the same seed playing the same game, a 403's pause, three network failures and `retry`, no previews at all, `skip`, the memo and the cache, a cover taking its original's preview, a pool that runs out.
+
+Checked in a browser on 2026-10-10 with `scripts/qa/drive.mjs` (the script and a 30-second WAV standing in for the previews stayed in the session's scratchpad). The demo, labelled with six more works through `ctx.edit`, iTunes stubbed:
+- the empty state with the demo alone;
+- the clip starts at its second and stops after 7 s, plus 5 when asked;
+- Space replays it, and the app's play button stops it;
+- YouTube's player stays paused through ten rounds played by clicks and keys;
+- Play the full song, the summary (8 of 10), Queue the ones I missed and `quizBest`;
+- a typed answer on Hard;
+- leaving the page stops the clip, and the round waits;
+- a clip that will not load is replaced;
+- a refused autoplay shows its note;
+- one column of 64 px choices at 390 by 844, light and dark, with no errors on the page.
 
 ## transport.js
 

@@ -1957,10 +1957,23 @@
 		}
 		view.appendChild(h('p', { class: 'ts-legal', text: 'This page uses YouTube API Services. ' }, [h('a', { href: 'https://www.youtube.com/t/terms', rel: 'noopener', text: 'YouTube Terms of Service' }), ' ' + DOT + ' ', h('a', { href: 'https://policies.google.com/privacy', rel: 'noopener', text: 'Google Privacy Policy' })]));
 	}
-	// Today's mix: thirty songs, seeded by the date, spread across artists,
-	// weighted toward what is rated and played, and mostly one or two moods.
+	// Today's mix: thirty songs, picked once a day (the first time that day's home page
+	// is drawn) and kept until the next day, so it stays the same however much of it is
+	// played. Seeded by the date, spread across artists, weighted toward what is rated
+	// and played, and mostly one or two moods. The demo keeps its own; the thumbnail none.
 	function dailyMix(music) {
-		var r = S.rng('daily-' + ToyKit.daily());
+		var day = ToyKit.daily(), key = demo ? 'dailyMixDemo' : 'dailyMix', kept = thumb ? null : ToyKit.load(key, null);
+		if (kept && kept.day === day && Array.isArray(kept.ids)) {
+			var still = kept.ids.filter(function (id) { return lib.tracks[id] && playableId(id); });
+			if (still.length) return still;
+		}
+		var mix = pickDailyMix(music, day);
+		if (!thumb && mix.length) ToyKit.store(key, { day: day, ids: mix.slice() });
+		return mix;
+	}
+	// -> ids
+	function pickDailyMix(music, day) {
+		var r = S.rng('daily-' + day);
 		var moods = T.MOODS.map(function (m) { return m[0]; }).filter(function (m) { return music.some(function (t) { return t.mood === m; }); });
 		var pick = moods.length ? [moods[r.int(moods.length)], moods[r.int(moods.length)]] : [];
 		var pool = music.filter(function (t) { return !pick.length || pick.indexOf(t.mood) >= 0 || r() < 0.15; });
@@ -2514,8 +2527,9 @@
 			['genres', 'Genres', 'genre', plural(Object.keys(ix.genres).length, 'genre')], ['browse', 'Moods & scenes', 'mood', 'Moods, scenes, languages, decades'],
 			['works', 'Anime, games & stage', 'works', plural(Object.keys(ix.works).length, 'work')], ['stats', 'Your numbers', 'stats', 'What you have and play'],
 			['discover', 'Discover', 'compass', 'New songs like the ones you love'], ['lists', 'Playlists', 'list', plural(lists.length, 'playlist')], ['map', 'Map', 'map', 'Your library as a map of sound'], ['history', 'History', 'history', 'What you played'], ['label', 'Quick labeller', 'edit', plural(idx().all.filter(needsLabel).length, 'song') + ' to label'],
+			moduleReady('wrapped') ? ['wrapped', 'Your year', 'sparkle', 'Your listening, in review'] : null, moduleReady('quiz') ? ['quiz', 'Guess the anime', 'tv', 'A quiz from your openings and endings'] : null,
 			['fix', 'Needs attention', 'fix', ix.needs.unsure ? plural(ix.needs.unsure, 'unsure artist') : 'All good'], ['settings', 'Settings', 'settings', 'Import, labels, backup, privacy']
-		];
+		].filter(Boolean);
 		var ul = h('ul', { class: 'ts-hub' });
 		items.forEach(function (it) { ul.appendChild(h('li', null, h('a', { href: '#/' + it[0] }, [icon(it[2]), h('span', null, [h('b', { text: it[1] }), h('span', { class: 'ts-muted', text: it[3] })])]))); });
 		view.appendChild(ul);
@@ -3190,6 +3204,7 @@
 		store.wipe().then(function () {
 			ToyKit.store('clientId', null);
 			ToyKit.store('nudgeDismissed', null);
+			ToyKit.store('dailyMix', null);
 			auth.setClientId(TS.config.clientId);
 			lib = L.create();
 			bag = null; bagKey = ''; stations = []; lists = []; focus = null; histCache = []; quota = null;
@@ -4368,6 +4383,7 @@
 		if (!t.preview) { say('No preview for this song.'); return; }
 		if (player && player.state() === 'playing') ctl.toggle();
 		previewAudio = new Audio(t.preview);
+		U.bus.emit('audio', { by: 'preview' });
 		previewAudio.addEventListener('ended', stopPreview);
 		previewAudio.play().catch(function () { say('The preview could not be played.'); stopPreview(); });
 		previewing = { id: t.id, btn: btn, title: t.title };
@@ -5201,6 +5217,7 @@
 		if (!t) { pvClose(); say('That was the last preview.'); return; }
 		if (player && player.state() === 'playing') ctl.toggle();
 		pv.audio = new Audio(t.preview);
+		U.bus.emit('audio', { by: 'preview' });
 		pv.audio.volume = Math.max(0, Math.min(1, (player && !player.muted() ? player.volume() : 100) / 100));
 		pv.audio.addEventListener('ended', function () { pv.at++; pvPlay(); });
 		pv.audio.addEventListener('timeupdate', pvProgress);
@@ -6032,6 +6049,8 @@
 		var seek = $('seek');
 		seek.addEventListener('input', function () { seeking = true; $('time-cur').textContent = clock(+seek.value); });
 		seek.addEventListener('change', function () { seeking = false; player.seek(+seek.value); });
+		// One sound at a time: a quiz clip (or any other page's audio) stops Discover's previews.
+		U.bus.on('audio', function (e) { if (e && e.by === 'preview') return; if (previewAudio) stopPreview(); if (pv.audio) { pv.audio.pause(); pvRender(); } });
 		player.on('state', function (e) { if (e && e.state === 'playing') applyVolume(fadesOn() ? fadeNow : 1); renderTransport(); renderTime(); if (e && (e.state === 'playing' || e.state === 'paused')) playerMessage(null); if (e && e.state === 'playing' && pv.audio && !pv.audio.paused) { pv.audio.pause(); pvRender(); } if (e && e.state === 'playing') { if (previewAudio) stopPreview(); if (pauseOnStart) { pauseOnStart = false; ctl.pause(); say('Sleep timer: paused after the track.'); } } });
 		player.on('time', function (e) { timeExtras(e); renderTime(); if (transport && e) transport.position({ duration: e.duration, position: e.current }); if (TS.lyrics && TS.lyrics.tick && e) TS.lyrics.tick(e.current, e.id); });
 		window.addEventListener('hashchange', onRoute);
