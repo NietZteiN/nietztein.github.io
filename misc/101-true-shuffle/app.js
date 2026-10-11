@@ -819,6 +819,8 @@
 		$('btn-prev').disabled = !s || s.index <= 0;
 		$('btn-next').disabled = !s || !s.items.length || s.index >= s.items.length - 1 && queueMode !== 'true';
 		b.disabled = !L.list(lib).length;
+		var sb = $('st-toggle');
+		if (sb) { sb.classList.toggle('is-playing', playing); U.setIcon(sb, playing ? 'pause' : 'play'); sb.setAttribute('aria-label', playing ? 'Pause' : 'Play'); sb.disabled = b.disabled; $('st-prev').disabled = $('btn-prev').disabled; $('st-next').disabled = $('btn-next').disabled; }
 		document.body.classList.toggle('is-playing', playing);
 		if (transport) transport.mirror(st);
 	}
@@ -827,14 +829,17 @@
 		var tm = player ? player.time() : { current: 0, duration: 0 };
 		var id = ctl && ctl.current(), t = id && trackOf(id);
 		var dur = tm.duration || (t && t.durationSec) || 0;
-		$('time-cur').textContent = clock(tm.current);
-		$('time-dur').textContent = clock(dur);
-		var r = $('seek');
-		r.max = Math.max(1, Math.round(dur));
-		if (!seeking) r.value = Math.round(tm.current);
-		r.disabled = !player || player.state() === 'idle';
-		r.style.setProperty('--p', (dur ? Math.min(100, 100 * tm.current / dur) : 0) + '%');
-		r.setAttribute('aria-valuetext', clock(tm.current) + ' of ' + clock(dur));
+		[['seek', 'time-cur', 'time-dur'], ['st-seek', 'st-cur', 'st-dur']].forEach(function (q) {
+			var r = $(q[0]);
+			if (!r) return;
+			if (!seeking) $(q[1]).textContent = clock(tm.current);
+			$(q[2]).textContent = clock(dur);
+			r.max = Math.max(1, Math.round(dur));
+			if (!seeking) r.value = Math.round(tm.current);
+			r.disabled = !player || player.state() === 'idle';
+			r.style.setProperty('--p', (dur ? Math.min(100, 100 * tm.current / dur) : 0) + '%');
+			r.setAttribute('aria-valuetext', clock(tm.current) + ' of ' + clock(dur));
+		});
 	}
 	function renderPoster(t) {
 		var art = $('poster-art'), text = $('poster-text');
@@ -5717,10 +5722,8 @@
 		search.addEventListener('input', go);
 		search.addEventListener('focus', function () { if (route.parts[0] !== 'search' && search.value) go(); });
 		$('search-form').addEventListener('submit', function (e) { e.preventDefault(); go(); });
-		[['btn-prev', 'prev'], ['btn-next', 'next'], ['btn-reshuffle', 'shuffle'], ['btn-queue', 'queue'], ['btn-mode', 'shuffle'], ['btn-toggle', 'play'], ['sheet-close', 'down']].forEach(function (b) { U.setIcon($(b[0]), b[1]); });
-		$('btn-toggle').addEventListener('click', togglePlay);
-		$('btn-next').addEventListener('click', goNext);
-		$('btn-prev').addEventListener('click', goPrev);
+		[['btn-prev', 'prev'], ['btn-next', 'next'], ['btn-reshuffle', 'shuffle'], ['btn-queue', 'queue'], ['btn-mode', 'shuffle'], ['btn-toggle', 'play'], ['sheet-close', 'down'], ['st-prev', 'prev'], ['st-next', 'next'], ['st-toggle', 'play']].forEach(function (b) { U.setIcon($(b[0]), b[1]); });
+		[['btn-toggle', togglePlay], ['btn-next', goNext], ['btn-prev', goPrev], ['st-toggle', togglePlay], ['st-next', goNext], ['st-prev', goPrev]].forEach(function (b) { $(b[0]).addEventListener('click', b[1]); });
 		$('btn-reshuffle').addEventListener('click', reshuffle);
 		$('btn-mode').addEventListener('click', function (e) { modeMenu(e.currentTarget); });
 		$('btn-queue').addEventListener('click', toggleQueue);
@@ -5748,9 +5751,11 @@
 		applyDensity();
 		renderVolume();
 		renderVbar();
-		var seek = $('seek');
-		seek.addEventListener('input', function () { seeking = true; $('time-cur').textContent = clock(+seek.value); });
-		seek.addEventListener('change', function () { seeking = false; player.seek(+seek.value); });
+		[['seek', 'time-cur'], ['st-seek', 'st-cur']].forEach(function (q) {
+			var seek = $(q[0]);
+			seek.addEventListener('input', function () { seeking = true; $(q[1]).textContent = clock(+seek.value); });
+			seek.addEventListener('change', function () { seeking = false; player.seek(+seek.value); });
+		});
 		// One sound at a time: a quiz clip (or any other page's audio) stops Discover's previews.
 		U.bus.on('audio', function (e) { if (e && e.by === 'preview') return; if (pv.audio) { pv.audio.pause(); pvRender(); } });
 		player.on('state', function (e) { if (e && e.state === 'playing') applyVolume(fadesOn() ? fadeNow : 1); renderTransport(); renderTime(); if (e && (e.state === 'playing' || e.state === 'paused')) playerMessage(null); if (e && e.state === 'playing' && pv.audio && !pv.audio.paused) { pv.audio.pause(); pvRender(); } if (e && e.state === 'playing') { if (pauseOnStart) { pauseOnStart = false; ctl.pause(); say('Sleep timer: paused after the track.'); } } });

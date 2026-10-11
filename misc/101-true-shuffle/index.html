@@ -11,8 +11,8 @@
 <meta name="theme-color" content="#0b0d10" media="(prefers-color-scheme: dark)">
 <link rel="apple-touch-icon" href="icons/192.png">
 <link rel="stylesheet" href="../_kit/kit.css"><script src="../_kit/kit.js"></script>
-<link rel="stylesheet" href="app.css?v=2026101107">
-<link rel="stylesheet" href="ds.css?v=2026101107">
+<link rel="stylesheet" href="app.css?v=2026101108">
+<link rel="stylesheet" href="ds.css?v=2026101108">
 </head>
 <body class="ts">
 
@@ -65,6 +65,11 @@
 		<div class="ts-now-rest" id="now-rest">
 			<div class="ts-sheet-grip kit-nothumb"><button class="ts-icon-btn" id="sheet-close" type="button" aria-label="Close the queue"></button></div>
 			<section class="ts-nowinfo" id="nowinfo" aria-label="This track"></section>
+			<!-- The phone's sheet covers the bar, so it carries the transport too (hidden on a wide window). -->
+			<div class="ts-sheet-tp kit-nothumb" role="group" aria-label="Playback">
+				<div class="ts-sheet-seek"><span class="ts-time" id="st-cur">0:00</span><input class="ts-range" id="st-seek" type="range" min="0" max="1" step="1" value="0" aria-label="Position in the track" disabled><span class="ts-time" id="st-dur">0:00</span></div>
+				<div class="ts-sheet-btns"><button class="ts-icon-btn" id="st-prev" type="button" aria-label="Previous track"></button><button class="ts-play" id="st-toggle" type="button" aria-label="Play"></button><button class="ts-icon-btn" id="st-next" type="button" aria-label="Next track"></button></div>
+			</div>
 			<section class="ts-queue" aria-label="Queue">
 				<button class="ts-queue-fold" id="queue-fold" type="button" aria-controls="panel-next"></button>
 				<div class="ts-tabs" role="tablist" aria-label="Queue and history">
@@ -148,39 +153,39 @@
 	<p>This page uses YouTube API Services: <a href="https://www.youtube.com/t/terms" rel="noopener">YouTube Terms of Service</a> &middot; <a href="https://policies.google.com/privacy" rel="noopener">Google Privacy Policy</a> &middot; <a href="https://myaccount.google.com/permissions" rel="noopener">remove access at Google</a></p>
 </template>
 
-<script src="config.js?v=2026101107"></script>
-<script src="parse.js?v=2026101107"></script>
-<script src="library.js?v=2026101107"></script>
-<script src="shuffle.js?v=2026101107"></script>
-<script src="store.js?v=2026101107"></script>
-<script src="player.js?v=2026101107"></script>
-<script src="transport.js?v=2026101107"></script>
-<script src="taxonomy.js?v=2026101107"></script>
-<script src="embed.js?v=2026101107"></script>
-<script src="discover.js?v=2026101107"></script>
-<script src="match.js?v=2026101107"></script>
-<script src="sources.js?v=2026101107"></script>
-<script src="finds.js?v=2026101107"></script>
-<script src="feeder.js?v=2026101107"></script>
-<script src="engine.js?v=2026101107"></script>
-<script src="demo.js?v=2026101107"></script>
-<script src="yt.js?v=2026101107"></script>
-<script src="ui.js?v=2026101107"></script>
-<script src="actions.js?v=2026101107"></script>
-<script src="lyrics.js?v=2026101107"></script>
-<script src="quiz.js?v=2026101107"></script>
-<script src="wrapped.js?v=2026101107"></script>
-<script src="share.js?v=2026101107"></script>
-<script src="channel.js?v=2026101107"></script>
-<script src="lanes.js?v=2026101107"></script>
-<script src="media.js?v=2026101107"></script>
-<script src="works.js?v=2026101107"></script>
-<script src="artists.js?v=2026101107"></script>
-<script src="explore.js?v=2026101107"></script>
-<script src="car.js?v=2026101107"></script>
-<script src="credits.js?v=2026101107"></script>
-<script src="recs.js?v=2026101107"></script>
-<script src="foryou.js?v=2026101107"></script>
-<script src="app.js?v=2026101107"></script>
+<script src="config.js?v=2026101108"></script>
+<script src="parse.js?v=2026101108"></script>
+<script src="library.js?v=2026101108"></script>
+<script src="shuffle.js?v=2026101108"></script>
+<script src="store.js?v=2026101108"></script>
+<script src="player.js?v=2026101108"></script>
+<script src="transport.js?v=2026101108"></script>
+<script src="taxonomy.js?v=2026101108"></script>
+<script src="embed.js?v=2026101108"></script>
+<script src="discover.js?v=2026101108"></script>
+<script src="match.js?v=2026101108"></script>
+<script src="sources.js?v=2026101108"></script>
+<script src="finds.js?v=2026101108"></script>
+<script src="feeder.js?v=2026101108"></script>
+<script src="engine.js?v=2026101108"></script>
+<script src="demo.js?v=2026101108"></script>
+<script src="yt.js?v=2026101108"></script>
+<script src="ui.js?v=2026101108"></script>
+<script src="actions.js?v=2026101108"></script>
+<script src="lyrics.js?v=2026101108"></script>
+<script src="quiz.js?v=2026101108"></script>
+<script src="wrapped.js?v=2026101108"></script>
+<script src="share.js?v=2026101108"></script>
+<script src="channel.js?v=2026101108"></script>
+<script src="lanes.js?v=2026101108"></script>
+<script src="media.js?v=2026101108"></script>
+<script src="works.js?v=2026101108"></script>
+<script src="artists.js?v=2026101108"></script>
+<script src="explore.js?v=2026101108"></script>
+<script src="car.js?v=2026101108"></script>
+<script src="credits.js?v=2026101108"></script>
+<script src="recs.js?v=2026101108"></script>
+<script src="foryou.js?v=2026101108"></script>
+<script src="app.js?v=2026101108"></script>
 </body>
 </html>
