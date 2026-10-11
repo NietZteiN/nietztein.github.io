@@ -28,6 +28,7 @@ Toy 101. A music player for one listener's YouTube playlists and Liked videos: s
 | `scrobble.js` | Opt-in ListenBrainz scrobbling with the listener's own token. Written and tested, not loaded yet: on 2026-10-11 ListenBrainz's API refused browsers (every path redirected to a 404). | no |
 | `recs.js` | The taste profile from your plays, likes and skips; which found songs a lane shows (not yours, not heard lately, not hidden, each once, the stale ones last); the feed's bookkeeping; moving the old Discover keys. | no |
 | `foryou.js` | For you (`#/for-you`): Your radio, this season's anime, airing today, the songs missing from your series, new releases, new uploads from your channels, Because you play X, Saved for later and Hidden, each a lane. | the page half |
+| `handoff.js` | Continue on your phone: the link that opens this queue at this song and second on another device, a QR code of it drawn in the page, the dialog. | the dialog only |
 | `habits.js` | Listening habits: the listening clock on Your numbers (minutes by weekday and hour, the streaks, minutes per week), the home page's Usually at this hour, and Skip the intro, learned (a song you keep seeking into is offered a later start). | the page half |
 | `pip.js` | The mini player: the song, its buttons and the time in a small window that stays on top of other windows (Chrome and Edge on a desktop). YouTube's player stays in the page. | the window only |
 | `duel.js` | Rank your songs two at a time (`#/duel`): which of two songs you like more, a score per song with how sure it is, the ranking, and stars from it. | the page half |
@@ -82,6 +83,7 @@ Everything is UMD: in the browser each file adds one member to `window.TrueShuff
 <script src="credits.js"></script>      <!-- needs match, sources -->
 <script src="recs.js"></script>         <!-- needs discover (its fold), sources -->
 <script src="foryou.js"></script>       <!-- needs recs, lanes, media, works, artists, channel, explore -->
+<script src="handoff.js"></script>      <!-- needs share, ui -->
 <script src="habits.js"></script>        <!-- reads car.js when it asks -->
 <script src="pip.js"></script>          <!-- draws through pageCtx -->
 <script src="duel.js"></script>
@@ -489,16 +491,19 @@ When the queue is waiting, a new song that is not ready within `maxWaitMs` gives
 
 | Name | What it is |
 | --- | --- |
-| `link(ids, title, base)` | `base#/share?ids=a.b.c&t=Title`: each valid video id once, at most `MAX` (100), and a title of at most 120 characters. |
-| `decode(query)` | `{ ids, title }` from the address's query. Anything that is not a video id is dropped. |
+| `link(ids, title, base, start)` | `base#/share?ids=a.b.c&at=b&s=151&t=Title`: each valid video id once, at most `MAX` (100); `start` (`{ id, sec }`, optional) is the song to start at and the second (whole seconds; under one is the beginning), left out when the song is not in the list; a title of at most 120 characters, never cut inside a character. |
+| `decode(query)` | `{ ids, title, start }` from the address's query. Anything that is not a video id is dropped. `start` is `{ id, index, sec }`; null for a link without one (every older link), a start song that is not among the songs, or seconds that are not a whole number. Seconds without a song are the first song's. |
 | `videoIdOf(text)` | The id in a YouTube address (watch, youtu.be, shorts, embed, live) or a bare id; otherwise `''`. |
 | `parseList(text)` | One song a line: `{ videoId }` for a link, otherwise `{ artist, title }` from "Artist - Title" (any dash), "Title / Artist" or "Title by Artist". Numbering and bullets are dropped. |
 | `titles(ids)` | oEmbed for each id, four at a time: `{ id: { title, channel } \| null }`. Null is a video that is gone or cannot be played on other sites (401). |
+| `startIn(decoded, playableIds)` | Where Play from starts among the songs that can play: `{ k, sec, exact }` (`k` in `playableIds`), the start song; when it is gone the next one that is not, from its beginning (`exact` false); null without a start or with none left. |
+| `seekOnPlay(player, id, sec)` | Go to `sec` once `id` plays (the controller has no start offset, so it is a seek on the player's first `playing` for that song); other songs playing first are ignored, and it gives up after a minute. Returns `stop()`. |
 | `view(view, ctx, parts, query)` | The pages `#/share` and `#/paste`. |
 | `configure({ fetch })` | The tests' fetch. |
 
 - **Where it is:** the bar's More has "Share the queue as a link" (the playing song and what comes after it). The palette has that and "Paste a list of songs".
 - **What it costs:** a shared song has its id, so it plays free. A pasted line without a link goes through the resolver: a search (100 units) unless the library or an earlier search has it. Play all looks songs up as it goes, at most 10 searches a press.
+- **Continue listening:** a link with a start (handoff.js makes them) opens with the kicker Continue listening, the start song and one big Play from 2:31 in place of Play all, busy until the titles are in. It plays the songs from there through the engine, as Play all does, and seeks to the second once the song plays. When the start song is gone it starts at the next one from its beginning, and says so. Nothing plays before the tap. In the demo the rows and the start song show no thumbnails.
 - **Privacy:** the requests carry no cookies and no referrer.
 
 ## duel.js
@@ -591,6 +596,28 @@ Hb.watch(ctx, { demo })                                   // -> { stop }: Skip t
 **In the demo** there is no history until something is played (the demo keeps none), so When you listen says what will fill it and Usually at this hour stays away. The drive check pushes an invented history into `ctx.history()`, as wrapped.js's does.
 
 **Tests.** The `habits` section (test/habits.section.js, 71 checks): the clock's cells (an hour boundary, Sunday into Monday, skips, unknown songs, after now, a year back), a fixed offset, both 2026 changes of US Central time (1 am twice in November, no 2 am in March), the local clock against Date; clockText's parts of the day and the night before; streaks (today, yesterday, broken, ties, an offset, four plays on three days around the change); weeks (Monday first, over Sunday midnight, an offset, after the change); thisHour (the hour either side, across midnight, weekdays and the weekend, 120 days, min, least, n, where a play began, an offset); momentText; the seek detector fed sequences of time events (a seek, playing along, the rate, arrow keys in a row, from too late, landing too early or too late, a step back, another song, a seek while paused, one seen after a pause, a throttled tab, reset, odd events); addSeek; introOffer (two of three, 8 s and 9 s apart, one, three, the play going on, an older play, the last seek in a play, another song, now, tol); 5,000 listens.
+
+## handoff.js
+
+`TS.handoff`: Continue on your phone. The owner listens on the computer and picks up the phone to leave the house; the computer shows a QR code, and the phone's camera opens this page at the same queue, the same song and the same second. The code is drawn in the page from the link: nothing is sent anywhere, and the link carries only video ids, the queue's name and the second.
+
+| Name | What it is |
+| --- | --- |
+| `plan({ items, index, sec, title, base, songs, budget })` | The link for the phone, from the queue (`items` and `index`, the controller's state) and the second the song is at: share.js `link` with the song that is on as the start, then up to `MAX_SONGS` (24) of what comes after it, each once; anything that is not a YouTube video is left out. A link longer than `budget` bytes (by default what a version `MAX_VERSION` code holds at level M: 412) drops the title, then songs from the end. Returns `{ url, at, sec, songs, cut }` (`cut`: the songs left out), or null when nothing is on or the song that is on is not a YouTube video (the demo's). |
+| `qr(text, { level, maxVersion })` | A QR code of the text (ISO/IEC 18004, byte mode, UTF-8): the smallest version at level M, or at L when M does not fit within `maxVersion` (40); `level: 'M'` or `'L'` asks for one. The mask is the one with the lowest penalty. Returns `{ version, level, mask, size, rows, dark(x, y) }` (`rows[y][x]` is true for a dark module; `dark` is false outside the code), or null when the text is too long. |
+| `svg(code, { scale, margin })` | The code as an SVG string: black modules on a white square whatever the theme, a quiet zone of `margin` modules (4), `scale` px a module (4). |
+| `pixels(modules, dpr)` | The width to show it at, in CSS pixels: at least 240, with a whole number of screen pixels (at least two) to a module, since even modules read best off a screen and a bigger code reads more easily (303 px for a full link at a device pixel ratio of 1, 252 at 1.25). |
+| `open(ctx)` | The dialog, below. `ctx` is app.js's `pageCtx`; it uses `ctl()`, `player()`, `trackOf`, `words`, `queueLabel()`, `say`, `U`, `h` and `demo`. |
+| `ecc(data, n)` | The `n` Reed-Solomon codewords of a block (GF(256) on x^8 + x^4 + x^3 + x^2 + 1). |
+| `formatBits(level, mask)`, `versionBits(version)` | The 15-bit format information and the 18-bit version information (BCH codes). |
+| `capacity(version, level)` | The bytes a code holds in byte mode at level L or M. |
+| `penalty(rows)` | The standard's four mask penalties, summed: runs of five or more, 2x2 blocks of one colour, 1:1:3:1:1 runs with four light modules on a side, the dark share in steps of 5%. |
+| `MAX_SONGS`, `MAX_VERSION` | 24 and 15 (77 modules a side): a denser code is hard for a phone camera to read off a screen. |
+
+- **Where it is:** the bar's More has Continue on your phone while a song is on, and so does the palette (Ctrl+K). No sign-in, no network.
+- **The dialog:** the code (240 to 320 px, on white, with its quiet zone), "Point the phone's camera at the code. It opens this queue at "Song", 2:31.", the link in a read-only box with Copy link, and, when the queue is longer than the code holds, "The code holds this song and the next 40 in the queue; the other 23 are left out." The second is read from the player when the dialog opens, so opening it again gives the new one; the computer keeps playing. The focus starts on Copy link; like every dialog it keeps off the player. In the demo it says that the invented songs cannot move to a phone.
+- **On the phone:** the link opens `#/share` as Continue listening, with the start song and a big Play from 2:31 (share.js above). Nothing plays before that tap: browsers refuse sound without one.
+- **Checked:** test/handoff.section.js checks the Reed-Solomon codewords against thonky.com's HELLO WORLD (1-M and 1-Q) and ISO/IEC 18004 annex I's 01234567 (1-M), all 32 format and 34 version strings, the byte capacities of versions 1 to 40 at L and M, the patterns at the published alignment centres, the mask chosen against the penalties written out again, and reads 88 codes back with a small reader written in the test from the standard (one byte past each version and its last byte, versions 1 to 20, 23 and 25, at M and L; each block checked as a Reed-Solomon codeword, the padding too). On 2026-10-11, outside the repo: jsQR 1.4.0 read back 166 codes (every version from 1 to 40 at M and L, at both ends, and links as `plan` makes them) once its table's alignment centre for version 23 was put right (it says 74; the standard says 78); node-qrcode 1.5.4 drew 240 codes bit for bit the same with the same mask, and on its own chose another mask for 6 of them, each time only because it counts a dark share between 50 and 55% as a step off. Not yet tried with a phone's camera.
 
 ## wrapped.js
 
