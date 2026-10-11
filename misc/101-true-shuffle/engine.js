@@ -258,6 +258,15 @@
 				emit('hidden', hidden);
 				return function () { delete hidden[kind][k]; kv('finds:hidden', hidden); emit('hidden', hidden); };
 			},
+			// Show it again (For you's Hidden): the opposite of hide.
+			unhide: function (kind, value) {
+				if (!hidden[kind] || !value) return;
+				var k = kind === 'artist' || kind === 'work' ? fold(value) : value;
+				if (!(k in hidden[kind])) return;
+				delete hidden[kind][k];
+				kv('finds:hidden', hidden);
+				emit('hidden', hidden);
+			},
 			isHidden: isHidden,
 			hidden: function () { return JSON.parse(JSON.stringify(hidden)); },
 			// An album or another group: its own YouTube list looked up once (finds.js resolveGroup).

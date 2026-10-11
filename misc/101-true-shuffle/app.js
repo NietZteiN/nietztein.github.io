@@ -681,13 +681,13 @@
 		{ key: 'browse', label: 'Moods & scenes', icon: 'mood' },
 		{ key: 'works', label: 'Anime, games & stage', icon: 'works' },
 		{ key: 'map', label: 'Map', icon: 'map' },
-		{ key: 'discover', label: 'Discover', icon: 'compass' },
+		{ key: 'for-you', label: 'For you', icon: 'sparkle' },
 		{ sep: 'Listen' },
 		{ key: 'lists', label: 'Playlists', icon: 'list' },
 		{ key: 'liked', label: 'Liked songs', icon: 'heart' },
 		{ key: 'mix', label: 'Mix builder', icon: 'mix' },
 		{ key: 'history', label: 'History', icon: 'history' },
-		{ key: 'wrapped', label: 'Your year', icon: 'sparkle', needs: 'wrapped' },
+		{ key: 'wrapped', label: 'Your year', icon: 'medal', needs: 'wrapped' },
 		{ key: 'quiz', label: 'Guess the anime', icon: 'tv', needs: 'quiz' },
 		{ key: 'stats', label: 'Your numbers', icon: 'stats' },
 		{ key: 'label', label: 'Quick labeller', icon: 'edit' },
@@ -696,9 +696,9 @@
 	];
 	var TABS = [
 		{ key: '', label: 'Home', icon: 'home' }, { key: 'search', label: 'Search', icon: 'search' },
-		{ key: 'discover', label: 'Discover', icon: 'compass' }, { key: 'library', label: 'Library', icon: 'songs' }, { key: 'queue', label: 'Queue', icon: 'queue' }
+		{ key: 'for-you', label: 'For you', icon: 'sparkle' }, { key: 'library', label: 'Library', icon: 'songs' }, { key: 'queue', label: 'Queue', icon: 'queue' }
 	];
-	var SECTION_OF = { person: 'artists', people: 'artists', channel: 'channels', explore: 'discover', artist: 'artists', genre: 'genres', family: 'genres', c: 'browse', work: 'works', track: 'songs', list: 'lists' };
+	var SECTION_OF = { person: 'artists', people: 'artists', channel: 'channels', explore: 'for-you', discover: 'for-you', artist: 'artists', genre: 'genres', family: 'genres', c: 'browse', work: 'works', track: 'songs', list: 'lists' };
 	var route = U.parseHash(location.hash);
 	function section() { var p = route.parts[0] || ''; return SECTION_OF[p] || p; }
 
@@ -746,7 +746,7 @@
 		var prevKey = route.path + '?' + route.query.toString();
 		scrollMemo[prevKey] = $('main').scrollTop;
 		route = U.parseHash(location.hash);
-		if (previewAudio) stopPreview();
+		stopPreview();
 		closeSheet();
 		U.closeMenu();
 		if (route.parts[0] !== 'search' && document.activeElement !== $('search')) $('search').value = '';
@@ -2535,7 +2535,7 @@
 			['songs', 'Songs', 'songs', plural(ix.music.length, 'song')], ['artists', 'Artists', 'artist', plural(Object.keys(ix.artists).length, 'artist')], ['channels', 'Channels', 'channel', 'Where your songs were uploaded'],
 			['genres', 'Genres', 'genre', plural(Object.keys(ix.genres).length, 'genre')], ['browse', 'Moods & scenes', 'mood', 'Moods, scenes, languages, decades'],
 			['works', 'Anime, games & stage', 'works', plural(Object.keys(ix.works).length, 'work')], ['stats', 'Your numbers', 'stats', 'What you have and play'],
-			['discover', 'Discover', 'compass', 'New songs like the ones you love'], ['lists', 'Playlists', 'list', plural(lists.length, 'playlist')], ['map', 'Map', 'map', 'Your library as a map of sound'], ['history', 'History', 'history', 'What you played'], ['label', 'Quick labeller', 'edit', plural(idx().all.filter(needsLabel).length, 'song') + ' to label'],
+			['for-you', 'For you', 'sparkle', 'New songs picked from what you play'], ['lists', 'Playlists', 'list', plural(lists.length, 'playlist')], ['map', 'Map', 'map', 'Your library as a map of sound'], ['history', 'History', 'history', 'What you played'], ['label', 'Quick labeller', 'edit', plural(idx().all.filter(needsLabel).length, 'song') + ' to label'],
 			moduleReady('wrapped') ? ['wrapped', 'Your year', 'sparkle', 'Your listening, in review'] : null, moduleReady('quiz') ? ['quiz', 'Guess the anime', 'tv', 'A quiz from your openings and endings'] : null, moduleReady('car') ? ['car', 'Car mode', 'car', 'Big buttons for driving; the screen stays on'] : null,
 			['fix', 'Needs attention', 'fix', ix.needs.unsure ? plural(ix.needs.unsure, 'unsure artist') : 'All good'], ['settings', 'Settings', 'settings', 'Import, labels, backup, privacy']
 		].filter(Boolean);
@@ -4294,7 +4294,7 @@
 		});
 		var redraw = later(function () { renderQueue(); renderModePill(); }, 100);
 		engine.on('feeder', redraw);
-		return engine.start().catch(function (e) { engine = null; if (window.console) console.warn('The discovery engine could not start: ' + (e && e.message)); });
+		return (TS.recs && !thumb && !demo ? TS.recs.migrateStore(store, Date.now()).catch(function () {}) : Promise.resolve()).then(function () { return engine.start(); }).catch(function (e) { engine = null; if (window.console) console.warn('The discovery engine could not start: ' + (e && e.message)); });
 	}
 	// The engine has a feeder's first songs: play them as the page's queue.
 	function startFeeder(fd, ids, ctx) {
@@ -4439,6 +4439,7 @@
 		lastfmKey: function () { return String(ToyKit.load('lastfmKey', '') || '').trim(); },
 		similar: function (t) { var r = recsFor(t); return { together: r.together, work: r.work, close: r.close.map(function (x) { return { t: x.t, why: whyWords(x.why) }; }) }; },
 		like: function (id) { toggleLike(lib.tracks[id]); }, liked: function (id) { var t = lib.tracks[id]; return !!(t && (t.rating || 0) >= 4); },
+		previewList: function (items, label) { pvStart((items || []).map(function (it) { return { id: it.key, title: it.title, artist: it.artist, preview: it.preview, cover: it.cover, album: it.album, key: it.key, videoId: it.videoId || null, find: it.find || null }; }), 0, label); },
 		preview: function (item, btn) { preview({ id: item.key || item.videoId, title: item.title, preview: item.preview }, btn); },
 		edit: function (ids, fields) { L.editMany(lib, ids, fields); return changed(ids); },
 		// car.js: the media keys' transport, and the bar's own play, next, previous and Endless
@@ -4450,42 +4451,20 @@
 	// transport in discover.js), 30-second previews, and one YouTube search to
 	// play a find (kept in the local playlist "Discovered").
 
-	var DX = TS.discover, dz = null, discoverHidden = null, previewAudio = null, previewing = null;
+	var DX = TS.discover, dz = null, discoverHidden = null;
 	var DISCOVERED = 'local:discovered';
 	function deezer() { if (!dz) dz = DX.createDeezer({ transport: DX.sandboxTransport() }); return dz; }
 	function loadHidden() { if (discoverHidden) return Promise.resolve(discoverHidden); if (thumb || !store) { discoverHidden = {}; return Promise.resolve(discoverHidden); } return store.get('discover:hidden', {}).then(function (h2) { discoverHidden = h2 || {}; return discoverHidden; }); }
 	function knownArtistName(name) { var k = L.normArtist(name); return !!(k && (idx().artists[k] || L.list(lib).some(function (t) { return t.artistKey === k || L.normArtist(t.artistNative) === k; }))); }
-	// The names and titles that identify an artist on Deezer.
-	function artistEvidence(key) {
-		var a = L.list(lib).filter(function (t) { return t.artistKey === key; });
-		var names = [], titles = [];
-		a.forEach(function (t) {
-			[t.artist, t.artistNative].forEach(function (n2) { if (n2 && names.indexOf(n2) < 0) names.push(n2); });
-			[t.title, t.titleAlt].forEach(function (x) { if (x && titles.indexOf(x) < 0) titles.push(x); });
-		});
-		return { names: names, titles: titles, tracks: a };
-	}
-	function stopPreview() {
-		if (previewAudio) { previewAudio.pause(); previewAudio = null; }
-		var old = previewing;
-		previewing = null;
-		if (old && old.btn) { U.setIcon(old.btn, 'play'); old.btn.setAttribute('aria-label', 'Preview ' + old.title); old.btn.classList.remove('is-on'); }
-	}
+	// A preview of one song is the preview bar with one song (its progress, Save, Play and close in
+	// one place, like a list of previews); pressing its button again closes it.
+	function stopPreview() { if (pv.single) pvClose(); }
 	function preview(t, btn) {
-		if (previewing && previewing.id === t.id) { stopPreview(); return; }
 		if (TS.car && TS.car.previewsOff()) { say('No previews in car mode.'); return; }
-		stopPreview();
-		pvClose();
+		if (pv.single && pv.audio && pv.list[0] && pv.list[0].id === t.id) { pvClose(); return; }
 		if (!t.preview) { say('No preview for this song.'); return; }
-		if (player && player.state() === 'playing') ctl.toggle();
-		previewAudio = new Audio(t.preview);
-		U.bus.emit('audio', { by: 'preview' });
-		previewAudio.addEventListener('ended', stopPreview);
-		previewAudio.play().catch(function () { say('The preview could not be played.'); stopPreview(); });
-		previewing = { id: t.id, btn: btn, title: t.title };
-		U.setIcon(btn, 'pause');
-		btn.classList.add('is-on');
-		btn.setAttribute('aria-label', 'Stop the preview');
+		pvStart([t], 0, 'Preview');
+		pv.single = true;
 	}
 	// Find the song on YouTube and play it; it joins the "Discovered" playlist.
 	function playFound(t, btn, mode) {
@@ -4520,6 +4499,7 @@
 		}).catch(function (err) { if (btn) U.btnState(btn, { busy: false }); job.done(); onApiError(err); });
 	}
 	function hideArtist(name) {
+		if (engine && !thumb) engine.hide('artist', name);
 		loadHidden().then(function (hd) { hd[DX.norm(name)] = true; if (!thumb) store.set('discover:hidden', hd); if (route.parts[0] === 'discover' || route.parts[0] === 'artist') renderView(true); say(name + ' will not be suggested again.'); });
 	}
 	function viewDiscover(view, parts, query) {
@@ -4527,7 +4507,7 @@
 		if (query.get('seed') && TS.explore) { location.replace('#/explore/' + encodeURIComponent(query.get('seed'))); return; }
 		if (query.get('artist')) { location.replace('#/artist/' + encodeURIComponent(query.get('artist'))); return; }
 		if (query.get('dz')) { viewDzArtist(view, query.get('dz')); return; }
-		viewDiscoverHub(view);
+		location.replace('#/for-you');
 	}
 
 
@@ -4814,7 +4794,7 @@
 			['Like the playing song', 'L', function () { toggleLike(ctl && lib.tracks[ctl.current()]); }, 'heart'],
 			['Mute or unmute', 'M', toggleMute, 'volume'],
 			['Start radio from the playing song', '', function () { var t = ctl && lib.tracks[ctl.current()]; if (t) startRadio(t); }, 'radio'],
-			['Explore the playing song', 'E', function () { var t = ctl && ctl.current(); location.hash = t ? '#/explore/' + encodeURIComponent(t) : '#/discover'; }, 'compass'],
+			['Explore the playing song', 'E', function () { var t = ctl && ctl.current(); location.hash = t ? '#/explore/' + encodeURIComponent(t) : '#/for-you'; }, 'compass'],
 			['Leave focus', focus ? listById(focus) && listById(focus).name : 'not focused', function () { setFocus(null); }, 'close'],
 			['Save the queue as a playlist', '', saveQueueAsList, 'plus'],
 			['Share the queue as a link', '', shareQueue, 'share'],
@@ -4934,11 +4914,7 @@
 	// ---- Density -------------------------------------------------------------------------------------------
 	function applyDensity() { document.body.classList.toggle('is-compact', prefs.density === 'compact'); }
 
-	// ---- Discover, the hub -------------------------------------------------------------------------------
-	// Many ways in: artists like the ones you play most, new releases from
-	// artists you have, more songs by them you don't have, picks from
-	// playlists of your genres, any artist on Deezer, a preview radio, and a
-	// list of songs saved for later.
+	// ---- Discover's Deezer artist page (#/discover?dz=) and its state; For you (foryou.js) replaced the hub ----
 
 	var dzIds = null, dzSaved = null, dzRecent = null;
 	function kvGet(key, fb) { return thumb || !store ? Promise.resolve(fb) : store.get(key, fb); }
@@ -4954,16 +4930,6 @@
 		var ws = [];
 		for (var w = 0; w < Math.min(n, items.length); w++) ws.push(worker());
 		return Promise.all(ws).then(function () { return out; });
-	}
-	// The Deezer artist for a library artist, remembered.
-	function dzArtistFor(key) {
-		if (dzIds[key] !== undefined) return Promise.resolve(dzIds[key]);
-		var ev = artistEvidence(key);
-		return DX.findArtist(deezer(), ev.names, ev.titles).then(function (f) {
-			dzIds[key] = f && f.verified ? { id: f.artist.id, name: f.artist.name, picture: DX.img(f.artist.picture_medium) } : null;
-			kvSet('discover:ids', dzIds);
-			return dzIds[key];
-		});
 	}
 	// Is a Deezer song already in the library? By artist and title, any spelling the labels know.
 	var libSongs = null, libSongsFor = null;
@@ -4990,15 +4956,16 @@
 			return true;
 		});
 	}
-	function topSeeds(n) {
-		var ix = idx();
-		return Object.keys(ix.artists).map(function (k) {
-			var a = ix.artists[k], likes = a.tracks.filter(liked).length;
-			return { key: k, a: a, s: a.plays * 3 + likes * 5 + a.tracks.length + (ix.artists[k].scene === 'vtuber' ? -2 : 0) };
-		}).filter(function (x) { return x.a.tracks.length >= 2 || x.a.plays; }).sort(function (x, y) { return y.s - x.s; }).slice(0, n);
-	}
-	function isSaved(t) { var v = t.videoId || (t._video && t._video.videoId); return dzSaved.some(function (s2) { return s2.id === t.id || (v && s2.videoId === v); }); }
+	function isSaved(t) { if (engine && !thumb) { var f0 = findOf(t); return !!(f0 && engine.isSaved(f0.key)); } return isSavedOld(t); }
+	function isSavedOld(t) { var v = t.videoId || (t._video && t._video.videoId); return dzSaved.some(function (s2) { return s2.id === t.id || (v && s2.videoId === v); }); }
 	function toggleSaved(t, btn) {
+		if (engine && !thumb) {
+			var f1 = findOf(t), on = engine.isSaved(f1.key);
+			if (on) engine.unsave(f1.key); else engine.save(f1);
+			if (btn) { btn.classList.toggle('is-on', !on); btn.setAttribute('aria-pressed', on ? 'false' : 'true'); }
+			U.toast(on ? 'Removed from Saved for later.' : 'Saved for later: ' + t.title + '.', { action: 'Undo', onAction: function () { toggleSaved(t, btn); } });
+			return;
+		}
 		var was = isSaved(t);
 		if (was) dzSaved = dzSaved.filter(function (s2) { return s2.id !== t.id; });
 		else dzSaved.unshift({ id: t.id, title: t.title, artist: t.artist, artistId: t.artistId, preview: t.preview, cover: t.cover, album: t.album, videoId: t.videoId || (t._video && t._video.videoId) || '', channel: (t._video && t._video.channel) || t.channel || '', savedAt: Date.now() });
@@ -5060,120 +5027,13 @@
 	}
 	var GENRE_QUERY = { 'Anison pop': 'anime songs', 'Anime rock': 'anime rock', 'Galge song': 'visual novel songs', 'Seiyuu & character song': 'seiyuu', 'Idol pop': 'japanese idol', 'Net-born J-pop': 'j-pop vocaloid producers', 'Mainstream J-pop': 'j-pop hits', 'J-pop rock': 'j-rock', 'Alt J-rock': 'japanese indie rock', 'J-punk & garage': 'japanese punk', 'Psych & art rock (JP)': 'japanese psychedelic', 'City pop': 'city pop', 'Shibuya-kei & neo-acoustic': 'shibuya-kei', 'Showa kayou & 80s idol': 'showa kayokyoku', 'Shoegaze & dream pop': 'shoegaze', 'Indie rock': 'indie rock', 'Vocaloid': 'vocaloid', 'Denpa & kawaii': 'denpa', 'Ethereal & fantasy vocal': 'fantasy anime vocal', 'Touhou arrange': 'touhou arrange', 'Mod & Britpop': 'britpop', 'Post-punk & jangle': 'post-punk' };
 
-	function viewDiscoverHub(view) {
-		view.appendChild(h('h1', { class: 'ts-h1', text: 'Discover' }));
-		view.appendChild(h('p', { class: 'ts-muted ts-lede', text: 'Songs and artists you do not have yet, from your own taste. Preview 30 seconds of anything; save what you like for later; Play finds it on YouTube.' }));
-		// explore any artist
-		var f = h('form', { class: 'ts-inline-form ts-dsearch', role: 'search' });
-		var inp = h('input', { class: 'kit-input', type: 'search', placeholder: 'Explore any artist (Deezer)', autocomplete: 'off', aria: { label: 'Explore any artist' } });
-		f.appendChild(inp);
-		var resBox = h('div', { class: 'ts-shelf ts-dsearch-res' });
-		f.addEventListener('submit', function (e) { e.preventDefault(); go(); });
-		var go = later(function () {
-			var v = inp.value.trim();
-			clear(resBox);
-			if (v.length < 2) return;
-			deezer().searchArtists(v).then(function (as) { clear(resBox); as.slice(0, 8).forEach(function (a) { resBox.appendChild(dzArtistCard({ id: a.id, name: a.name, picture: DX.img(a.picture_medium), fans: a.nb_fan })); }); }).catch(function (err) { resBox.appendChild(h('p', { class: 'ts-muted', text: err.message })); });
-		}, 350);
-		inp.addEventListener('input', go);
-		view.appendChild(f);
-		view.appendChild(resBox);
-		var seedRow = h('div', { class: 'ts-chips ts-chipbar' });
-		var cur = ctl && ctl.current() && lib.tracks[ctl.current()];
-		if (cur && cur.artistKey) seedRow.appendChild(h('a', { class: 'ts-chip is-hued', style: { '--h': '200', '--s': '55%' }, href: '#/discover?seed=' + encodeURIComponent(cur.id), text: 'Like what is playing: ' + trackTitle(cur) }));
-		(dzRecent || []).slice(0, 6).forEach(function (r) { seedRow.appendChild(h('a', { class: 'ts-chip', href: '#/discover?dz=' + r.id, text: r.name })); });
-		view.appendChild(seedRow);
-		var acts = h('div', { class: 'ts-actions' });
-		var radioBtn = actionBtn('radio', 'Preview radio from your taste', function () { tasteRadio(radioBtn); }, true);
-		acts.appendChild(radioBtn);
-		acts.appendChild(actionBtn('plus', 'Saved for later (' + dzSaved.length + ')', function () { var s2 = view.querySelector('.ts-dsaved'); if (s2) s2.scrollIntoView({ block: 'start' }); }));
-		if (lib.playlists[DISCOVERED]) acts.appendChild(actionBtn('list', 'Songs you found here', function () { var li = lists.filter(function (x) { return x.kind === 'smart' && x.patch && x.patch.playlists && x.patch.playlists[0] === DISCOVERED; })[0]; if (!li) { li = { id: newId(), name: 'Discovered', kind: 'smart', patch: { playlists: [DISCOVERED] }, created: new Date().toISOString() }; lists.push(li); saveLists(); } location.hash = link('list', li.id); }));
-		view.appendChild(acts);
-		var here = location.hash, seeds = topSeeds(14);
-		if (!seeds.length) { view.appendChild(h('p', { class: 'ts-empty', text: 'Play or like a few songs first, or label your library, so Discover knows what you like.' })); return; }
-		var becauseBox = h('div');
-		view.appendChild(becauseBox);
-		var newRel = dsection(view, 'New from artists you have', 'releases from the last two years');
-		var more = dsection(view, 'More by artists you have', 'their best songs that are not in your library');
-		var genres = dsection(view, 'From playlists of your genres');
-		var savedHead = h('div', { class: 'ts-sec-head' }, [h('h2', { text: 'Saved for later' }), h('span', { class: 'ts-muted', text: plural(dzSaved.length, 'song') })]);
-		if (engine && dzSaved.length) savedHead.appendChild(smallBtn('play', 'Play all', function () { engine.list(dzSaved.map(findOf), { label: 'Saved for later', href: '#/discover' }); }));
-		var savedSec = h('section', { class: 'ts-dsec ts-dsaved' }, [savedHead]);
-		view.appendChild(savedSec);
-		dzList(savedSec, dzSaved.slice(), 'Press + on any song to keep it here.');
-		// find the top artists on Deezer, then fill the sections
-		pool(seeds, 4, function (s2) { return dzArtistFor(s2.key).then(function (d) { return d ? { key: s2.key, name: s2.a.name, dz: d } : null; }); }).then(function (found) {
-			if (location.hash !== here) return;
-			found = found.filter(Boolean);
-			if (!found.length) { newRel.done(); newRel.body.appendChild(h('p', { class: 'ts-muted', text: 'Deezer does not know your top artists. Try exploring an artist by name above.' })); return; }
-			// because you like X: four of them, related artists you do not have
-			found.slice(0, 5).forEach(function (fa) {
-				var s3 = dsection(becauseBox, 'Because you like ' + fa.name);
-				deezer().related(fa.dz.id).then(function (rel) {
-					s3.done();
-					var fresh = rel.filter(function (a) { return !knownArtistName(a.name) && !(discoverHidden && discoverHidden[DX.norm(a.name)]); }).slice(0, 14);
-					if (!fresh.length) { s3.body.appendChild(h('p', { class: 'ts-muted', text: 'You already have every artist Deezer relates to them.' })); return; }
-					s3.head.appendChild(smallBtn('radio', 'Preview radio: ' + fa.name, function () { deezer().radio(fa.dz.id, 50).then(function (ts) { pvStart(freshOnly(ts), 0, fa.name + ' mix'); }); }));
-					shelf(s3.body, fresh.map(function (a) { return dzArtistCard({ id: a.id, name: a.name, picture: DX.img(a.picture_medium), fans: a.nb_fan }); }));
-				}).catch(function (e) { s3.done(); s3.body.appendChild(h('p', { class: 'ts-muted', text: 'Deezer did not answer (' + (e && e.message || 'error') + '). Reload to try again.' })); });
-			});
-			// new releases
-			var cutoff = new Date(Date.now() - 730 * 86400000).toISOString().slice(0, 10);
-			pool(found.slice(0, 20), 4, function (fa) { return deezer().albums(fa.dz.id, 30).then(function (als) { return als.filter(function (al) { return al.date >= cutoff; }).slice(0, 3).map(function (al) { al.artistName = fa.dz.name; return al; }); }); }).then(function (lists2) {
-				newRel.done();
-				var all2 = [].concat.apply([], lists2.filter(Boolean)).sort(function (a, b) { return a.date < b.date ? 1 : -1; });
-				if (!all2.length) newRel.body.appendChild(h('p', { class: 'ts-muted', text: 'Nothing new from your top artists on Deezer in the last two years.' }));
-				else shelf(newRel.body, all2.slice(0, 24).map(function (al) { return albumCard(al, al.artistName); }));
-			});
-			// more by artists you have
-			pool(found.slice(0, 12), 4, function (fa) { return deezer().top(fa.dz.id, 10).then(function (ts) { return freshOnly(ts.map(function (t) { return DX.trackOf(t, { name: fa.dz.name, id: fa.dz.id }); })).slice(0, 3); }); }).then(function (lists2) {
-				more.done();
-				var all3 = [].concat.apply([], lists2.filter(Boolean));
-				if (!all3.length) more.body.appendChild(h('p', { class: 'ts-muted', text: 'You already have their best-known songs.' }));
-				else { more.head.appendChild(smallBtn('play', 'Preview them all', function () { pvStart(all3, 0, 'More by your artists'); })); dzList(more.body, all3); }
-			});
-		});
-		// playlists of your genres
-		var gc = {};
-		idx().music.forEach(function (t) { if (t.genres[0]) gc[t.genres[0]] = (gc[t.genres[0]] || 0) + 1 + (liked(t) ? 3 : 0) + (t.plays || 0); });
-		var topG = Object.keys(gc).filter(function (g) { return GENRE_QUERY[g]; }).sort(function (a, b) { return gc[b] - gc[a]; }).slice(0, 4);
-		pool(topG, 2, function (g) {
-			return deezer().searchPlaylists(GENRE_QUERY[g], 3).then(function (pls) {
-				var pl = pls.filter(function (p) { return p.nb_tracks >= 10; })[0];
-				if (!pl) return null;
-				return deezer().playlistTracks(pl.id, 80).then(function (ts) { return { genre: g, title: pl.title, tracks: freshOnly(ts).slice(0, 10) }; });
-			});
-		}).then(function (rows) {
-			genres.done();
-			rows.filter(Boolean).forEach(function (r) {
-				if (!r.tracks.length) return;
-				var hd = h('div', { class: 'ts-sec-head ts-dsub' }, [h('h3', { text: r.genre }), h('span', { class: 'ts-muted', text: 'from the playlist ' + q(r.title) })]);
-				hd.appendChild(smallBtn('play', 'Preview these', function () { pvStart(r.tracks, 0, r.genre); }));
-				genres.body.appendChild(hd);
-				dzList(genres.body, r.tracks);
-			});
-			if (!genres.body.querySelector('li')) genres.body.appendChild(h('p', { class: 'ts-muted', text: 'No playlists found for your genres.' }));
-		});
-	}
-	// A preview radio from your taste: the artist mixes of three of your top artists.
-	function tasteRadio(btn) {
-		if (btn) btn.disabled = true;
-		var seeds = topSeeds(30);
-		var pick = S.trueShuffle(seeds.map(function (s2) { return s2.key; }), S.cryptoRng()).slice(0, 6);
-		pool(pick, 3, function (k) { return dzArtistFor(k).then(function (d) { return d ? deezer().radio(d.id, 30) : []; }); }).then(function (lists2) {
-			if (btn) btn.disabled = false;
-			var all2 = freshOnly([].concat.apply([], lists2.filter(Boolean)));
-			var mixed = S.spreadShuffle(all2.map(function (t) { return { id: String(t.id), spreadKey: DX.norm(t.artist), t: t }; }), S.cryptoRng(), {}).map(function (id) { return all2.filter(function (t) { return String(t.id) === id; })[0]; });
-			if (!mixed.length) { say('Deezer had nothing new for your taste just now.'); return; }
-			pvStart(mixed.slice(0, 60), 0, 'Your taste');
-		}).catch(function (e) { if (btn) btn.disabled = false; fail(e); });
-	}
+
 
 	// ---- An artist on Deezer: top songs, releases, related, an artist mix ---------------------------------
 	function viewDzArtist(view, id) {
 		var here = location.hash;
 		var head = h('div');
-		view.appendChild(h('a', { class: 'ts-back', href: '#/discover', text: String.fromCharCode(0x2190) + ' Discover' }));
+		view.appendChild(h('a', { class: 'ts-back', href: '#/for-you', text: String.fromCharCode(0x2190) + ' For you' }));
 		view.appendChild(head);
 		var top = dsection(view, 'Top songs'), rel = dsection(view, 'Releases'), like = dsection(view, 'Related artists');
 		deezer().artist(id).then(function (a) {
@@ -5187,7 +5047,7 @@
 					actionBtn('radio', 'Preview artist mix', function () { deezer().radio(a.id, 50).then(function (ts) { pvStart(freshOnly(ts), 0, a.name + ' mix'); }); }, true),
 					actionBtn('play', 'Preview top songs', function () { deezer().top(a.id, 20).then(function (ts) { pvStart(ts.map(function (t) { return DX.trackOf(t, a); }).filter(function (t) { return t.preview; }), 0, a.name); }); }),
 					libA ? actionBtn('artist', 'In your library', function () { location.hash = link('artist', known); }) : null,
-					actionBtn('close', 'Not interested', function () { hideArtist(a.name); location.hash = '#/discover'; })
+					actionBtn('close', 'Not interested', function () { hideArtist(a.name); location.hash = '#/for-you'; })
 				]
 			});
 		}).catch(function (e) { head.appendChild(h('p', { class: 'ts-empty', text: e.message })); });
@@ -5197,19 +5057,19 @@
 	}
 
 	// ---- The preview radio: 30-second previews one after another -------------------------------------------
-	var pv = { list: [], at: 0, audio: null, label: '' };
+	var pv = { list: [], at: 0, audio: null, label: '', single: false };
 	function pvStart(list, at, label) {
 		if (TS.car && TS.car.previewsOff()) { say('No previews in car mode.'); return; }
 		list = (list || []).filter(function (t) { return t && t.preview; });
 		if (!list.length) { say('No previews here.'); return; }
-		stopPreview();
-		pv.list = list; pv.at = Math.max(0, at || 0); pv.label = label || 'Previews';
+		pvClose();
+		pv.list = list; pv.at = Math.max(0, at || 0); pv.label = label || 'Previews'; pv.single = false;
 		pvPlay();
 	}
 	function pvPlay() {
 		if (pv.audio) { pv.audio.pause(); pv.audio = null; }
 		var t = pv.list[pv.at];
-		if (!t) { pvClose(); say('That was the last preview.'); return; }
+		if (!t) { var one = pv.single; pvClose(); if (!one) say('That was the last preview.'); return; }
 		if (player && player.state() === 'playing') ctl.toggle();
 		pv.audio = new Audio(t.preview);
 		U.bus.emit('audio', { by: 'preview' });
@@ -5220,7 +5080,7 @@
 		pvRender();
 	}
 	function pvProgress() { var b = document.querySelector('.ts-pvbar-fill'); if (b && pv.audio && pv.audio.duration) b.style.width = (100 * pv.audio.currentTime / pv.audio.duration) + '%'; }
-	function pvClose() { if (pv.audio) pv.audio.pause(); pv.audio = null; var bar = $('pvbar'); if (bar) bar.parentNode.removeChild(bar); document.body.classList.remove('has-pvbar'); }
+	function pvClose() { if (pv.audio) pv.audio.pause(); pv.audio = null; pv.single = false; var bar = $('pvbar'); if (bar) bar.parentNode.removeChild(bar); document.body.classList.remove('has-pvbar'); }
 	function pvRender() {
 		var t = pv.list[pv.at], bar = $('pvbar');
 		if (!t) return;
@@ -5905,8 +5765,8 @@
 		seek.addEventListener('input', function () { seeking = true; $('time-cur').textContent = clock(+seek.value); });
 		seek.addEventListener('change', function () { seeking = false; player.seek(+seek.value); });
 		// One sound at a time: a quiz clip (or any other page's audio) stops Discover's previews.
-		U.bus.on('audio', function (e) { if (e && e.by === 'preview') return; if (previewAudio) stopPreview(); if (pv.audio) { pv.audio.pause(); pvRender(); } });
-		player.on('state', function (e) { if (e && e.state === 'playing') applyVolume(fadesOn() ? fadeNow : 1); renderTransport(); renderTime(); if (e && (e.state === 'playing' || e.state === 'paused')) playerMessage(null); if (e && e.state === 'playing' && pv.audio && !pv.audio.paused) { pv.audio.pause(); pvRender(); } if (e && e.state === 'playing') { if (previewAudio) stopPreview(); if (pauseOnStart) { pauseOnStart = false; ctl.pause(); say('Sleep timer: paused after the track.'); } } });
+		U.bus.on('audio', function (e) { if (e && e.by === 'preview') return; if (pv.audio) { pv.audio.pause(); pvRender(); } });
+		player.on('state', function (e) { if (e && e.state === 'playing') applyVolume(fadesOn() ? fadeNow : 1); renderTransport(); renderTime(); if (e && (e.state === 'playing' || e.state === 'paused')) playerMessage(null); if (e && e.state === 'playing' && pv.audio && !pv.audio.paused) { pv.audio.pause(); pvRender(); } if (e && e.state === 'playing') { if (pauseOnStart) { pauseOnStart = false; ctl.pause(); say('Sleep timer: paused after the track.'); } } });
 		player.on('time', function (e) { timeExtras(e); renderTime(); if (transport && e) transport.position({ duration: e.duration, position: e.current }); if (TS.lyrics && TS.lyrics.tick && e) TS.lyrics.tick(e.current, e.id); });
 		window.addEventListener('hashchange', onRoute);
 	}
@@ -5917,7 +5777,7 @@
 		'': viewHome, search: viewSearch, songs: viewSongs, artists: viewArtists, artist: viewArtist, genres: viewGenres, genre: viewGenre,
 		family: viewFamily, c: viewFacet, browse: viewBrowse, works: viewWorks, work: viewWork, track: viewTrack, mix: viewMix,
 		stats: viewStats, fix: viewFix, settings: viewSettings, library: viewLibrary,
-		lists: viewLists, list: viewList, liked: viewLiked, channel: pageFile('channel'), channels: pageFile('channel'), explore: pageFile('explore'), person: viewPerson, people: viewPeople, history: viewHistory, label: viewLabel, map: viewMap, discover: viewDiscover,
+		lists: viewLists, list: viewList, liked: viewLiked, channel: pageFile('channel'), channels: pageFile('channel'), explore: pageFile('explore'), 'for-you': pageFile('foryou'), person: viewPerson, people: viewPeople, history: viewHistory, label: viewLabel, map: viewMap, discover: viewDiscover,
 		car: pageFile('car'), lyrics: pageFile('lyrics'), quiz: pageFile('quiz'), wrapped: pageFile('wrapped'), share: pageFile('share'), paste: pageFile('share')
 	};
 	// A view drawn by a page file (lyrics.js, quiz.js, wrapped.js): its view(view, ctx, parts, query).

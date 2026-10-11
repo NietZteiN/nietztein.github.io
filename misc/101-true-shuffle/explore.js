@@ -208,7 +208,7 @@
 						if (!items.length) return;
 						list.appendChild(h('h3', { class: 'ts-x-gh', text: g.title }, g.sub ? [h('span', { class: 'ts-muted', text: ' ' + g.sub })] : null));
 						var ol = h('ol', { class: 'ts-x-rows' });
-						items.forEach(function (f) { ol.appendChild(mod('media').row(ctx, mod('media').item(f, ctx), { context: { label: data.title, href: hrefOf(seed) + '?lane=work' } })); });
+						items.forEach(function (f) { ol.appendChild(mod('media').row(ctx, mod('media').item(f, ctx), { context: { label: data.title, href: hrefOf(seed) + '?lane=work' }, badge: false })); });
 						list.appendChild(ol);
 					});
 				}

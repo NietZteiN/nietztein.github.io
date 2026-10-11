@@ -369,6 +369,10 @@
 		'.ts-m-dur { min-width: 36px; text-align: right; font-size: 12.5px; color: var(--text-2); font-variant-numeric: tabular-nums; }',
 		'.ts-m-acts { flex: none; display: flex; align-items: center; gap: 2px; }',
 		'.ts-m-acts .ts-m-play { margin-right: 4px; }',
+		'.ts-m-play .ts-i { color: var(--ts-play); }',
+		'.ts-m-play.is-free { width: var(--btn-h); padding: 0; border-radius: 50%; border-color: transparent; background: transparent; }',
+		'.ts-m-play.is-free:hover { background: var(--ts-hover); }',
+		'.ts-m-play.is-free .ts-btn-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }',
 		'.ts-m-row .ts-m-hover { opacity: 0; transition: opacity var(--dur-fast); }',
 		'.ts-m-row:hover .ts-m-hover, .ts-m-row:focus-within .ts-m-hover, .ts-m-row:has([aria-expanded="true"]) .ts-m-hover { opacity: 1; }',
 		'.ts-m-row.is-now .ts-m-tt { color: var(--accent); }',
@@ -531,11 +535,15 @@
 			acts.appendChild(pv);
 		}
 		var c = cost(ctx, it), status = '';
-		var pb = U.btn({ icon: c === 'tab' ? 'external' : 'play', label: c === 'tab' ? 'YouTube' : 'Play', variant: 'primary', size: 'sm', cls: 'ts-m-play', cost: c === 1 || c === 100 ? c : null, title: costTitle(c), aria: { describedby: tid } });
+		// A song that plays at once has a quiet round Play; one that needs finding says so (its cost),
+		// and one that can only open YouTube says that. A list of rows then reads as songs, not buttons.
+		var pb = U.btn({ icon: c === 'tab' ? 'external' : 'play', label: c === 'tab' ? 'YouTube' : 'Play', variant: 'secondary', size: 'sm', cls: 'ts-m-play' + (c === 0 ? ' is-free' : ''), cost: c === 1 || c === 100 ? c : null, title: costTitle(c), aria: { describedby: tid, label: (c === 'tab' ? 'Find ' : 'Play ') + name + (c === 'tab' ? ' on YouTube' : '') } });
 		function setCost(n, st) {
 			c = n;
 			status = st || '';
 			U.btnState(pb, { icon: c === 'tab' ? 'external' : 'play', label: c === 'tab' ? 'YouTube' : 'Play', cost: c === 1 || c === 100 ? c : null });
+			pb.classList.toggle('is-free', c === 0);
+			pb.setAttribute('aria-label', (c === 'tab' ? 'Find ' : 'Play ') + name + (c === 'tab' ? ' on YouTube' : ''));
 			pb.title = costTitle(c, status);
 		}
 		pb.addEventListener('click', function () {
@@ -603,6 +611,8 @@
 		if (it.mine) return '#/explore/' + encodeURIComponent(it.mine);
 		return '#/explore/find/' + encodeURIComponent(it.key);
 	}
+	// A found song has no page of its own: Explore knows it once it is remembered (explore.js), on the way there.
+	function rememberFor(it) { var X = root.TrueShuffle && root.TrueShuffle.explore; if (X && X.remember && !it.mine && (it.find || it.key)) X.remember(it.find || it); }
 	// A card: the art with Play over it (and its cost), the title, a line; the card opens Explore.
 	function card(ctx, x, opts) {
 		opts = opts || {};
@@ -611,7 +621,7 @@
 		if (!it) return h('div', { class: 'ts-card ts-m-card is-hidden' });
 		var href = typeof opts.href === 'function' ? opts.href(it) : opts.href || exploreHref(it);
 		var c0 = h('div', { class: 'ts-card ts-m-card' + (it.mine ? ' is-mine' : ''), data: { key: it.key, id: it.videoId || null } });
-		var a = h('a', { class: 'ts-card-a', href: href });
+		var a = h('a', { class: 'ts-card-a', href: href, on: { click: function () { if (!opts.href) rememberFor(it); } } });
 		a.appendChild(artOf(ctx, it, 'ts-m-cart'));
 		a.appendChild(h('span', { class: 'ts-card-title', text: it.title || 'Untitled' }));
 		var why = opts.why === false ? '' : textOpt(opts.why, it, whyText(it, 1, ctx));
@@ -727,7 +737,7 @@
 		gos.push(goItem(A, 'go-work', 'tv', go.work || (it.work ? '#/work/' + encodeURIComponent(it.work) : null), 'Go to ' + (it.work || 'the work'), ctx, it));
 		gos.push(goItem(A, 'go-album', 'album', go.album || null, 'Go to ' + (it.album || 'the album'), ctx, it));
 		gos.push(goItem(A, 'go-channel', 'channel', go.channel || (it.channelId && !ctx.demo ? '#/channel/' + encodeURIComponent(it.channelId) : null), 'Go to ' + (it.channel || 'the channel'), ctx, it));
-		gos.push(goItem(A, 'explore', 'compass', go.explore || exploreHref(it), 'Explore', ctx, it));
+		gos.push(goItem(A, 'explore', 'compass', go.explore || function () { rememberFor(it); nav(ctx, exploreHref(it)); }, 'Explore', ctx, it));
 		if (it.mine && it.kind === 'track') gos.push(A.item('details', function () { nav(ctx, '#/track/' + encodeURIComponent(it.mine)); }));
 		if (it.videoId && YT_ID.test(it.videoId) && !ctx.demo) gos.push(A.item('open-youtube', function () { if (root.open) root.open('https://www.youtube.com/watch?v=' + encodeURIComponent(it.videoId), '_blank', 'noopener'); }));
 		gos = gos.filter(Boolean);
