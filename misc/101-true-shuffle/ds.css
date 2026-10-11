@@ -37,12 +37,14 @@
 	--ts-like: #d6336c;
 	--ts-cost: #8a5a00;
 	--ts-cost-bg: #fff3d6;
-	--ts-ok: #1a7f37;
-	--ts-src-mix: #b42318;
-	--ts-src-channel: #b54708;
-	--ts-src-anime: #c11574;
-	--ts-src-season: #6941c6;
-	--ts-src-album: #0e7490;
+	--ts-ok: #116329;
+	--ts-new: #1a52ba;
+	--ts-src-muted: #4b5563;
+	--ts-src-mix: #912018;
+	--ts-src-channel: #93370d;
+	--ts-src-anime: #9e165f;
+	--ts-src-season: #53389e;
+	--ts-src-album: #155e75;
 }
 :root[data-theme="dark"] {
 	--ts-play: #7cb3ff;
@@ -52,6 +54,8 @@
 	--ts-cost: #f2c14e;
 	--ts-cost-bg: rgba(242, 193, 78, 0.14);
 	--ts-ok: #56d364;
+	--ts-new: #7cb3ff;
+	--ts-src-muted: #9aa3af;
 	--ts-src-mix: #ff8a80;
 	--ts-src-channel: #fdb022;
 	--ts-src-anime: #f670c7;
@@ -134,14 +138,14 @@
 .ts-badge .ts-i { width: 13px; height: 13px; }
 .ts-badge--cost { --role: var(--ts-cost); background: var(--ts-cost-bg); }
 .ts-badge--ok { --role: var(--ts-ok); }
-.ts-badge--new { --role: var(--accent); }
+.ts-badge--new { --role: var(--ts-new); }
 .ts-badge--mix { --role: var(--ts-src-mix); }
 .ts-badge--channel { --role: var(--ts-src-channel); }
 .ts-badge--anime { --role: var(--ts-src-anime); }
 .ts-badge--season { --role: var(--ts-src-season); }
 .ts-badge--album { --role: var(--ts-src-album); }
-.ts-badge--search { --role: var(--ts-cost); }
-.ts-badge--ext, .ts-badge--library { --role: var(--text-2); }
+.ts-badge--search { --role: var(--ts-cost); background: var(--ts-cost-bg); }
+.ts-badge--ext, .ts-badge--library { --role: var(--ts-src-muted); }
 .ts-btn .ts-btn-cost { height: 18px; padding: 0 5px; margin-right: -6px; font-size: 11px; }
 .ts-btn--primary .ts-btn-cost { --role: var(--ts-play-ink); background: color-mix(in srgb, var(--ts-play-ink) 18%, transparent); border-color: transparent; }
 
