@@ -675,6 +675,7 @@
 		{ sep: 'Library' },
 		{ key: 'songs', label: 'Songs', icon: 'songs' },
 		{ key: 'artists', label: 'Artists', icon: 'artist' },
+		{ key: 'channels', label: 'Channels', icon: 'channel' },
 		{ key: 'genres', label: 'Genres', icon: 'genre' },
 		{ key: 'browse', label: 'Moods & scenes', icon: 'mood' },
 		{ key: 'works', label: 'Anime, games & stage', icon: 'works' },
@@ -696,7 +697,7 @@
 		{ key: '', label: 'Home', icon: 'home' }, { key: 'search', label: 'Search', icon: 'search' },
 		{ key: 'library', label: 'Library', icon: 'songs' }, { key: 'mix', label: 'Mix', icon: 'mix' }, { key: 'queue', label: 'Queue', icon: 'queue' }
 	];
-	var SECTION_OF = { person: 'artists', people: 'artists', channel: 'artists', artist: 'artists', genre: 'genres', family: 'genres', c: 'browse', work: 'works', track: 'songs', list: 'lists' };
+	var SECTION_OF = { person: 'artists', people: 'artists', channel: 'channels', artist: 'artists', genre: 'genres', family: 'genres', c: 'browse', work: 'works', track: 'songs', list: 'lists' };
 	var route = U.parseHash(location.hash);
 	function section() { var p = route.parts[0] || ''; return SECTION_OF[p] || p; }
 
@@ -984,6 +985,8 @@
 		var chips = h('div', { class: 'ts-chips' });
 		labelChips(t, chips);
 		box.appendChild(chips);
+		var chLink = TS.channel && TS.channel.nowLink ? TS.channel.nowLink(t, pageCtx) : null;
+		if (chLink) box.appendChild(chLink);
 		var row = h('div', { class: 'ts-now-actions' });
 		row.appendChild(stars(t));
 		row.appendChild(U.iconBtn('radio', 'Radio from this song', { on: { click: function () { startRadio(t); } } }));
@@ -1936,6 +1939,7 @@
 		}
 		var artists = Object.keys(ix.artists).map(function (k) { return ix.artists[k]; }).sort(function (a, b) { return (b.plays * 3 + b.tracks.length) - (a.plays * 3 + a.tracks.length) || cmp(a.name, b.name); }).slice(0, 18);
 		if (artists.length) { sectionHead(view, 'Your artists', { href: '#/artists' }); shelf(view, artists.map(artistCard)); }
+		if (TS.channel && TS.channel.homeShelf && !thumb) TS.channel.homeShelf(view, pageCtx);
 		var works = Object.keys(ix.works).map(function (k) { return ix.works[k]; }).sort(function (a, b) { return b.tracks.length - a.tracks.length || cmp(a.key, b.key); }).slice(0, 18);
 		if (works.length) { sectionHead(view, 'From your anime, games and stage', { href: '#/works' }); shelf(view, works.map(workCard)); }
 		var nowD = new Date(now()), thisYear = nowD.getUTCFullYear(), mm = nowD.getUTCMonth();
@@ -2523,7 +2527,7 @@
 		view.appendChild(h('h1', { class: 'ts-h1', text: 'Library' }));
 		var ix = idx();
 		var items = [
-			['songs', 'Songs', 'songs', plural(ix.music.length, 'song')], ['artists', 'Artists', 'artist', plural(Object.keys(ix.artists).length, 'artist')],
+			['songs', 'Songs', 'songs', plural(ix.music.length, 'song')], ['artists', 'Artists', 'artist', plural(Object.keys(ix.artists).length, 'artist')], ['channels', 'Channels', 'channel', 'Where your songs were uploaded'],
 			['genres', 'Genres', 'genre', plural(Object.keys(ix.genres).length, 'genre')], ['browse', 'Moods & scenes', 'mood', 'Moods, scenes, languages, decades'],
 			['works', 'Anime, games & stage', 'works', plural(Object.keys(ix.works).length, 'work')], ['stats', 'Your numbers', 'stats', 'What you have and play'],
 			['discover', 'Discover', 'compass', 'New songs like the ones you love'], ['lists', 'Playlists', 'list', plural(lists.length, 'playlist')], ['map', 'Map', 'map', 'Your library as a map of sound'], ['history', 'History', 'history', 'What you played'], ['label', 'Quick labeller', 'edit', plural(idx().all.filter(needsLabel).length, 'song') + ' to label'],
@@ -4332,6 +4336,9 @@
 		ui: { headerBlock: headerBlock, actionBtn: actionBtn, smallBtn: smallBtn, trackList: trackList, sectionHead: sectionHead, card: card, trackCard: trackCard, shelf: shelf, grid: grid, chip: chip },
 		store: function () { return store; }, prefs: function () { return prefs; },
 		lists: { create: function (ids, name) { createList('manual', { ids: ids }, name, { focus: false }); } },
+		canRead: canRead, client: function () { return demo ? null : client; }, endpoints: function () { return ep; },
+		channelRule: function (key, rule) { var ids = L.setChannelRule(lib, key, rule); changed(ids, true); return ids; },
+		extras: { channel: function (view, id, mine) { channelExtras(view, id, mine); } },
 		edit: function (ids, fields) { L.editMany(lib, ids, fields); return changed(ids); }
 	};
 
@@ -5409,7 +5416,7 @@
 		var cl = h('div', { class: 'ts-chips' });
 		chList.forEach(function (c) { cl.appendChild(h('a', { class: 'ts-chip', href: link('channel', c.id) }, [h('span', { text: c.name }), h('span', { class: 'ts-count', text: plural(c.n, 'song') + ' here' })])); });
 		chans.body.appendChild(cl);
-		chans.body.appendChild(h('p', { class: 'ts-muted', text: 'A channel page lists its uploads on YouTube that you do not have' + (canRead() ? ' (about 2 quota units for its newest hundred).' : ' (sign in, or add a YouTube API key in Settings, to see them here; otherwise it links to YouTube).') }));
+		chans.body.appendChild(h('p', { class: 'ts-muted', text: 'A channel page lists all its uploads on YouTube, the ones you do not have first' + (canRead() ? ' (2 quota units for each hundred).' : ' (its newest 200 without a sign-in; sign in, or add an API key in Settings, to read further back).') }));
 		loadDiscoverState().then(function () { return dzArtistFor(key); }).then(function (d) {
 			if (location.hash !== here) return;
 			if (!d) {
@@ -5439,56 +5446,8 @@
 		});
 	}
 
-	// ---- A YouTube channel: the songs here from it, and its other uploads --------------------------------
-	var channelCache = {};
-	function viewChannel(view, parts) {
-		var id = parts[0], ix = idx();
-		var mine = ix.all.filter(function (t) { return t.channelId === id; });
-		var name = mine.length ? mine[0].channel : 'Channel';
-		headerBlock(view, {
-			kicker: 'YouTube channel', title: name, hue: { h: 0, s: 45 }, artNode: mine[0] ? artFor(mine[0], 'ts-hero-art') : null,
-			meta: plural(mine.length, 'song') + ' in your library',
-			actions: [
-				mine.length ? actionBtn('play', 'Play', function () { playFrom(sorted(mine, 'added').map(function (t) { return t.id; }), 0, { label: name, href: link('channel', id), patch: { channels: [id] } }); }, true) : null,
-				mine.length > 1 ? shuffleSplit({ channels: [id] }, { label: name, href: link('channel', id), patch: { channels: [id] } }) : null,
-				smallBtn('external', 'Open on YouTube', function () { window.open('https://www.youtube.com/channel/' + encodeURIComponent(id), '_blank', 'noopener'); })
-			]
-		});
-		if (mine.length) { sectionHead(view, 'In your library'); trackList(view, sorted(mine, 'added'), { context: { label: name, href: link('channel', id) } }); }
-		var up = dsection(view, 'More uploads on this channel', 'newest first, the ones you do not have');
-		channelExtras(view, id, mine);
-		if (demo || !/^UC[A-Za-z0-9_-]{22}$/.test(id)) { up.done(); up.body.appendChild(h('p', { class: 'ts-muted', text: demo ? 'The demo has no YouTube channels.' : 'This channel cannot be listed.' })); return; }
-		if (!canRead()) {
-			up.done();
-			up.body.appendChild(h('p', { class: 'ts-muted', text: 'Listing a channel\u2019s uploads asks YouTube, so it needs either a sign-in (an hour at a time) or a YouTube API key, which works without signing in. Below: more by the artist from Deezer, and what sounds like this channel in your library.' }));
-			up.body.appendChild(h('div', { class: 'ts-row-btns' }, [
-				auth.configured() ? actionBtn('artist', 'Sign in', signIn, true) : null,
-				actionBtn('settings', 'Add an API key', function () { location.hash = '#/settings'; setTimeout(function () { var k = $('api-key'); if (k) { k.scrollIntoView({ block: 'center' }); k.focus(); } }, 300); })
-			]));
-			return;
-		}
-		var here = location.hash;
-		function show(items) {
-			up.done();
-			var fresh = items.filter(function (it) { return !lib.tracks[it.videoId] && !it.unavailable; });
-			if (!fresh.length) { up.body.appendChild(h('p', { class: 'ts-muted', text: 'You have every recent upload.' })); return; }
-			var ul = h('ul', { class: 'ts-dlist' });
-			fresh.forEach(function (it) {
-				var li = h('li', { class: 'ts-drow' });
-				li.appendChild(prefs.art ? U.art(it.videoId, 0, it.title, 'ts-q-art', true, 0) : U.swatch(0, it.title, 'ts-q-art', 0));
-				li.appendChild(h('span', { class: 'ts-q-text' }, [h('span', { class: 'ts-q-title', text: it.title }), h('span', { class: 'ts-q-artist', text: (it.addedAt ? String(it.addedAt).slice(0, 10) + ' ' + DOT + ' ' : '') + name })]));
-				findButtons(li, { id: it.videoId, artist: name, title: it.title, _video: { videoId: it.videoId, title: it.title, channel: name, channelId: id } }, null);
-				ul.appendChild(li);
-			});
-			up.body.appendChild(ul);
-		}
-		if (channelCache[id]) { show(channelCache[id]); return; }
-		var uploads = 'UU' + id.slice(2), items = [];
-		client.playlistPage(uploads, '').then(function (p1) {
-			items = p1.items;
-			return p1.nextPageToken ? client.playlistPage(uploads, p1.nextPageToken).then(function (p2) { items = items.concat(p2.items); }) : null;
-		}).then(function () { channelCache[id] = items; if (location.hash === here) show(items); }).catch(function (e) { up.done(); up.body.appendChild(h('p', { class: 'ts-muted', text: e.message || String(e) })); });
-	}
+	// ---- A YouTube channel: channel.js draws #/channel/<id> and #/channels; below its uploads
+	// go channelExtras (more by its artist, and what sounds like it in the library).
 
 	// ---- Add a song to one of the account's YouTube playlists ----------------------------------------
 	// The page reads YouTube with a read-only sign-in. Adding asks Google, once, for permission to
@@ -6062,7 +6021,7 @@
 		'': viewHome, search: viewSearch, songs: viewSongs, artists: viewArtists, artist: viewArtist, genres: viewGenres, genre: viewGenre,
 		family: viewFamily, c: viewFacet, browse: viewBrowse, works: viewWorks, work: viewWork, track: viewTrack, mix: viewMix,
 		stats: viewStats, fix: viewFix, settings: viewSettings, library: viewLibrary,
-		lists: viewLists, list: viewList, liked: viewLiked, channel: viewChannel, person: viewPerson, people: viewPeople, history: viewHistory, label: viewLabel, map: viewMap, discover: viewDiscover,
+		lists: viewLists, list: viewList, liked: viewLiked, channel: pageFile('channel'), channels: pageFile('channel'), person: viewPerson, people: viewPeople, history: viewHistory, label: viewLabel, map: viewMap, discover: viewDiscover,
 		lyrics: pageFile('lyrics'), quiz: pageFile('quiz'), wrapped: pageFile('wrapped'), share: pageFile('share'), paste: pageFile('share')
 	};
 	// A view drawn by a page file (lyrics.js, quiz.js, wrapped.js): its view(view, ctx, parts, query).

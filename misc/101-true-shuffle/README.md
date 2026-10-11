@@ -18,6 +18,7 @@ Toy 101. A music player for one listener's YouTube playlists and Liked videos: s
 | `feeder.js` | What keeps the queue fed: a list of found songs in order, or an endless radio. | no |
 | `engine.js` | The discovery engine: the one object the page calls about songs the library does not have. | no |
 | `share.js` | A queue as a link anyone can open (`#/share`), and a pasted list of songs (`#/paste`). | the pages only |
+| `channel.js` | A YouTube channel as a place to find music: every upload, the artist read from each title, the ones new to you first; the channels that find music for you (`#/channel/<id>`, `#/channels`). | the pages only |
 | `wrapped.js` | Your year: the year in review (`#/wrapped`) and the home page's On this day, Rediscover old favourites and the nudge to like a song. | the page half |
 | `lyrics.js` | The words of the song that is on, from LRCLIB: the Lyrics tab, the karaoke page, finding a song by a line of its words. | the views only |
 | `quiz.js` | Guess the anime: a few seconds of an opening or an ending from the library (Apple's 30-second previews), four anime to choose from. | the page only |
@@ -33,7 +34,7 @@ Toy 101. A music player for one listener's YouTube playlists and Liked videos: s
 | `ds.css` | The design system: tokens, the button, badges, progress chips, the player-safe zone, touch screens. | yes |
 | `index.html`, `app.js`, `app.css` | The page. | yes |
 
-Everything is UMD: in the browser each file adds one member to `window.TrueShuffle` (`config`, `parse`, `library`, `shuffle`, `store`, `player`, `demo`, `yt`, and since 2026-10-10 `transport`, `actions`, `match`, `sources`, `finds`, `feeder`, `engine`, `share`, `wrapped`, `lyrics` and `quiz`); in Node each is a CommonJS module. The sources are plain ASCII (other characters are written as escapes), old-style (`var`, `function`, one IIFE), tabs.
+Everything is UMD: in the browser each file adds one member to `window.TrueShuffle` (`config`, `parse`, `library`, `shuffle`, `store`, `player`, `demo`, `yt`, and since 2026-10-10 `transport`, `actions`, `match`, `sources`, `finds`, `feeder`, `engine`, `share`, `wrapped`, `lyrics`, `quiz` and `channel`); in Node each is a CommonJS module. The sources are plain ASCII (other characters are written as escapes), old-style (`var`, `function`, one IIFE), tabs.
 
 ```html
 <script src="config.js"></script>
@@ -59,6 +60,7 @@ Everything is UMD: in the browser each file adds one member to `window.TrueShuff
 <script src="quiz.js"></script>        <!-- needs library, sources, ui -->
 <script src="wrapped.js"></script>
 <script src="share.js"></script>
+<script src="channel.js"></script>      <!-- needs parse, sources, player, ui -->
 <script src="app.js"></script>
 ```
 
@@ -127,7 +129,7 @@ Every collection has Play (in order) and Shuffle (its filters as a plan, in the 
 
 **Versions and voice actors.** A song's versions share `S.songKey` (the folded title and the original artist): the track page lists them under Versions, the original first (no version and no other original artist), with Play every version and Another version; the now playing panel says how many there are and its menu puts another take on next and skips to it, the rest of the queue staying; the track menu has Other versions. Voice actors come out of the credits with `L.people` (`A (CV: X), B (CV: Y)`, `A & B (CV: X & Y)` paired in order, full-width brackets too): `#/people` lists everyone credited as a voice, `#/person/<key>` shows the characters they sing as (each song says which) and what they sing under their own name, the player and the track page link the voices, an artist page that is also a voice has As a voice actor, and Your numbers has Most versions and Voice actors.
 
-**Channels and artists.** `#/channel/<id>` (a track's Channel fact, More from this channel in its menu) shows the library's songs from that YouTube channel and its other uploads (`client.playlistPage` on the uploads list, `UU` + the id after `UC`, the newest hundred, about 2 quota units), each with Play and Add. Listing uploads needs a sign-in or an API key; without either the page says so, with Sign in and Add an API key. Either way it shows what needs no YouTube call: when the channel's songs here are mostly one artist's, their other songs and releases from Deezer (the same as an artist page's), and Sounds like this channel, the library's songs closest to the channel's own (`S.similar` from up to six of them, the channel's own left out), each with its reason.
+**Channels and artists.** `#/channel/<id>` (channel.js, below) lists every upload of a YouTube channel, the ones new to you first, with the artist read from each title: from the Data API with a sign-in or an API key (2 quota units a hundred, as far back as asked), otherwise read through a visible YouTube player (its newest 200, free) with oEmbed titles. `#/channels` lists the channels your songs came from, the ones that upload other artists' music (curators) first; the home page and the now-playing panel lead to them. Below the uploads, as before: when the channel's songs here are mostly one artist's, their other songs and releases from Deezer (the same as an artist page's), and Sounds like this channel, the library's songs closest to the channel's own (`S.similar` from up to six of them, the channel's own left out), each with its reason.
 
 **The map (#/map).** `embed.js` turns the tracks of the scope into vectors by one of `E.RECIPES`: Sound (the labels), Names (character trigrams of titles, artists and works, hashed), Taste timeline (labels and when each song was added), Blend, and Language model (multilingual MiniLM through transformers.js 4.3.1 from jsDelivr and the model from Hugging Face, about 120 MB, only after the reader asks; the vectors are kept, quantised, under `lm:vectors`). The page finds 15 neighbours each and lays the graph out in slices so it animates, then names k-means regions by their commonest genre or work. Colour by genre family, mood, scene or language (the eight validated categorical hues in a fixed order; the rest fold into Other) or by year and plays (one blue ramp). Drag, scroll or pinch, click a dot (play, play its neighbourhood), Shift-drag a box (shuffle, save as playlist); the legend fades categories; the regions are listed under the map as buttons for the keyboard. The queue's next tracks are drawn as a path.
 
@@ -679,6 +681,33 @@ Checked in a browser on 2026-10-10 with `scripts/qa/drive.mjs` (the script and a
 - a clip that will not load is replaced;
 - a refused autoplay shows its note;
 - one column of 64 px choices at 390 by 844, light and dark, with no errors on the page.
+
+## channel.js
+
+`TS.channel`: a YouTube channel as a place to find music, not only a name under a song. A channel that uploads other artists' songs (a niche reupload channel, a label, an archive) brings music the way an artist does, so every upload it has can be read, filtered and played, the ones new to you first.
+
+| Name | What it is |
+| --- | --- |
+| `rank(tracks)` | The channels the tracks came from: `[{ id, name, songs, artists, names, curator, ids, lastAdded }]`. `curator` is a channel that is not an artist's own (not a Topic or VEVO channel, not named after a singer of its songs: "Neon Abacus Official" is Neon Abacus's) with two songs or more. Curators come first, the most artists first; `artists` counts the artists of its songs other than the channel itself, guessed ones (`track.guess`) too; `names` are the three most frequent. |
+| `isMusic(title, durationSec, hasArtist)` | False for an upload that is not a song: a short, a trailer or teaser, a stream, a vlog, anything under 45 seconds, and (with `hasArtist` false) a title of hashtags with no artist in it, the way Shorts and announcements are titled (oEmbed gives no size or length to tell them by). Such uploads are kept apart, shown on request, and never played by Play or Shuffle. |
+| `uploadFinds(items, { channelId, channel, rule, have, find })` | Uploads as finds: the artist and title read by parse.js (`sure` when the channel's `rule` vouches for the artist; otherwise the reading is a guess, as on any stranger's channel), `mine` when `have(videoId)`, `music` from `isMusic`, `raw` the title as uploaded. Each video once; unavailable ones are dropped; `find` is sources.js `find`. |
+| `artistsOf(finds)` | `[{ key, name, count }]`: grouped across spellings, under the commonest spelling, the most frequent first. |
+| `teachRule(tracks)` | `'artist-title'` or `'title-artist'` when the channel's songs have only guessed artists and most of their titles keep that shape (two songs or more, 60%); otherwise null. |
+| `demoUploads(channelId, name, rand)` | The demo's eighteen invented uploads by several artists, the newest first, with ids shaped like YouTube's. |
+| `readList(box, listId, opts)` | The ids of a YouTube list, read through a player built in `box`: visible, 356 by 200, YouTube's own controls, on youtube-nocookie, cued and never played (a press on its play is undone). An empty read (the cued item cannot be embedded) is cued again from the next item, `retries` (3) times. The player is gone when it settles. `opts`: `{ loadApi, host, width, height, timeoutMs (20 s), pollMs, retryMs, retries, doc }`; it returns `Promise<[ids]>`. |
+| `view(view, ctx, parts, query)` | `#/channel/<id>` and `#/channels`. |
+| `homeShelf(view, ctx)` | The home page's "Channels that find music for you", when there are any. |
+| `nowLink(track, ctx)` | Under the song that is on, when its channel is a curator: "From wound, 7 artists, 12 songs of yours", a link to the channel. |
+| `PAGE`, `READ` | Rows drawn at a time (60); uploads read at a time through the Data API (100, 2 units). |
+
+**The channel page (`#/channel/<id>`).**
+- **The header:** Play what's new to you (the uploads you do not have, newest first, through engine.js `list`; each has its video, so nothing is searched), Shuffle the channel (its uploads and your songs from it), and Open on YouTube. The meta counts your songs, its uploads and its artists.
+- **The rows:** New to you, Yours and All (chips with counts), the artists here (a chip filters by one), and a filter by title or artist. A click on a row plays it now; each row has Play next and a menu (Add to queue, Save for later, Song details for yours, Open on YouTube). Your songs show as the library has them, with a Yours badge; your songs older than the uploads read come after them.
+- **Reading the uploads:** with a sign-in or an API key, sources.js `ytLists.uploads` (the Data API: 100 at a time for 2 units, kept 6 hours, read on from where it stopped by Load older uploads). Without either, `readList` reads the uploads list (`UU` and the id after `UC`) through a visible player, at most the newest 200, and sources.js `oEmbed` fills in the titles (free, 20 at a time, kept 30 days); the rows show as soon as the ids are read.
+- **Teaching the channel:** when the artists of your songs from it are only guessed and its titles keep one shape, a note offers "Take the artists from the titles" (library.js `setChannelRule`): your songs from it, and its uploads here, then get their artists from the titles.
+- **Below:** as before, when the channel's songs are mostly one artist's, their other songs and releases from Deezer, and what sounds like the channel in your library (app.js `channelExtras`).
+
+**`#/channels`** (Channels, under Artists in the sections): the channels that find music for you as cards (each card's play shuffles your songs from it), then the artists' own channels. The home page shows the first ten curators, and the now-playing panel links the song's channel when it is one.
 
 ## transport.js
 
