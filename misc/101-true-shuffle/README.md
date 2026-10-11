@@ -28,6 +28,7 @@ Toy 101. A music player for one listener's YouTube playlists and Liked videos: s
 | `scrobble.js` | Opt-in ListenBrainz scrobbling with the listener's own token. Written and tested, not loaded yet: on 2026-10-11 ListenBrainz's API refused browsers (every path redirected to a 404). | no |
 | `recs.js` | The taste profile from your plays, likes and skips; which found songs a lane shows (not yours, not heard lately, not hidden, each once, the stale ones last); the feed's bookkeeping; moving the old Discover keys. | no |
 | `foryou.js` | For you (`#/for-you`): Your radio, this season's anime, airing today, the songs missing from your series, new releases, new uploads from your channels, Because you play X, Saved for later and Hidden, each a lane. | the page half |
+| `fuzzy.js` | Search that forgives: romaji for kana titles, long vowels written or not, typos, a word half typed, a title typed without its spaces; the search page's Close matches and the palette's songs. | the page half |
 | `handoff.js` | Continue on your phone: the link that opens this queue at this song and second on another device, a QR code of it drawn in the page, the dialog. | the dialog only |
 | `habits.js` | Listening habits: the listening clock on Your numbers (minutes by weekday and hour, the streaks, minutes per week), the home page's Usually at this hour, and Skip the intro, learned (a song you keep seeking into is offered a later start). | the page half |
 | `pip.js` | The mini player: the song, its buttons and the time in a small window that stays on top of other windows (Chrome and Edge on a desktop). YouTube's player stays in the page. | the window only |
@@ -83,6 +84,7 @@ Everything is UMD: in the browser each file adds one member to `window.TrueShuff
 <script src="credits.js"></script>      <!-- needs match, sources -->
 <script src="recs.js"></script>         <!-- needs discover (its fold), sources -->
 <script src="foryou.js"></script>       <!-- needs recs, lanes, media, works, artists, channel, explore -->
+<script src="fuzzy.js"></script>        <!-- needs match -->
 <script src="handoff.js"></script>      <!-- needs share, ui -->
 <script src="habits.js"></script>        <!-- reads car.js when it asks -->
 <script src="pip.js"></script>          <!-- draws through pageCtx -->
@@ -282,6 +284,39 @@ The song's own words (its base title and its artist) are taken out of the upload
 **What it cannot do.** Kanji are never romanised: a kanji title meets the same kanji, or the song's `titleAlt`. Katakana loanwords do not meet their English spelling (コネクト is `konekuto`, not Connect): of the 183 labelled anime songs whose title has kana and no kanji and whose `titleAlt` is in Latin letters, 61 meet it without the `titleAlt`, and the rest are loanwords and translations, which only `titleAlt` bridges. The particle は is read ha, so "kimi wa" written in kana meets "kimi ha" only. Fold keys lose kana sound marks (ガラス and カラス fold alike); the loose keys keep them.
 
 The `match` test section (293 checks) has 122 kana rows (both syllabaries, digraphs, the small tsu, long marks, n, loanword sounds), 14 groups of romanisation styles, 55 base titles, the cases of `sameSong` (kana and romaji, Kunrei and Hepburn, the TV size, a cover, the "Hikari" trap, voice actors, no title), the index and `inLibrary`, a ranking of uploads (Topic, official video, lyrics, cover, nightcore), a piano find, works and queries, and purity (frozen inputs, the same answers twice, any library order). It also reads labels.json: every labelled anime song with a `titleAlt` (592) must find itself from that `titleAlt` and its artist, at least 95% of them (all do).
+
+## fuzzy.js
+
+`TS.fuzzy`: search that forgives. Library search (`L.search`) finds the words as they are typed, case and accents aside. Most of this library is anime, game and visual-novel music, so a listener types romaji for a kana title, writes long vowels or leaves them out, mistypes a name, or is halfway through a word. fuzzy.js finds those, and the page shows them after the exact results. It reads match.js (`fold`, `romaji`, `loose`) and has no kana table of its own. Nothing leaves the browser and nothing is stored: the index lives in memory and is built again after a library change.
+
+```js
+var F = TS.fuzzy;
+var ix = F.index(tracks);                         // a list or { id: track }
+F.search(ix, 'kalafna hikari', { not, limit })    // -> [{ id, score, how }], best first
+F.rankNames(['Aimer', 'Kalafina'], 'aimr')        // -> [{ i: 0, score, how: 'typo' }]
+```
+
+**Words.** `index(tracks)` reads `title` and `titleAlt` (the title), `artist` and `artistNative` (the artist), and `work`, `album` and `feat` (the rest). A field is split at everything but letters and digits, and between Japanese and other letters ("himawariGood" is two words). Each word is kept folded, kana read as Hepburn romaji. A kana word, or one that can be read as romaji (`romajiLike(word)`: syllables of a consonant and a vowel, the syllabic n, a doubled consonant, an h after a vowel), is also kept loosely (match.js `loose`: tokyo, toukyou and tohkyoh are one). Only such words are compared loosely, so "four" never meets "for", nor "good" "god". Kanji are never romanised: a kanji title is found through its `titleAlt`, and the kana inside a word with kanji are kept as readings of their own. One kana alone (the particle in "Vtuber no") stays in the title but is not a word to find. `nameIndex(names)` indexes plain names the same way, each a title whose id is its place in the list.
+
+**Matching.** Every term of the query must meet a word of the track. A term scores the best of:
+
+| Kind | Points | When |
+| --- | --- | --- |
+| exact | 50 | the word, or a kana word's romaji reading |
+| start of a word | 40 | the last term only (it is still being typed): 3 letters or more, 2 after another term |
+| inside a word | 30 | 3 letters or more, as library search does; 4 inside a kana reading (a kana title is one long word) |
+| loose | 20 | both romaji-like: the same loose spelling (3 letters or more), its start (the last term, even half a syllable: "touky"), or inside a kana reading |
+| typo | 10; 7 for two | Damerau-Levenshtein, `distance(a, b, max)` (a swap is one edit; max + 1 once it is further). `allowed(n)` typos for n letters: none under 4, 1 for 4 to 7, 2 from 8. The word has 4 letters or more and the same first letter (or the first two swapped). Only for a term that met nothing else: a word that exists was meant. |
+
+A title or an artist adds 5, so a kind always beats the kinds below it, and within a kind the title and the artist beat the rest. A track scores the sum of its terms. The whole query, spaces taken out, also meets whole titles ("kiminoshiranai"; "kimi no shiranai" for a kana title): equal, its start (4 letters or more), loosely, or with typos when some term met nothing. That scores (points + 5) times the number of terms, plus 2, when it is better, so a title equal to the query comes first. Terms of one letter only meet equal words, and two letters neither a start nor a typo on their own, so "a" and "no" find nothing library search does not. Ties go by artist and title. `opts.not` (a list of ids or `{ id: true }`) leaves tracks out; `opts.limit` cuts the list.
+
+`how` is the kind of the weakest term: `exact`, `prefix`, `romaji` (a kana reading), `loose`, `typo`, or `joined` (only the whole title met it). `HOW` has the words the page shows for each: "start of a word", "romaji reading", "another spelling", "close spelling", "spaced differently" (nothing for `exact`).
+
+**Speed (Node 24).** 10,000 invented tracks: the index in about 110 ms the first time and 40 ms after (the word forms are remembered, 50,000 at most), a query in under 10 ms. The 1,855 tracks of labels.json: about 25 ms, then 5 ms.
+
+**The page.** `closeMatches(ctx, query, found)`, found being the search page's `{ songs, artists, works, chips }` (chips: how many genres, moods and scenes matched), indexes `ctx.idx().all` (the focused playlist's songs, or all) the first time it is needed after app.js's index was rebuilt. It returns `{ query, songs, how: { id: how }, artists, works, exact, alone }`: up to 50 songs the exact search did not find, and up to 6 artists, and works, when the exact search found none (the page adds them to its own). `section(view, ctx, close)` draws "Close matches (n)" after the exact songs, with Play these; when the rows come close in different ways, each says how ("close spelling", "romaji reading"). When the close songs are all the page has (`alone`), the section takes the place of "Nothing found" and says "Nothing matches "x" exactly. These come close." `paletteSongs(ctx, query, out)`: when the palette's exact search finds fewer than 3 songs, close ones fill up to 8, after the exact songs and the artists and works the palette found itself, before genres and moods. The CSS is `<style id="ts-fuzzy-css">`.
+
+**Tests.** The `fuzzy` section (test/fuzzy.section.js, 104 checks): distance and allowed, romajiLike, invented tracks shaped like the library's (romaji for kana titles, loose vowels, typos at 3, 4, 7 and 8 letters, the start of a word still being typed, several terms, kanji titles through titleAlt, no hits for "a", "no" and junk, the order of kinds and fields, not and limit, how), rankNames, the page calls on a fake ctx, and the shipped labels.json (read only: every kana title by its reading, every kanji title by its titleAlt and with a typo, artists with a letter missing, real cases such as "koi no sirusi", "toukyou jihen", "uchujin", "konekuto"); then the speed on 10,000 generated tracks.
 
 ## sources.js
 

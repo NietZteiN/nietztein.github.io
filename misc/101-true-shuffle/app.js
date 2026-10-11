@@ -2015,6 +2015,8 @@
 		var scenes = T.SCENES.filter(function (s) { return ix.scenes[s[0]] && Parse.fold(s[1]).indexOf(f) >= 0; });
 		view.appendChild(h('h1', { class: 'ts-h1', text: 'Results for ' + q(qtext) }));
 		if (TS.lyrics && TS.lyrics.searchSection && !demo) { try { TS.lyrics.searchSection(view, pageCtx, qtext); } catch (e) { if (window.console) console.error(e); } }
+		var close = TS.fuzzy ? TS.fuzzy.closeMatches(pageCtx, qtext, { songs: songs, artists: artists, works: works, chips: genres.length + moods.length + scenes.length }) : null;
+		if (close) { artists = artists.concat(close.artists); works = works.concat(close.works); if (close.alone) { TS.fuzzy.section(view, pageCtx, close); return; } }
 		if (!songs.length && !artists.length && !works.length && !genres.length && !moods.length && !scenes.length) { view.appendChild(h('p', { class: 'ts-empty', text: 'Nothing found. Search knows titles in any script, romaji, artists, anime and games, genres and moods.' })); return; }
 		var top = h('div', { class: 'ts-search-top' });
 		if (artists[0] && (Parse.fold(artists[0].name) === f || !songs.length)) top.appendChild(artistCard(artists[0]));
@@ -2032,6 +2034,7 @@
 			view.appendChild(h('div', { class: 'ts-row-btns' }, [actionBtn('shuffle', 'Shuffle these', function () { shuffleThese({ text: qtext }, { label: 'Search: ' + qtext, href: '#/search?q=' + encodeURIComponent(qtext) }); })].concat(scopeButtons({ text: qtext }, capital(qtext)))));
 			trackList(view, songs, { context: { label: 'Search: ' + qtext, href: '#/search?q=' + encodeURIComponent(qtext), patch: {} } });
 		}
+		if (close) TS.fuzzy.section(view, pageCtx, close);
 	}
 	function browseTiles(view, title) {
 		var ix = idx();
@@ -4783,6 +4786,7 @@
 		T.SCENES.forEach(function (s2) { add('Scene', s2[1], '', function () { location.hash = link('c', 'scene', s2[0]); }, 'works', 2); });
 		Object.keys(ix.addedY).forEach(function (y) { add('Added', 'Added in ' + y, plural(ix.addedY[y].tracks.length, 'song'), function () { location.hash = link('c', 'added', y); }, 'newest', 1); });
 		L.search(lib, qtext, scopeTracks()).slice(0, 8).forEach(function (t) { out.push({ kind: 'Song', name: trackTitle(t), sub: trackArtist(t), run: function () { playNow([t.id]); }, art: t, s: 15 }); });
+		if (TS.fuzzy) TS.fuzzy.paletteSongs(pageCtx, qtext, out);
 		return out.sort(function (a2, b2) { return b2.s - a2.s; }).slice(0, 14);
 	}
 	function ACTIONS() {

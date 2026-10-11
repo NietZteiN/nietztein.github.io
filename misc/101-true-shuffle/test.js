@@ -2472,6 +2472,7 @@ describe('readme', function () {
 		credits: Object.keys(require('./credits.js')),
 		recs: Object.keys(require('./recs.js')),
 		foryou: Object.keys(require('./foryou.js')),
+		fuzzy: Object.keys(require('./fuzzy.js')),
 		handoff: Object.keys(require('./handoff.js')),
 		habits: Object.keys(require('./habits.js')),
 		pip: Object.keys(require('./pip.js')),
