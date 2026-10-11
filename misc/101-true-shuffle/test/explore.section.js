@@ -27,6 +27,6 @@ module.exports = function (h) {
 		h.eq(X.recall('at:song:42'), f, 'remember: a found song explored is kept for the session');
 		h.eq(X.recall('at:song:43'), null, 'recall: one never seen is not known');
 		h.eq(X.trail(), [], 'trail: none outside a browser');
-		h.eq(X.LANES, ['work', 'mix', 'artist', 'similar', 'channel', 'library'], 'LANES: the lanes, most specific first');
+		h.eq(X.LANES, ['work', 'mix', 'artist', 'credits', 'similar', 'channel', 'library'], 'LANES: the lanes, most specific first');
 	});
 };

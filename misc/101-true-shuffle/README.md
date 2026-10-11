@@ -24,6 +24,8 @@ Toy 101. A music player for one listener's YouTube playlists and Liked videos: s
 | `works.js` | Which anime a song is from (AnimeThemes, checked against the library), and the franchise's every opening, ending and insert. | no |
 | `artists.js` | An artist on iTunes, Deezer and AnimeThemes (checked against the library): top songs, albums, EPs, singles, anime songs. | no |
 | `explore.js` | Explore: any song as a door to more music: its anime, YouTube Mix, artist and albums, songs like it, its channel, the library's own (`#/explore/<id>`, the now-playing panel's Explore tab). | the pages only |
+| `credits.js` | Who wrote a song, from MusicBrainz: composer, lyricist, arranger, the players, the work; a composer's or lyricist's other songs as found songs (Explore's "More by <composer>"); the line on the song page; invented ones for the demo. | the lane and the line only |
+| `scrobble.js` | Opt-in ListenBrainz scrobbling with the listener's own token. Written and tested, not loaded yet: on 2026-10-11 ListenBrainz's API refused browsers (every path redirected to a 404). | no |
 | `wrapped.js` | Your year: the year in review (`#/wrapped`) and the home page's On this day, Rediscover old favourites and the nudge to like a song. | the page half |
 | `lyrics.js` | The words of the song that is on, from LRCLIB: the Lyrics tab, the karaoke page, finding a song by a line of its words. | the views only |
 | `quiz.js` | Guess the anime: a few seconds of an opening or an ending from the library (Apple's 30-second previews), four anime to choose from. | the page only |
@@ -39,7 +41,7 @@ Toy 101. A music player for one listener's YouTube playlists and Liked videos: s
 | `ds.css` | The design system: tokens, the button, badges, progress chips, the player-safe zone, touch screens. | yes |
 | `index.html`, `app.js`, `app.css` | The page. | yes |
 
-Everything is UMD: in the browser each file adds one member to `window.TrueShuffle` (`config`, `parse`, `library`, `shuffle`, `store`, `player`, `demo`, `yt`, and since 2026-10-10 `transport`, `actions`, `match`, `sources`, `finds`, `feeder`, `engine`, `share`, `wrapped`, `lyrics`, `quiz`, `channel`, `lanes`, `media`, `works`, `artists` and `explore`); in Node each is a CommonJS module. The sources are plain ASCII (other characters are written as escapes), old-style (`var`, `function`, one IIFE), tabs.
+Everything is UMD: in the browser each file adds one member to `window.TrueShuffle` (`config`, `parse`, `library`, `shuffle`, `store`, `player`, `demo`, `yt`, and since 2026-10-10 `transport`, `actions`, `match`, `sources`, `finds`, `feeder`, `engine`, `share`, `wrapped`, `lyrics`, `quiz`, `channel`, `lanes`, `media`, `works`, `artists`, `explore`, `car` and `credits`); in Node each is a CommonJS module. The sources are plain ASCII (other characters are written as escapes), old-style (`var`, `function`, one IIFE), tabs.
 
 ```html
 <script src="config.js"></script>
@@ -71,6 +73,8 @@ Everything is UMD: in the browser each file adds one member to `window.TrueShuff
 <script src="works.js"></script>        <!-- needs match, library, sources -->
 <script src="artists.js"></script>      <!-- needs match, library, sources -->
 <script src="explore.js"></script>      <!-- needs channel, lanes, media, works, artists -->
+<script src="car.js"></script>          <!-- needs transport, ui -->
+<script src="credits.js"></script>      <!-- needs match, sources -->
 <script src="app.js"></script>
 ```
 
@@ -881,6 +885,77 @@ The UMD list: add `artists` after `channel`. The script order, after `channel.js
 ```
 
 The Tests paragraph's section list: `artists` (in test/artists.section.js: the store, typing and merging releases, the check against the library, the cache's time limits, corrections, abort, the demo).
+
+## credits.js
+
+`TS.credits`: who wrote a song, from MusicBrainz, and the other songs a composer or lyricist wrote.
+
+```js
+var C = TS.credits;
+var credits = C.forCtx(pageCtx);                 // or C.create({ cache, index, base, fetch, now, sleep, onLine, agent, gapMs })
+credits.of(track, { signal })                    // -> Promise<null | result>
+credits.byPerson(person, { signal })             // -> Promise<[find]>   person: { id, name } (a result's composer ...)
+C.line(result)                                   // -> 'Music: X . Lyrics: Y . Arranged by Z' (middle dots)
+C.paint(el, ctx, track)                          // the song page's line into el; hidden when there is none
+C.lane(ctx, seed, { compact })                   // a lanes.js spec for Explore: id 'credits', "More by <composer>"
+```
+
+The result:
+
+```js
+{ recording: { id, title, artist, durationSec }, work: { id, title } | null,
+  composers: [{ id, name, native }], lyricists, writers, arrangers,
+  performers: [{ id, name, native, roles: ['lead vocals', 'guitar' ...] }],
+  sure, score, why }      // sure: match.js score STRONG (7) or more; why: match.js's reasons
+```
+
+`name` is in Latin letters: a name in another script is read from MusicBrainz's sort name ("Kajiura, Yuki" is Yuki Kajiura) and the name itself is kept as `native`.
+
+**A song** (`of`): one recording search (`searchQuery`: any of the base title and `titleAlt`, by any of the credit, the native name and each person in the credit, as Lucene phrases), then the best recording with `inc=work-rels+artist-rels`, then its work with `inc=artist-rels` (the composer and the lyricist are on the work). The best recording (`rankRecordings`) is one match.js `sameSong` calls the same song with the artist (or a person of it) as part of the evidence, so an equal title by another artist never passes; then the same recording (lengths within 4 s), the track's own version (no live take or TV size for a studio upload), not a video, on most releases, the best search score, released earliest. When it is linked to no work, the next one is read (`workOf` prefers a whole performance to a part of a medley). Three requests a song, five at most. `relationsOf` puts the work's composer, lyricist and librettist, writer and arranger, and the recording's arranger, instrument and vocal arranger, orchestrator, vocal, instrument, performer, orchestra, conductor and chorus master in their lists, each person once (a performer with every role). Kept under `mb:credits:<artist>|<base title>[|<version>]` (`keyOf`) for `KEEP_MS` (30 days), "nothing" for `KEEP_NONE_MS` (7 days), in the cache it is given (sources.js `createCache`; the page's `ctx.cache()`), so another upload of the same song asks nothing.
+
+**A person's songs** (`byPerson`): one work search (`arid:<id>`, `WORKS` (10); MusicBrainz ranks the most recorded works first), the works they composed, wrote or wrote the words of (`worksOf`; one they only arranged is left out), then recording searches by id (`ridQueries`: `rid:(...)`, 100 a search, two at most, the works taking turns), and for each work the original performer's recording (`findsOf`): the artist whose recordings of it are on most releases (a cover is on one or two), then their recording that is no other version, on most releases, released earliest. Two or three requests, kept under `mb:person:<id>` 30 days. Each is a sources.js find: `key: 'mb:rec:<id>'`, `videoId: null`, `source: 'musicbrainz'`, `ids: { mb, mbWork }`, `album` (the first release), `year`, `durationSec`, `people`, `why: [['credit', 'music by X']]` ('words by', 'written by'), and `mine` (`markMine`: match.js `inLibrary`, the same song and not another version of it; new objects, the cached ones untouched).
+
+**The lane** (`lane`): title "More by <person>" once loaded ("More by its composer" before), MusicBrainz's badge, the credits line as its sub line, cards (three rows in the now-playing panel, with See all), `lazy`. The person (`personFor`) is the first composer, else a writer, else a lyricist, one who is not the song's own artist first (a singer-songwriter's lyricist partner rather than the artist lane again). The song itself is left out. Empty: "MusicBrainz does not know this song yet.", "... knows this song but not who wrote it.", "... has no other songs by X.". Unavailable for an artist page's seed or a song without an artist and title. `o.credits` (a `create()` object) replaces `forCtx(ctx)` (the tests).
+
+**Manners** (`createLine`): requests go through sources.js `createHttp` with one line, `musicbrainz` (`BASE`, `https://musicbrainz.org/ws/2`, or `ctx.endpoints().mb`): one at a time, `GAP_MS` (1.1 s) apart; 2.2 s where the browser sends our User-Agent (`AGENT`, `TrueShuffle/1.0 ( https://nietztein.github.io/misc/101-true-shuffle/ )`), since that costs a CORS preflight each time (Firefox; Chrome and Safari drop the header, and MusicBrainz sees the page's Origin). MusicBrainz's preflight answer allows `User-Agent` (`Access-Control-Allow-Headers: Authorization, Content-Type, User-Agent`, checked 2026-10-11). A 503 (MusicBrainz's "busy", seen twice that day) or 429 waits 4 s and tries again, three tries in all, then rejects with a SourceError `'rate'`, host `'musicbrainz'`. No cookies, no referrer, only the artist and song names (never a video id).
+
+**The demo** (`demoCredits(track)`, `demoPerson(person, lib)`; `credits.demo`, `credits.demoPerson`): invented credits for a demo track (its artist's composer, a lyricist and an arranger from six invented names, the same every time) and an invented person's songs: the demo library's songs they are credited with (`mine`) and three invented ones (`videoId` null), with words demo.js never uses. The lane and `paint` use them under `ctx.demo` and ask nothing.
+
+Pure helpers, each tested: `searchQuery`, `keyOf`, `latinName`, `creditText`, `creditNames`, `candidateOf`, `rankRecordings`, `workOf`, `relationsOf`, `personFor`, `worksOf`, `ridQueries`, `findsOf`, `markMine`, `line`. A credits object also carries its `http` (sources.js `stats()` for the curious).
+
+Checked against the real MusicBrainz on 2026-10-11 (by hand, ten requests): Kalafina's "Magia" gave the studio recording (not the DJ-mix excerpt, the live takes or a namesake's "Magia"), Yuki Kajiura as composer, lyricist and arranger, and seven performers; Yorushika's "Tada Kimi ni Hare" (with its `titleAlt` and native name; the romaji alone finds nothing) gave n-buna; Yuki Kajiura's songs came back by their original performers (Kalafina, FictionJunction YUUKA, Aimer, LiSA, See-Saw, Sayuri), not the covers.
+
+MusicBrainz's data used here (relationships, recordings, works) is its core data, CC0.
+
+## scrobble.js
+
+**Not wired yet.** On 2026-10-11 every `api.listenbrainz.org/1/...` path answered a browser with a redirect to a 404 (a preflight cannot follow a redirect), so index.html does not load this file and Settings has no token field. When a browser check passes again (`validate-token` with a made-up token answers 401 with CORS), the hooks are: create the scrobbler at start (`token` from ToyKit `lbToken`, the store), `scrobbler.listened(trackOf(id), info)` in the controller's `onListened`, `scrobbler.playingNow(trackOf(player.id()))` on `playing`, and `TS.scrobble.field(pageCtx, scrobbler)` in Settings.
+
+`TS.scrobble`: scrobbling to ListenBrainz, only with the listener's own token. Without it nothing is sent, nothing is kept, and ListenBrainz is never asked.
+
+```js
+var SC = TS.scrobble;
+var scrobbler = SC.create({ token: function () { return ToyKit.load(SC.TOKEN_KEY, ''); }, store: store });   // + fetch, now, onLine, setTimer, clearTimer, base
+scrobbler.playingNow(track)        // a song starts            -> Promise<{ sent, reason }>
+scrobbler.listened(track, info)    // player.js onListened     -> Promise<{ queued, sent, reason, waiting }>
+scrobbler.flush()                  // send what waits          -> Promise<status>
+scrobbler.status()                 // { on, sentToday, sent, waiting, dropped, lastError, retryAt, lastSentAt, text }
+scrobbler.pending()                // the listens waiting (copies)
+scrobbler.clear()                  // forget what waits (the token was taken away)
+scrobbler.tokenChanged()           // a new token: forget a refusal, send what waits
+scrobbler.destroy()
+SC.validate(token)                 // GET /1/validate-token -> Promise<{ ok, user, code, message }>, never rejects
+SC.field(ctx, scrobbler)           // Settings' token field (a node)
+```
+
+- **The rule** (`counts(info, track)`, `needed(durationSec)`): a listen is half the song or 4 minutes, whichever comes first; the track's length when the player had none; an unknown length counts at 4 minutes, or at 30 s when the song played to its end.
+- **The listen** (`listenOf`, `metadata`, `body`): `{ listened_at, track_metadata: { artist_name, track_name, release_name (the track's album, when known), additional_info: { media_player: 'True Shuffle', submission_client: 'True Shuffle', submission_client_version, music_service: 'youtube.com', origin_url: 'https://www.youtube.com/watch?v=<id>', youtube_id, duration_ms } } }`. `listened_at` is when the song started (the time "playing now" saw it, else the end less what was heard). A song without a sure artist (only the channel's name, a guess) is not sent (`skipReason`: `'no-artist'`, also `'no-title'`, `'short'`, `'no-track'`).
+- **Playing now**: `listen_type: 'playing_now'`, no `listened_at`, never kept. A resume after a pause is the same play (the song was not left yet) and the same song within 30 s is not sent again, so the page may call it on every "playing" the player reports.
+- **The queue**: listens wait in the store under `KEY` (`scrobble`: `{ queue, day, sentToday, sent, dropped, lastError, retryAt, tries, lastSentAt, badToken, single }`; the token itself is never stored there, only a fingerprint of a refused one) when they cannot go: offline, refused, ListenBrainz down. `KEEP` (500) at most, the oldest dropped first. They go `BATCH` (50) a request as `import` (one alone as `single`), when the page is back online (the `online` event), at the next listen, or after a wait that doubles from 30 s to 30 min (5xx, no answer, 404) or that `X-RateLimit-Reset-In` names (429, or a success that leaves no allowance). A 400 sends the batch again one by one and drops the listen ListenBrainz refuses. A 401 stops sending with that token (kept listens wait for a new one; `tokenChanged`).
+- **Settings** (`field`, `statusText`): a password field; the token is kept (ToyKit, this browser only, under `TOKEN_KEY`, `lbToken`) only once `validate` says ListenBrainz knows it, which also proves this browser may talk to ListenBrainz; an empty field turns scrobbling off and clears the queue. Below it the status: "12 listens sent today; 2 waiting", "Off: no ListenBrainz token.", with the last problem in words. `looksLikeToken` (a UUID) is checked first. `localDay` is the listener's own day for "today".
+- **What is sent**: to `API` (`https://api.listenbrainz.org`) only, `POST /1/submit-listens` with `Authorization: Token <token>` and JSON, no cookies, no referrer. `CLIENT` and `VERSION` name the player.
+
+**What was found about ListenBrainz on 2026-10-11** (13:44 to 14:11 UTC, three checks): every API path on api.listenbrainz.org answered 308 to the same path with a slash, which answered 404 (with `Access-Control-Allow-Origin: *`); `/1/` itself served the website's HTML; a POST to `/1/submit-listens` with a made-up token answered 404. A browser does not follow a redirect in a CORS preflight, so on that day a browser could neither validate a token nor submit a listen. This looked like ListenBrainz's own routing being broken (its documentation still gives `/1/submit-listens`, and its website's banner said statistics were unstable), not a CORS policy; it could not be confirmed that the preflight passes once the API is back. Nothing breaks meanwhile: `field` keeps no token that `validate` cannot check, so nothing is queued or sent; with a token kept earlier, listens wait in the queue and are tried again with the doubling wait.
 
 ## explore.js
 

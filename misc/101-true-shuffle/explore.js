@@ -7,7 +7,7 @@
  *
  *     X.parseSeed(route) -> { kind: 'track', id } | { kind: 'find', key } | null
  *     X.seedOf(ref, ctx) -> seed | null       the song behind a route, as one shape
- *     X.order(seed) -> ['work', 'mix', 'artist', 'similar', 'channel', 'library'] (those that apply)
+ *     X.order(seed) -> ['work', 'mix', 'artist', 'credits', 'similar', 'channel', 'library'] (those that apply)
  *     X.remember(find) / X.recall(key)         a found song to explore, kept for the session
  *     X.hrefOf(item) -> '#/explore/...'        where exploring a song goes
  *     X.trail() -> [{ href, title }]           the songs explored last, at most five
@@ -25,7 +25,7 @@
 })(typeof self !== 'undefined' ? self : (typeof globalThis !== 'undefined' ? globalThis : this), function (root) {
 	'use strict';
 
-	var LANES = ['work', 'mix', 'artist', 'similar', 'channel', 'library'];
+	var LANES = ['work', 'mix', 'artist', 'credits', 'similar', 'channel', 'library'];
 	var TRAIL_MAX = 5, TRAIL_KEY = 'ts.explore.trail';
 	function mod(name) { return root.TrueShuffle && root.TrueShuffle[name]; }
 	function fold(s) { var M = mod('match'); return M && M.fold ? M.fold(String(s || '')) : String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, ''); }
@@ -92,6 +92,8 @@
 		if (seed.work || seed.scene === 'anime' || (!seed.scene && seed.lang === 'ja')) out.push('work');
 		if (seed.videoId) out.push('mix');
 		if (seed.artist) out.push('artist');
+		// who wrote it, and their other songs (credits.js, MusicBrainz)
+		if (seed.artist && seed.title && seed.kind !== 'artist' && mod('credits')) out.push('credits');
 		out.push('similar');
 		if (seed.channelId && !/\s-\sTopic$/i.test(seed.channel || '')) out.push('channel');
 		if (seed.track) out.push('library');
@@ -517,10 +519,11 @@
 		if (id === 'mix') return mixLane(ctx, seed, o, holder);
 		if (id === 'artist') return artistLane(ctx, seed, o);
 		if (id === 'similar') return similarLane(ctx, seed, o);
+		if (id === 'credits') return mod('credits').lane(ctx, seed, o);
 		if (id === 'channel') return channelLane(ctx, seed, o);
 		return libraryLane(ctx, seed, o);
 	}
-	var JUMP = { work: 'Anime', mix: 'Mix', artist: 'Artist', similar: 'Similar', channel: 'Channel', library: 'Your library' };
+	var JUMP = { work: 'Anime', mix: 'Mix', artist: 'Artist', credits: 'Composer', similar: 'Similar', channel: 'Channel', library: 'Your library' };
 
 	function view(el, ctx, parts, query) {
 		injectCss();

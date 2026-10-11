@@ -2507,6 +2507,8 @@
 		});
 		var vlinks = voiceLinks(t);
 		if (vlinks) view.appendChild(vlinks);
+		// who wrote it (credits.js, MusicBrainz): asked when the page opens, shown when known
+		if (TS.credits) TS.credits.paint(view.appendChild(h('p', { class: 'ts-muted ts-credits', hidden: true })), pageCtx, t);
 		view.appendChild(stars(t));
 		if (isGuess(t)) view.appendChild(guessBox(t));
 		var facts = h('dl', { class: 'ts-facts' });
@@ -2521,7 +2523,7 @@
 		fact('Status', !L.playable(t) ? 'cannot be played here' : t.blocked ? 'blocked' : '');
 		view.appendChild(facts);
 		trackVersions(view, t);
-		if (TS.explore) TS.explore.section(view, pageCtx, TS.explore.seedOf({ kind: 'track', id: t.id }, pageCtx), ['library', 'work', 'similar']);
+		if (TS.explore) TS.explore.section(view, pageCtx, TS.explore.seedOf({ kind: 'track', id: t.id }, pageCtx), ['library', 'work', 'credits', 'similar']);
 	}
 
 	// ---- The library hub (phones) ---------------------------------------------------------------------------

@@ -249,7 +249,7 @@
 	var SOURCE = {
 		animethemes: ['anime', 'Anime'], anilist: ['season', 'Airing'], ytmix: ['mix', 'Mix'], ytuploads: ['channel', 'Channel'],
 		ytplaylist: ['ext', 'Playlist'], ytsearch: ['search', 'Search'], itunes: ['ext', 'iTunes'], deezer: ['ext', 'Deezer'],
-		lastfm: ['ext', 'Last.fm'], lrclib: ['ext', 'LRCLIB'], vndb: ['ext', 'VNDB'], shared: ['ext', 'Shared'], pasted: ['ext', 'Pasted'], saved: ['ext', 'Saved']
+		lastfm: ['ext', 'Last.fm'], musicbrainz: ['ext', 'MusicBrainz'], lrclib: ['ext', 'LRCLIB'], vndb: ['ext', 'VNDB'], shared: ['ext', 'Shared'], pasted: ['ext', 'Pasted'], saved: ['ext', 'Saved']
 	};
 	function sourceBadge(it) {
 		if (!it || it.kind === 'track') return null;
