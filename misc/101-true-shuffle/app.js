@@ -1960,6 +1960,7 @@
 			sectionHead(view, 'Around this time in earlier years', { href: link('c', 'added', new Date(S.firstAdded(bk[0])).toISOString().slice(0, 7)), text: 'That month' });
 			shelf(view, bk.map(function (t, i) { var c = trackCard(t, bIds, i, { label: 'Around this time, earlier years', href: '#/' }); var sub = c.querySelector('.ts-card-sub'); if (sub) sub.textContent = trackArtist(t) + ' ' + DOT + ' added ' + addedName(new Date(S.firstAdded(t)).toISOString().slice(0, 7)); return c; }));
 		}
+		if (TS.habits && !thumb) { try { TS.habits.homeLane(view, pageCtx); } catch (e) { if (window.console) console.error(e); } }
 		if (TS.wrapped && TS.wrapped.homeLanes && !thumb) { try { TS.wrapped.homeLanes(view, pageCtx); } catch (e) { if (window.console) console.error(e); } }
 		var recent = sorted(music, 'added').slice(0, 18), rIds = recent.map(function (t) { return t.id; });
 		if (recent.length) { sectionHead(view, 'Recently added', { href: '#/songs?sort=added' }); shelf(view, recent.map(function (t, i) { return trackCard(t, rIds, i, { label: 'Recently added', href: '#/songs?sort=added' }); })); }
@@ -2743,6 +2744,7 @@
 		stat(n(s.plays), 'plays, ' + n(s.skips) + ' skips');
 		stat((s.tracks ? Math.round(100 * s.neverPlayed / s.tracks) : 0) + '%', 'never played');
 		view.appendChild(tiles);
+		if (TS.habits) TS.habits.statsSection(view, pageCtx);
 		var cols = h('div', { class: 'ts-statcols' });
 		view.appendChild(cols);
 		bars(cols, 'Genre families', T.FAMILIES.map(function (f) { return { name: f.name, href: link('family', f.key), value: ix.families[f.key] ? ix.families[f.key].tracks.length : 0 }; }).sort(function (a, b) { return b.value - a.value; }), 'songs; a song can sit in two families');
@@ -4437,6 +4439,7 @@
 		previewList: function (items, label) { pvStart((items || []).map(function (it) { return { id: it.key, title: it.title, artist: it.artist, preview: it.preview, cover: it.cover, album: it.album, key: it.key, videoId: it.videoId || null, find: it.find || null }; }), 0, label); },
 		preview: function (item, btn) { preview({ id: item.key || item.videoId, title: item.title, preview: item.preview }, btn); },
 		edit: function (ids, fields) { L.editMany(lib, ids, fields); return changed(ids); },
+		songPref: function (id, v) { if (arguments.length > 1) { if (v) songPrefs[id] = v; else delete songPrefs[id]; saveSongPrefs(); applyVolume(null); } return songPref(id); },
 		// pip.js: what the bar's Previous, Next and Play allow now, and the bar's heart (it also keeps a found song)
 		bar: function () { return { prev: !$('btn-prev').disabled, next: !$('btn-next').disabled, play: !$('btn-toggle').disabled }; }, likeNow: function () { toggleLike(ctl && trackOf(ctl.current())); },
 		// car.js: the media keys' transport, and the bar's own play, next, previous and Endless
@@ -5859,6 +5862,7 @@
 		wireShell();
 		wireQueue();
 		wireKeys();
+		if (TS.habits) TS.habits.watch(pageCtx);
 		auth.onChange(function () { if (store && route.parts[0] === 'settings') renderView(true); });
 		var opened = demo ? Promise.resolve(TS.store.memory()) : TS.store.open();
 		opened.then(function (s) {

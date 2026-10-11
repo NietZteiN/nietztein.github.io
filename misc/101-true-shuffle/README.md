@@ -28,6 +28,7 @@ Toy 101. A music player for one listener's YouTube playlists and Liked videos: s
 | `scrobble.js` | Opt-in ListenBrainz scrobbling with the listener's own token. Written and tested, not loaded yet: on 2026-10-11 ListenBrainz's API refused browsers (every path redirected to a 404). | no |
 | `recs.js` | The taste profile from your plays, likes and skips; which found songs a lane shows (not yours, not heard lately, not hidden, each once, the stale ones last); the feed's bookkeeping; moving the old Discover keys. | no |
 | `foryou.js` | For you (`#/for-you`): Your radio, this season's anime, airing today, the songs missing from your series, new releases, new uploads from your channels, Because you play X, Saved for later and Hidden, each a lane. | the page half |
+| `habits.js` | Listening habits: the listening clock on Your numbers (minutes by weekday and hour, the streaks, minutes per week), the home page's Usually at this hour, and Skip the intro, learned (a song you keep seeking into is offered a later start). | the page half |
 | `pip.js` | The mini player: the song, its buttons and the time in a small window that stays on top of other windows (Chrome and Edge on a desktop). YouTube's player stays in the page. | the window only |
 | `duel.js` | Rank your songs two at a time (`#/duel`): which of two songs you like more, a score per song with how sure it is, the ranking, and stars from it. | the page half |
 | `wrapped.js` | Your year: the year in review (`#/wrapped`) and the home page's On this day, Rediscover old favourites and the nudge to like a song. | the page half |
@@ -81,6 +82,7 @@ Everything is UMD: in the browser each file adds one member to `window.TrueShuff
 <script src="credits.js"></script>      <!-- needs match, sources -->
 <script src="recs.js"></script>         <!-- needs discover (its fold), sources -->
 <script src="foryou.js"></script>       <!-- needs recs, lanes, media, works, artists, channel, explore -->
+<script src="habits.js"></script>        <!-- reads car.js when it asks -->
 <script src="pip.js"></script>          <!-- draws through pageCtx -->
 <script src="duel.js"></script>
 <script src="app.js"></script>
@@ -548,6 +550,47 @@ When the queue is waiting, a new song that is not ready within `maxWaitMs` gives
 - the Library hub's link; both themes at 1280 by 860 and 390 by 844 without sideways scroll, no key hints on a touch screen, no page errors, no request to any other site.
 
 **Not done.** A score does not grow unsure again with time, so an old ranking is trusted as much as a new one. Two tabs on one book: the last write wins.
+
+## habits.js
+
+`TS.habits`: listening habits, from the play history. The listening clock on Your numbers (`#/stats`), the home page's Usually at this hour, and Skip the intro, learned. The counting is pure and runs in Node; the drawing uses only `pageCtx`.
+
+```js
+var Hb = TS.habits;
+Hb.clock(history, tracks, now, { local, offset, days })   // -> { cells, max, minutes, listens, peak, from, days }
+Hb.clockText(clock)                                       // -> 'You listen most on Friday evenings, 9 to 10 pm.'
+Hb.streaks(history, tracks, now, { local, offset })       // -> { current, currentFrom, today, longest, longestFrom, longestTo, days }
+Hb.weeks(history, tracks, now, { local, offset, n })      // -> [{ from, minutes, current }]
+Hb.thisHour(history, tracks, now, { local, offset, days, span, min, least, n })   // -> [{ id, plays, last }]
+Hb.momentText(now, { local, offset })                     // -> 'weekday evenings'
+Hb.seekDetector(opts)                                     // -> { feed(e), reset() }
+Hb.addSeek(list, seek, now)                               // -> the kept seeks, with one more
+Hb.introOffer(id, seeks, history, { now, tol })           // -> { start, seeks } | null
+Hb.statsSection(view, ctx)    Hb.homeLane(view, ctx)      // the page's parts, called from app.js
+Hb.watch(ctx, { demo })                                   // -> { stop }: Skip the intro, for the page's life
+```
+
+`history` is the store's listens, as wrapped.js reads them; `tracks` is `{ id: track }` or a list (null counts every listen; `thisHour` needs them, to leave out what cannot play). Times are UTC unless `local: true` (the page passes it) or `offset`: minutes east of UTC, a number, or a function of the moment for a zone whose clocks change.
+
+**clock** adds up the minutes heard (plays and skips, `listenedSec`) by weekday, Monday first, and hour, over the last `days` (365). A listen began `listenedSec` before its `at`, and it is cut at the hour boundaries of the zone it was heard in: on the night the clocks go back, 1 am comes twice and both count as 1 am; going forward, 2 am gets nothing. `cells[day][hour]` are minutes to a tenth, `peak` (`{ day, hour, minutes }`) is the busiest hour (the first of equals), `from` the first listen counted, `listens` how many. A `listenedSec` over 12 hours is cut to 12 hours. **clockText** says it: "You listen most on Friday evenings, 9 to 10 pm." Mornings start at 5 am, afternoons at noon, evenings at 5 pm, nights at 11 pm, and the small hours belong to the night before (1 am on a Saturday is "Friday nights"). Under ten listens it is `''`.
+
+**streaks** counts days with a play (not a skip), as Your year does. `current` ends today, or yesterday when today has no play yet (`today` says which); `longest` is the first of the longest runs; days are `'YYYY-MM-DD'` in the zone. **weeks** gives the minutes of the last `n` (12) weeks, each from its Monday (`from`), the current week last (`current`).
+
+**thisHour** is Usually at this hour: the songs played (not skipped) within `span` (60) minutes of now's time of day, either side and across midnight, on the same kind of day (Monday to Friday, or the weekend), in the last `days` (120). A play counts where it began. Each song needs `min` (2) plays, and with fewer than `least` (3) such songs it returns `[]`. Blocked and unplayable songs and clips are left out; most played first, then the latest; `n` (12) at most. **momentText** names the moment: `'weekday evenings'`, `'weekend mornings'`.
+
+**Skip the intro, learned.** `seekDetector()` is fed the player's time events as `{ id, current, at, rate, playingFrom }`: `at` is the wall clock, `playingFrom` since when the player has played without a stop (0 while it does not). A seek is a jump the clock cannot explain: more than 2.5 s beyond what playing since the last event covers, or any step back. A forward seek from under 15 s that lands between 10 s and 120 s is kept; seeks made in a row (within 3 s) move where it lands, as the arrow keys go 5 s at a time. `feed` returns `{ id, from, to, at }` once playback has gone on for 1.5 s; a new song or `reset()` forgets it. A seek while paused counts, and so does one seen only after playing again (YouTube reads no time while paused). `addSeek` keeps the seeks as `{ id, to, at }`, a year at most, the newest 300. `introOffer` reads the song's last three listens in the history (a skip is a listen here) and the last seek made while each played; two that land within `tol` (8) seconds of each other offer the earlier one, in whole seconds.
+
+**watch** runs from app.js `start` for the page's life. It hears the player's `state`, `time` and `ended` events (`ctx.player()`), and for every seek past the intro of a library song with no start of its own it keeps the seek and asks `introOffer`. The offer is a small prompt where the toasts are, never over the player; it is not a dialog and takes no focus: "You skip to 0:42 in this song. Start it there from now on?", with Start at 0:42 and No. Start at 0:42 sets the song's start in Trim and volume (`songprefs`, through `ctx.songPref(id, value)`; its end and volume are kept), with Undo in a toast. No is remembered. Each song is asked once: unanswered, the prompt goes after 15 s (it waits while the pointer or the focus is on it; Escape closes it). It never asks in car mode (car.js `active()`), for a song that has a start, in the thumbnail, or in the demo, unless `watch(ctx, { demo: true })` (the drive check calls that).
+
+**The page.** Your numbers shows When you listen after its tiles (`statsSection`): the sentence; By day and hour, a 7 by 24 grid of squares in the bar hue, four steps on a square-root scale so a quiet hour still shows, the busiest ringed, a line that reads out the square under the pointer or the finger, `role="img"` with the sentence, and the minutes by day and quarter of the day as a table for screen readers; two tiles, the days in a row now and the longest streak; Minutes per week, twelve columns, this week hatched (so far), the highest labelled, with its own table. Without a listen it says what will fill it. Home shows Usually at this hour before On this day (`homeLane`), with Play all (`ctx.play.from`, as "Usually at this hour") and a line naming the moment it read ("What you play most on weekday evenings around this time, from the last four months"). Both count from the index's tracks, so Focus narrows them. The CSS is one injected `<style id="ts-habits-css">` on the app's tokens.
+
+**What is kept.** The store's kv: `habits:seeks` (`[{ id, to, at }]`) and `habits:asked` (`{ id: { at, answer } }`, the answer `'yes'`, `'no'`, or `''` when the offer went unanswered). Nothing leaves the browser.
+
+**The hooks in app.js.** `pageCtx.songPref(id, value)` reads a song's trim and, given a value, sets it (null clears it; `songprefs` is saved and the volume applied); `viewHome` calls `homeLane` before wrapped.js's lanes; `viewStats` calls `statsSection` after its tiles; `start` calls `watch(pageCtx)`.
+
+**In the demo** there is no history until something is played (the demo keeps none), so When you listen says what will fill it and Usually at this hour stays away. The drive check pushes an invented history into `ctx.history()`, as wrapped.js's does.
+
+**Tests.** The `habits` section (test/habits.section.js, 71 checks): the clock's cells (an hour boundary, Sunday into Monday, skips, unknown songs, after now, a year back), a fixed offset, both 2026 changes of US Central time (1 am twice in November, no 2 am in March), the local clock against Date; clockText's parts of the day and the night before; streaks (today, yesterday, broken, ties, an offset, four plays on three days around the change); weeks (Monday first, over Sunday midnight, an offset, after the change); thisHour (the hour either side, across midnight, weekdays and the weekend, 120 days, min, least, n, where a play began, an offset); momentText; the seek detector fed sequences of time events (a seek, playing along, the rate, arrow keys in a row, from too late, landing too early or too late, a step back, another song, a seek while paused, one seen after a pause, a throttled tab, reset, odd events); addSeek; introOffer (two of three, 8 s and 9 s apart, one, three, the play going on, an older play, the last seek in a play, another song, now, tol); 5,000 listens.
 
 ## wrapped.js
 
