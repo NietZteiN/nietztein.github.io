@@ -2460,6 +2460,7 @@ describe('readme', function () {
 		engine: Object.keys(require('./engine.js')),
 		'an engine': Object.keys(require('./engine.js').create({})),
 		share: Object.keys(require('./share.js')),
+		wrapped: Object.keys(require('./wrapped.js')),
 		sources: Object.keys(require('./sources.js')),
 		'a source http': Object.keys(require('./sources.js').createHttp({ fetch: function () { return Promise.reject(new Error('no')); } })),
 		'a source cache': Object.keys(require('./sources.js').createCache()),

@@ -18,6 +18,7 @@ Toy 101. A music player for one listener's YouTube playlists and Liked videos: s
 | `feeder.js` | What keeps the queue fed: a list of found songs in order, or an endless radio. | no |
 | `engine.js` | The discovery engine: the one object the page calls about songs the library does not have. | no |
 | `share.js` | A queue as a link anyone can open (`#/share`), and a pasted list of songs (`#/paste`). | the pages only |
+| `wrapped.js` | Your year: the year in review (`#/wrapped`) and the home page's On this day, Rediscover old favourites and the nudge to like a song. | the page half |
 | `embed.js` | Embeddings of the tracks, nearest neighbours, the 2D layout of the map, its regions. | no |
 | `demo.js` | An invented library of 160 tracks for `?demo=1` and `?thumb=1`, labelled. | no |
 | `yt.js` | Google sign-in, the YouTube Data API client, the resumable import, the refresh, MusicBrainz. | sign-in redirect only |
@@ -30,7 +31,7 @@ Toy 101. A music player for one listener's YouTube playlists and Liked videos: s
 | `ds.css` | The design system: tokens, the button, badges, progress chips, the player-safe zone, touch screens. | yes |
 | `index.html`, `app.js`, `app.css` | The page. | yes |
 
-Everything is UMD: in the browser each file adds one member to `window.TrueShuffle` (`config`, `parse`, `library`, `shuffle`, `store`, `player`, `demo`, `yt`, and since 2026-10-10 `transport`, `actions`, `match`, `sources`, `finds`, `feeder`, `engine` and `share`); in Node each is a CommonJS module. The sources are plain ASCII (other characters are written as escapes), old-style (`var`, `function`, one IIFE), tabs.
+Everything is UMD: in the browser each file adds one member to `window.TrueShuffle` (`config`, `parse`, `library`, `shuffle`, `store`, `player`, `demo`, `yt`, and since 2026-10-10 `transport`, `actions`, `match`, `sources`, `finds`, `feeder`, `engine`, `share` and `wrapped`); in Node each is a CommonJS module. The sources are plain ASCII (other characters are written as escapes), old-style (`var`, `function`, one IIFE), tabs.
 
 ```html
 <script src="config.js"></script>
@@ -468,6 +469,55 @@ When the queue is waiting, a new song that is not ready within `maxWaitMs` gives
 - **Where it is:** the bar's More has "Share the queue as a link" (the playing song and what comes after it). The palette has that and "Paste a list of songs".
 - **What it costs:** a shared song has its id, so it plays free. A pasted line without a link goes through the resolver: a search (100 units) unless the library or an earlier search has it. Play all looks songs up as it goes, at most 10 searches a press.
 - **Privacy:** the requests carry no cookies and no referrer.
+
+## wrapped.js
+
+`TS.wrapped`: Your year, at `#/wrapped` (`#/wrapped?year=2025` for another year), and three small lanes on the home page. The counting is pure and runs in Node; the drawing uses only `pageCtx`.
+
+```js
+var Wr = TS.wrapped;
+Wr.yearStats(history, tracks, year, { now, local, top })  // the year in numbers (below)
+Wr.onThisDay(history, tracks, now, { local })             // -> { added: [{ id, year, ago }], played: [{ id, plays, year, ago }] }
+Wr.rediscover(history, tracks, now, { n, local })         // -> [{ id, last, score }]
+Wr.nudges(tracks, history, now)                           // -> [ids]
+Wr.years(history, tracks, { local })                      // -> [2026, 2025]
+Wr.yearText(stats, tracks)                                // the year as a few plain lines
+Wr.view(view, ctx, parts, query)                          // #/wrapped, through app.js pageFile
+Wr.homeLanes(view, ctx)                                   // the home page, before Recently added
+```
+
+`history` is the store's listens (`{ id, at, kind: 'play' | 'skip', listenedSec }`, in any order); `tracks` is `{ id: track }` or a list. Listens of songs that are not in `tracks` are left out; the page passes the index's tracks, so Focus narrows Your year as it narrows every view. Days, months and years are UTC unless `local: true`; the page passes it, so that a day is the reader's own day (an evening play in Texas is not tomorrow's).
+
+**yearStats** counts one year. Tops count plays only; minutes are what was heard (`listenedSec`), skips included. Listens after `now` are left out; `top` (50) cuts the lists, not the counts.
+
+| Field | What it is |
+| --- | --- |
+| `year`, `listens`, `plays`, `skips`, `seconds`, `minutes` | The year's listens of known songs, and the time heard. |
+| `songs`, `artists` | How many songs and artists (by `artistKey`) were played. |
+| `days`, `longestStreak`, `streakFrom`, `streakTo` | Days with a play; the most days in a row and its first and last day (`'YYYY-MM-DD'`). |
+| `topSongs` | `[{ id, plays, minutes }]`, most played first (then the most heard, then the first heard). |
+| `topArtists` | `[{ key, name, plays, ids }]`: the plays of the artist's songs; `name` the commonest spelling; `ids` the songs, most played first. |
+| `topWorks`, `topGenres`, `topMoods`, `topScenes` | `[{ key, plays, ids }]`: the work's name, the genre, the mood and scene keys. A play counts once for each genre of its song. |
+| `firstSong`, `lastSong` | `{ id, at }`: the year's first and last play. |
+| `busiestMonth`, `busiestDay` | `{ month: 'YYYY-MM', plays }`, `{ date: 'YYYY-MM-DD', plays }`; the first of equals. |
+| `hours`, `weekdays`, `months` | Plays per hour (24), per day of the week (7, Sunday first) and per month (12). |
+| `newSongs`, `discoveries` | Ids of the songs first added that year (the earliest of `addedAt`), oldest first, and those of them in the local playlist `local:discovered` (kept from Discover). |
+| `mostSkipped` | `{ id, skips, plays }`: three skips or more, the most; of equals, the one played least. Else null. |
+| `onRepeat` | `{ id, date, plays }`: the most plays of one song on one day, five or more. Else null. |
+
+**onThisDay** lists the songs first added on this month and day in earlier years (`added`, oldest first, `ago` in years) and the songs played on it in earlier years (`played`, most played first, `year` the latest such year). On February 28 of a year without a 29th, the 29ths of earlier years count too; in a leap year they wait for their own day.
+
+**rediscover** finds songs loved before (rated 4 or more, or played 5 times or more by the track's count or the history's) that have not been played in the last 180 days (`lastPlayed` and the history both count; a song added in those days is not "before"). Blocked and unplayable songs and clips are left out. Best first: shuffle.js's favourite weight, then the longest unheard. `last` is the last play in ms (0 for never); `n` caps the list (12).
+
+**nudges** returns the songs played to the end 6 times or more in the last 60 days that are not liked (rated under 4), most played first, then the latest. A play is a full one when 90% of the track's length was heard; without a length or a `listenedSec`, the history's `'play'` decides. Blocked songs never.
+
+**years** are the years with at least one play of a known song, newest first. **yearText** is what Copy as text copies: the minutes, plays, songs and artists, the days and the streak, the top five songs, artists and three genres, the busiest month.
+
+**The page (#/wrapped).** A header (Your 2026, the year as its art, the dates counted) with Play your top 50 (`ctx.play.from`, as "Your top songs of 2026"), Save as playlist (the top songs, through `ctx.lists.create`, which asks for a name) and Copy as text (`navigator.clipboard.writeText`; when the browser refuses, the text in a dialog, selected); chips for the other years; five tiles (minutes, songs, artists, days, the longest streak); the top songs as a numbered list (ten, then Show all) with a Play on each row; the top artists and works as shelves (each plays its songs of the year); genres, moods and scenes as chips linking to their pages; three column charts of plain divs (month by month, by the hour, the week: one hue, the highest column labelled, a line above that reads out the column under the pointer or the finger, `role="img"` with a summary and a table for screen readers); highlights (the busiest month and day, the first song, on repeat, skipped the most, and in a past year the last song); You kept N new songs this year (the discoveries, and how many songs joined the playlists, linking to `#/c/added/<year>`). A year without plays says that listens are counted from now on. When the store holds 5,000 listens or more, the footnote says how far back they reach. Its CSS is one injected `<style id="ts-wrapped-css">` on the app's tokens; nothing in it is fixed or sits over the player.
+
+**The home page's lanes** (`homeLanes`, each only when it has something): On this day (up to six songs played on this day in earlier years, then songs added on it: "added 3 years ago"), Rediscover old favourites (`rediscover`, 12 at most, with Play all), and one nudge card, "You play X a lot. Like it?", whose heart rates the song 5 (`ctx.edit`, Undo in the toast) and whose Not now puts it off for 30 days (`ToyKit.store('nudgeDismissed', { id: until })`). Once a nudge is answered no other one comes until the page is loaded again.
+
+Tests: the `wrapped` section (48 checks): every pure function on an invented history (a streak across the end of January, the last second of a year and of a month, February 29 on the 28th of a year without one and on a leap year's 28th, skips left out of the tops, unknown ids, the 180-day and 6-play thresholds and the 90% full play, frozen inputs, 5,000 listens in a few ms).
 
 ## transport.js
 

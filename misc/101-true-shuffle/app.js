@@ -3189,6 +3189,7 @@
 		player.stop();
 		store.wipe().then(function () {
 			ToyKit.store('clientId', null);
+			ToyKit.store('nudgeDismissed', null);
 			auth.setClientId(TS.config.clientId);
 			lib = L.create();
 			bag = null; bagKey = ''; stations = []; lists = []; focus = null; histCache = []; quota = null;
@@ -4315,6 +4316,7 @@
 		redraw: function () { renderView(true); },
 		ui: { headerBlock: headerBlock, actionBtn: actionBtn, smallBtn: smallBtn, trackList: trackList, sectionHead: sectionHead, card: card, trackCard: trackCard, shelf: shelf, grid: grid, chip: chip },
 		store: function () { return store; }, prefs: function () { return prefs; },
+		lists: { create: function (ids, name) { createList('manual', { ids: ids }, name, { focus: false }); } },
 		edit: function (ids, fields) { L.editMany(lib, ids, fields); return changed(ids); }
 	};
 
