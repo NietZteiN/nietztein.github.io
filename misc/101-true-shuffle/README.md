@@ -15,10 +15,13 @@ Toy 101. A music player for one listener's YouTube playlists and Liked videos: s
 | `embed.js` | Embeddings of the tracks, nearest neighbours, the 2D layout of the map, its regions. | no |
 | `demo.js` | An invented library of 160 tracks for `?demo=1` and `?thumb=1`, labelled. | no |
 | `yt.js` | Google sign-in, the YouTube Data API client, the resumable import, the refresh, MusicBrainz. | sign-in redirect only |
-| `test.js` | `node misc/101-true-shuffle/test.js`: over 700 checks, PASS and FAIL lines, exit 1 on failure. | no |
+| `test.js` | `node misc/101-true-shuffle/test.js`: over 1,000 checks, PASS and FAIL lines, exit 1 on failure. | no |
 | `test/fake-youtube.mjs` | A local fake of the Google endpoints, for tests. | no |
 | `toy.json` | The manifest (`"status": "wip"` until the page exists). | |
-| `ui.js` | The page's small parts: DOM builder, icons, router, menus, dialogs, virtual list, cover art. | yes |
+| `ui.js` | The page's small parts: DOM builder, icons, one button component, router, menus, dialogs, virtual list, cover art, toasts, progress chips, an event bus, the player-safe zone. | yes |
+| `actions.js` | The action vocabulary: one label, icon and key for each thing the page lets you do, and the list of keys. | no |
+| `transport.js` | What the operating system sees: the Media Session and the media-key anchor. | the anchor only |
+| `ds.css` | The design system: tokens, the button, badges, progress chips, the player-safe zone, touch screens. | yes |
 | `index.html`, `app.js`, `app.css` | The page. | yes |
 
 Everything is UMD: in the browser each file adds one member to `window.TrueShuffle` (`config`, `parse`, `library`, `shuffle`, `store`, `player`, `demo`, `yt`); in Node each is a CommonJS module. The sources are plain ASCII (other characters are written as escapes), old-style (`var`, `function`, one IIFE), tabs.
@@ -30,12 +33,14 @@ Everything is UMD: in the browser each file adds one member to `window.TrueShuff
 <script src="shuffle.js"></script>
 <script src="store.js"></script>
 <script src="player.js"></script>      <!-- needs shuffle -->
+<script src="transport.js"></script>
 <script src="taxonomy.js"></script>
 <script src="embed.js"></script>
 <script src="discover.js"></script>
 <script src="demo.js"></script>        <!-- needs library, shuffle -->
 <script src="yt.js"></script>          <!-- needs parse, library -->
 <script src="ui.js"></script>
+<script src="actions.js"></script>
 <script src="app.js"></script>
 ```
 
@@ -112,6 +117,10 @@ Every collection has Play (in order) and Shuffle (its filters as a plan, in the 
 
 **Controls (third pass).** The shuffle order is a labelled pill in the player bar (O), in the queue under "Playing from", next to Shuffle everything on the home page, and every Shuffle button is split: the main part shuffles in the current order, the caret picks another; the order menu describes each order and toggles keeping works apart and one version per song. Under the video: S, M and L sizes, theater mode (T: a wide player, the sections as icons) and full screen (F); the panel's edge still drags. Volume and mute (M, - and =; `p.volume(0..100)` and `p.muted(bool)` on both players, remembered); a heart likes a song (rating 5; L), and #/liked lists what is rated 4 or more (`minRating` in the plan). Ctrl+K opens a palette over pages, actions, playlists, artists, works, genres, moods, scenes, years and songs; ? lists the keys. Blocking, removing from a playlist, clearing the queue and liking can be undone from the toast. Long pages keep a compact header with Play. Song lists can be compact (Settings).
 
+**Playing, queueing and the buttons (2026-10-10).** Play on one song (a menu, the track page, a history row, the palette, the map, a version, a found song) plays it now and keeps the queue: `playNow(ids)` puts it right after the song that was on, which joins Played, and what was coming follows (`ctl.playNow`, the reducer's `playNow`); a song that was queued already moves up instead of playing twice. Play in a list plays the list from there (`playFrom(ids, index, ctx)`, once called `playIds`, a name the test hook keeps). Songs queued by hand (Play next, Add to queue, dragged onto the queue) play before the rest of what is coming, in the order given (`insert`), and survive a new list: they are kept under the store key `queue:hand`. On a wide window Q and the Queue button fold the queue to one line under the player (`body.queue-hidden`, remembered as `queueHidden`); the panel itself stays, since the player must. The bar's title opens the song's page (on a phone, the sheet). The bar's More (`#btn-bar-more`) holds the sleep timer (a dot on it while one runs), theater mode, full screen, Edit details, Repeat and Shuffle again; from 761 to 1100 px wide, Repeat and Shuffle again are only there, so the bar never overflows. The heart likes a song (four stars or more is liked); liking a song rated under four remembers that rating (`rating:beforeLike`), and taking the like back restores it, else leaves three stars. Every button is one component (ui.js `btn`, styled in ds.css): pills, round icon buttons, one blue for every play, at most three actions and More in a page's header, a cost shown as a badge. Labels, icons and keys come from actions.js; the track menu is grouped (Play, Find more, Keep, Go to, Fix) and Rating opens its own small menu. A new page puts the focus on its title; a redraw keeps the focus on the same row; the phone's sheet is a dialog (the rest of the page inert, never the video). Work in progress shows as a chip above the bar (ui.js `job`), not only to screen readers.
+
+**Media keys and car buttons.** A browser sends the keyboard's media keys, a phone's lock-screen buttons and a car's steering-wheel buttons (Bluetooth AVRCP) only to a frame that plays something itself (Chromium's `MediaSessionImpl::ComputeFrameForRouting`, read on 2026-10-10). The only player was YouTube's cross-origin iframe, so next and previous never reached the page. transport.js adds an anchor: a looping, unmuted `<audio>` of digital silence, built in memory, that plays while YouTube's player plays and pauses with it; the page then owns the Media Session (title, artist, the work or the playlist as album, artwork, position) and its play, pause, next, previous and seek handlers. On a phone it pauses the moment the page is hidden and ignores everything but pause while hidden. Settings > Playback switches it (`mediaKeys`) and lists the last twenty buttons received, for trying it: the PC's media keys or the Windows media overlay, or a car's steering wheel.
+
 **When you added them (#/c/added/<year or year-month>).** `S.firstAdded(track)` is when a track first came into the library (its earliest playlist addition) and `S.addedKeys(track)` its year and month as keys (`['2021', '2021-05']`, UTC). `select` takes `added` (those keys) and `addedFrom`, `addedTo` (ISO days, both included); the plan carries them, so smart playlists and Focus can be "added in 2021" or "added between March and June 2025". Browse shows a tile per year and a column per month (each opens that month); a year or month page has Play, Shuffle, Focus and Save as playlist, and chips for its months and the years around it. The mix builder has year and month rows and a date range; the playlists page suggests one per year with 40 songs or more; the home page shows songs added around this time in earlier years; Your numbers has songs added per year.
 
 **Discover, the hub (#/discover).** Without a seed the page is a hub: explore any artist on Deezer by name; a preview radio from your taste (the Deezer artist mixes of six of your top artists, songs you have left out, artists spread apart); "Because you like X" for five top artists (related artists you lack, each with its own preview radio); new releases from your artists (the last two years); more songs by your artists that are not in the library; picks from Deezer playlists of your top genres; and songs saved for later (`discover:saved`). `#/discover?dz=<id>` is any artist on Deezer: top songs, releases (a release opens its tracks), related artists to follow, an artist mix. The preview radio plays 30-second previews one after another in a bar above the player, with save, play on YouTube and not interested. `createDeezer` also has `artist`, `albums` (newest first, through `albumOf`), `albumTracks`, `radio`, `searchPlaylists` and `playlistTracks`; `trackOf` carries `artistId`; `img` keeps only Deezer's image hosts. Requests leave at least 125 ms apart and a "quota exceeded" answer (Deezer allows 50 requests in 5 seconds) waits and tries again; the Deezer ids of library artists are kept (`discover:ids`), as are recent seeds (`discover:recent`).
@@ -142,6 +151,38 @@ The owner's labels ship with the page as `labels.json` (the public Music playlis
 
 `TS.embed`: `RECIPES`, `vectors(tracks, recipe, { taxonomy, firstAdded, lm })` (unit-length `Float32Array` rows; `labelVectors`, `nameVectors`, `timeVectors` are the parts), `describe(track, taxonomy)` (the sentence the language model reads), `knn(vecs, k)` and `knnJob(vecs, k)` (the same in slices: `step(budgetMs)` until `done`), `layout(vecs, nn, { rand, epochs })` (a UMAP-like layout from the first two principal components, `pca2`; `step(budgetMs)`, `pos`), `regions(pos, tracks, k, rand)` (k-means on the layout, each `{ x, y, name, mood, size, members }`), `dot`, `unit`. Pure; the seeded random source makes the same map every time. `journey(vecs, from, to, { steps, pull, keyOf, workOf, sameOf, maxPerKey, gap, skip })`: the songs between two, each the unused one closest to a point sliding from the start's vector to the end's and leaning on the one before (`pull`), no key (an artist) again within `gap` (3) steps or more than `maxPerKey` (2) times, no work more than twice, one song per `sameOf`; the start first and the end last.
 
+## transport.js
+
+`TS.transport`: `create({ onPlay, onPause, onNext, onPrev, onSeek, onSeekBy, onLog, mobile, enabled, now })` returns a transport:
+
+| Call | What it does |
+| --- | --- |
+| `mirror(state)` | The player's state. `playing` starts the anchor; `loading` keeps it going for up to fifteen seconds (a track change); anything else pauses it. The Media Session's playback state follows. |
+| `wake()` | From a click, while the browser allows sound: start the anchor. |
+| `metadata({ title, artist, album, artwork })` | What the lock screen and the car show; null clears it. |
+| `position({ duration, position })` | The Media Session's position, at most once a second. |
+| `enable(bool)`, `enabled()` | Settings > Playback's switch. |
+| `anchorState()` | `'none'` (not made yet), `'playing'` or `'paused'`. |
+| `hidden()` | On a phone: the page is hidden, so only pause is obeyed. |
+| `log()` | The last `LOG_MAX` (20) actions, newest first: `{ at, action, handled, hidden }`. |
+| `fire(action, details)` | What the system asked for (one of `ACTIONS`); also the tests' way in. |
+| `destroy()` | Stops the anchor and lets go of the Media Session. |
+
+`silentWav(seconds, rate)` is the anchor's sound: 8-bit mono PCM, every sample 128. `ANCHOR_SECONDS` (10) keeps it longer than the five seconds under which Chrome treats a sound as a one-shot.
+
+## actions.js
+
+`TS.actions`:
+
+| Name | What it is |
+| --- | --- |
+| `VOCAB` | Each action's `label`, `short`, `icon`, `key` and `desc`. |
+| `item(name, onSelect, { label, hint, desc, disabled, checked })` | A menu item for ui.js `openMenu`. |
+| `label(name)` | An action's label. |
+| `KEYMAP` | `[{ keys, does }]`: what the shortcuts list (?) and the help show. |
+| `SHARED` | The icon families several actions share on purpose. |
+| `check(iconNames)` | The problems: a label or a key used twice, an icon ui.js does not draw, an icon with two meanings. The `actions` test section runs it. |
+
 ## taxonomy.js
 
 `TS.taxonomy`: `FAMILIES` (twelve families, each `{ key, name, hue, blurb, genres: [[name, blurb]], list: [{ name, blurb, family }] }`), `SCENES`, `MOODS` (with a sentence each), `LANGS`, `KINDS`, `ROLES` as `[key, name]` rows and `SCENE_NAME`, `MOOD_NAME`, `LANG_NAME`, `KIND_NAME`, `ROLE_NAME` as maps. `genre(name)`, `family(key)`, `familyOf(genre)` (`'other'` for a genre the map does not know, such as YouTube's own Rock), `trackFamily(track)` (its first known genre's), `genresOfFamily(key, known)` (for `'other'`, also the unknown genres in `known`), `hueOf(genre or family key)` (`{ h, s }`: one hue per family, shifted a little per genre). The map was written by hand for one listener's library: anime and visual-novel music, J-rock, city pop and Shibuya-kei, net music, western indie and classics, scores, musicals and classical.
@@ -153,6 +194,8 @@ The core does what it can; the rest is the page's.
 | Rule | Who |
 | --- | --- |
 | The player is visible, at least 200 by 200 px, with YouTube's own controls. | `player.js` refuses to build in a smaller or hidden box (`error` with code `'too-small'`) and never turns the controls off. The page must not cover the player, shrink it, move it off screen, or keep playing with the player hidden (no "audio only" view, no background tab trick). |
+| Nothing covers the player. | ui.js `safe`: dialogs, sheets, toasts and progress chips lay out around the player (CSS reads `--ts-safe-right` on a wide window, `--ts-safe-top` on a phone), menus move off it (`safe.avoid`), and the player's own messages (loading, could not start) sit under it, never over it. The now-playing panel scrolls only the part under the video, so the video never scrolls away. |
+| No sound while the player is hidden. | transport.js's media-key anchor plays silence, only while YouTube's player plays, so that media keys and car buttons reach the page; on a phone it pauses the moment the page is hidden and ignores play, next, previous and seeking until the page is visible again. It never plays YouTube's sound and cannot keep it going. |
 | A visible link to the YouTube Terms of Service and to Google's Privacy Policy. | The page: `Y.TERMS.youtubeTerms`, `Y.TERMS.googlePrivacy`. Put them in the footer and in the help, and say "This page uses YouTube API Services". |
 | A way to delete all stored data and to revoke access. | The page offers both: `store.wipe()` (and `ToyKit.store(key, null)` for anything it kept through the kit), and `auth.signOut()`. Also link `Y.TERMS.googlePermissions`, where Google lets the user remove access himself. |
 | Stored API data is refreshed or deleted within 30 days. | At each sign-in: `if (L.stale(lib, Date.now(), TS.config.refreshDays).length) Y.refreshInto({ client, lib, store })`. `L.stats(lib).staleCount` is for a banner when he has not signed in for a month: offer "sign in to refresh" or "delete". |
@@ -374,7 +417,7 @@ store.get(key, null).then(function (saved) {
 
 `bagSync` is what makes later imports join the bag at random places. The bag is stored after every draw, so a reload or a new session goes on where it stopped.
 
-**The queue.** `queue(state, action)` is a reducer over `{ items, index, history, done, repeat }` (`queueInit()` is the empty state; `current(state)` and `upcoming(state)` read it). It never changes the state it is given. Actions: `load { ids, index }`, `next`, `previous`, `jump { index }`, `playNext { ids }`, `enqueue { ids }`, `remove { index }` or `{ id }`, `move { from, to }`, `clearUpcoming`, `setRepeat { value }`, `reset`. `history` is what was current and then left, oldest first, at most 500. The page rarely calls it directly: the controller does. Also exported: `hash128(text)`, `lengthClass(sec)`.
+**The queue.** `queue(state, action)` is a reducer over `{ items, index, history, done, repeat }` (`queueInit()` is the empty state; `current(state)` and `upcoming(state)` read it). It never changes the state it is given. Actions: `load { ids, index }`, `next`, `previous`, `jump { index }`, `playNext { ids }`, `playNow { ids, started }` (play these now and keep what was coming: with `started` they go right after the current track and the first becomes current, the track left joins the history; without, a restored queue that has not started, they go before the current track), `insert { ids, after }` (after the first `after` tracks that follow the current one; how Play next and Add to queue keep songs queued by hand together), `enqueue { ids }`, `remove { index }` or `{ id }`, `move { from, to }`, `clearUpcoming`, `setRepeat { value }`, `reset`. `history` is what was current and then left, oldest first, at most 500. The page rarely calls it directly: the controller does. Also exported: `hash128(text)`, `lengthClass(sec)`.
 
 ## store.js
 
@@ -435,7 +478,7 @@ var ctl = TS.player.controller({
 	onHalt(reason),                    // 'finished', 'errors' (five failures in a row), 'player'
 	maxErrors, now
 });
-ctl.load(ids, index)  ctl.next()  ctl.previous()  ctl.jump(index)  ctl.playNext(ids)  ctl.enqueue(ids)
+ctl.load(ids, index)  ctl.next()  ctl.previous()  ctl.jump(index)  ctl.playNext(ids)  ctl.playNow(ids)  ctl.insert(ids, after)  ctl.enqueue(ids)
 ctl.remove(indexOrId)  ctl.move(from, to)  ctl.clearUpcoming()  ctl.setRepeat(bool)
 ctl.pause()  ctl.resume()  ctl.toggle()  ctl.state()  ctl.current()  ctl.destroy()
 ```
@@ -557,9 +600,33 @@ To try the real sign-in from this machine before publishing, add `http://127.0.0
 
 Changes to a client can take a few minutes to take effect. Access can be removed at any time at https://myaccount.google.com/permissions.
 
+## What was found about YouTube lists in the IFrame player on 2026-10-10
+
+A probe page outside the repo, driven by `scripts/qa/drive.mjs` with visible players on both hosts (`www.youtube-nocookie.com` and `www.youtube.com`), using only documented calls. The probe and its raw results stayed in the session's scratchpad.
+
+- **A Mix (`'RD' + videoId`) can be read without playing anything.**
+  - A fresh player built with `videoId: seed` and `playerVars: { listType: 'playlist', list: 'RD' + seed }` on nocookie has the list inside `onReady`: 50 ids, the seed first (6 of 6 seeds), state CUED, one request (`/youtubei/v1/embedded_player`), no media.
+  - `cuePlaylist({ listType: 'playlist', list: 'RD' + seed })` on an existing player also fills it (50 ids in 0.6 to 0.9 s). That list is the seed's Mix but not anchored on it: the seed was first in 1 of 6 and missing in 5 of 6. It shares 28 to 43 of its 50 ids with the anchored list.
+  - `loadPlaylist` is never needed. The list does not grow after 3 s, 10 s or three quick `nextVideo()` calls.
+  - nocookie is steadier: www reuses a cached list for an RD id across players (it even cued that list's first item instead of the `videoId` asked for), and only www contacted `doubleclick.net`.
+  - A Mix holds some videos that cannot be embedded, and changes a little from read to read.
+- **Uploads (`'UU' + channelId.slice(2)`), playlists (`PL...`) and albums (`OLAK5uy_...`) can be read with `cuePlaylist` in 0.2 to 0.6 s** on both hosts.
+  - `getPlaylist()` stops at **200 ids**: a 437-upload channel gave 200, a 447-item playlist 200, a 43-item playlist 43, an album 10.
+  - There is no way past 200: a cue at index 199 returns the same 200, and a cue at index 250 starts again from item 0.
+  - Every way in fills every kind of list: the constructor's `list`, a cue after a video, and `loadPlaylist` at index 0 or 1.
+- **A read can fail silently.** When the item at the cued index cannot be embedded, `getPlaylist()` stays empty and no `onError` fires; the same list cued at the next index reads in full.
+- **Reading a list on the only player stops the music** (PLAYING becomes CUED). Read while the player is idle, at a song's boundary, or on a second visible player.
+- **Back to single videos.** After a list, `loadVideoById(x)` returns the player to single-video mode: for about 100 ms the getters return `undefined`, then `getPlaylist()` is `null`, `getPlaylistIndex()` is -1, and at the end of `x` comes ENDED and nothing more (no auto-advance).
+- **Inside a list given as an array** (`loadPlaylist([a, b, c])`), no ENDED fires between items. The next item's UNSTARTED, BUFFERING and PLAYING follow, and `getPlaylistIndex()` and the `v=` of `getVideoUrl()` already name the new item at the first of them. `nextVideo()` gives PAUSED (already the next item), then the same. ENDED comes only after the last item, and it does not loop.
+- **oEmbed answers a browser** (`https://www.youtube.com/oembed?url=...&format=json`; CORS, no key, no quota).
+  - Measured over 102 requests: p50 37 ms, p95 57 ms one at a time; p50 35 ms four at a time.
+  - A video that cannot be embedded gives 401 and an invalid id 404; `fetch` resolves for both and the body can be read.
+  - `author_url` is `/@handle` for most channels and `/channel/UC...` for Topic channels.
+- **Pages on an IP address.** On `http://127.0.0.1` most music videos failed with error 150 and most lists read empty; on `http://localhost` the same videos played. Drive scripts that play real YouTube load the page through `localhost`.
+
 ## Shipping a change
 
-`index.html` loads the page's own scripts and `app.css` with `?v=<date>`. GitHub Pages lets browsers keep a file for ten minutes, and a page that mixes a new `app.js` with an old `yt.js` can break, so bump that stamp (all fourteen at once) whenever any of them changes.
+`index.html` loads the page's own scripts and `app.css` with `?v=<date>`. GitHub Pages lets browsers keep a file for ten minutes, and a page that mixes a new `app.js` with an old `yt.js` can break, so bump that stamp (every script and stylesheet at once) whenever any of them changes. The `lint` test section checks that the stamps are all the same and that every stamped file exists.
 
 ## Tests
 

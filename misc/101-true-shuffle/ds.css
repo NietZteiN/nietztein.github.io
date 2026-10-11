@@ -1,0 +1,170 @@
+/* True Shuffle: the design system. Tokens and the shared components (one
+   button, badges, progress chips), loaded after app.css and outside any
+   @layer, on top of the kit's tokens (kit.css). New class names (ts-btn,
+   ts-badge, ts-job) so nothing here fights the older rules in app.css.
+
+   Rules (README "The page"): every button is a pill and every icon button is
+   round; an action row shows at most three buttons and More, the primary one
+   first; a cost is a badge, never words in a label. */
+
+:root {
+	/* control heights */
+	--ts-h-sm: 32px;
+	--ts-h-md: 40px;
+	--ts-h-lg: 48px;
+	--ts-h-xl: 56px;
+	--ts-h-2xl: 72px;
+	--ts-h-car: 96px;
+	--ts-hit: 44px;               /* the least a finger gets on a touch screen */
+	/* radii */
+	--ts-r-xs: 4px;
+	--ts-r-sm: 6px;
+	--ts-r-md: 10px;
+	--ts-r-lg: 14px;
+	--ts-r-pill: 999px;
+	/* space */
+	--ts-s1: 4px; --ts-s2: 8px; --ts-s3: 12px; --ts-s4: 16px; --ts-s5: 24px; --ts-s6: 32px; --ts-s7: 48px;
+	/* elevation */
+	--ts-e1: 0 6px 18px rgba(0, 0, 0, 0.18);
+	--ts-e2: 0 16px 48px rgba(0, 0, 0, 0.28);
+	--ts-e3: 0 24px 80px rgba(0, 0, 0, 0.4);
+	/* layers */
+	--ts-z-sticky: 6; --ts-z-sheet: 800; --ts-z-dialog: 900; --ts-z-toast: 950; --ts-z-menu: 1000;
+	/* roles */
+	--ts-play: #1f5fd6;
+	--ts-play-ink: #ffffff;
+	--ts-play-hover: #1a52ba;
+	--ts-like: #d6336c;
+	--ts-cost: #8a5a00;
+	--ts-cost-bg: #fff3d6;
+	--ts-ok: #1a7f37;
+	--ts-src-mix: #b42318;
+	--ts-src-channel: #b54708;
+	--ts-src-anime: #c11574;
+	--ts-src-season: #6941c6;
+	--ts-src-album: #0e7490;
+}
+:root[data-theme="dark"] {
+	--ts-play: #7cb3ff;
+	--ts-play-ink: #0b1220;
+	--ts-play-hover: #9cc6ff;
+	--ts-like: #ff7aa8;
+	--ts-cost: #f2c14e;
+	--ts-cost-bg: rgba(242, 193, 78, 0.14);
+	--ts-ok: #56d364;
+	--ts-src-mix: #ff8a80;
+	--ts-src-channel: #fdb022;
+	--ts-src-anime: #f670c7;
+	--ts-src-season: #b692f6;
+	--ts-src-album: #67e8f9;
+}
+
+/* ---------- The button ---------- */
+.ts-btn {
+	--btn-h: var(--ts-h-md);
+	position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 8px; flex: none;
+	height: var(--btn-h); min-width: var(--btn-h); padding: 0 16px; margin: 0;
+	border: 1px solid transparent; border-radius: var(--ts-r-pill);
+	background: transparent; color: var(--text);
+	font: inherit; font-size: 14px; font-weight: 650; line-height: 1; white-space: nowrap; text-decoration: none;
+	cursor: pointer; -webkit-tap-highlight-color: transparent;
+	transition: background var(--dur-fast), color var(--dur-fast), border-color var(--dur-fast), transform var(--dur-fast), box-shadow var(--dur-fast);
+}
+.ts-btn .ts-i { width: 20px; height: 20px; }
+.ts-btn-label { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.ts-btn:disabled, .ts-btn[aria-disabled="true"] { opacity: 0.45; cursor: default; }
+.ts-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ts-btn.is-icon { width: var(--btn-h); padding: 0; }
+.ts-btn-caret { width: 14px !important; height: 14px !important; margin-right: -4px; opacity: 0.75; }
+
+/* sizes */
+.ts-btn--sm { --btn-h: var(--ts-h-sm); padding: 0 12px; gap: 6px; font-size: 13px; }
+.ts-btn--sm .ts-i { width: 18px; height: 18px; }
+.ts-btn--md { --btn-h: var(--ts-h-md); }
+.ts-btn--lg { --btn-h: var(--ts-h-lg); padding: 0 22px 0 18px; font-size: 15px; }
+.ts-btn--lg .ts-i { width: 22px; height: 22px; }
+.ts-btn--xl { --btn-h: var(--ts-h-xl); }
+.ts-btn--xl .ts-i { width: 28px; height: 28px; }
+.ts-btn--2xl { --btn-h: var(--ts-h-2xl); font-size: 16px; }
+.ts-btn--2xl .ts-i { width: 34px; height: 34px; }
+.ts-btn--car { --btn-h: var(--ts-h-car); font-size: 18px; }
+.ts-btn--car .ts-i { width: 44px; height: 44px; }
+.ts-btn.is-icon.ts-btn--sm, .ts-btn.is-icon.ts-btn--md, .ts-btn.is-icon.ts-btn--lg { padding: 0; }
+
+/* variants */
+.ts-btn--primary { background: var(--ts-play); color: var(--ts-play-ink); }
+.ts-btn--primary:hover:not(:disabled) { background: var(--ts-play-hover); color: var(--ts-play-ink); }
+.ts-btn--primary:active:not(:disabled) { transform: scale(0.98); }
+.ts-btn--secondary { border-color: var(--border-strong); color: var(--text); }
+.ts-btn--secondary:hover:not(:disabled) { background: var(--ts-hover); border-color: var(--text-2); color: var(--heading); }
+.ts-btn--ghost, .ts-btn--icon { color: var(--text-2); }
+.ts-btn--ghost:hover:not(:disabled), .ts-btn--icon:hover:not(:disabled) { background: var(--ts-hover); color: var(--heading); }
+.ts-btn--chip { --btn-h: 30px; padding: 0 12px; border-color: var(--border); background: var(--surface); color: var(--text); font-size: 12.5px; }
+.ts-btn--chip:hover:not(:disabled) { border-color: var(--border-strong); background: var(--ts-hover); }
+.ts-btn--chip[aria-pressed="true"] { background: var(--heading); color: var(--bg); border-color: var(--heading); }
+.ts-btn--danger { border-color: var(--kit-warn-line); color: var(--kit-warn); }
+.ts-btn--danger:hover:not(:disabled) { background: var(--kit-warn-bg, var(--ts-hover)); }
+.ts-btn--ghost[aria-pressed="true"], .ts-btn--icon[aria-pressed="true"], .ts-btn--ghost.is-on, .ts-btn--icon.is-on { color: var(--accent); }
+.ts-btn.ts-like[aria-pressed="true"], .ts-btn.ts-like.is-on, #btn-like.is-on { color: var(--ts-like); }
+
+/* busy: a spinner where the icon was */
+.ts-btn.is-busy { cursor: progress; }
+.ts-btn.is-busy > .ts-i:not(.ts-btn-caret) { display: none; }
+.ts-btn.is-busy::before {
+	content: ''; width: 16px; height: 16px; flex: none; border-radius: 50%;
+	border: 2px solid currentColor; border-right-color: transparent; animation: ts-spin 0.8s linear infinite;
+}
+@keyframes ts-spin { to { transform: rotate(360deg); } }
+
+/* the split button: Shuffle | its order */
+.ts-split { display: inline-flex; }
+.ts-split > .ts-btn.ts-split-main { border-radius: var(--ts-r-pill) 0 0 var(--ts-r-pill); padding-right: 14px; }
+.ts-split > .ts-btn.ts-split-caret { border-radius: 0 var(--ts-r-pill) var(--ts-r-pill) 0; border-left-width: 0; width: auto; min-width: 40px; padding: 0 10px; }
+.ts-split > .ts-btn--primary.ts-split-caret { border-left: 1px solid color-mix(in srgb, var(--ts-play-ink) 35%, transparent); }
+
+/* ---------- Badges: a cost, in your library, the source ---------- */
+.ts-badge {
+	--role: var(--text-2);
+	display: inline-flex; align-items: center; gap: 4px; flex: none; height: 20px; padding: 0 7px;
+	border-radius: var(--ts-r-pill); border: 1px solid color-mix(in srgb, var(--role) 30%, transparent);
+	background: color-mix(in srgb, var(--role) 12%, transparent); color: var(--role);
+	font-size: 11.5px; font-weight: 700; line-height: 1; white-space: nowrap; vertical-align: middle;
+}
+.ts-badge .ts-i { width: 13px; height: 13px; }
+.ts-badge--cost { --role: var(--ts-cost); background: var(--ts-cost-bg); }
+.ts-badge--ok { --role: var(--ts-ok); }
+.ts-badge--new { --role: var(--accent); }
+.ts-badge--mix { --role: var(--ts-src-mix); }
+.ts-badge--channel { --role: var(--ts-src-channel); }
+.ts-badge--anime { --role: var(--ts-src-anime); }
+.ts-badge--season { --role: var(--ts-src-season); }
+.ts-badge--album { --role: var(--ts-src-album); }
+.ts-badge--search { --role: var(--ts-cost); }
+.ts-badge--ext, .ts-badge--library { --role: var(--text-2); }
+.ts-btn .ts-btn-cost { height: 18px; padding: 0 5px; margin-right: -6px; font-size: 11px; }
+.ts-btn--primary .ts-btn-cost { --role: var(--ts-play-ink); background: color-mix(in srgb, var(--ts-play-ink) 18%, transparent); border-color: transparent; }
+
+/* ---------- Work in progress, shown ---------- */
+.ts-jobs { position: fixed; z-index: var(--ts-z-toast); left: calc((100vw - var(--ts-safe-right, 0px)) / 2); bottom: calc(var(--ts-bar) + 12px); transform: translateX(-50%); display: flex; flex-direction: column; gap: 6px; align-items: center; pointer-events: none; }
+.ts-job { display: inline-flex; align-items: center; gap: 10px; padding: 8px 12px 8px 12px; border-radius: var(--ts-r-pill); background: var(--surface-2); color: var(--text); border: 1px solid var(--border); box-shadow: var(--ts-e2); font-size: 13.5px; font-weight: 600; pointer-events: auto; max-width: min(520px, calc(100vw - 32px)); }
+.ts-job-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ts-job-x { border: 0; background: none; color: var(--accent); font: inherit; font-weight: 750; cursor: pointer; padding: 2px 4px; }
+.ts-spin { width: 14px; height: 14px; flex: none; border-radius: 50%; border: 2px solid var(--accent); border-right-color: transparent; animation: ts-spin 0.8s linear infinite; }
+
+/* ---------- The player-safe zone: overlays leave the YouTube player alone ---------- */
+.ts-modal-back { right: var(--ts-safe-right, 0px); top: var(--ts-safe-top, 0px); }
+.ts .kit-backdrop { right: var(--ts-safe-right, 0px); top: var(--ts-safe-top, 0px); }
+.ts-toast { left: calc((100vw - var(--ts-safe-right, 0px)) / 2); }
+
+/* ---------- Touch screens: nothing hides behind a hover ---------- */
+@media (hover: none), (pointer: coarse) {
+	.ts-row-play, .ts-c-more .ts-icon-btn, .ts-c-more .ts-like, .ts-q-x, .ts-grip, .ts-card .ts-bigplay { opacity: 1 !important; }
+	.ts-card .ts-bigplay { transform: none; }
+	.ts-resizer::after { opacity: 0.6; }
+	.ts-btn--sm::after, .ts-btn--md::after { content: ''; position: absolute; inset: -6px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.ts-btn.is-busy::before, .ts-spin { animation-duration: 2.4s; }
+}
+html.is-reduced .ts-btn.is-busy::before, html.is-reduced .ts-spin { animation-duration: 2.4s; }

@@ -1335,14 +1335,41 @@ describe('shuffle', function () {
 	eq(S.queue(q, { type: 'whatever' }), q, 'queue: an unknown action changes nothing');
 	eq(S.queue(undefined, { type: 'load', ids: ['a'], index: 5 }).index, 0, 'queue: a start index outside the list is clamped');
 	eq(S.queue(q, { type: 'reset' }), S.queueInit(), 'queue: reset');
+	// playNow: one song now, what was coming stays
+	var pn = S.queue(S.queueInit(), { type: 'load', ids: ['a', 'b', 'c', 'd'], index: 1 });
+	var pn1 = S.queue(pn, { type: 'playNow', ids: ['x'], started: true });
+	eq([pn1.items, S.current(pn1), pn1.history.slice(-1)], [['a', 'b', 'x', 'c', 'd'], 'x', ['b']], 'queue: playNow (started) plays the song after the current one, keeps the rest, and the track left joins the history');
+	var pn2 = S.queue(pn, { type: 'playNow', ids: ['d'], started: true });
+	eq([pn2.items, S.current(pn2)], [['a', 'b', 'd', 'c'], 'd'], 'queue: playNow moves a song that was already queued instead of doubling it');
+	var pn3 = S.queue(pn, { type: 'playNow', ids: ['x', 'y'], started: false });
+	eq([pn3.items, S.current(pn3), pn3.history], [['a', 'x', 'y', 'b', 'c', 'd'], 'x', pn.history], 'queue: playNow on a queue that has not started puts the songs before the current one, which stays next');
+	eq(S.queue(pn, { type: 'playNow', ids: ['b'], started: true }), pn, 'queue: playNow of the current track changes nothing');
+	var pn4 = S.queue(S.queue(S.queue(S.queueInit(), { type: 'load', ids: ['a'] }), { type: 'next' }), { type: 'playNow', ids: ['z'], started: false });
+	eq([pn4.items, S.current(pn4), pn4.done], [['a', 'z'], 'z', false], 'queue: playNow on a finished queue adds the song and plays it');
+	eq(S.current(S.queue(S.queueInit(), { type: 'playNow', ids: ['z'] })), 'z', 'queue: playNow on an empty queue');
+	// insert: after the first n tracks that follow the current one
+	var ins = S.queue(pn, { type: 'insert', ids: ['x'], after: 0 });
+	eq([ins.items, S.current(ins)], [['a', 'b', 'x', 'c', 'd'], 'b'], 'queue: insert after 0 is right after the current track');
+	ins = S.queue(ins, { type: 'insert', ids: ['y'], after: 1 });
+	eq(ins.items, ['a', 'b', 'x', 'y', 'c', 'd'], 'queue: insert after 1 goes after the first song that follows');
+	eq(S.queue(pn, { type: 'insert', ids: ['a', 'q'], after: 9 }).items, ['b', 'c', 'd', 'a', 'q'], 'queue: insert past the end appends, taking the earlier copy out');
+	var insDone = S.queue(S.queue(S.queue(S.queueInit(), { type: 'load', ids: ['a'] }), { type: 'next' }), { type: 'insert', ids: ['z'] });
+	eq([S.current(insDone), insDone.done], ['z', false], 'queue: a finished queue that gets a track by insert has it as current');
 	// Random actions: the state stays sound and is never changed in place.
 	var fz = S.rng('queue-fuzz'), st = S.queueInit(), sound = true, why = '', nextId = 0;
 	for (i = 0; i < 4000 && sound; i++) {
-		var kinds = ['next', 'next', 'next', 'previous', 'jump', 'playNext', 'enqueue', 'remove', 'move', 'clearUpcoming', 'setRepeat', 'load'];
+		var kinds = ['next', 'next', 'next', 'previous', 'jump', 'playNext', 'enqueue', 'remove', 'move', 'clearUpcoming', 'setRepeat', 'load', 'playNow', 'insert'];
 		var kind = kinds[fz.int(kinds.length)], act = { type: kind };
 		if (kind === 'jump' || kind === 'remove') act.index = fz.int(st.items.length + 2) - 1;
 		if (kind === 'move') { act.from = fz.int(st.items.length + 1); act.to = fz.int(st.items.length + 1); }
 		if (kind === 'playNext' || kind === 'enqueue') act.ids = ['id' + (nextId++), 'id' + (nextId++)];
+		if (kind === 'playNow' || kind === 'insert') {
+			// fresh songs, and now and then one that is already queued
+			act.ids = ['id' + (nextId++)];
+			if (st.items.length && fz.int(2)) act.ids.push(st.items[fz.int(st.items.length)]);
+			act.started = !!fz.int(2);
+			act.after = fz.int(4);
+		}
 		if (kind === 'load') { if (fz.int(10)) continue; act.ids = ['id' + (nextId++), 'id' + (nextId++), 'id' + (nextId++)]; }
 		if (kind === 'setRepeat') act.value = !!fz.int(2);
 		var before = deepFreeze(st), curBefore = S.current(before), out;
@@ -1350,7 +1377,13 @@ describe('shuffle', function () {
 		if (!(out.index >= -1 && out.index <= out.items.length)) { sound = false; why = kind + ': index ' + out.index + ' of ' + out.items.length; }
 		if (out.items.length && out.index === -1 && kind !== 'reset' && before.index !== -1) { sound = false; why = kind + ': lost its place'; }
 		if (out.done !== (out.items.length > 0 && out.index >= out.items.length)) { sound = false; why = kind + ': done is ' + out.done + ' at ' + out.index + '/' + out.items.length; }
-		if ((kind === 'move' || kind === 'playNext' || kind === 'enqueue' || kind === 'clearUpcoming' || kind === 'setRepeat') && curBefore != null && S.current(out) !== curBefore) { sound = false; why = kind + ': the current track changed'; }
+		if ((kind === 'move' || kind === 'playNext' || kind === 'enqueue' || kind === 'clearUpcoming' || kind === 'setRepeat' || kind === 'insert') && curBefore != null && S.current(out) !== curBefore) { sound = false; why = kind + ': the current track changed'; }
+		if (kind === 'playNow') {
+			var wanted = act.ids.filter(function (x) { return x !== curBefore; })[0];
+			if (wanted != null && S.current(out) !== wanted) { sound = false; why = 'playNow: ' + wanted + ' is not current'; }
+			var left = before.items.filter(function (x, k) { return k > before.index && act.ids.indexOf(x) < 0; }), after2 = out.items.slice(out.index + 1);
+			if (wanted != null && curBefore != null && act.started && left.join() !== after2.filter(function (x) { return act.ids.indexOf(x) < 0; }).join()) { sound = false; why = 'playNow: what was coming changed'; }
+		}
 		if (kind === 'move' && out.items.slice().sort().join() !== before.items.slice().sort().join()) { sound = false; why = 'move lost a track'; }
 		if (new Set(out.items).size !== out.items.length) { sound = false; why = kind + ': a track is in the queue twice'; }
 		if (out.history.length > 500) { sound = false; why = 'history too long'; }
@@ -1571,6 +1604,16 @@ describe('player', async function () {
 	eq([r.c.state().items, r.c.current(), r.player.id()], [['c', 'a', 'b', 'd'], 'b', 'b'], 'controller: playNext and move change the queue, not what is playing');
 	r.c.remove('b'); await tickAll();
 	eq([r.c.state().items, r.player.id()], [['c', 'a', 'd'], 'd'], 'controller: removing the current track starts the one after it');
+	r.player.tick(20000);
+	r.c.playNow('x'); await tickAll();
+	eq([r.c.state().items, r.c.current(), r.player.id()], [['c', 'a', 'd', 'x'], 'x', 'x'], 'controller: playNow plays a song now and keeps what was coming (nothing, here)');
+	eq(r.events.listened.slice(-1)[0].slice(0, 2), ['d', false], 'controller: playNow reports the song it left');
+	r.c.insert(['y', 'z'], 0);
+	eq([r.c.state().items.slice(-2), r.c.current()], [['y', 'z'], 'x'], 'controller: insert queues songs without changing what plays');
+	var rp = rig(null, { state: { items: ['m', 'n'], index: 1, history: [], done: false, repeat: false } });
+	rp.c.playNow('k'); await tickAll();
+	eq([rp.c.state().items, rp.c.current(), rp.player.id(), rp.events.listened], [['m', 'k', 'n'], 'k', 'k', []], 'controller: playNow on a restored queue that has not started plays the song, and the restored one is next');
+	rp.c.destroy();
 	r.c.pause(); eq(r.player.state(), 'paused', 'controller: pause');
 	r.c.toggle(); eq(r.player.state(), 'playing', 'controller: toggle resumes');
 	r.c.destroy();
@@ -2286,6 +2329,102 @@ describe('discover', async function () {
 });
 
 // =============================================================================
+// transport (what the operating system sees; the media-key anchor)
+// =============================================================================
+
+describe('transport', async function () {
+	var Tr = require('./transport.js');
+	var w = Tr.silentWav(1, 8000);
+	eq([String.fromCharCode(w[0], w[1], w[2], w[3]), String.fromCharCode(w[8], w[9], w[10], w[11]), w.length], ['RIFF', 'WAVE', 44 + 8000], 'silentWav: a RIFF WAVE file of the length asked for');
+	ok(Array.prototype.every.call(w.subarray(44), function (b) { return b === 128; }), 'silentWav: every sample is silence (128 in unsigned 8-bit)');
+	ok(Tr.ANCHOR_SECONDS >= 5, 'the anchor lasts at least five seconds, so Chrome does not take it for a one-shot sound');
+	var calls = [];
+	var tr = Tr.create({ onPlay: function () { calls.push('play'); }, onNext: function () { calls.push('next'); }, onSeek: function (s) { calls.push('seek ' + s); } });
+	eq([tr.fire('nexttrack'), tr.fire('seekto', { seekTime: 42 }), tr.fire('previoustrack')], [true, true, false], 'fire: handled when the page gave a handler, not otherwise');
+	eq(calls, ['next', 'seek 42'], 'fire: the handlers run with what the system sent');
+	eq(tr.log().map(function (e) { return e.action + ' ' + e.handled; }), ['previoustrack false', 'seekto true', 'nexttrack true'], 'log: newest first, with whether it was handled');
+	eq(tr.anchorState(), 'none', 'no anchor without a document');
+	tr.destroy();
+
+	// a phone: a fake document that can go hidden, a fake audio element
+	var listeners = {}, made = [];
+	var fakeDoc = {
+		visibilityState: 'visible',
+		addEventListener: function (type, fn) { listeners[type] = fn; },
+		removeEventListener: function (type) { delete listeners[type]; },
+		createElement: function () { var a = { paused: true, play: function () { a.paused = false; return Promise.resolve(); }, pause: function () { a.paused = true; } }; made.push(a); return a; }
+	};
+	globalThis.document = fakeDoc;
+	try {
+		var got = [];
+		var ph = Tr.create({ mobile: true, onNext: function () { got.push('next'); }, onPause: function () { got.push('pause'); } });
+		ph.mirror('playing');
+		eq([made.length, ph.anchorState()], [1, 'playing'], 'the anchor plays while YouTube plays');
+		ph.mirror('loading');
+		eq(ph.anchorState(), 'playing', 'it keeps going while the next song loads');
+		ph.mirror('paused');
+		eq(ph.anchorState(), 'paused', 'it pauses when YouTube pauses');
+		ph.mirror('playing');
+		fakeDoc.visibilityState = 'hidden';
+		listeners.visibilitychange();
+		eq([ph.anchorState(), ph.hidden()], ['paused', true], 'on a phone, a hidden page pauses the anchor at once');
+		eq([ph.fire('nexttrack'), ph.fire('pause')], [false, true], 'while hidden, next is ignored and pause still works');
+		eq(got, ['pause'], 'only the pause reached the page');
+		fakeDoc.visibilityState = 'visible';
+		listeners.visibilitychange();
+		eq(ph.anchorState(), 'playing', 'back in view, it follows the player again');
+		ph.enable(false);
+		eq([ph.anchorState(), ph.enabled()], ['paused', false], 'switched off in Settings, it stops');
+		ph.destroy();
+		eq(listeners.visibilitychange, undefined, 'destroy lets go of the page');
+	} finally { delete globalThis.document; }
+});
+
+// =============================================================================
+// actions (one label, one icon, one key for each thing the page does)
+// =============================================================================
+
+describe('actions', function () {
+	var A = require('./actions.js');
+	var uiSrc = fs.readFileSync(path.join(HERE, 'ui.js'), 'utf8');
+	var from = uiSrc.indexOf('var PATHS = {'), block = uiSrc.slice(from, uiSrc.indexOf('};', from));
+	var names = [];
+	block.replace(/^\s*'?([a-z0-9-]+)'?:\s*'/gm, function (m, k) { names.push(k); return m; });
+	ok(names.length > 70, names.length + ' icons drawn in ui.js');
+	eq(A.check(names), [], 'the vocabulary: one label and one key per action, icons that exist, one meaning per icon');
+	ok(A.check(names.filter(function (x) { return x !== 'queue-next'; })).length > 0, 'check: a missing icon is reported');
+	eq([A.item('play-next', null).label, A.item('play-next', null).icon], ['Play next', 'queue-next'], 'item: the vocabulary\'s words and icon');
+	eq(A.item('edit', null, { label: 'Edit 3 tracks' }).label, 'Edit 3 tracks', 'item: a label of its own when asked');
+	ok(A.KEYMAP.length > 15 && A.KEYMAP.every(function (r) { return r.keys && r.does; }), 'KEYMAP: every row says which keys and what they do');
+	var appSrc = fs.readFileSync(path.join(HERE, 'app.js'), 'utf8');
+	ok(appSrc.indexOf('A.KEYMAP') >= 0 && appSrc.indexOf('fillHelpKeys') >= 0, 'the shortcuts list and the help are drawn from KEYMAP');
+});
+
+// =============================================================================
+// lint (app.js read as text: rules that keep old mistakes out)
+// =============================================================================
+
+describe('lint', function () {
+	var src = fs.readFileSync(path.join(HERE, 'app.js'), 'utf8');
+	var seen = {}, dups = [];
+	src.split('\n').forEach(function (line) { var m = /^\tfunction ([A-Za-z0-9_$]+)\(/.exec(line); if (m) { if (seen[m[1]]) dups.push(m[1]); seen[m[1]] = true; } });
+	eq(dups, [], 'app.js: no two top-level functions share a name (the later one silently replaces the earlier: the heart lost its icon that way)');
+	eq(src.match(/play(?:Ids|From)\(\[[^\],\]]+\]\s*,/g) || [], [], 'app.js: one song plays with playNow, never by replacing the queue with a list of one');
+	eq((src.match(/kit-btn/g) || []).length, 0, 'app.js: no kit-btn buttons (one button component)');
+	eq((src.match(/\bts-act\b/g) || []).length, 0, 'app.js: no ts-act buttons');
+	var lines = src.split('\n').length;
+	ok(lines <= 5850, 'app.js has ' + lines + ' lines (at most 5,850 now; the target is 5,200 once Explore and the other new views live in their own files)');
+	var html = fs.readFileSync(path.join(HERE, 'index.html'), 'utf8');
+	var stamps = {};
+	html.replace(/\?v=([0-9A-Za-z-]+)/g, function (m, v) { stamps[v] = (stamps[v] || 0) + 1; return m; });
+	eq(Object.keys(stamps).length, 1, 'index.html: every script and stylesheet carries the same ?v= stamp (' + Object.keys(stamps).join(', ') + ')');
+	var files = [];
+	html.replace(/(?:src|href)="([a-z.-]+\.(?:js|css))\?v=/g, function (m, f) { files.push(f); return m; });
+	eq(files.filter(function (f) { return !fs.existsSync(path.join(HERE, f)); }), [], 'index.html: every stamped file exists');
+	ok(['transport.js', 'actions.js', 'ds.css'].every(function (f) { return files.indexOf(f) >= 0; }), 'index.html loads transport.js, actions.js and ds.css');
+});
+
+// =============================================================================
 // readme (every name the page can call is documented)
 // =============================================================================
 
@@ -2309,6 +2448,9 @@ describe('readme', function () {
 		taxonomy: Object.keys(require('./taxonomy.js')),
 		embed: Object.keys(require('./embed.js')),
 		discover: Object.keys(require('./discover.js')),
+		transport: Object.keys(require('./transport.js')),
+		'a transport': Object.keys(require('./transport.js').create({})),
+		actions: Object.keys(require('./actions.js')),
 		yt: Object.keys(Y),
 		'an auth': Object.keys(Y.createAuth({ clientId: 'x', storage: null, location: fakeLocation('http://127.0.0.1/'), endpoints: Y.GOOGLE })),
 		'a client': Object.keys(Y.createClient({ getToken: function () { return null; }, endpoints: Y.GOOGLE })),

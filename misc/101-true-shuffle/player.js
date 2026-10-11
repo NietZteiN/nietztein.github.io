@@ -339,8 +339,9 @@
 	//   opts.now()                   the clock (default Date.now)
 	//   opts.maxErrors               consecutive failed tracks before giving up (default 5)
 	// Methods: load(ids, index), next(), previous(), jump(index), playNext(ids),
-	// enqueue(ids), remove(indexOrId), move(from, to), clearUpcoming(),
-	// setRepeat(bool), pause(), resume(), toggle(), state(), current(), destroy().
+	// playNow(ids), insert(ids, after), enqueue(ids), remove(indexOrId),
+	// move(from, to), clearUpcoming(), setRepeat(bool), pause(), resume(),
+	// toggle(), state(), current(), destroy().
 	function controller(opts) {
 		opts = opts || {};
 		var Shuffle = getShuffle();
@@ -418,6 +419,10 @@
 			previous: function () { return dispatch({ type: 'previous' }, 'previous'); },
 			jump: function (index) { return dispatch({ type: 'jump', index: index }, 'jump'); },
 			playNext: function (ids) { return dispatch({ type: 'playNext', ids: [].concat(ids) }, 'playNext'); },
+			// Play these now, keeping what was coming after them. The track that
+			// was playing is reported as left (a play or a skip) and stays in the history.
+			playNow: function (ids) { return dispatch({ type: 'playNow', ids: [].concat(ids), started: playingId != null }, 'playNow'); },
+			insert: function (ids, after) { return dispatch({ type: 'insert', ids: [].concat(ids), after: after | 0 }, 'insert'); },
 			enqueue: function (ids) { return dispatch({ type: 'enqueue', ids: [].concat(ids) }, 'enqueue'); },
 			remove: function (what) { return dispatch(typeof what === 'number' ? { type: 'remove', index: what } : { type: 'remove', id: what }, 'remove'); },
 			move: function (from, to) { return dispatch({ type: 'move', from: from, to: to }, 'move'); },

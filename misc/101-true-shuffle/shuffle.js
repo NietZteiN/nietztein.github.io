@@ -942,6 +942,23 @@
 		return history.length > HISTORY_MAX ? history.slice(history.length - HISTORY_MAX) : history;
 	}
 
+	// Each id once, first copy first.
+	function uniqueIds(ids) {
+		var seen = {}, out = [];
+		ids.forEach(function (id) { var k = 'k' + id; if (!seen[k]) { seen[k] = true; out.push(id); } });
+		return out;
+	}
+	// The queue without these ids (the current place keeps its own), and where
+	// the current place is afterwards.
+	function withoutIds(items, index, ids) {
+		var kept = [], at = index;
+		items.forEach(function (id, k) {
+			if (k !== index && ids.indexOf(id) >= 0) { if (k < index) at--; return; }
+			kept.push(id);
+		});
+		return { items: kept, index: at };
+	}
+
 	// The reducer. It never changes the state it is given. Actions:
 	//   { type: 'load', ids, index }     a new queue; index (default 0) is current
 	//   { type: 'next' }                 the next track; past the end: done, or
@@ -950,6 +967,19 @@
 	//   { type: 'jump', index }          make another place current
 	//   { type: 'playNext', ids }        put these right after the current track
 	//                                    (taking them out of where they were later)
+	//   { type: 'playNow', ids, started } play these now and keep what was coming:
+	//                                    with started (the current track is under
+	//                                    way) they go right after it and the first
+	//                                    becomes current, the track left joins the
+	//                                    history; without (a restored queue that
+	//                                    has not started) they go before the
+	//                                    current track, which stays next; on an
+	//                                    empty or finished queue they are added and
+	//                                    the first is current
+	//   { type: 'insert', ids, after }   put these after the first `after` tracks
+	//                                    that follow the current one (0: right
+	//                                    after it); the current track stays
+	//   (playNow and insert take every other copy of an id out of the queue)
 	//   { type: 'enqueue', ids }         add at the end
 	//   { type: 'remove', index }        or { type: 'remove', id }: take one out;
 	//                                    removing the current track makes the
@@ -991,6 +1021,21 @@
 			var head = items.slice(0, Math.max(0, state.index + 1));
 			var tail = items.slice(Math.max(0, state.index + 1)).filter(function (id) { return next.indexOf(id) < 0; });
 			return { items: head.concat(next, tail), index: state.index, history: state.history, done: false, repeat: state.repeat };
+		case 'playNow':
+			next = uniqueIds((action.ids || []).filter(function (id) { return id !== cur; }));
+			if (!next.length) return state;
+			var pw = withoutIds(items, state.index, next);
+			if (cur == null) return { items: pw.items.concat(next), index: pw.items.length, history: state.history, done: false, repeat: state.repeat };
+			if (action.started) return { items: pw.items.slice(0, pw.index + 1).concat(next, pw.items.slice(pw.index + 1)), index: pw.index + 1, history: leave(state, state.history), done: false, repeat: state.repeat };
+			return { items: pw.items.slice(0, pw.index).concat(next, pw.items.slice(pw.index)), index: pw.index, history: state.history, done: false, repeat: state.repeat };
+		case 'insert':
+			next = uniqueIds((action.ids || []).filter(function (id) { return id !== cur; }));
+			if (!next.length) return state;
+			var iw = withoutIds(items, state.index, next);
+			var at = cur == null ? iw.items.length : Math.min(iw.items.length, iw.index + 1 + Math.max(0, action.after | 0));
+			// A finished queue that gets tracks has the first of them as current, as with enqueue.
+			var ix = cur == null ? (state.index < 0 ? -1 : iw.items.length) : iw.index;
+			return { items: iw.items.slice(0, at).concat(next, iw.items.slice(at)), index: ix, history: state.history, done: false, repeat: state.repeat };
 		case 'enqueue':
 			if (!action.ids || !action.ids.length) return state;
 			// A finished queue that gets more tracks is no longer finished: its

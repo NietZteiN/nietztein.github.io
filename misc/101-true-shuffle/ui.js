@@ -1,7 +1,9 @@
 /*
- * True Shuffle: the page's small parts. A DOM builder, icons, the hash
- * router, menus, dialogs, a virtual list for long track lists, and cover
- * art. Everything inserts text with textContent: titles come from YouTube
+ * True Shuffle: the page's small parts. A DOM builder, icons, one button
+ * component (btn, btnState, split, badge), the hash router, menus, dialogs, a
+ * virtual list for long track lists, cover art, toasts, progress chips (job),
+ * an event bus, and the player-safe zone (safe) that keeps every overlay off
+ * the YouTube player. Everything inserts text with textContent: titles come from YouTube
  * and from files, and are untrusted.
  *
  * window.TrueShuffle.ui. Browser only.
@@ -96,8 +98,44 @@
 		map: 'M9 3.5 3 6v14.5l6-2.5 6 2.5 6-2.5V3.5L15 6zm1 2.3 4 1.7v11.7l-4-1.7zM5 7.3l3-1.2v11.6l-3 1.2zm11 .2 3-1.2v11.5l-3 1.3z',
 		repeat: 'M7 7h10v3l4-4-4-4v3H5v6h2zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2z',
 		moon: 'M14.5 2.5a9.5 9.5 0 1 0 7 15.8A8 8 0 0 1 14.5 2.5z',
-		disc: 'M12 2.5a9.5 9.5 0 1 1 0 19 9.5 9.5 0 0 1 0-19zm0 6.5a3 3 0 1 0 0 6 3 3 0 0 0 0-6z'
+		disc: 'M12 2.5a9.5 9.5 0 1 1 0 19 9.5 9.5 0 0 1 0-19zm0 6.5a3 3 0 1 0 0 6 3 3 0 0 0 0-6z',
+		// One meaning each (README "The page", the action vocabulary in actions.js).
+		'queue-next': 'M3 5h11v2H3zm0 4.5h11v2H3zM3 14h7v2H3zm10-2v8l6-4z',
+		'queue-add': 'M3 5h13v2H3zm0 4.5h13v2H3zm0 4.5h7v2H3zm13-1h2v3h3v2h-3v3h-2v-3h-3v-2h3z',
+		reshuffle: 'M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zm0 2v14h14V5zm3.3 1.6a1.7 1.7 0 1 1 0 3.4 1.7 1.7 0 0 1 0-3.4zm7.4 0a1.7 1.7 0 1 1 0 3.4 1.7 1.7 0 0 1 0-3.4zM12 10.3a1.7 1.7 0 1 1 0 3.4 1.7 1.7 0 0 1 0-3.4zM8.3 14a1.7 1.7 0 1 1 0 3.4 1.7 1.7 0 0 1 0-3.4zm7.4 0a1.7 1.7 0 1 1 0 3.4 1.7 1.7 0 0 1 0-3.4z',
+		sparkle: 'M11 2l1.9 5.6 5.6 1.9-5.6 1.9L11 17l-1.9-5.6-5.6-1.9 5.6-1.9zm7 11l.9 2.6 2.6.9-2.6.9L18 20l-.9-2.6-2.6-.9 2.6-.9z',
+		blend: 'M9 5a7 7 0 1 1 0 14A7 7 0 0 1 9 5zm6 0a7 7 0 1 1 0 14 7 7 0 0 1 0-14z',
+		infinity: 'M7 7.5c2 0 3.4 1.6 5 3.4 1.6-1.8 3-3.4 5-3.4a4.5 4.5 0 0 1 0 9c-2 0-3.4-1.6-5-3.4-1.6 1.8-3 3.4-5 3.4a4.5 4.5 0 0 1 0-9zm0 2a2.5 2.5 0 0 0 0 5c1.2 0 2.2-1.1 3.6-2.5C9.2 10.6 8.2 9.5 7 9.5zm10 0c-1.2 0-2.2 1.1-3.6 2.5 1.4 1.4 2.4 2.5 3.6 2.5a2.5 2.5 0 0 0 0-5z',
+		headphones: 'M12 3a9 9 0 0 1 9 9v6a3 3 0 0 1-3 3h-2v-8h3v-1a7 7 0 0 0-14 0v1h3v8H6a3 3 0 0 1-3-3v-6a9 9 0 0 1 9-9z',
+		bookmark: 'M6 3h12v18l-6-4-6 4zm2 2v12.3l4-2.7 4 2.7V5z',
+		'playlist-add': 'M3 5h11v2H3zm0 4h11v2H3zm0 4h7v2H3zM17 5h4v2.5h-2V16a3 3 0 1 1-2-2.8z',
+		'playlist-new': 'M3 3h12v2H5v14h14v-8h2v10H3zm15-1h2v3h3v2h-3v3h-2V7h-3V5h3zM7 9h7v2H7zm0 4h9v2H7z',
+		'youtube-add': 'M4 5h12a3 3 0 0 1 3 3v3h-2V8a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8v2H4a3 3 0 0 1-3-3V8a3 3 0 0 1 3-3zm4 4.5 5 2.5-5 2.5zM18 13h2v3h3v2h-3v3h-2v-3h-3v-2h3z',
+		'eye-off': 'M3.3 2.3l18.4 18.4-1.4 1.4-3.6-3.6A10.6 10.6 0 0 1 12 19.5C6.5 19.5 2.7 15.4 1 12a13.6 13.6 0 0 1 3.9-5L1.9 3.7zM12 4.5c5.5 0 9.3 4.1 11 7.5a13 13 0 0 1-2.9 4.1l-3.5-3.5A5 5 0 0 0 11 7.4L8.7 5.1A9.8 9.8 0 0 1 12 4.5zM6.3 8.4A11 11 0 0 0 3.3 12c1.6 2.8 4.8 5.5 8.7 5.5 1.2 0 2.2-.2 3.2-.6l-1.6-1.6a5 5 0 0 1-4.8-4.8z',
+		'minus-circle': 'M12 2.5a9.5 9.5 0 1 1 0 19 9.5 9.5 0 0 1 0-19zm0 2a7.5 7.5 0 1 0 0 15 7.5 7.5 0 0 0 0-15zM7 11h10v2H7z',
+		'clear-all': 'M3 6h14v2H3zm0 5h10v2H3zm0 5h8v2H3zm12.6-.6 1.4-1.4 2 2 2-2 1.4 1.4-2 2 2 2-1.4 1.4-2-2-2 2-1.4-1.4 2-2z',
+		trash: 'M9 3h6l1 1.5h4v2H4v-2h4zM5.5 8h13l-1.1 13H6.6zm4 2.5v8h1.6v-8zm3.4 0v8h1.6v-8z',
+		info: 'M12 2.5a9.5 9.5 0 1 1 0 19 9.5 9.5 0 0 1 0-19zm0 2a7.5 7.5 0 1 0 0 15 7.5 7.5 0 0 0 0-15zM11 10.5h2V17h-2zm1-3.8a1.3 1.3 0 1 1 0 2.6 1.3 1.3 0 0 1 0-2.6z',
+		versions: 'M7 3h14v14h-2V5H7zM3 7h14v14H3zm2 2v10h10V9z',
+		album: 'M3 3h18v18H3zm2 2v14h14V5zm7 2.5a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9zm0 3.3a1.2 1.2 0 1 0 0 2.4 1.2 1.2 0 0 0 0-2.4z',
+		tv: 'M4 4h16v12.5H4zm2 2v8.5h12V6zM8 18.5h8V20H8z',
+		channel: 'M3 5h18v13H3zm2 2v9h14V7zm4.5 1.5 6 3.5-6 3.5zM8 19.5h8V21H8z',
+		ytmix: 'M6 3h12v2H6zM4 6.5h16v2H4zM2 10h20v11H2zm8 2.5v6l5-3z',
+		route: 'M5 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zm14 12a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zM4 9.8h2V13a2 2 0 0 0 2 2h3v-4a4 4 0 0 1 4-4h3v2h-3a2 2 0 0 0-2 2v6H8a4 4 0 0 1-4-4z',
+		sliders: 'M4 6h9.2a2.6 2.6 0 0 1 5 0H20v2h-1.8a2.6 2.6 0 0 1-5 0H4zm0 10h1.8a2.6 2.6 0 0 1 5 0H20v2h-9.2a2.6 2.6 0 0 1-5 0H4z',
+		target: 'M12 2.5a9.5 9.5 0 1 1 0 19 9.5 9.5 0 0 1 0-19zm0 2a7.5 7.5 0 1 0 0 15 7.5 7.5 0 0 0 0-15zm0 3a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9zm0 2a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z',
+		'arrow-right': 'M4 11h12.2l-5-5 1.4-1.4L20 12l-7.4 7.4-1.4-1.4 5-5H4z',
+		retry: 'M12 4a8 8 0 1 1-7.9 9.3l2-.4A6 6 0 1 0 8 7.5L10.5 10H3.5V3l2.9 2.9A8 8 0 0 1 12 4z',
+		meter: 'M12 4a10 10 0 0 1 10 10c0 1.9-.5 3.6-1.4 5.1l-1.7-1A8 8 0 1 0 5 18.1l-1.7 1A10 10 0 0 1 12 4zm4.9 4.7 1.4 1.4-4.8 4.8a2 2 0 1 1-1.4-1.4z',
+		car: 'M6.5 5h11l2.3 6H21v7h-2v2h-2.5v-2h-9v2H5v-2H3v-7h1.2zm1.4 2-1.5 4h11.2l-1.5-4zM6.5 13a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm11 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z',
+		'wifi-off': 'M3.3 2.3l18.4 18.4-1.4 1.4-6.4-6.4a3.5 3.5 0 0 0-4.4.6l-1.4-1.4a5.5 5.5 0 0 1 3.9-1.6L9.4 10.7a8.5 8.5 0 0 0-3.7 2.2l-1.4-1.4a10.6 10.6 0 0 1 3.6-2.3L5.6 6.9a14 14 0 0 0-3.2 2.4L1 7.9a16 16 0 0 1 3.1-2.5L1.9 3.7zM12 4.5c4.1 0 7.9 1.6 10.7 4.2l-1.4 1.4A13 13 0 0 0 10.5 6.6zm2.8 4.2a10.7 10.7 0 0 1 4.6 2.8L18 12.9a8.6 8.6 0 0 0-1.7-1.3zM12 17a1.8 1.8 0 1 1 0 3.6 1.8 1.8 0 0 1 0-3.6z',
+		'check-circle': 'M12 2.5a9.5 9.5 0 1 1 0 19 9.5 9.5 0 0 1 0-19zm4.3 5.6-5.6 5.6-2.9-2.9-1.4 1.4 4.3 4.3 7-7z',
+		medal: 'M7 2h4l1 2.8L13 2h4l-2.6 6.3a6.5 6.5 0 1 1-4.8 0zm5 8.5a4.5 4.5 0 1 0 0 9 4.5 4.5 0 0 0 0-9z',
+		leaf: 'M20 3.5c-.9 9.4-5.6 14.5-13 14.5-.7 0-1.4-.1-2.1-.3L3 20.5l-1.4-1.4 2.1-2.1A9.6 9.6 0 0 1 3 13c0-6 6-9.5 17-9.5zM6 15.3c2.9-2.8 6-5 9.3-6.4-4.1.7-7.3 2.9-9.3 6.4z',
+		tag: 'M3 3h8.2l9.8 9.8L12.8 21 3 11.2zm4.5 2.5a2 2 0 1 0 0 4 2 2 0 0 0 0-4z'
 	};
+	// Shapes drawn as outlines (a hole inside a filled shape) use the even-odd rule.
+	var EVENODD = { reshuffle: 1, blend: 1, infinity: 1, bookmark: 1, 'playlist-new': 1, 'youtube-add': 1, 'eye-off': 1, 'minus-circle': 1, trash: 1, info: 1, versions: 1, album: 1, channel: 1, ytmix: 1, target: 1, car: 1, 'check-circle': 1, medal: 1, tag: 1 };
 	var NS = 'http://www.w3.org/2000/svg';
 	function icon(name, cls) {
 		var svg = document.createElementNS(NS, 'svg');
@@ -107,16 +145,85 @@
 		svg.setAttribute('class', 'ts-i' + (cls ? ' ' + cls : ''));
 		var p = document.createElementNS(NS, 'path');
 		p.setAttribute('d', PATHS[name] || PATHS.disc);
+		if (EVENODD[name]) p.setAttribute('fill-rule', 'evenodd');
 		svg.appendChild(p);
 		return svg;
 	}
-	// A button with an icon and a label (shown or for screen readers only).
+
+	// ---- Buttons: one component -------------------------------------------------------------
+	// U.btn({ label, icon, variant, size, iconOnly, pressed, menu, cost, kbd, busy, busyLabel,
+	//         href, target, rel, disabled, title, cls, on, aria, data })
+	// variant: primary (at most one per surface) | secondary | ghost | icon | chip | danger
+	// size: sm 32 | md 40 | lg 48 | xl 56 | 2xl 72 | car 96 (px). A cost is a badge, never words
+	// in the label; the accessible name says it ("Play, uses 100 YouTube units").
+	function btn(o) {
+		o = o || {};
+		var variant = o.variant || (o.iconOnly ? 'icon' : 'secondary');
+		var iconOnly = !!o.iconOnly || variant === 'icon';
+		var size = o.size || (variant === 'chip' ? 'sm' : 'md');
+		var b = h(o.href ? 'a' : 'button', {
+			class: 'ts-btn ts-btn--' + variant + ' ts-btn--' + size + (iconOnly ? ' is-icon' : '') + (o.cls ? ' ' + o.cls : ''),
+			href: o.href, target: o.target, rel: o.rel,
+			title: o.title || (iconOnly ? (o.label || '') + (o.kbd ? ' (' + o.kbd + ')' : '') : (o.kbd ? (o.label || '') + ' (' + o.kbd + ')' : null)),
+			disabled: o.disabled, data: o.data, on: o.on
+		});
+		b.dataset.label = o.label || '';
+		b.dataset.icon = o.icon || '';
+		if (o.icon) b.appendChild(icon(o.icon));
+		if (!iconOnly) b.appendChild(h('span', { class: 'ts-btn-label', text: o.label || '' }));
+		if (o.menu) { b.setAttribute('aria-haspopup', 'menu'); b.setAttribute('aria-expanded', 'false'); if (!iconOnly) b.appendChild(icon('down', 'ts-btn-caret')); }
+		if (o.busyLabel) b.dataset.busyLabel = o.busyLabel;
+		if (o.aria) for (var a in o.aria) if (o.aria[a] != null) b.setAttribute('aria-' + a, String(o.aria[a]));
+		btnState(b, { pressed: o.pressed, cost: o.cost, busy: o.busy });
+		return b;
+	}
+	// Change a button in place: { pressed, busy, label, icon, cost, disabled }.
+	function btnState(b, s) {
+		if (!b || !s) return b;
+		if (s.pressed != null) { b.setAttribute('aria-pressed', s.pressed ? 'true' : 'false'); b.classList.toggle('is-on', !!s.pressed); }
+		if (s.label != null) { b.dataset.label = s.label; var l = b.querySelector('.ts-btn-label'); if (l) l.textContent = s.label; if (b.title && b.classList.contains('is-icon')) b.title = s.label; }
+		if (s.icon) { b.dataset.icon = s.icon; setIcon(b, s.icon); }
+		if ('cost' in s) {
+			var old = b.querySelector('.ts-btn-cost');
+			if (old) old.parentNode.removeChild(old);
+			b.dataset.cost = s.cost ? String(s.cost) : '';
+			if (s.cost) b.appendChild(badge('cost', String(s.cost), 'ts-btn-cost'));
+		}
+		if (s.busy != null) {
+			b.classList.toggle('is-busy', !!s.busy);
+			b.setAttribute('aria-busy', s.busy ? 'true' : 'false');
+			b.disabled = !!s.busy || !!s.disabled;
+			var lb = b.querySelector('.ts-btn-label');
+			if (lb && b.dataset.busyLabel) lb.textContent = s.busy ? b.dataset.busyLabel : b.dataset.label;
+		} else if (s.disabled != null) b.disabled = !!s.disabled;
+		var name = (b.dataset.label || '') + (b.dataset.cost ? ', uses ' + b.dataset.cost + ' YouTube units' : '');
+		if (b.classList.contains('is-icon') || b.dataset.cost) b.setAttribute('aria-label', name); else b.removeAttribute('aria-label');
+		return b;
+	}
+	// The main action and a caret that opens a menu: Shuffle | its order.
+	function split(main, caret) {
+		var g = h('div', { class: 'ts-split', role: 'group', aria: { label: main.label || 'Actions' } });
+		var a = btn(main), c = btn(Object.assign({ icon: 'down', iconOnly: true, variant: main.variant || 'secondary', size: main.size || 'md', menu: true }, caret || {}));
+		a.classList.add('ts-split-main');
+		c.classList.add('ts-split-caret');
+		g.appendChild(a);
+		g.appendChild(c);
+		return g;
+	}
+	// A small label: kind is 'cost', 'ok' (in your library), 'new', or a source
+	// ('mix', 'channel', 'anime', 'season', 'album', 'ext', 'search', 'library').
+	function badge(kind, text, cls) {
+		var b = h('span', { class: 'ts-badge ts-badge--' + kind + (cls ? ' ' + cls : '') });
+		if (kind === 'cost') b.appendChild(icon('meter'));
+		if (kind === 'ok') b.appendChild(icon('check-circle'));
+		b.appendChild(h('span', { text: text }));
+		return b;
+	}
+	// A button with an icon and a label (shown, or for screen readers only): the
+	// same component, as an icon button or a ghost one with text.
 	function iconBtn(name, label, opts) {
 		opts = opts || {};
-		var b = h('button', { class: 'ts-icon-btn' + (opts.cls ? ' ' + opts.cls : ''), aria: { label: opts.text ? null : label }, title: opts.title || label, on: opts.on });
-		b.appendChild(icon(name));
-		if (opts.text) b.appendChild(h('span', { text: label }));
-		return b;
+		return btn({ icon: name, label: label, iconOnly: !opts.text, variant: opts.text ? 'ghost' : 'icon', cls: 'ts-icon-btn' + (opts.cls ? ' ' + opts.cls : ''), title: opts.title || label, on: opts.on });
 	}
 	function setIcon(btn, name) {
 		var old = btn.querySelector('svg.ts-i');
@@ -142,11 +249,13 @@
 	// ---- Menus ------------------------------------------------------------------------------
 	// items: [{ label, icon, onSelect, disabled, checked, sep, hint }]. at: an element (the menu
 	// opens under it) or { x, y }. Arrow keys, Enter, Escape; returns focus to `returnTo`.
-	var openMenuEl = null, menuReturn = null;
+	var openMenuEl = null, menuReturn = null, menuAnchor = null;
 	function closeMenu() {
 		if (!openMenuEl) return;
 		var m = openMenuEl;
 		openMenuEl = null;
+		if (menuAnchor && menuAnchor.setAttribute && menuAnchor.hasAttribute('aria-expanded')) menuAnchor.setAttribute('aria-expanded', 'false');
+		menuAnchor = null;
 		if (m.parentNode) m.parentNode.removeChild(m);
 		document.removeEventListener('pointerdown', outside, true);
 		if (menuReturn && menuReturn.nodeType && document.body.contains(menuReturn)) { try { menuReturn.focus(); } catch (e) { /* gone */ } }
@@ -183,14 +292,17 @@
 		document.body.appendChild(m);
 		openMenuEl = m;
 		menuReturn = opts.returnTo || (at && at.nodeType ? at : document.activeElement);
-		// place it inside the window
+		if (at && at.nodeType && at.hasAttribute('aria-haspopup')) { menuAnchor = at; at.setAttribute('aria-expanded', 'true'); }
+		// place it inside the window, and off the YouTube player
 		var r = at && at.getBoundingClientRect ? at.getBoundingClientRect() : { left: at.x, right: at.x, top: at.y, bottom: at.y };
 		var mw = m.offsetWidth, mh = m.offsetHeight, vw = document.documentElement.clientWidth, vh = window.innerHeight;
 		var x = opts.alignRight ? r.right - mw : r.left, y = r.bottom + 4;
 		if (y + mh > vh - 8) y = Math.max(8, r.top - mh - 4);
 		x = Math.max(8, Math.min(x, vw - mw - 8));
-		m.style.left = x + 'px';
-		m.style.top = y + 'px';
+		var placed = safe.avoid({ x: x, y: y, w: mw, h: mh }, vw, vh);
+		m.style.left = placed.x + 'px';
+		m.style.top = placed.y + 'px';
+		safe.cover({ left: placed.x, top: placed.y, right: placed.x + mw, bottom: placed.y + mh });
 		setTimeout(function () { document.addEventListener('pointerdown', outside, true); }, 0);
 		var first = buttons.filter(function (b) { return !b.disabled; })[opts.focusChecked ? Math.max(0, buttons.findIndex(function (b) { return b.classList.contains('is-checked'); })) : 0];
 		if (first) first.focus();
@@ -229,6 +341,7 @@
 			if (e.shiftKey && document.activeElement === f[0]) { e.preventDefault(); f[f.length - 1].focus(); }
 			else if (!e.shiftKey && document.activeElement === f[f.length - 1]) { e.preventDefault(); f[0].focus(); }
 		});
+		safe.cover(null);
 		document.body.appendChild(back);
 		var api = { node: box, body: body, close: close };
 		dialogs.push(api);
@@ -312,6 +425,65 @@
 		return swatch(hue, text, cls, sat);
 	}
 
+	// ---- The player-safe zone ------------------------------------------------------------------
+	// YouTube's terms: its player stays visible and is never covered. Dialogs,
+	// sheets, toasts and progress chips lay out around it (CSS reads
+	// --ts-safe-right on a wide window, where the player is in the right-hand
+	// panel, and --ts-safe-top on a phone, where it is docked under the top bar),
+	// and menus move off it. A second player (a scout) is parked, not covered.
+	var safe = (function () {
+		var players = [], scouts = [], raf = 0, ro = null;
+		function rectOf(el) { if (!el || !el.isConnected) return null; var r = el.getBoundingClientRect(); return r.width && r.height ? r : null; }
+		function live() { return players.filter(function (p) { return p.active(); }).map(function (p) { return rectOf(p.el); }).filter(Boolean); }
+		function phone() { return !!(root.matchMedia && root.matchMedia('(max-width: 760px)').matches); }
+		function update() {
+			raf = 0;
+			var right = 0, top = 0, vw = document.documentElement.clientWidth;
+			live().forEach(function (r) {
+				if (phone()) top = Math.max(top, Math.round(r.bottom));
+				else right = Math.max(right, Math.round(vw - r.left + 8));
+			});
+			var de = document.documentElement;
+			de.style.setProperty('--ts-safe-right', right + 'px');
+			de.style.setProperty('--ts-safe-top', top + 'px');
+		}
+		function schedule() { if (!raf) raf = requestAnimationFrame(update); }
+		function watch(el) {
+			if (root.ResizeObserver) { if (!ro) ro = new ResizeObserver(schedule); ro.observe(el); }
+		}
+		function overlaps(a, r) { return a.x < r.right && a.x + a.w > r.left && a.y < r.bottom && a.y + a.h > r.top; }
+		root.addEventListener('resize', schedule);
+		return {
+			// active(): whether the player counts now (built, visible)
+			player: function (el, active) { players.push({ el: el, active: active || function () { return true; } }); watch(el); schedule(); },
+			// park(): take the scout's iframe out because something will cover it
+			scout: function (el, park) { scouts.push({ el: el, park: park }); return function () { scouts = scouts.filter(function (s) { return s.el !== el; }); }; },
+			update: schedule,
+			now: update,
+			rects: function () { return live().map(function (r) { return { left: r.left, top: r.top, right: r.right, bottom: r.bottom }; }); },
+			// a box { x, y, w, h } moved off every protected player, inside the window
+			avoid: function (b, vw, vh) {
+				var hit = live().filter(function (r) { return overlaps(b, r); })[0];
+				if (!hit) return b;
+				var tries = [
+					{ x: hit.left - b.w - 8, y: b.y },
+					{ x: b.x, y: hit.bottom + 8 },
+					{ x: b.x, y: hit.top - b.h - 8 },
+					{ x: hit.right + 8, y: b.y }
+				];
+				for (var i = 0; i < tries.length; i++) {
+					var t = { x: Math.max(8, Math.min(tries[i].x, vw - b.w - 8)), y: Math.max(8, Math.min(tries[i].y, vh - b.h - 8)), w: b.w, h: b.h };
+					if (!live().some(function (r) { return overlaps(t, r); })) return t;
+				}
+				return b;
+			},
+			// before something covers part of the page: park every scout under it
+			cover: function (rect) {
+				scouts.forEach(function (s) { var r = rectOf(s.el); if (r && (!rect || overlaps({ x: rect.left, y: rect.top, w: rect.right - rect.left, h: rect.bottom - rect.top }, r))) s.park(); });
+			}
+		};
+	})();
+
 	// ---- A toast with an action (Undo) -----------------------------------------------------------
 	var toastEl = null, toastTimer = 0;
 	function toast(text, opts) {
@@ -326,10 +498,44 @@
 		toastTimer = setTimeout(hide, opts.ms || (opts.action ? 7000 : 3500));
 	}
 
+	// ---- Work in progress, shown: "Searching YouTube..." -------------------------------------------
+	// A chip above the player bar (and the screen reader's status line) while
+	// something runs; done() or fail() turns it into a toast. At most three.
+	var jobsEl = null, jobs = [];
+	function status(text) { var s = document.getElementById('status'); if (s) s.textContent = text || ''; }
+	function job(text, opts) {
+		opts = opts || {};
+		if (!jobsEl) { jobsEl = h('div', { class: 'ts-jobs', aria: { hidden: 'true' } }); document.body.appendChild(jobsEl); }
+		var label = h('span', { class: 'ts-job-text', text: text });
+		var el = h('div', { class: 'ts-job' }, [h('span', { class: 'ts-spin' }), label]);
+		var over = false;
+		function end() { if (over) return; over = true; jobs = jobs.filter(function (j) { return j !== el; }); if (el.parentNode) el.parentNode.removeChild(el); }
+		if (opts.onCancel) el.appendChild(h('button', { class: 'ts-job-x', text: 'Cancel', on: { click: function () { end(); status(''); opts.onCancel(); } } }));
+		jobsEl.appendChild(el);
+		jobs.push(el);
+		while (jobs.length > 3) { var old = jobs.shift(); if (old.parentNode) old.parentNode.removeChild(old); }
+		status(text);
+		return {
+			set: function (t) { label.textContent = t; status(t); },
+			done: function (t) { end(); status(t || ''); if (t) toast(t); },
+			fail: function (t) { end(); status(t || ''); if (t) toast(t); }
+		};
+	}
+
+	// ---- A small event bus between the page's parts ------------------------------------------------
+	function bus() {
+		var subs = {};
+		return {
+			on: function (name, fn) { (subs[name] || (subs[name] = [])).push(fn); return function () { subs[name] = (subs[name] || []).filter(function (f) { return f !== fn; }); }; },
+			emit: function (name, data) { (subs[name] || []).slice().forEach(function (fn) { try { fn(data); } catch (e) { setTimeout(function () { throw e; }, 0); } }); }
+		};
+	}
+
 	root.TrueShuffle = root.TrueShuffle || {};
 	root.TrueShuffle.ui = {
-		toast: toast,
-		h: h, add: add, clear: clear, icon: icon, iconBtn: iconBtn, setIcon: setIcon, PATHS: PATHS,
+		toast: toast, job: job, bus: bus(), safe: safe,
+		h: h, add: add, clear: clear, icon: icon, iconBtn: iconBtn, setIcon: setIcon, PATHS: PATHS, EVENODD: EVENODD,
+		btn: btn, btnState: btnState, split: split, badge: badge,
 		parseHash: parseHash, link: link,
 		openMenu: openMenu, closeMenu: closeMenu, openDialog: openDialog, dialogOpen: dialogOpen,
 		virtualList: virtualList, art: art, swatch: swatch, initialOf: initialOf, YT_ID: YT_ID
