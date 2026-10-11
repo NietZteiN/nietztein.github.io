@@ -28,6 +28,7 @@ Toy 101. A music player for one listener's YouTube playlists and Liked videos: s
 | `scrobble.js` | Opt-in ListenBrainz scrobbling with the listener's own token. Written and tested, not loaded yet: on 2026-10-11 ListenBrainz's API refused browsers (every path redirected to a 404). | no |
 | `recs.js` | The taste profile from your plays, likes and skips; which found songs a lane shows (not yours, not heard lately, not hidden, each once, the stale ones last); the feed's bookkeeping; moving the old Discover keys. | no |
 | `foryou.js` | For you (`#/for-you`): Your radio, this season's anime, airing today, the songs missing from your series, new releases, new uploads from your channels, Because you play X, Saved for later and Hidden, each a lane. | the page half |
+| `rescue.js` | Songs gone from YouTube (`#/rescue`): the uploads that cannot play, another upload of the same song for each (the library, what YouTube showed before, the artist's Topic channel, a search), and the swap that moves ratings, plays, labels, playlists and history onto it, with Undo. | the page half |
 | `fuzzy.js` | Search that forgives: romaji for kana titles, long vowels written or not, typos, a word half typed, a title typed without its spaces; the search page's Close matches and the palette's songs. | the page half |
 | `handoff.js` | Continue on your phone: the link that opens this queue at this song and second on another device, a QR code of it drawn in the page, the dialog. | the dialog only |
 | `habits.js` | Listening habits: the listening clock on Your numbers (minutes by weekday and hour, the streaks, minutes per week), the home page's Usually at this hour, and Skip the intro, learned (a song you keep seeking into is offered a later start). | the page half |
@@ -84,6 +85,7 @@ Everything is UMD: in the browser each file adds one member to `window.TrueShuff
 <script src="credits.js"></script>      <!-- needs match, sources -->
 <script src="recs.js"></script>         <!-- needs discover (its fold), sources -->
 <script src="foryou.js"></script>       <!-- needs recs, lanes, media, works, artists, channel, explore -->
+<script src="rescue.js"></script>       <!-- needs library, match, parse (sources, share on the page) -->
 <script src="fuzzy.js"></script>        <!-- needs match -->
 <script src="handoff.js"></script>      <!-- needs share, ui -->
 <script src="habits.js"></script>        <!-- reads car.js when it asks -->
@@ -653,6 +655,56 @@ Hb.watch(ctx, { demo })                                   // -> { stop }: Skip t
 - **The dialog:** the code (240 to 320 px, on white, with its quiet zone), "Point the phone's camera at the code. It opens this queue at "Song", 2:31.", the link in a read-only box with Copy link, and, when the queue is longer than the code holds, "The code holds this song and the next 40 in the queue; the other 23 are left out." The second is read from the player when the dialog opens, so opening it again gives the new one; the computer keeps playing. The focus starts on Copy link; like every dialog it keeps off the player. In the demo it says that the invented songs cannot move to a phone.
 - **On the phone:** the link opens `#/share` as Continue listening, with the start song and a big Play from 2:31 (share.js above). Nothing plays before that tap: browsers refuse sound without one.
 - **Checked:** test/handoff.section.js checks the Reed-Solomon codewords against thonky.com's HELLO WORLD (1-M and 1-Q) and ISO/IEC 18004 annex I's 01234567 (1-M), all 32 format and 34 version strings, the byte capacities of versions 1 to 40 at L and M, the patterns at the published alignment centres, the mask chosen against the penalties written out again, and reads 88 codes back with a small reader written in the test from the standard (one byte past each version and its last byte, versions 1 to 20, 23 and 25, at M and L; each block checked as a Reed-Solomon codeword, the padding too). On 2026-10-11, outside the repo: jsQR 1.4.0 read back 166 codes (every version from 1 to 40 at M and L, at both ends, and links as `plan` makes them) once its table's alignment centre for version 23 was put right (it says 74; the standard says 78); node-qrcode 1.5.4 drew 240 codes bit for bit the same with the same mask, and on its own chose another mask for 6 of them, each time only because it counts a dark share between 50 and 55% as a step off. Not yet tried with a phone's camera.
+
+## rescue.js
+
+`TS.rescue`: songs gone from YouTube, brought back. An upload that was deleted, made private or kept off other sites still holds the listener's ratings, plays, labels and history on its dead video id. `#/rescue` lists those songs; `#/rescue/<id>` finds another upload of the same song and moves everything onto it. Nothing changes on YouTube.
+
+**Which songs.** `reason(track)` is `''` for a song that plays (library.js `playable`), else `'gone'` (YouTube no longer returns it), `'private'` (the player said removed or private), `'blocked'` (not embeddable: its owner, or a region, keeps it off other sites) or `'error'` (another player error); `reasonText(track)` says it in words. `unplayable(tracks)` lists them, the highest rated and most played first; the page counts in the scope Focus sets, as `#/fix` does. They are listed on `#/rescue` (each with "Find an upload", and "Copy in your library" or "Sure match found" when one is there for free), in a note at the top of `#/fix`, in a note on the song's page, and the track menu of such a song has "Find a working upload".
+
+**Candidates, free first.** The song page gathers uploads in this order, each judged by match.js:
+
+| Source | What it costs | Where from |
+| --- | --- | --- |
+| `library` | nothing | `copiesOf(index, track)`: the library's other tracks that play and share a title or artist key with the song (match.js `index`, the page's `libIndex`) |
+| `pool` | nothing | `poolOf(rows)`: every video YouTube showed before, read from the sources cache (`yt:q:` searches, `yt:list:` lists, `yt:mix:` Mixes, `yt:v:` video details, `oe:` oEmbed answers; ones known not to play left out), indexed once by title key (`poolIndex`) and looked up per song (`fromPool`). Read again after ten minutes or a search. |
+| `topic` | 1 unit per 50 uploads, kept 6 hours | with a sign-in or a key: the artist's Topic channel (from the library's or the pool's "Artist - Topic" channels), sources.js `ytLists.uploads`, 200 at most |
+| lengths | 1 unit, kept 30 days | with a sign-in or a key: `ytLists.videos` for the best 12 uploads (their length and whether they still play) |
+| `search` | 100 units, kept 30 days | only on a press of Search YouTube (its cost badge shows): `ytLists.searchVideos(queryOf(track), { max: 10, category: null })`, every category; refused when today's allowance for finding songs is spent (engine.js `quota`). Without a sign-in or a key the button is a link that opens the same search on YouTube in a new tab. |
+| `paste` | 1 unit, or nothing | a pasted YouTube link (share.js `videoIdOf`), checked with `ytLists.videos` (a sign-in or a key) or oEmbed (free) |
+| `demo` | nothing | `demoUploads(track)`: in the demo, three invented uploads (the artist's Topic upload, a lyrics video, a cover); nothing is asked of any service |
+
+The engine's resolver is not called: it gives one answer, and its library rung stops at the dead upload itself (the library's own copy of that recording) before the pool or the Topic channel is read. Its free rungs are walked here instead, keeping every candidate.
+
+`candidates(track, list)` ranks them (`list`: `[{ video, source, track, keep }]`; `keep` shows a search result or a pasted link even when it is unlikely). Each is judged twice: `sameSong(songOf(track), copy or uploadSong(video))` (is it the song: title, artist, version, length) and, for an upload, `scoreVideo` (is it a good upload of it: the artist's Topic channel, no cover, live or lyrics words). `sure` is the same recording at `STRONG` (7) or more (and an upload at `MIN_VIDEO` or more); only a sure one is chosen by itself. The order: sure, then the same song, then copies in the library, then the better upload, then the closer length. `-> [{ video, source, track, record, same, sure, score, fit, why, gap }]`. Each row shows the title, the channel, the length against the old one (`lengthWords(sec, oldSec)`: "3:42, 2 s longer"), where it came from, and why (`whyWords(codes)`: `{ good, bad }`, "same title, same artist; but a lyrics video"), with Play (a copy plays as itself, an upload as a found song, not kept) and Open on YouTube.
+
+**The swap.** "Use this upload" checks the upload first (the video details with a sign-in or a key, else oEmbed, free; a copy in the library or the demo needs nothing), then `swap(lib, oldId, video, { now })`:
+
+- **A new upload** joins through library.js `upsert` (an oEmbed-only record gets no `fetchedAt`, so the next refresh reads it in full) and takes the old track's `rating`, `plays`, `skips`, `lastPlayed`, `blocked`, `tags`, `userEdits`, `labels`, `stateAt`, `playlists` and `addedAt` (`STATE`, `PLACES`), then is derived again.
+- **A copy the library has** is merged into instead, never doubled: the higher rating, plays and skips added, the later last play, playlists and tags joined (each playlist's earlier date), its own corrections and labels kept with the old song's filling the gaps, and the old song's block (such a copy was often blocked as a duplicate). A rating or block that changes is stamped (`stateAt`) for the Desk's sync.
+- The old id goes into `lib.moved` (`{ to, at }`, saved with the meta) and its track out of `lib.tracks`. `-> { ok, oldId, newId, created, ids, drop, record }`, or `{ ok: false, reason }`: `no-track`, `moved` (done already: a second swap changes nothing), `no-video`, `same`, `replaced` (that upload was itself replaced), `unplayable`.
+
+The page then writes (`saveSwap(store, lib, change)`), in an order that never loses the old track: the record (`rescue:moved:<old id>`: the old track whole, the copy's state before and after, the playlists changed), the new track and the meta, and only then deletes the old track's row. If the record cannot be written, the swap is undone in memory. Hand-picked playlists (`moveInLists(lists, oldId, newId)`: the new id takes the old one's place, or the old one leaves when the new one is there) are saved through `ctx.lists.save`. The queue is left alone: a dead id in it is skipped as before.
+
+**The history is mapped, not moved.** A listen is one store record under an auto-increment key that store.js never changes (`addHistory` strips the key, an import adds copies), so moving listens would mean rewriting the whole history, and a tab closed half way would leave it half moved. Instead every listen keeps the video that really played (the CSV export shows it), and the page reads the history through `lib.moved`: app.js `loadHistory` calls `mapHistory(rows, lib)` (`mapRows`: each row of a moved id gets the id it moved to, following later moves; `-> [{ row, from }]`), so Your year, For you, History and radios count the listens for the new upload. An undo only reads the rows again (`restoreRows`). `seenListens(have)` gives app.js's Desk inbox the old ids of the listens it has, so a pulled copy from before the swap adds no doubles.
+
+**Undo.** The toast after a swap has Undo; the song's page says "Moved here on <date> from an upload that stopped playing" with "Put the old one back", and so does `#/rescue` under "Moved to another upload". Both read the record and call `unswap(lib, record)`: a new upload leaves the library and the song goes back to the old one with everything it has now; a merged copy gets back what it had and keeps what happened to it since (plays added after the swap, a rating, label or playlist changed since). The playlists go back (`unmoveInLists`), the history is read again, and `saveUnswap(store, lib, oldId, change)` writes the tracks and the meta, deletes a new upload's row, then the record. `-> { ok, ids, drop }` or `{ ok: false, reason }`: `back`, `not-moved`, `gone` (the song moved on again: put that move back first). It works after a reload. Listens made on a new upload between the swap and its undo stay under that upload's id (it played), so after a reload they are no longer listed, though the song's play count keeps them.
+
+**An import afterwards.** library.js `upsert` skips an id in `lib.moved`, yt.js `importInto` leaves it out before writing, and `reconcilePlaylist` keeps the upload it moved to in a playlist that still lists the old one. A refresh only asks for the library's own ids.
+
+| Name | What it is |
+| --- | --- |
+| `KEY` | `'rescue:moved:'`, the store key of a record. |
+| `STATE`, `PLACES` | The fields that move: the listener's state, and the playlists with their dates. |
+| `songOf(track)` | The song as match.js reads it, without its video. `queryOf(track)` is what a search types (the artist, else the parser's guess, and the base title). |
+| `view(view, ctx, parts)` | `#/rescue` and `#/rescue/<id>`. |
+| `fixNote(view, ctx)`, `trackNote(view, ctx, track)`, `menuItem(ctx, track)` | The note on `#/fix`, the notes on the song's page, the track menu's item (null for a song that plays). |
+
+**What is kept.** The store: `rescue:moved:<old id>` per move, and `lib.moved` in the library's meta. In memory for the visit: the candidates of each song and the chosen one, the pool for ten minutes. pageCtx gains `lists.all()`, `lists.save()` and `changed(ids, meta)`.
+
+**Tests.** The `rescue` section (test/rescue.section.js, 97 checks): the reasons and the order; a swap and its undo on a library built with library.js (every moving field, playlists with their dates, derived again), a merge into a copy (the higher rating, plays added, playlists joined, the copy's own corrections kept, blocks) and its undo after more plays, a second swap changing nothing, a refused one, a chain of two moves; an import afterwards through `upsert`, `reconcilePlaylist` and yt.js `importInto` with a stub client (the old id stays out, the new upload stays in the playlist); `movedTo` and the meta round trip; candidates (the Topic upload sure, a lyrics video not, a cover left out, a copy in the library first, the dead upload never); the pool from cache rows; the playlists and the history both ways; the store writes on store.js's memory store.
+
+**Checked in a browser** (2026-10-11, `scripts/qa/drive.mjs`, the script outside the repo): on `?demo=1` with four songs made unplayable, `#/fix`'s note, `#/rescue` (sure matches marked), a song's page (the Topic upload chosen, arrows move the choice with a focus ring), a candidate played without joining the library, a swap (plays, rating, labels, playlists and title moved; the record stored), Undo from the toast, Put the old one back from the song's page, the track menu's item, a merge into the library's copy; dark and light at 1280 by 860 and 390 by 844 (no sideways scroll). Not in the demo, with a library in IndexedDB: Search YouTube with its cost badge (a key), the search in a new tab and the link field (no key), a merge, then a reload (the move, the merged counts and the listen read as the copy's are kept), Put the old one back, another reload (both uploads as they were); no request went to the YouTube Data API or oEmbed (only the cover art from i.ytimg.com, as for any library).
 
 ## wrapped.js
 
@@ -1449,6 +1501,8 @@ A library is one plain object that survives JSON:
   aliases, channelRules, genres: { artist, channel, mb }, settings: { minConfidence: 0.6 } }
 ```
 
+Since rescue.js, `moved: { oldId: { to, at } }` lists the uploads another upload took over from (see `movedTo`).
+
 A track:
 
 ```js
@@ -1470,6 +1524,7 @@ A track:
 | `toParts(lib)` / `fromParts(parts)` / `meta(lib)` | `{ tracks, playlists, meta }`: what the store keeps, and back. `meta` is everything except the tracks and playlists. |
 | `list(lib)`, `get(lib, id)` | All tracks; one track or null. |
 | `playable(track)` | Not removed, embeddable, no player error. |
+| `movedTo(lib, id)` | The upload a replaced video moved to (`lib.moved`, rescue.js `swap`), following later moves; `''` when it never moved. `upsert` never adds a moved id again, `reconcilePlaylist` keeps the upload it moved to in a playlist that still lists it, and yt.js `importInto` leaves it out. |
 | `upsert(lib, videos, { playlistId, addedAt, now })` | Add or refresh from `yt.js` records. Never touches rating, counts, tags, corrections. `-> { added, updated }` |
 | `markMissing(lib, ids, now)` | YouTube no longer returns these: `removed = true`. `-> ids` |
 | `markUnplayable(lib, id, code, now)` | The player's verdict: 100 sets `removed`, 101 and 150 clear `embeddable`. `-> track` |
@@ -1626,7 +1681,7 @@ If the browser refuses IndexedDB, `open()` resolves with an in-memory store whos
 
 **The cache (database version 2).** `DB_VERSION` is 2: a fifth object store, `cache` (key path `key`, an index on `exp`), holds other sites' answers for sources.js. It is not the listener's data: `exportAll` leaves it out, `importAll` leaves it alone, `wipe()` empties it, `destroy()` drops it with the database. Opening a version 1 database runs the upgrade, which only creates `cache` and its index; the four data stores are not touched. A tab still holding the old version closes its connection when the new one asks (`onversionchange`), so the upgrade is not blocked; that tab's store then answers "The store is closed." Checked in Chrome on 2026-10-10: a version 1 database of 3,000 tracks, 5 playlists, kv records and 20 listens, written by the old store.js and opened by the new one while the old page held it, exported byte for byte the same; the cache calls behaved on IndexedDB as on the in-memory twin.
 
-Keys in use (for For you also `feed:visits`, `feed:seen`, `foryou:shown`, `foryou:names`): `library` (the meta), `queue`, `plan`, `quota` (`{ day, units }`), `bag:<signature>`, `import:<playlist id>` (written by `importInto`; left out of exports); since 2026-10-10 also `queue:hand` (songs queued by hand), `rating:beforeLike`, `songprefs` (trim and volume per song), and engine.js's `finds:queue`, `finds:saved`, `finds:hidden`, `finds:heard`, `feeder` and `quota:auto`. Nothing about his music is ever written anywhere else.
+Keys in use (for For you also `feed:visits`, `feed:seen`, `foryou:shown`, `foryou:names`): `library` (the meta), `queue`, `plan`, `quota` (`{ day, units }`), `bag:<signature>`, `import:<playlist id>` (written by `importInto`; left out of exports); since 2026-10-10 also `queue:hand` (songs queued by hand), `rating:beforeLike`, `songprefs` (trim and volume per song), and engine.js's `finds:queue`, `finds:saved`, `finds:hidden`, `finds:heard`, `feeder` and `quota:auto`. rescue.js keeps `rescue:moved:<old id>`: the old track whole, until it is put back. Nothing about his music is ever written anywhere else.
 
 ## player.js
 

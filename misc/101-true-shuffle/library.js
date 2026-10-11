@@ -236,6 +236,7 @@
 			channelRules: {},
 			genres: { artist: {}, channel: {}, mb: {} },
 			profiles: {},
+			moved: {},
 			settings: { minConfidence: 0.6 }
 		};
 	}
@@ -260,6 +261,7 @@
 			});
 		}
 		if (d.profiles && typeof d.profiles === 'object') for (k in d.profiles) if (d.profiles[k] && typeof d.profiles[k] === 'object') lib.profiles[k] = d.profiles[k];
+		if (d.moved && typeof d.moved === 'object') for (k in d.moved) if (d.moved[k] && d.moved[k].to) lib.moved[k] = { to: str(d.moved[k].to), at: d.moved[k].at || null };
 		if (d.settings && typeof d.settings === 'object') for (k in d.settings) lib.settings[k] = d.settings[k];
 		return lib;
 	}
@@ -270,13 +272,13 @@
 		return {
 			tracks: list(lib),
 			playlists: Object.keys(lib.playlists).map(function (id) { return lib.playlists[id]; }),
-			meta: { version: VERSION, aliases: lib.aliases, channelRules: lib.channelRules, genres: lib.genres, profiles: lib.profiles, settings: lib.settings }
+			meta: { version: VERSION, aliases: lib.aliases, channelRules: lib.channelRules, genres: lib.genres, profiles: lib.profiles, settings: lib.settings, moved: lib.moved }
 		};
 	}
 	function fromParts(parts) {
 		parts = parts || {};
 		var meta = parts.meta || {};
-		return load({ tracks: parts.tracks || [], playlists: parts.playlists || [], aliases: meta.aliases, channelRules: meta.channelRules, genres: meta.genres, profiles: meta.profiles, settings: meta.settings });
+		return load({ tracks: parts.tracks || [], playlists: parts.playlists || [], aliases: meta.aliases, channelRules: meta.channelRules, genres: meta.genres, profiles: meta.profiles, settings: meta.settings, moved: meta.moved });
 	}
 	function meta(lib) { return toParts(lib).meta; }
 
@@ -304,6 +306,12 @@
 
 	// Can this track be played in the embedded player?
 	function playable(t) { return !!t && !t.removed && t.embeddable !== false && !t.playerError; }
+	// The upload a replaced video moved to (rescue.js), following later moves; '' when it never moved.
+	function movedTo(lib, id) {
+		var to = '', seen = {};
+		while (lib.moved && lib.moved[id] && !seen[id]) { seen[id] = true; to = id = lib.moved[id].to; }
+		return to;
+	}
 
 	// ---- Deriving the corrected fields -------------------------------------------
 
@@ -525,6 +533,8 @@
 		var stamp = iso(ctx.now), added = [], updated = [];
 		(videos || []).forEach(function (v) {
 			if (!v || !v.id) return;
+			// an upload another took over from (rescue.js) stays replaced: an import does not bring it back
+			if (lib.moved && lib.moved[v.id]) return;
 			var t = lib.tracks[v.id], isNew = !t;
 			if (isNew) { t = blank(v.id); lib.tracks[v.id] = t; }
 			t.raw = { title: str(v.title), channel: str(v.channel) };
@@ -610,6 +620,8 @@
 	function reconcilePlaylist(lib, playlistId, keepIds) {
 		var keep = {}, changed = [], orphans = [];
 		(keepIds || []).forEach(function (id) { keep[id] = true; });
+		// a listed upload another took over from keeps the one it moved to in the playlist
+		(keepIds || []).forEach(function (id) { var to = movedTo(lib, id); if (to) keep[to] = true; });
 		list(lib).forEach(function (t) {
 			var at = t.playlists.indexOf(playlistId);
 			if (at < 0 || keep[t.id]) return;
@@ -1123,7 +1135,7 @@
 		applyLabels: applyLabels, checkLabels: checkLabels, exportLabels: exportLabels, fixedArtist: fixedArtist,
 		LENGTH_CLASSES: LENGTH_CLASSES,
 		create: create, load: load, toParts: toParts, fromParts: fromParts, meta: meta,
-		list: list, get: get, playable: playable,
+		list: list, get: get, playable: playable, movedTo: movedTo,
 		normArtist: normArtist, normTitle: normTitle, people: people, artistOf: artistOf, channelKey: channelKey,
 		parseDuration: parseDuration, lengthClass: lengthClass, decadeOf: decadeOf, firstAdded: firstAdded, lastAdded: lastAdded,
 		genresFromTopics: genresFromTopics, genresOf: genresOf,

@@ -732,6 +732,7 @@
 				if (i >= batches.length) return Promise.resolve();
 				stopIfAsked();
 				return client.videoBatch(batches[i], { signal: o.signal }).then(function (res) {
+					res.videos = res.videos.filter(function (v) { return !(lib.moved && lib.moved[v.id]); });   // replaced by another upload (rescue.js)
 					var r = Library.upsert(lib, res.videos, { playlistId: pl.id, addedAt: addedAt, now: now() });
 					added = added.concat(r.added); updated = updated.concat(r.updated);
 					fetched += res.videos.length;

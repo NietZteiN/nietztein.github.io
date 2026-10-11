@@ -1392,6 +1392,7 @@
 		var blocked = ids.every(function (id) { return lib.tracks[id].blocked; });
 		items.push(A.item(blocked ? 'unblock' : 'block', function () { blockIds(ids, !blocked); }, { label: blocked ? null : 'Block (never shuffle)' }));
 		if (ids.some(function (id) { return lib.tracks[id].playerError; })) items.push(A.item('retry-play', function () { changed(L.clearPlayerErrors(lib, ids)); say('Will be tried again.'); }));
+		if (one && TS.rescue) items.push(TS.rescue.menuItem(pageCtx, one));
 		if (one && !demo && U.YT_ID.test(one.id)) items.push(A.item('open-youtube', function () { window.open('https://www.youtube.com/watch?v=' + one.id, '_blank', 'noopener'); }));
 		U.openMenu(at, items, { label: one ? 'Actions for ' + trackTitle(one) : 'Actions for ' + n(ids.length) + ' tracks', returnTo: at && at.nodeType ? at : document.activeElement });
 	}
@@ -2522,6 +2523,7 @@
 		if (TS.credits) TS.credits.paint(view.appendChild(h('p', { class: 'ts-muted ts-credits', hidden: true })), pageCtx, t);
 		view.appendChild(stars(t));
 		if (isGuess(t)) view.appendChild(guessBox(t));
+		if (TS.rescue) TS.rescue.trackNote(view, pageCtx, t);
 		var facts = h('dl', { class: 'ts-facts' });
 		function fact(k, v) { if (v) { facts.appendChild(h('dt', { text: k })); facts.appendChild(h('dd', { text: v })); } }
 		fact('On YouTube', t.raw.title);
@@ -2774,6 +2776,7 @@
 		if (!ix.all.length) { noMusic(view); return; }
 		var tab = query.get('tab') || 'unsure';
 		view.appendChild(h('h1', { class: 'ts-h1', text: 'Needs attention' }));
+		if (TS.rescue) TS.rescue.fixNote(view, pageCtx);
 		var dups = L.duplicates(lib), dupIds = {};
 		dups.forEach(function (g) { g.ids.forEach(function (id) { dupIds[id] = g; }); });
 		var TABS_FIX = [
@@ -3475,7 +3478,7 @@
 	// ---- History -----------------------------------------------------------------------------------------
 
 	var histCache = [];
-	function loadHistory() { if (thumb || demo) return Promise.resolve(); return store.getHistory({ limit: 5000 }).then(function (hs) { histCache = hs || []; }).catch(function () { histCache = []; }); }
+	function loadHistory() { if (thumb || demo) return Promise.resolve(); return store.getHistory({ limit: 5000 }).then(function (hs) { histCache = hs || []; if (TS.rescue) TS.rescue.mapHistory(histCache, lib); }).catch(function () { histCache = []; }); }
 	function recentIds(days, minPlays) {
 		var since = now() - days * 86400000, c = {}, order = [];
 		histCache.forEach(function (e) { if (e.kind !== 'play' || e.at < since || !lib.tracks[e.id]) return; if (!c[e.id]) order.push(e.id); c[e.id] = (c[e.id] || 0) + 1; });
@@ -4121,6 +4124,7 @@
 			(box.stations || []).forEach(function (li) { if (li && li.id && !names[li.id]) lists.push(li); });
 			var have = {};
 			histCache.forEach(function (e) { have[e.id + '@' + e.at] = true; });
+			if (TS.rescue) TS.rescue.seenListens(have);
 			var extra = (box.history || []).filter(function (e) { return e && !have[e.id + '@' + e.at]; });
 			return Promise.all(extra.map(function (e) { return store.addHistory(e); })).then(function () {
 				return store.set('sync:inbox', null);
@@ -4433,7 +4437,7 @@
 		redraw: function () { renderView(true); },
 		ui: { headerBlock: headerBlock, actionBtn: actionBtn, smallBtn: smallBtn, trackList: trackList, sectionHead: sectionHead, card: card, trackCard: trackCard, shelf: shelf, grid: grid, chip: chip },
 		store: function () { return store; }, prefs: function () { return prefs; },
-		lists: { create: function (ids, name) { createList('manual', { ids: ids }, name, { focus: false }); } },
+		lists: { create: function (ids, name) { createList('manual', { ids: ids }, name, { focus: false }); }, all: function () { return lists; }, save: function () { saveLists(); } },
 		canRead: canRead, client: function () { return demo ? null : client; }, endpoints: function () { return ep; },
 		channelRule: function (key, rule) { var ids = L.setChannelRule(lib, key, rule); changed(ids, true); return ids; },
 		extras: { channel: function (view, id, mine) { channelExtras(view, id, mine); } },
@@ -4448,7 +4452,7 @@
 		// pip.js: what the bar's Previous, Next and Play allow now, and the bar's heart (it also keeps a found song)
 		bar: function () { return { prev: !$('btn-prev').disabled, next: !$('btn-next').disabled, play: !$('btn-toggle').disabled }; }, likeNow: function () { toggleLike(ctl && trackOf(ctl.current())); },
 		// car.js: the media keys' transport, and the bar's own play, next, previous and Endless
-		transport: function () { return transport; }, toggle: togglePlay, next: goNext, prev: goPrev, endless: function () { return endlessOn(); }
+		transport: function () { return transport; }, toggle: togglePlay, next: goNext, prev: goPrev, endless: function () { return endlessOn(); }, changed: function (ids, meta) { return changed(ids, meta); }
 	};
 
 	// ---- Discover: songs like this one that are not in the library -----------------------------------
@@ -5787,7 +5791,7 @@
 		family: viewFamily, c: viewFacet, browse: viewBrowse, works: viewWorks, work: viewWork, track: viewTrack, mix: viewMix,
 		stats: viewStats, fix: viewFix, settings: viewSettings, library: viewLibrary,
 		lists: viewLists, list: viewList, liked: viewLiked, channel: pageFile('channel'), channels: pageFile('channel'), explore: pageFile('explore'), 'for-you': pageFile('foryou'), person: viewPerson, people: viewPeople, history: viewHistory, label: viewLabel, map: viewMap, discover: viewDiscover,
-		car: pageFile('car'), lyrics: pageFile('lyrics'), quiz: pageFile('quiz'), wrapped: pageFile('wrapped'), share: pageFile('share'), paste: pageFile('share'), duel: pageFile('duel')
+		car: pageFile('car'), lyrics: pageFile('lyrics'), quiz: pageFile('quiz'), wrapped: pageFile('wrapped'), share: pageFile('share'), paste: pageFile('share'), rescue: pageFile('rescue'), duel: pageFile('duel')
 	};
 	// A view drawn by a page file (lyrics.js, quiz.js, wrapped.js): its view(view, ctx, parts, query).
 	function pageFile(name) {
