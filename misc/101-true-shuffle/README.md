@@ -28,6 +28,7 @@ Toy 101. A music player for one listener's YouTube playlists and Liked videos: s
 | `scrobble.js` | Opt-in ListenBrainz scrobbling with the listener's own token. Written and tested, not loaded yet: on 2026-10-11 ListenBrainz's API refused browsers (every path redirected to a 404). | no |
 | `recs.js` | The taste profile from your plays, likes and skips; which found songs a lane shows (not yours, not heard lately, not hidden, each once, the stale ones last); the feed's bookkeeping; moving the old Discover keys. | no |
 | `foryou.js` | For you (`#/for-you`): Your radio, this season's anime, airing today, the songs missing from your series, new releases, new uploads from your channels, Because you play X, Saved for later and Hidden, each a lane. | the page half |
+| `duel.js` | Rank your songs two at a time (`#/duel`): which of two songs you like more, a score per song with how sure it is, the ranking, and stars from it. | the page half |
 | `wrapped.js` | Your year: the year in review (`#/wrapped`) and the home page's On this day, Rediscover old favourites and the nudge to like a song. | the page half |
 | `lyrics.js` | The words of the song that is on, from LRCLIB: the Lyrics tab, the karaoke page, finding a song by a line of its words. | the views only |
 | `quiz.js` | Guess the anime: a few seconds of an opening or an ending from the library (Apple's 30-second previews), four anime to choose from. | the page only |
@@ -79,6 +80,7 @@ Everything is UMD: in the browser each file adds one member to `window.TrueShuff
 <script src="credits.js"></script>      <!-- needs match, sources -->
 <script src="recs.js"></script>         <!-- needs discover (its fold), sources -->
 <script src="foryou.js"></script>       <!-- needs recs, lanes, media, works, artists, channel, explore -->
+<script src="duel.js"></script>
 <script src="app.js"></script>
 ```
 
@@ -494,6 +496,56 @@ When the queue is waiting, a new song that is not ready within `maxWaitMs` gives
 - **Where it is:** the bar's More has "Share the queue as a link" (the playing song and what comes after it). The palette has that and "Paste a list of songs".
 - **What it costs:** a shared song has its id, so it plays free. A pasted line without a link goes through the resolver: a search (100 units) unless the library or an earlier search has it. Play all looks songs up as it goes, at most 10 searches a press.
 - **Privacy:** the requests carry no cookies and no referrer.
+
+## duel.js
+
+`TS.duel`: rank your songs two at a time (`#/duel`, "Rank your songs" in the sections, the Library hub and the palette). Stars drive Favourites and Liked songs, but rating thousands of songs on a scale of five is tiring and drifts; a duel asks one easy question instead, "Which do you like more?". The model is pure and runs in Node; the drawing uses only `pageCtx`.
+
+**The model: Glicko, one duel at a time.** Each song keeps a score `r` and how unsure it is, `rd` (Glickman's Glicko-1, each duel its own rating period). A pick moves both songs by how surprising it was (more for an unsure song, less against an unsure partner) and makes both surer. It was chosen over Bradley-Terry fitted to all duels because it keeps no list of past duels and needs no refit: a few numbers per song, the same work for 100 songs or 10,000. Its uncertainty is also what the pair choice, the confidence shown and the stars need. The cost: the order of duels matters a little, and a score does not grow unsure again with time (a taste that changed needs new duels). A song starts at `R0` (1500) moved by its stars (one to five: -150, -75, 0, +75, +150), with `rd` at `RD0` (350), never below `RD_MIN` (45). About four duels bring `rd` to `FAIR_RD` (200, "Fairly sure"), about ten to `SURE_RD` (120, "Sure").
+
+| Name | What it is |
+| --- | --- |
+| `empty()` | A book with no duels, `{ n: 0, s: {}, p: [] }`. A book is `{ n: turns, s: { id: { r, rd, n: duels, w: won, t: the turn it was last shown } }, p: the pairs shown lately, the last one last }`. |
+| `update(me, other, score)` | One Glicko step for `me` (`{ r, rd }`) after a duel with `other`: `score` 1 when me was picked, 0 when other was. `-> { r, rd }` |
+| `record(book, winner, loser, { starsOf })` | `winner` was liked more. Returns a new book; the one given is never changed, so the book before a pick is its undo. One more turn, both songs updated and shown this turn, the pair remembered (`PAIR_MEMORY`, the last 200 pairs). `starsOf(id)` gives a new song's stars. |
+| `skip(book, a, b, { starsOf })` | A pair that cannot be judged: no score moves and nothing counts as a duel, but both songs and the pair rest as after one. |
+| `pickPair(book, ids, rand, { starsOf, keyOf, sample })` | The next two songs of `ids` as `[left, right]`, or null with fewer than two. The first is the song with most to learn: the most unsure, not shown in the last three turns. The second is the partner that teaches most about it: a close score (a toss-up says the most), unsure too, not met in the last 200 pairs, never another upload of the same song (`keyOf`, shuffle.js `songKey`) unless nothing else is left. Each choice weighs `sample` (60) songs drawn at random, so a library of 5,000 costs what one of 60 does (300 duels in about 0.2 s in Node). `rand` is shuffle.js `rng` (seeded, in the tests) or `cryptoRng` (the page); it also decides which side each song goes on. |
+| `ranking(book, ids)` | The songs of `ids` that had a duel, best first (of equal scores the surer first): `[{ id, r, rd, n, w, sure }]`, `sure` being `'sure'`, `'fair'` or `'unsure'`. |
+| `starsPlan(rows, { ratingOf, all })` | What Set stars would do with `ranking` rows. The songs fairly sure or better get stars by their place among themselves (`SHARES`: the top 10% five, the next 20% four, the middle 40% three, the next 20% two, the last 10% one); only unrated songs change unless `all`. `-> { ok (at least MIN_RANKED, 10, such songs), ranked, unsure, changes: [{ id, from, to }], counts (the changes by new stars), kept (rated songs left alone), same (already right) }` |
+| `pool(tracks, scope)` | The ids a duel may ask about, from a list or a map of tracks: playable, not blocked, not a clip, not a found song; then the scope: `'all'`, `'liked'` (four stars or more), `'unrated'`, `'work:<name>'` or `'genre:<name>'`. |
+| `pack(book)`, `unpack(value)` | The book as the store keeps it, `{ v: 1, n, s: { id: [r, rd, duels, won, turn] }, p }`, scores to a tenth (30 songs take about 1.7 KB), and back. A damaged entry is left out; anything that is not a book gives `empty()`. |
+| `view(view, ctx, parts, query)` | `#/duel` and `#/duel/ranking`. |
+| `KEY`, `R0`, `RD0`, `RD_MIN`, `SURE_RD`, `FAIR_RD`, `SHARES`, `MIN_RANKED`, `PAIR_MEMORY` | `'duel:scores'`, 1500, 350, 45, 120, 200, the star shares, 10, 200. |
+
+**The page (#/duel).** Two tabs, Duel and Your ranking. A row of chips picks the songs: All songs, Liked, Unrated, Anime or work... and Genre... (a dialog listing library.js `facets` of two songs or more over the songs a duel may ask about, with a filter). The choice is remembered as ToyKit `duelScope`; Focus narrows it as it narrows every view (the page reads `ctx.idx().all`). Two songs side by side, or stacked as rows on a phone: cover art, title, artist, the work and role when known, plays and stars; the whole card is the button.
+- **Picking.** A click or a tap, 1 or Left, 2 or Right. S skips; Backspace (or Undo) goes back one step, twenty at most this visit.
+- **Hear it** plays that song now and keeps the queue (`ctx.play.now`); the YouTube player stays where it is.
+- **Below the pair:** the last pick in words, and "12 duels this session · 340 songs ranked" (with how many of the set are ranked when it is not all songs).
+- **Keys** are taken in the capture phase, before app.js's own (elsewhere S shuffles again and the arrows seek). The arrows and Backspace only while the focus is on this page; digits and S anywhere but a text field or a dialog. A held key does not repeat, and a click within 150 ms of a new pair counts as a double click, not a choice.
+- **States:** no library (a link to Settings), a set of fewer than two songs, a work or genre that is gone (back to all songs), loading.
+
+**Your ranking (#/duel/ranking).** The set's songs by score, numbered, each with Sure, Fairly sure or Not sure yet, its duels and wins, and its stars; a hundred rows, then Show all. Play from the top plays them in that order. Set stars from the ranking... opens a dialog: the shares; how many songs would get 5, 4, 3, 2 and 1 stars; how many join or leave Liked songs; how many rated songs keep their stars and how many need more duels. A box also changes songs that already have stars. Set stars applies it with `ctx.edit` (one edit per number of stars; `edit` stamps `stateAt`, so the Desk's sync carries the new ratings), and the toast's Undo puts every song back.
+
+**What is kept.** The store's kv `duel:scores` (`pack`), written 0.4 s after the last pick and when the page is left. `exportAll` carries it in the backup file and `importAll` brings it back; the Desk's sync does not, only the stars set from it. A restored backup or Delete everything brings a new library object, and the page reads the book again. ToyKit: `duelScope`. Nothing is sent anywhere, in the demo or out of it.
+
+**Tests.** The `duel` section (test/duel.section.js, 58 checks):
+- `update` against Glicko's formula written out again (equals, a sure song losing to an unsure one, an upset, the floor);
+- `record` and `skip` on frozen books, the start from stars, the 200 remembered pairs;
+- `pickPair` on seeded runs: the same seed gives the same pairs; 150 picks among 30 songs ask no pair twice and bring no song straight back; three songs never give the same pair twice in a row; the sides are drawn; never two uploads of one song unless nothing else is left; unsure songs first; partners at least four times closer than random ones; 300 duels over 5,000 songs;
+- convergence on a hidden order, 40 songs: 160 duels with right answers reach a rank correlation of at least 0.95; 240 with Bradley-Terry noise at least 0.85, above random pairs; every song fairly sure after four duels each;
+- `ranking`, `starsPlan` (10 and 100 songs, too few, only unrated, `all`, the counts) and `pool`'s scopes;
+- `pack` and `unpack` (a round trip, damaged entries, `__proto__`), and the kv through store.js's in-memory twin, its export and its import.
+
+**Checked in a browser** (2026-10-11, `scripts/qa/drive.mjs` on `?demo=1`, the script in the session's scratchpad):
+- picks by 1, the right arrow, a click on either card and a tap on a phone, each saved in `duel:scores` with the right winner;
+- the arrows picking while a song plays, without seeking it; S skipping without shuffling the queue again;
+- Backspace and Undo going back one step at a time, to the pair each pick was made on; a press the moment a pair shows is dropped;
+- Hear it playing the song now on the same page, the player visible at 316 by 210;
+- the work picker (a filter, Kumori Station Anime, 10 songs), then 34 duels by a hidden taste: the ranking follows it (rank correlation 1.0 and 0.99 in two runs), all ten fairly sure;
+- the stars dialog (8 unrated songs by default, 10 with the box), applying 5, 4, 4, 3, 3, 3, 3, 2, 2, 1 by place, and Undo restoring every rating;
+- the Library hub's link; both themes at 1280 by 860 and 390 by 844 without sideways scroll, no key hints on a touch screen, no page errors, no request to any other site.
+
+**Not done.** A score does not grow unsure again with time, so an old ranking is trusted as much as a new one. Two tabs on one book: the last write wins.
 
 ## wrapped.js
 

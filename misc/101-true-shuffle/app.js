@@ -689,6 +689,7 @@
 		{ key: 'history', label: 'History', icon: 'history' },
 		{ key: 'wrapped', label: 'Your year', icon: 'medal', needs: 'wrapped' },
 		{ key: 'quiz', label: 'Guess the anime', icon: 'tv', needs: 'quiz' },
+		{ key: 'duel', label: 'Rank your songs', icon: 'blend', needs: 'duel' },
 		{ key: 'stats', label: 'Your numbers', icon: 'stats' },
 		{ key: 'label', label: 'Quick labeller', icon: 'edit' },
 		{ key: 'fix', label: 'Needs attention', icon: 'fix', badge: true },
@@ -719,7 +720,7 @@
 		var tb = $('tabbar');
 		clear(tb);
 		TABS.forEach(function (it) {
-			var on = it.key === 'library' ? ['songs', 'artists', 'genres', 'browse', 'works', 'stats', 'fix', 'settings', 'library', 'lists', 'map', 'history', 'label', 'channels', 'mix', 'wrapped', 'quiz'].indexOf(sec) >= 0 : it.key === 'queue' ? document.body.classList.contains('sheet-open') : sec === it.key;
+			var on = it.key === 'library' ? ['songs', 'artists', 'genres', 'browse', 'works', 'stats', 'fix', 'settings', 'library', 'lists', 'map', 'history', 'label', 'channels', 'mix', 'wrapped', 'quiz', 'duel'].indexOf(sec) >= 0 : it.key === 'queue' ? document.body.classList.contains('sheet-open') : sec === it.key;
 			var a = h('a', { class: 'ts-tab-a' + (on ? ' is-on' : ''), href: it.key === 'queue' ? '#' : '#/' + it.key });
 			a.appendChild(icon(it.icon));
 			a.appendChild(h('span', { text: it.label }));
@@ -2541,7 +2542,7 @@
 			['genres', 'Genres', 'genre', plural(Object.keys(ix.genres).length, 'genre')], ['browse', 'Moods & scenes', 'mood', 'Moods, scenes, languages, decades'],
 			['works', 'Anime, games & stage', 'works', plural(Object.keys(ix.works).length, 'work')], ['stats', 'Your numbers', 'stats', 'What you have and play'],
 			['for-you', 'For you', 'sparkle', 'New songs picked from what you play'], ['lists', 'Playlists', 'list', plural(lists.length, 'playlist')], ['map', 'Map', 'map', 'Your library as a map of sound'], ['history', 'History', 'history', 'What you played'], ['label', 'Quick labeller', 'edit', plural(idx().all.filter(needsLabel).length, 'song') + ' to label'],
-			moduleReady('wrapped') ? ['wrapped', 'Your year', 'sparkle', 'Your listening, in review'] : null, moduleReady('quiz') ? ['quiz', 'Guess the anime', 'tv', 'A quiz from your openings and endings'] : null, moduleReady('car') ? ['car', 'Car mode', 'car', 'Big buttons for driving; the screen stays on'] : null,
+			moduleReady('wrapped') ? ['wrapped', 'Your year', 'sparkle', 'Your listening, in review'] : null, moduleReady('quiz') ? ['quiz', 'Guess the anime', 'tv', 'A quiz from your openings and endings'] : null, moduleReady('duel') ? ['duel', 'Rank your songs', 'blend', 'Which of two songs you like more'] : null, moduleReady('car') ? ['car', 'Car mode', 'car', 'Big buttons for driving; the screen stays on'] : null,
 			['fix', 'Needs attention', 'fix', ix.needs.unsure ? plural(ix.needs.unsure, 'unsure artist') : 'All good'], ['settings', 'Settings', 'settings', 'Import, labels, backup, privacy']
 		].filter(Boolean);
 		var ul = h('ul', { class: 'ts-hub' });
@@ -5770,7 +5771,7 @@
 		family: viewFamily, c: viewFacet, browse: viewBrowse, works: viewWorks, work: viewWork, track: viewTrack, mix: viewMix,
 		stats: viewStats, fix: viewFix, settings: viewSettings, library: viewLibrary,
 		lists: viewLists, list: viewList, liked: viewLiked, channel: pageFile('channel'), channels: pageFile('channel'), explore: pageFile('explore'), 'for-you': pageFile('foryou'), person: viewPerson, people: viewPeople, history: viewHistory, label: viewLabel, map: viewMap, discover: viewDiscover,
-		car: pageFile('car'), lyrics: pageFile('lyrics'), quiz: pageFile('quiz'), wrapped: pageFile('wrapped'), share: pageFile('share'), paste: pageFile('share')
+		car: pageFile('car'), lyrics: pageFile('lyrics'), quiz: pageFile('quiz'), wrapped: pageFile('wrapped'), share: pageFile('share'), paste: pageFile('share'), duel: pageFile('duel')
 	};
 	// A view drawn by a page file (lyrics.js, quiz.js, wrapped.js): its view(view, ctx, parts, query).
 	function pageFile(name) {
