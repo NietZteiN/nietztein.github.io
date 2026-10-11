@@ -2472,6 +2472,7 @@ describe('readme', function () {
 		credits: Object.keys(require('./credits.js')),
 		recs: Object.keys(require('./recs.js')),
 		foryou: Object.keys(require('./foryou.js')),
+		pip: Object.keys(require('./pip.js')),
 		duel: Object.keys(require('./duel.js')),
 		'a credits object': Object.keys(require('./credits.js').create({ fetch: function () { return Promise.reject(new Error('no')); } })),
 		scrobble: Object.keys(require('./scrobble.js')),

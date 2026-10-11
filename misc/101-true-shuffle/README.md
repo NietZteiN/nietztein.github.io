@@ -28,6 +28,7 @@ Toy 101. A music player for one listener's YouTube playlists and Liked videos: s
 | `scrobble.js` | Opt-in ListenBrainz scrobbling with the listener's own token. Written and tested, not loaded yet: on 2026-10-11 ListenBrainz's API refused browsers (every path redirected to a 404). | no |
 | `recs.js` | The taste profile from your plays, likes and skips; which found songs a lane shows (not yours, not heard lately, not hidden, each once, the stale ones last); the feed's bookkeeping; moving the old Discover keys. | no |
 | `foryou.js` | For you (`#/for-you`): Your radio, this season's anime, airing today, the songs missing from your series, new releases, new uploads from your channels, Because you play X, Saved for later and Hidden, each a lane. | the page half |
+| `pip.js` | The mini player: the song, its buttons and the time in a small window that stays on top of other windows (Chrome and Edge on a desktop). YouTube's player stays in the page. | the window only |
 | `duel.js` | Rank your songs two at a time (`#/duel`): which of two songs you like more, a score per song with how sure it is, the ranking, and stars from it. | the page half |
 | `wrapped.js` | Your year: the year in review (`#/wrapped`) and the home page's On this day, Rediscover old favourites and the nudge to like a song. | the page half |
 | `lyrics.js` | The words of the song that is on, from LRCLIB: the Lyrics tab, the karaoke page, finding a song by a line of its words. | the views only |
@@ -80,6 +81,7 @@ Everything is UMD: in the browser each file adds one member to `window.TrueShuff
 <script src="credits.js"></script>      <!-- needs match, sources -->
 <script src="recs.js"></script>         <!-- needs discover (its fold), sources -->
 <script src="foryou.js"></script>       <!-- needs recs, lanes, media, works, artists, channel, explore -->
+<script src="pip.js"></script>          <!-- draws through pageCtx -->
 <script src="duel.js"></script>
 <script src="app.js"></script>
 ```
@@ -1178,6 +1180,34 @@ A page cannot choose where its sound goes: Android sends all media sound to the 
 
 **No service worker.** Chrome on Android has not needed one to install a page since Chrome 108 (112 on desktop): the requirement for a service worker with a `fetch` handler was dropped from installation from the menu ("Revisiting Chrome's installability criteria", developer.chrome.com, updated 2023-12-05), MDN lists none for Chromium (Making PWAs installable, modified 2026-10-06), and Chromium's own `InstallableParams` and `AppBannerManager` (main, read 2026-10-11) check no service worker at all, for the menu or for `beforeinstallprompt`. So there is no `sw.js`; offline, the installed app shows Chrome's own offline page. The Google sign-in's redirect returns to `./`, inside the scope, so it comes back into the installed app; this is still to be tried on the phone.
 
+## pip.js
+
+`TS.pip`: the mini player. On a desktop, Chrome and Edge (116 and later) can open a small window that stays on top of every other window: the Document Picture-in-Picture API (`documentPictureInPicture.requestWindow`). The listener can work in another program and still see the song and press the buttons.
+
+**Only the controls go into the window.** YouTube's player never moves there: moving an iframe to another document reloads it, and YouTube's terms want the player visible in the page. It stays in the now-playing panel, at its size, and plays from there as before; the window holds the page's own controls. So it is not an audio-only view. The window shows the cover, the title, the artist and the anime or game (when there is one), Previous, Play or Pause, Next, Like, the seek bar with both times, and Back to the tab (the page's own `window.focus()`, called from that click, which is how Chrome documents it).
+
+**Getting there.** The player bar's More (Mini player; Close the mini player while it is open), the palette (Ctrl+K), or W. Where the API is missing (Firefox, Safari, phones) none of them shows and W does nothing. The browser opens the window only from a click or a key, and the page asks for 360 by 150 (`SIZE`); Chrome may keep the size the listener gave it last time instead. If the browser refuses, the page says "The browser did not open the mini player."
+
+**Keys in the window.** Space plays or pauses, N next, P previous, L like, the left and right arrows go `SEEK_SEC` (5) seconds back or on, W closes it. A focused button keeps Space and Enter, the seek bar its arrows.
+
+**It follows the page.** app.js's `renderTransport` sends `U.bus.emit('bar', state)` each time it draws the bar's buttons (the song, a like, the queue or the play state changed), and the window draws itself again from pageCtx: `ctl()`, `trackOf(id)`, `player()`, `liked(id)`, `words`, `art(t)`, `prefs()`, and two entries added for it, `bar()` (whether the bar's Previous, Next and Play are enabled now) and `likeNow()` (the bar's heart, which also keeps a found song). The time comes from `player().on('time')`. The window copies the page's tokens and parts (`pickCss`) and adds its own `CSS`; it follows `<html data-theme>` through a `MutationObserver` on the page (so the kit's switch, another tab's and car mode all count), and lays itself out again when the listener resizes it (`layoutFor`).
+
+**Closing.** Its own close button (or Chrome's back-to-tab button), W in it or in the page, More, the palette, or the page going away (`pagehide`). Every listener goes with it: the bus, the player's time, the theme observer, the page's `pagehide`. Nothing is kept and nothing is sent anywhere.
+
+| Name | What it is |
+| --- | --- |
+| `supported()` | Whether `documentPictureInPicture.requestWindow` exists here. |
+| `open(ctx)` | Opens the window (from a click or a key). A promise of true; false when it is not supported or the browser refused. `ctx` is app.js's `pageCtx`. |
+| `close()`, `toggle(ctx)`, `isOpen()` | Close it (false when it was not open); open or close it; whether it is open. |
+| `model(s)` | Pure. `s` is `{ song: { title, artist, work, durationSec } or null, hasMusic, state, bar: { prev, next, play }, liked, time: { current, duration } }`; returns `{ empty, title, sub, docTitle, play: { icon, label, disabled }, prev, next, like: { pressed, label, disabled }, seek: { max, value, pct, disabled, cur, dur, text } }`. "Nothing playing" or "No music yet" without a song; Pause while playing or loading; the song's own length while the player does not know it yet; the time never past the end. |
+| `layoutFor(w, h)` | Pure. `'tiny'` under 300 wide or 130 tall (the title, the bar, the buttons), `'wide'` from 520 wide (the cover on the left, as tall as the window), `'tall'` from 300 tall (the cover on top), else `'compact'` (the cover beside the title: the 360 by 150 the page asks for). |
+| `keyAction(key, { tag, ctrl, meta, alt })` | Pure. `'toggle'`, `'next'`, `'prev'`, `'like'`, `'back'`, `'forward'`, `'close'` or null. |
+| `pickCss(ruleLists)` | Pure. From the page's rules (one list per style sheet), the text of those the window needs: `:root` and `:root[data-theme="dark"]` (both themes' tokens, from kit.css, app.css and ds.css) and the `ts-btn`, `ts-i`, `ts-art` and `ts-range` parts. |
+| `CSS` | The window's own rules: the four layouts. |
+| `SIZE`, `SEEK_SEC` | `{ width: 360, height: 150 }`; 5. |
+
+**Tested.** The pure parts in the `pip` section of test.js; `pickCss` also runs there on the real kit.css, app.css and ds.css (every token the window uses is set, and its colours in both themes). Headless Chrome 155 opens a real window, and on 2026-10-11 a drive script (outside the repo) worked inside it as a window of its own: it opened from More with a real click, from W and from the palette; Play, Next and Like clicked in it, and Space, N, P, L, the arrows and W pressed in it, did what they say; the song, the work, the time and the heart followed the page (a like in the page reached the window); its seek bar moved the player; it followed a theme switch; at 360 by 150 (compact), 540 by 160 (wide), 300 by 100 (tiny) and 310 by 300 (tall) it was looked at in both themes, without sideways scroll; Tab reached its six controls, each with a ring; closed by W, More, its own close or a reload, it left none of its listeners on the page. An empty library shows No music yet with Play disabled; with the API taken away (as in Firefox and Safari) More, the palette and W offer nothing. The longer More menu still keeps off the player. Not tested: a desktop Chrome or Edge with a screen (whether Back to the tab brings the tab forward cannot be seen headless: the click runs and the window stays open), and the size Chrome gives the window the first time (headless opened 666 by 459, not the 360 by 150 asked for, and caps its area near 96,000 px).
+
 ## transport.js
 
 `TS.transport`: `create({ onPlay, onPause, onNext, onPrev, onSeek, onSeekBy, onLog, mobile, enabled, now })` returns a transport:
@@ -1223,6 +1253,7 @@ The core does what it can; the rest is the page's.
 | The player is visible, at least 200 by 200 px, with YouTube's own controls. | `player.js` refuses to build in a smaller or hidden box (`error` with code `'too-small'`) and never turns the controls off. The page must not cover the player, shrink it, move it off screen, or keep playing with the player hidden (no "audio only" view, no background tab trick). |
 | Nothing covers the player. | ui.js `safe`: dialogs, sheets, toasts and progress chips lay out around the player (CSS reads `--ts-safe-right` on a wide window, `--ts-safe-top` on a phone), menus move off it (`safe.avoid`), and the player's own messages (loading, could not start) sit under it, never over it. The now-playing panel scrolls only the part under the video, so the video never scrolls away. |
 | No sound while the player is hidden. | transport.js's media-key anchor plays silence, only while YouTube's player plays, so that media keys and car buttons reach the page; on a phone it pauses the moment the page is hidden and ignores play, next, previous and seeking until the page is visible again. It never plays YouTube's sound and cannot keep it going. |
+| The player stays in the page. | pip.js's mini player window holds only the page's own controls. YouTube's player never moves into it (moving an iframe reloads it); it plays where it was, at its size. |
 | A visible link to the YouTube Terms of Service and to Google's Privacy Policy. | The page: `Y.TERMS.youtubeTerms`, `Y.TERMS.googlePrivacy`. Put them in the footer and in the help, and say "This page uses YouTube API Services". |
 | A way to delete all stored data and to revoke access. | The page offers both: `store.wipe()` (and `ToyKit.store(key, null)` for anything it kept through the kit), and `auth.signOut()`. Also link `Y.TERMS.googlePermissions`, where Google lets the user remove access himself. |
 | Stored API data is refreshed or deleted within 30 days. | sources.js's cache keeps anything from YouTube (keys under `yt:` and `oe:`) 30 days at most, whatever a caller asks. At each sign-in: `if (L.stale(lib, Date.now(), TS.config.refreshDays).length) Y.refreshInto({ client, lib, store })`. `L.stats(lib).staleCount` is for a banner when he has not signed in for a month: offer "sign in to refresh" or "delete". |

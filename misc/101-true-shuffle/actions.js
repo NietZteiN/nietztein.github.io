@@ -70,6 +70,7 @@
 		'queue': { label: 'Show or hide the queue', icon: 'queue', key: 'Q' },
 		'theater': { label: 'Theater mode', icon: 'theater', key: 'T' },
 		'fullscreen': { label: 'Full screen', icon: 'fullscreen', key: 'F' },
+		'pip': { label: 'Mini player', icon: 'pip', key: 'W', desc: 'Open or close the mini player: a small window of controls on top' },
 		'sleep': { label: 'Sleep timer' + ELL, icon: 'moon' },
 		'mute': { label: 'Mute', icon: 'mute', key: 'M' },
 		'volume': { label: 'Volume down or up', icon: 'volume', key: '- / =' },
@@ -85,7 +86,7 @@
 	var SHARED = { play: 1, shuffle: 1, 'minus-circle': 1, block: 1, target: 1, search: 1, retry: 1, bookmark: 1 };
 
 	// The keys, in the order the shortcuts list shows them.
-	var KEY_ORDER = ['palette', 'play-pause', 'next', 'previous', 'reshuffle', 'order', 'explore', 'radio', 'repeat', 'like', 'save', 'mute', 'volume', 'seek', 'theater', 'fullscreen', 'queue', 'edit', 'search', 'shortcuts'];
+	var KEY_ORDER = ['palette', 'play-pause', 'next', 'previous', 'reshuffle', 'order', 'explore', 'radio', 'repeat', 'like', 'save', 'mute', 'volume', 'seek', 'theater', 'fullscreen', 'pip', 'queue', 'edit', 'search', 'shortcuts'];
 	var KEYMAP = KEY_ORDER.map(function (k) { return { keys: VOCAB[k].key, does: VOCAB[k].desc || VOCAB[k].label, action: k }; }).concat([
 		{ keys: 'In a list', does: String.fromCharCode(0x2191) + ' ' + String.fromCharCode(0x2193) + ' move, Enter play from there, Space select, E explore, I edit, Shift+F10 menu, Ctrl+A all' },
 		{ keys: 'In the queue', does: 'Arrow keys on a grip move a song, Delete removes it' },

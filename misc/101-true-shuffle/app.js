@@ -824,6 +824,7 @@
 		if (sb) { sb.classList.toggle('is-playing', playing); U.setIcon(sb, playing ? 'pause' : 'play'); sb.setAttribute('aria-label', playing ? 'Pause' : 'Play'); sb.disabled = b.disabled; $('st-prev').disabled = $('btn-prev').disabled; $('st-next').disabled = $('btn-next').disabled; }
 		document.body.classList.toggle('is-playing', playing);
 		if (transport) transport.mirror(st);
+		U.bus.emit('bar', st);
 	}
 	var seeking = false;
 	function renderTime() {
@@ -4152,6 +4153,7 @@
 			A.item('sleep', function () { sleepMenu(anchor); }, { label: sleep ? 'Sleep timer' + ELL + ' (' + (sleep.end === 'track' ? 'after this song' : 'until ' + new Date(sleep.at).toTimeString().slice(0, 5)) + ')' : null }),
 			A.item('theater', function () { setTheater(!th); }, { label: th ? 'Leave theater mode' : null }),
 			A.item('fullscreen', toggleFullscreen),
+			TS.pip && TS.pip.supported() ? A.item('pip', function () { TS.pip.toggle(pageCtx); }, { label: TS.pip.isOpen() ? 'Close the mini player' : null, desc: 'The song and its buttons in a small window on top' }) : null,
 			TS.car ? { label: 'Car mode', icon: 'car', desc: 'Big buttons, the screen kept on, the steering wheel buttons', onSelect: function () { location.hash = '#/car'; } } : null,
 			A.item('edit', function () { if (cur) openEditor([cur]); }, { disabled: !cur }),
 			A.item('repeat', toggleRepeat, { label: ctl && ctl.state().repeat ? 'Repeat: on' : 'Repeat: off' }),
@@ -4435,6 +4437,8 @@
 		previewList: function (items, label) { pvStart((items || []).map(function (it) { return { id: it.key, title: it.title, artist: it.artist, preview: it.preview, cover: it.cover, album: it.album, key: it.key, videoId: it.videoId || null, find: it.find || null }; }), 0, label); },
 		preview: function (item, btn) { preview({ id: item.key || item.videoId, title: item.title, preview: item.preview }, btn); },
 		edit: function (ids, fields) { L.editMany(lib, ids, fields); return changed(ids); },
+		// pip.js: what the bar's Previous, Next and Play allow now, and the bar's heart (it also keeps a found song)
+		bar: function () { return { prev: !$('btn-prev').disabled, next: !$('btn-next').disabled, play: !$('btn-toggle').disabled }; }, likeNow: function () { toggleLike(ctl && trackOf(ctl.current())); },
 		// car.js: the media keys' transport, and the bar's own play, next, previous and Endless
 		transport: function () { return transport; }, toggle: togglePlay, next: goNext, prev: goPrev, endless: function () { return endlessOn(); }
 	};
@@ -4784,6 +4788,7 @@
 			['Next song', 'N', goNext, 'next'],
 			['Theater mode', 'T', function () { setTheater(!document.body.classList.contains('is-theater')); }, 'theater'],
 			['Full screen', 'F', toggleFullscreen, 'fullscreen'],
+			TS.pip && TS.pip.supported() ? [TS.pip.isOpen() ? 'Close the mini player' : 'Mini player', 'W', function () { TS.pip.toggle(pageCtx); }, 'pip'] : null,
 			['Like the playing song', 'L', function () { toggleLike(ctl && lib.tracks[ctl.current()]); }, 'heart'],
 			['Mute or unmute', 'M', toggleMute, 'volume'],
 			['Start radio from the playing song', '', function () { var t = ctl && lib.tracks[ctl.current()]; if (t) startRadio(t); }, 'radio'],
@@ -5692,6 +5697,7 @@
 			else if (k === 'm' || k === 'M') toggleMute();
 			else if (k === 't' || k === 'T') setTheater(!document.body.classList.contains('is-theater'));
 			else if (k === 'f' || k === 'F') toggleFullscreen();
+			else if ((k === 'w' || k === 'W') && TS.pip && TS.pip.supported()) TS.pip.toggle(pageCtx);
 			else if (k === '?') showShortcuts();
 			else if (k === '-' || k === '_') setVolume((player.muted() ? 0 : player.volume()) - 10);
 			else if (k === '=' || k === '+') setVolume((player.muted() ? 0 : player.volume()) + 10);
