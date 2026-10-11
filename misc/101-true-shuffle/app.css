@@ -1057,3 +1057,20 @@ body.has-ambient .ts-video::before { content: ''; position: absolute; inset: 0; 
 .ts-qmode { flex-wrap: nowrap; }
 .ts-qmode > .ts-muted { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ts-qmode .ts-btn.is-icon { --btn-h: 32px; flex: none; }
+/* the player sizes share the "Now playing" line instead of a row of their own (a wide window) */
+@media (min-width: 761px) {
+	.ts-vbar { position: relative; z-index: 2; padding: 10px 16px 0; margin-bottom: -40px; pointer-events: none; }
+	.ts-vbar > * { pointer-events: auto; }
+	.ts-vbtn { height: 28px; min-width: 30px; padding: 0 7px; font-size: 12px; }
+}
+/* a phone: the header art smaller, so the title and its buttons come sooner */
+@media (max-width: 760px) { .ts-hero-art { width: 104px; height: 104px; } }
+/* a mid-width window: the panel is narrow; the size presets go (theater, full screen and the drag stay), the row of actions and the tabs tighten */
+@media (min-width: 761px) and (max-width: 1099px) {
+	.ts-vbtn:nth-child(-n+3) { display: none; }
+	.ts-now-actions .ts-btn.is-icon { --btn-h: 30px; }
+	.ts-now-actions { gap: 0; }
+	.ts-tab { padding: 6px 6px; font-size: 13.5px; }
+}
+/* a queue row's remove on a touch screen: shown, but quiet (with a mouse it shows on hover) */
+@media (hover: none), (pointer: coarse) { .ts-q .ts-q-x { opacity: 0.6; } .ts-q .ts-q-x:focus-visible { opacity: 1; } }

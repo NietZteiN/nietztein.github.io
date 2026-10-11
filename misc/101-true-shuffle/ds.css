@@ -159,7 +159,7 @@
 
 /* ---------- Touch screens: nothing hides behind a hover ---------- */
 @media (hover: none), (pointer: coarse) {
-	.ts-row-play, .ts-c-more .ts-icon-btn, .ts-c-more .ts-like, .ts-q-x, .ts-grip, .ts-card .ts-bigplay { opacity: 1 !important; }
+	.ts-row-play, .ts-c-more .ts-icon-btn, .ts-c-more .ts-like, .ts-grip, .ts-card .ts-bigplay { opacity: 1 !important; }
 	.ts-card .ts-bigplay { transform: none; }
 	.ts-resizer::after { opacity: 0.6; }
 	.ts-btn--sm::after, .ts-btn--md::after { content: ''; position: absolute; inset: -6px; }
