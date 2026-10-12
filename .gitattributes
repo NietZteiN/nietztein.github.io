@@ -1,0 +1,2 @@
+# Vendor hashes describe the fetched bytes; checkout must preserve them on Windows.
+desk/vendor/** -text
