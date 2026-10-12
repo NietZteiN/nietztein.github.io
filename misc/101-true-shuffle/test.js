@@ -2433,6 +2433,10 @@ describe('lint', function () {
 	html.replace(/(?:src|href)="([a-z.-]+\.(?:js|css))\?v=/g, function (m, f) { files.push(f); return m; });
 	eq(files.filter(function (f) { return !fs.existsSync(path.join(HERE, f)); }), [], 'index.html: every stamped file exists');
 	ok(['transport.js', 'actions.js', 'ds.css'].every(function (f) { return files.indexOf(f) >= 0; }), 'index.html loads transport.js, actions.js and ds.css');
+	var A = require('./actions.js');
+	ok(html.indexOf('title="Repeat the queue (' + A.VOCAB.repeat.key + ')"') >= 0, 'Repeat title agrees with the shortcut vocabulary');
+	ok(html.indexOf('with <kbd>e</kbd>') < 0, 'Help no longer assigns E to editing');
+	eq(A.item('repeat', null).hint, 'Shift+R', 'Repeat shortcut fits in menus');
 });
 
 // =============================================================================

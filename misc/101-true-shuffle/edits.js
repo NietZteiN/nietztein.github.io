@@ -17,7 +17,7 @@
 	}
 	function keep(ctx, ids) {
 		var lib = ctx.lib(), L = ctx.L, was = {};
-		ids.forEach(function (id) { var t = lib.tracks[id]; if (t) was[id] = { rating: t.rating || 0, edits: JSON.parse(JSON.stringify(t.userEdits || {})) }; });
+		ids.forEach(function (id) { var t = lib.tracks[id]; if (t) was[id] = { rating: t.rating || 0, likedAt: t.likedAt || null, edits: JSON.parse(JSON.stringify(t.userEdits || {})) }; });
 		return function () {
 			var back = Object.keys(was).filter(function (id) { return lib.tracks[id]; }), redo = [], byRating = {};
 			back.forEach(function (id) {
@@ -26,7 +26,7 @@
 				if (JSON.stringify(t.userEdits || {}) !== JSON.stringify(w.edits)) { t.userEdits = JSON.parse(JSON.stringify(w.edits)); redo.push(id); }
 			});
 			if (redo.length) { L.deriveIds(lib, redo); back = back.concat(L.resolveArtists(lib)); }
-			Object.keys(byRating).forEach(function (k) { L.editMany(lib, byRating[k], { rating: +k }); });
+			Object.keys(byRating).forEach(function (k) { L.editMany(lib, byRating[k], { rating: +k }); byRating[k].forEach(function (id) { lib.tracks[id].likedAt = was[id].likedAt; }); });
 			ctx.changed(back);
 			ctx.say('Back as they were.');
 		};

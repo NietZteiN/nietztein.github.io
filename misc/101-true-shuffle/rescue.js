@@ -28,7 +28,7 @@
 
 	var KEY = 'rescue:moved:';
 	// What moves from the old upload to the new one: the listener's own state, and where the song lives.
-	var STATE = ['rating', 'plays', 'skips', 'lastPlayed', 'blocked', 'tags', 'userEdits', 'labels', 'stateAt'];
+	var STATE = ['rating', 'plays', 'skips', 'lastPlayed', 'blocked', 'tags', 'userEdits', 'labels', 'stateAt', 'likedAt'];
 	var PLACES = ['playlists', 'addedAt'];
 	var YT_ID = /^[A-Za-z0-9_-]{11}$/;
 	var DOT = String.fromCharCode(0xB7), ELL = String.fromCharCode(0x2026), RSQ = String.fromCharCode(0x2019);
@@ -257,6 +257,7 @@
 	function merge(target, old, now) {
 		var before = { rating: target.rating, blocked: target.blocked };
 		target.rating = Math.max(+target.rating || 0, +old.rating || 0);
+		if ((before.rating || 0) < 4 && target.rating >= 4) target.likedAt = old.likedAt || null;
 		target.plays = (+target.plays || 0) + (+old.plays || 0);
 		target.skips = (+target.skips || 0) + (+old.skips || 0);
 		target.lastPlayed = later(target.lastPlayed, old.lastPlayed);
@@ -331,7 +332,7 @@
 			var before = record.before || now;
 			target.plays = (+before.plays || 0) + Math.max(0, (+now.plays || 0) - (+after.plays || 0));
 			target.skips = (+before.skips || 0) + Math.max(0, (+now.skips || 0) - (+after.skips || 0));
-			['rating', 'lastPlayed', 'blocked', 'tags', 'userEdits', 'labels', 'stateAt'].forEach(function (k) { target[k] = same(now[k], after[k]) ? copy(before[k]) : copy(now[k]); });
+			['rating', 'lastPlayed', 'blocked', 'tags', 'userEdits', 'labels', 'stateAt', 'likedAt'].forEach(function (k) { target[k] = same(now[k], after[k]) ? copy(before[k]) : copy(now[k]); });
 			var joined = (now.playlists || []).filter(function (p) { return (after.playlists || []).indexOf(p) < 0; });
 			target.playlists = union(before.playlists, joined);
 			target.addedAt = copy(before.addedAt || {});

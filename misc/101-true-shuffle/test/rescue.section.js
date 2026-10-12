@@ -178,6 +178,7 @@ module.exports = function (h) {
 		h.eq([cp.blocked, cp.tags, cp.playlists, cp.addedAt.PL1, cp.addedAt.PL3], [false, ['spare', 'road'], ['PL3', 'PL1', 'PL2'], '2021-05-01T00:00:00Z', '2023-02-02T00:00:00Z'], 'merge: the old song\'s block (the copy was blocked as a duplicate), tags and playlists joined with their dates');
 		h.eq([cp.userEdits.lang, cp.userEdits.year, cp.userEdits.mood, cp.labels.work, cp.lang, cp.year, cp.work], ['en', 2019, 'bright', 'Starfall Odyssey', 'en', 2019, 'Starfall Odyssey'], 'merge: the copy\'s own correction kept, the old song\'s fill the gaps, derived again');
 		h.eq(cp.stateAt, iso(NOW), 'merge: a rating that changed is stamped for the sync');
+		h.eq(cp.likedAt, rm.record.old.likedAt, 'merge: a newly liked copy keeps the original like date');
 		h.eq(json(rm.record.before), json(R.STATE.concat(R.PLACES).reduce(function (o, k) { o[k] = copyBefore[k]; return o; }, {})), 'merge: the record keeps what the copy had before');
 		// labels on both: the copy's win, the old song's fill the rest; an earlier date wins
 		x = build();

@@ -1949,3 +1949,13 @@ Browser regression for this batch: `node scripts/qa/drive.mjs misc/101-true-shuf
 `playlist-actions.js` previews YouTube playlist removal with the exact deletion count and focuses Keep it. Songs held in hand-picked playlists or with trim/volume settings survive removal. Nothing changes on YouTube. Deleting a hand-picked playlist with songs asks first; every playlist delete has Undo, restoring its position, Focus and page. Playlist and song headers open their full action menu directly from the visible More actions button.
 
 `history.js` draws History from fresh application state on each render, retaining local calendar grouping and the existing playback actions. Both browser modules load before app.js.
+
+### Mix filters, sorting and Recently liked (2026-10-12)
+
+`mix.js` draws the Mix builder, supplied fresh state and playback/save/reset callbacks. Rating shows and clears inherited `minRating`; Words shows and edits `text`. The summary explains songs excluded because they are blocked or cannot play. Smart-playlist previews count the whole library and distinguish playable songs; Home counts agree with Songs.
+
+Song filters retain the chosen sort. Song, collection and playlist rows show the relevant plays, stars, year or date added. Reverse the order works from the accessible button; Title, From and Time headings also sort, and a second press reverses the order. The header stays below the compact player bar and keyboard reveal accounts for both.
+
+Liked songs defaults to Recently liked: `likedAt` stamps the first transition to four stars or more. Four-to-five stars and blocking keep that date; unliking clears it, and a new like gets a new date. Undo, backup, Desk sync and Rescue preserve the date. Songs liked before dates were recorded fall back to Recently added after newer likes.
+
+R starts radio from the playing song and says how many upcoming songs it replaced. Undo stops radio and restores the prior order and context, including the true-shuffle bag; starting a radio while already in radio or car mode reports status only. Shift+R repeats, and its button/menu hints follow the shared action vocabulary.

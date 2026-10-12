@@ -87,6 +87,7 @@
 		plus: 'M11 4h2v7h7v2h-7v7h-2v-7H4v-2h7z',
 		playnext: 'M3 5h11v2H3zm0 4.5h11v2H3zM3 14h7v2H3zm10-2v8l6-4z',
 		grip: 'M8 5h3v3H8zm5 0h3v3h-3zm-5 5.5h3v3H8zm5 0h3v3h-3zM8 16h3v3H8zm5 0h3v3h-3z',
+		'sort-direction': 'M7 3 3 7l1.4 1.4L6 6.8V20h2V6.8l1.6 1.6L11 7zM17 21l4-4-1.4-1.4-1.6 1.6V4h-2v13.2l-1.6-1.6L13 17z',
 		upload: 'M11 16V7.8L7.4 11.4 6 10l6-6 6 6-1.4 1.4L13 7.8V16zm-6 2h14v2H5z',
 		download: 'M11 4h2v8.2l3.6-3.6L18 10l-6 6-6-6 1.4-1.4 3.6 3.6zm-6 14h14v2H5z',
 		volume: 'M3 9h4l5-4.5v15L7 15H3zm12.5-1.8a6 6 0 0 1 0 9.6l-1.3-1.6a4 4 0 0 0 0-6.4zM17.6 4a10 10 0 0 1 0 16l-1.3-1.6a8 8 0 0 0 0-12.8z',
@@ -410,7 +411,8 @@
 		function row(i) { return drawn[i] || null; }
 		function reveal(i) {
 			var top = box.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop + i * rowH;
-			if (top < scroller.scrollTop + 60) scroller.scrollTop = top - 60;
+			var inset = opts.inset ? opts.inset() : 60;
+			if (top < scroller.scrollTop + inset) scroller.scrollTop = top - inset;
 			else if (top + rowH > scroller.scrollTop + scroller.clientHeight - 20) scroller.scrollTop = top + rowH - scroller.clientHeight + 20;
 			place();
 		}

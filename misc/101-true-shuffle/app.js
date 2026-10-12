@@ -618,12 +618,27 @@
 		var pool = scored.slice(0, count || 120).map(function (x) { return x.t; });
 		return [seed.id].concat(S.spreadShuffle(pool, r, { after: S.artistKey(seed) }));
 	}
+	function bagRedraw(was) {
+		var pl = S.bagPlayed(bag), back = was.filter(function (id) { return pl.indexOf(id) < 0 && bag.order.indexOf(id) >= 0; }), rest = S.bagRemaining(bag).filter(function (id) { return was.indexOf(id) < 0; }), gone = bag.gone;
+		bag = { v: 1, order: pl.concat(back, rest), pos: pl.length + back.length, cycle: bag.cycle, last: bag.last }; if (gone && gone.length) bag.gone = gone.slice(); saveBag();
+	}
 	function startRadio(t) {
 		if (!t) return;
 		if (engine && !thumb) {
 			// the song itself first (unless it is on), then the radio
 			if (!(ctl && ctl.current() === t.id)) playNow([t.id]);
-			engine.radio(t.id, { ratio: +ToyKit.load('newRatio', 0.5), label: 'Radio: ' + trackTitle(t), href: lib.tracks[t.id] ? link('track', t.id) : '#/' });
+			var was = S.upcoming(ctl.state()), ctx0 = context, mode0 = queueMode;
+			engine.radio(t.id, { ratio: +ToyKit.load('newRatio', 0.5), label: 'Radio: ' + trackTitle(t), href: lib.tracks[t.id] ? link('track', t.id) : '#/' }).then(function (ids) {
+				if (!ids || !ids.length) return;
+				var gone = was.filter(function (id) { return !hand[id]; }), msg = 'Radio from ' + q(trackTitle(t)) + (gone.length ? ': it replaced ' + plural(gone.length, 'song') + ' that were coming.' : '.');
+				setStatus(msg);
+				if (!gone.length || mode0 === 'feeder' || (TS.car && TS.car.active())) return;
+				U.toast(msg, { action: 'Undo', onAction: function () {
+					setQueueMode('list'); context = ctx0; if (!thumb) store.set('context', context);
+					if (mode0 === 'true' && bag) bagRedraw(was);
+					ctl.clearUpcoming(); ctl.enqueue(was); setQueueMode(mode0); renderQueue(); renderModePill();
+				} });
+			}).catch(fail);
 			return;
 		}
 		playFrom(radioIds(t), 0, { label: 'Radio: ' + trackTitle(t), href: link('track', t.id) });
@@ -1162,7 +1177,7 @@
 			], { label: 'The queue', returnTo: e.currentTarget });
 		});
 		function clearUpcoming() { var was = S.upcoming(ctl.state()); if (queueMode === 'true') returnToBag(was); ctl.clearUpcoming(); U.toast('Cleared what was coming next.', { action: 'Undo', onAction: function () {
-			if (queueMode === 'true' && bag) { var pl = S.bagPlayed(bag), back = was.filter(function (id) { return pl.indexOf(id) < 0 && bag.order.indexOf(id) >= 0; }), rest = S.bagRemaining(bag).filter(function (id) { return was.indexOf(id) < 0; }), gone = bag.gone; bag = { v: 1, order: pl.concat(back, rest), pos: pl.length + back.length, cycle: bag.cycle, last: bag.last }; if (gone && gone.length) bag.gone = gone.slice(); saveBag(); }
+			if (queueMode === 'true' && bag) bagRedraw(was);
 			ctl.playNext(was);
 		} }); }
 	}
@@ -1236,17 +1251,23 @@
 			h('span', { class: 'ts-c-idx', text: '#' }), h('span', { class: 'ts-c-art' }), h('span', { class: 'ts-c-main', text: 'Title' }),
 			h('span', { class: 'ts-c-work', text: opts.noWork ? '' : 'From' }), h('span', { class: 'ts-c-genre', text: 'Genre' }), h('span', { class: 'ts-c-len', text: 'Time' }), h('span', { class: 'ts-c-more' })
 		]);
+		if (opts.sort) [['.ts-c-main', 'title'], ['.ts-c-work', 'work'], ['.ts-c-len', 'length']].forEach(function (entry) {
+			var cell = head.querySelector(entry[0]), key = entry[1], active = opts.sort.key === key;
+			if (!cell || !cell.textContent) return;
+			var label = cell.textContent; clear(cell);
+			cell.appendChild(h('button', { class: 'ts-th' + (active ? ' is-on' : '') + (active && opts.sort.rev ? ' is-reversed' : ''), type: 'button', tabindex: '-1', on: { click: function () { opts.sort.set(key, active ? !opts.sort.rev : false); } } }, [label, active ? icon('sort-direction') : null]));
+		});
 		if (!opts.noHead) wrap.appendChild(head);
 		var ids = tracks.map(function (t) { return t.id; });
 		var sel = { ids: {}, anchor: -1, focus: 0, mode: selMemo.mode }; if (sel.mode) wrap.classList.add('is-selecting');
 		ids.forEach(function (id, i) { selShown[id] = true; if (selMemo.ids[id]) sel.ids[id] = true; if (id === selMemo.anchor) sel.anchor = i; if (id === selMemo.focus) sel.focus = i; });
 		function remember() { ids.forEach(function (id) { if (sel.ids[id]) selMemo.ids[id] = true; else delete selMemo.ids[id]; }); selMemo.anchor = ids[sel.anchor] || null; selMemo.focus = ids[sel.focus] || null; }
-		var vl = U.virtualList({ scroller: $('main'), rowHeight: opts.rowHeight || (opts.compact || prefs.density === 'compact' ? 48 : 60), label: opts.label || 'Tracks', render: row });
+		var vl = U.virtualList({ scroller: $('main'), rowHeight: opts.rowHeight || (opts.compact || prefs.density === 'compact' ? 48 : 60), label: opts.label || 'Tracks', inset: function () { return 60 + (view.querySelector('.ts-sticky.is-on') && head.isConnected ? head.offsetHeight : 0); }, render: row });
 		liveLists.push(vl);
 		wrap.appendChild(vl.node);
 		function row(i) {
 			var t = tracks[i];
-			var r = h('div', { class: 'ts-row' + (sel.ids[t.id] ? ' is-sel' : '') + (t.blocked ? ' is-blocked' : '') + (!L.playable(t) ? ' is-gone' : '') + (ctl && ctl.current() === t.id ? ' is-now' : ''), role: 'listitem', tabindex: i === sel.focus ? '0' : '-1', data: { id: t.id }, aria: { label: trackTitle(t) + ', ' + trackArtist(t) + (sel.ids[t.id] ? ', selected' : '') } });
+			var r = h('div', { class: 'ts-row' + (sel.ids[t.id] ? ' is-sel' : '') + (t.blocked ? ' is-blocked' : '') + (!L.playable(t) ? ' is-gone' : '') + (ctl && ctl.current() === t.id ? ' is-now' : ''), role: 'listitem', tabindex: i === sel.focus ? '0' : '-1', data: { id: t.id }, aria: { label: trackTitle(t) + ', ' + trackArtist(t) + (sel.ids[t.id] ? ', selected' : '') + (opts.sort && sortWords(t, opts.sort.key) ? ', ' + sortWords(t, opts.sort.key) : '') } });
 			var idxc = h('span', { class: 'ts-c-idx' }, [h('span', { class: 'ts-idx-n', text: String(i + 1) }), h('span', { class: 'ts-eq', aria: { hidden: 'true' } }, [h('i'), h('i'), h('i')])]);
 			var pb = U.iconBtn('play', 'Play ' + trackTitle(t), { cls: 'ts-row-play', on: { click: function (e) { e.stopPropagation(); play(i); } } });
 			pb.tabIndex = -1;
@@ -1822,13 +1843,28 @@
 		plays: function (a, b) { return b.plays - a.plays || SORTS.title(a, b); },
 		rating: function (a, b) { return (b.rating || 0) - (a.rating || 0) || SORTS.plays(a, b); },
 		length: function (a, b) { return (b.durationSec || 0) - (a.durationSec || 0); },
+		liked: function (a, b) { var x = a.likedAt || '', y = b.likedAt || ''; return x < y ? 1 : x > y ? -1 : SORTS.added(a, b); },
 		added: function (a, b) { return (L.lastAdded(b) || 0) - (L.lastAdded(a) || 0); },
 		year: function (a, b) { return (a.year || 9999) - (b.year || 9999) || SORTS.title(a, b); },
 		work: function (a, b) { return cmp(a.work || '\uFFFF', b.work || '\uFFFF') || roleRank(a) - roleRank(b) || SORTS.title(a, b); }
 	};
 	var ROLE_ORDER = ['OP', 'ED', 'insert', 'theme', 'image', 'OST', ''];
 	function roleRank(t) { var i = ROLE_ORDER.indexOf(t.role || ''); return i < 0 ? 9 : i; }
-	function sorted(tracks, key) { return tracks.slice().sort(SORTS[key] || SORTS.added); }
+	function sorted(tracks, key, rev) { var out = tracks.slice().sort(SORTS[key] || SORTS.added); return rev ? out.reverse() : out; }
+	function sortConfig(key) { return { key: key, rev: route.query.get('dir') === 'rev', set: function (value, rev) { setQuery({ sort: value, dir: rev ? 'rev' : null }); } }; }
+	function sortControls(host, key, options, save) {
+		host.appendChild(sortSelect(key, function (value) { if (save) save(value); setQuery({ sort: value, dir: null }); }, options));
+		host.appendChild(U.btn({ icon: 'sort-direction', iconOnly: true, label: 'Reverse the order', variant: 'secondary', pressed: route.query.get('dir') === 'rev', data: { id: 'sort-reverse' }, on: { click: function () { setQuery({ dir: route.query.get('dir') === 'rev' ? null : 'rev' }); } } }));
+	}
+	function sortWords(t, key) {
+		if (key === 'plays') return t.plays ? plural(t.plays, 'play') : 'never played';
+		if (key === 'rating') return t.rating ? new Array(t.rating + 1).join(STAR) : 'not rated';
+		if (key === 'year') return t.year ? String(t.year) : 'no year';
+		if (key === 'added') return L.lastAdded(t) ? 'added ' + addedName(new Date(L.lastAdded(t)).toISOString().slice(0, 7)) : 'date added unknown';
+		if (key === 'liked') return t.likedAt ? 'liked ' + addedName(String(t.likedAt).slice(0, 7)) : 'liked before dates were kept';
+		return '';
+	}
+	function sortExtra(key) { return function (t) { var words = sortWords(t, key); return words ? h('span', { class: 'ts-like-why', text: ' ' + DOT + ' ' + words }) : null; }; }
 	function sectionHead(view, title, more) {
 		var hd = h('div', { class: 'ts-sec-head' }, [h('h2', { text: title })]);
 		if (more) hd.appendChild(h('a', { class: 'ts-sec-more', href: more.href, text: more.text || 'Show all' }));
@@ -1904,7 +1940,7 @@
 		var music = playable(ix.music);
 		var hero = h('section', { class: 'ts-home-hero' });
 		hero.appendChild(h('h1', { class: 'ts-greet', text: greeting() }));
-		hero.appendChild(h('p', { class: 'ts-muted', text: plural(music.length, 'song') + ' ' + DOT + ' ' + plural(Object.keys(ix.artists).length, 'artist') + ' ' + DOT + ' ' + longTime(secs(music)) + ' of music' }));
+		hero.appendChild(h('p', { class: 'ts-muted', text: plural(ix.music.length, 'song') + ' ' + DOT + ' ' + plural(Object.keys(ix.artists).length, 'artist') + ' ' + DOT + ' ' + longTime(secs(ix.music)) + ' of music' }));
 		var quick = h('div', { class: 'ts-quick' });
 		function quickBtn(iconName, title, sub, fn, hue) {
 			var b = h('button', { class: 'ts-quickb', on: { click: fn } });
@@ -2112,7 +2148,7 @@
 		if (!ix.all.length) { noMusic(view); return; }
 		var sort = query.get('sort') || ToyKit.load('songsSort', 'added'), show = query.get('show') || 'music', filt = query.get('f') || '';
 		var base = show === 'all' ? ix.all : show === 'clips' ? ix.all.filter(function (t) { return t.kind === 'clip'; }) : show === 'unplayed' ? ix.music.filter(function (t) { return !t.plays; }) : show === 'rated' ? ix.all.filter(function (t) { return t.rating > 0; }) : ix.music;
-		var list = filt ? L.search(lib, filt, base) : sorted(base, sort);
+		var list = sorted(filt ? L.search(lib, filt, base) : base, sort, route.query.get('dir') === 'rev');
 		headerBlock(view, { title: 'Songs', kicker: 'Library', meta: metaLine(list), hue: { h: 265, s: 45 }, art: false, actions: [
 			actionBtn('play', 'Play', function () { playFrom(list.map(function (t) { return t.id; }), 0, { label: 'Songs', href: '#/songs' }); }, true),
 			shuffleSplit({}, { label: 'All songs', href: '#/songs' })
@@ -2126,9 +2162,9 @@
 		showSel.value = show;
 		showSel.addEventListener('change', function () { setQuery({ show: showSel.value === 'music' ? null : showSel.value }); });
 		bar.appendChild(showSel);
-		bar.appendChild(sortSelect(sort, function (v) { ToyKit.store('songsSort', v); setQuery({ sort: v }); }));
+		sortControls(bar, sort, null, function (v) { ToyKit.store('songsSort', v); });
 		view.appendChild(bar);
-		trackList(view, list, { context: { label: 'Songs', href: '#/songs', patch: {} }, empty: 'No songs match.' });
+		trackList(view, list, { sort: sortConfig(sort), extra: sortExtra(sort), context: { label: 'Songs', href: '#/songs', patch: {} }, empty: 'No songs match.' });
 		if (filt) setTimeout(function () { var x = view.querySelector('.ts-filter'); if (x && document.activeElement === document.body) { x.focus(); x.setSelectionRange(x.value.length, x.value.length); } }, 0);
 	}
 	// Change the query of the current route without a new history entry.
@@ -2302,14 +2338,15 @@
 	// A collection page: header, actions, a breakdown row, the list.
 	function collection(view, o) {
 		var tracks = o.tracks, sort = route.query.get('sort') || o.sort || 'artist';
-		var list = sorted(tracks, sort), ids = list.map(function (t) { return t.id; });
+		var list = sorted(tracks, sort, route.query.get('dir') === 'rev'), ids = list.map(function (t) { return t.id; });
 		headerBlock(view, {
 			kicker: o.kicker, title: o.title, blurb: o.blurb, hue: o.hue, meta: metaLine(tracks), artNode: o.artNode,
 			actions: [
 				actionBtn('play', 'Play', function () { playFrom(ids, 0, o.ctx); }, true),
-				shuffleSplit(o.ctx.patch, o.ctx),
+				shuffleSplit(o.ctx.patch, o.ctx)
+			].concat(scopeButtons(o.ctx.patch, o.title), [
 				actionBtn('mix', 'Open in mix builder', function () { draft = planWith(o.ctx.patch, plan.mode); editingList = null; location.hash = '#/mix'; })
-			].concat(scopeButtons(o.ctx.patch, o.title))
+			])
 		});
 		var ix = idx();
 		if (o.breakdown === 'family') {
@@ -2324,9 +2361,9 @@
 			if (tw.length) { sectionHead(view, 'Works'); shelf(view, tw.map(workCard)); }
 		}
 		var hd = h('div', { class: 'ts-sec-head' }, [h('h2', { text: 'Songs' })]);
-		hd.appendChild(sortSelect(sort, function (v) { setQuery({ sort: v }); }));
+		sortControls(hd, sort, o.sorts);
 		view.appendChild(hd);
-		trackList(view, list, { context: o.ctx });
+		trackList(view, list, { sort: sortConfig(sort), extra: sortExtra(sort), context: o.ctx });
 	}
 
 	// ---- Works: the anime, visual novels, games, films and stage shows songs come from --------------
@@ -2577,119 +2614,13 @@
 
 	var draft = null;   // the plan being built; null: start from the current plan
 	function viewMix(view) {
-		var ix = idx();
-		if (!ix.all.length) { noMusic(view); return; }
 		if (!draft) draft = copyPlan(plan);
-		view.appendChild(h('h1', { class: 'ts-h1', text: 'Mix builder' }));
-		view.appendChild(h('p', { class: 'ts-muted ts-lede', text: 'Pick what goes in and how it is ordered. Within one row the choices are alternatives (City pop or Anison pop); different rows must all hold (and wistful, and Japanese).' }));
-		var summary = h('div', { class: 'ts-mixsum', aria: { live: 'polite' } });
-		view.appendChild(summary);
-		function refresh() {
-			clear(summary);
-			var chosen = chosenTracks(draft);
-			summary.appendChild(h('p', { class: 'ts-mixsum-n' }, [h('b', { text: plural(chosen.length, 'song') }), ' ' + DOT + ' ' + longTime(secs(chosen)) + ' ' + DOT + ' ' + modeName(draft.mode)]));
-			var words = mixWords(draft);
-			summary.appendChild(h('p', { class: 'ts-muted', text: words || 'Everything (no clips).' }));
-			var row = h('div', { class: 'ts-row-btns' });
-			var go = actionBtn('play', 'Play this mix', function () { plan = copyPlan(draft); context = { label: 'Mix', href: '#/mix', patch: patchOf(draft) }; applyPlan({ play: true }); }, true);
-			go.disabled = !chosen.length;
-			row.appendChild(go);
-			var editing = editingList && listById(editingList);
-			if (editing) row.appendChild(actionBtn('check', 'Update ' + editing.name, function () { editing.patch = patchOf(draft); editing.mode = draft.mode; delete editing.auto; saveLists(); if (focus === editing.id) setFocus(editing.id, true); say('Updated ' + q(editing.name) + '.'); location.hash = link('list', editing.id); }));
-			row.appendChild(actionBtn('plus', editing ? 'Save as a new playlist' : 'Save as playlist', function () { createList('smart', { patch: patchOf(draft), mode: draft.mode }, suggestName(draft), { focus: false }); }));
-			var reset = actionBtn('close', 'Start over', function () { draft = copyPlan(DEFAULT_PLAN); draft.mode = plan.mode; renderView(true); }); reset.dataset.id = 'mix-reset'; row.appendChild(reset);
-			summary.appendChild(row);
-		}
-		// order
-		sectionHead(view, 'Order');
-		var modes = h('div', { class: 'ts-modes', role: 'radiogroup', aria: { label: 'Order' } });
-		ORDER.forEach(function (o) {
-			var m = modeInfo(o.key), on = draft.mode === o.key;
-			var b = h('button', { data: { id: 'mix-mode-' + o.key }, class: 'ts-modecard' + (on ? ' is-on' : ''), role: 'radio', aria: { checked: on ? 'true' : 'false' } }, [icon(o.icon), h('b', { text: modeName(o.key) }), h('span', { text: m.blurb })]);
-			b.addEventListener('click', function () { draft.mode = o.key; renderView(true); });
-			modes.appendChild(b);
+		TS.mixView(view, { idx: idx, noMusic: noMusic, draft: draft, h: h, clear: clear, chosenTracks: chosenTracks, plural: plural, DOT: DOT, longTime: longTime, secs: secs, modeName: modeName, mixWords: mixWords, actionBtn: actionBtn, patchOf: patchOf, editingList: editingList, listById: listById, saveLists: saveLists, focus: focus, setFocus: setFocus, say: say, q: q, link: link, createList: createList, suggestName: suggestName, renderView: renderView, sectionHead: sectionHead, ORDER: ORDER, modeInfo: modeInfo, icon: icon, T: T, familyHue: familyHue, MOOD_HUE: MOOD_HUE, n: n, expanded: expanded, addedHue: addedHue, addedName: addedName, L: L, lib: lib, now: now, selectOf: selectOf, scopeTracks: scopeTracks, S: S,
+			play: function (p) { plan = copyPlan(p); context = { label: 'Mix', href: '#/mix', patch: patchOf(p) }; applyPlan({ play: true }); },
+			reset: function () { draft = copyPlan(DEFAULT_PLAN); draft.mode = plan.mode; renderView(true); }
 		});
-		view.appendChild(modes);
-		// filters
-		function pickRow(title, key, entries, opts) {
-			opts = opts || {};
-			entries = entries.filter(function (e) { return e.count; });
-			if (!entries.length) return;
-			var box = h('div', { class: 'ts-pickrow' });
-			var hd = h('div', { class: 'ts-pick-h' }, [h('h3', { text: title })]);
-			if (draft[key].length) hd.appendChild(h('button', { class: 'ts-link-btn', text: 'Clear', on: { click: function () { draft[key] = []; renderView(true); var back = view.querySelector('.ts-chip[data-id^="mix-' + key + '-"]'); if (back) back.focus({ preventScroll: true }); } } }));
-			box.appendChild(hd);
-			var row = h('div', { class: 'ts-chips' });
-			var shown = opts.max && !opts.all ? entries.slice(0, opts.max) : entries;
-			entries.forEach(function (e) { if (draft[key].indexOf(e.key) >= 0 && shown.indexOf(e) < 0) shown.push(e); });
-			shown.forEach(function (e) {
-				var on = draft[key].indexOf(e.key) >= 0;
-				var c = h('button', { data: { id: 'mix-' + key + '-' + e.key }, class: 'ts-chip' + (on ? ' is-on' : '') + (e.hue ? ' is-hued' : ''), aria: { pressed: on ? 'true' : 'false' } }, [h('span', { text: e.name }), h('span', { class: 'ts-count', text: n(e.count) })]);
-				if (e.hue) { c.style.setProperty('--h', String(Math.round(e.hue.h))); c.style.setProperty('--s', e.hue.s + '%'); }
-				c.addEventListener('click', function () { var at = draft[key].indexOf(e.key); if (at >= 0) draft[key].splice(at, 1); else draft[key].push(e.key); renderView(true); });
-				row.appendChild(c);
-			});
-			if (opts.max && entries.length > shown.length) row.appendChild(h('button', { class: 'ts-link-btn', text: 'and ' + n(entries.length - shown.length) + ' more', on: { click: function () { var first = entries.filter(function (x) { return shown.indexOf(x) < 0; })[0]; opts.all = true; expanded[key] = true; renderView(true); var back = view.querySelector('[data-id="' + CSS.escape('mix-' + key + '-' + first.key) + '"]'); if (back) back.focus({ preventScroll: true }); } } }));
-			box.appendChild(row);
-			view.appendChild(box);
-		}
-		sectionHead(view, 'What goes in');
-		pickRow('Families', 'families', T.FAMILIES.map(function (f) { return { key: f.key, name: f.name, count: ix.families[f.key] ? ix.families[f.key].tracks.length : 0, hue: familyHue(f.key) }; }));
-		var gnames = Object.keys(ix.genres).sort(function (a, b) { return ix.genres[b].tracks.length - ix.genres[a].tracks.length; });
-		pickRow('Genres', 'genres', gnames.map(function (g) { return { key: g, name: g, count: ix.genres[g].tracks.length, hue: T.hueOf(g) }; }), { max: 24, all: expanded.genres });
-		pickRow('Moods', 'moods', T.MOODS.map(function (m) { return { key: m[0], name: m[1], count: ix.moods[m[0]] ? ix.moods[m[0]].tracks.length : 0, hue: { h: MOOD_HUE[m[0]], s: 60 } }; }));
-		pickRow('Scenes', 'scenes', T.SCENES.map(function (s) { return { key: s[0], name: s[1], count: ix.scenes[s[0]] ? ix.scenes[s[0]].tracks.length : 0 }; }));
-		pickRow('Languages', 'langs', T.LANGS.map(function (l) { return { key: l[0], name: l[1], count: ix.langs[l[0]] ? ix.langs[l[0]].tracks.length : 0 }; }));
-		pickRow('Roles', 'roles', T.ROLES.map(function (r) { return { key: r[0], name: r[1], count: ix.all.filter(function (t) { return t.role === r[0]; }).length }; }));
-		pickRow('Added in (year)', 'added', Object.keys(ix.addedY).sort().reverse().map(function (y) { return { key: y, name: y, count: ix.addedY[y].tracks.length, hue: addedHue(y) }; }));
-		var pickedYears = draft.added.filter(function (k) { return k.length === 4; });
-		var monthKeys = Object.keys(ix.addedM).sort().reverse().filter(function (k) { return !pickedYears.length || pickedYears.indexOf(k.slice(0, 4)) >= 0 || draft.added.indexOf(k) >= 0; });
-		pickRow(pickedYears.length ? 'Added in (month of ' + pickedYears.join(', ') + ')' : 'Added in (month)', 'added', monthKeys.map(function (k) { return { key: k, name: addedName(k), count: ix.addedM[k].tracks.length }; }), { max: 12, all: expanded.added });
-		pickRow('Decades', 'decades', Object.keys(ix.decades).sort().map(function (dk) { return { key: dk, name: dk, count: ix.decades[dk].tracks.length }; }));
-		var fl = L.facets(lib, ix.all, now());
-		pickRow('Length', 'lengths', fl.length.map(function (e) { return { key: e.key, name: e.name, count: e.count }; }));
-		pickRow('Works', 'works', Object.keys(ix.works).sort(function (a, b) { return ix.works[b].tracks.length - ix.works[a].tracks.length; }).map(function (w) { return { key: w, name: w, count: ix.works[w].tracks.length }; }), { max: 18, all: expanded.works });
-		pickRow('Artists', 'artists', Object.keys(ix.artists).map(function (k) { return ix.artists[k]; }).sort(function (a, b) { return b.tracks.length - a.tracks.length; }).map(function (a) { return { key: a.key, name: a.name, count: a.tracks.length }; }), { max: 24, all: expanded.artists });
-		if (Object.keys(lib.playlists).length > 1) pickRow('Playlists', 'playlists', fl.playlist.map(function (e) { return { key: e.key, name: e.name, count: e.count }; }));
-		// limits
-		sectionHead(view, 'Limits');
-		var lim = h('div', { class: 'ts-limits' });
-		function num(label, key, hint) {
-			var lab = h('label', { class: 'ts-field' }, [h('span', { text: label })]);
-			var inp = h('input', { class: 'kit-input', type: 'number', min: '0', placeholder: hint });
-			inp.value = draft[key] || '';
-			inp.addEventListener('change', function () { var v = parseInt(inp.value, 10); draft[key] = v > 0 ? v : null; if (!(v > 0)) inp.value = ''; refresh(); });
-			lab.appendChild(inp);
-			lim.appendChild(lab);
-		}
-		num('Stop after (tracks)', 'maxTracks', 'no limit');
-		num('Stop after (minutes)', 'maxMinutes', 'no limit');
-		num('Skip what played in the last (hours)', 'hours', 'none');
-		function day(label, key) {
-			var lab = h('label', { class: 'ts-field' }, [h('span', { text: label })]);
-			var inp = h('input', { class: 'kit-input', type: 'date' });
-			inp.value = draft[key] || '';
-			inp.addEventListener('change', function () { draft[key] = inp.value || ''; refresh(); });
-			lab.appendChild(inp);
-			lim.appendChild(lab);
-		}
-		day('Added on or after', 'addedFrom');
-		day('Added on or before', 'addedTo');
-		function check(label, key) {
-			var lab = h('label', { class: 'ts-check' });
-			var cb = h('input', { type: 'checkbox', checked: !!draft[key] });
-			cb.addEventListener('change', function () { draft[key] = cb.checked; refresh(); });
-			lab.appendChild(cb);
-			lab.appendChild(h('span', { text: label }));
-			lim.appendChild(lab);
-		}
-		check('Keep numbered parts together (Pt. 1, Pt. 2)', 'keepRuns');
-		check('Include clips (videos that are not music)', 'clips');
-		check('Keep songs from one anime or game apart (all orders but the true shuffle)', 'apart');
-		check('One version of each song (the original or one cover, not all of them)', 'oneVersion');
-		view.appendChild(lim);
-		refresh();
 	}
+
 	var expanded = {};
 	function mixWords(p) {
 		var ix = idx(), parts = [];
@@ -2721,7 +2652,10 @@
 		if (p.scenes.length === 1) bits.push(T.SCENE_NAME[p.scenes[0]]);
 		if (p.works.length === 1) bits.push(p.works[0]);
 		if (p.added && p.added.length === 1) bits.push('added ' + addedName(p.added[0]));
-		return bits.filter(Boolean).join(' ') || 'My mix';
+		var name = bits.filter(Boolean).join(' ');
+		if (p.minRating >= 4) name = name ? name + ' (liked)' : 'Liked mix'; else if (p.minRating > 0) name = (name || 'My mix') + ' (' + p.minRating + '+ stars)';
+		if (!name && p.text) name = capital(p.text);
+		return name || 'My mix';
 	}
 
 	// ---- Your numbers -------------------------------------------------------------------------------------
@@ -3325,8 +3259,9 @@
 		var inp = h('input', { class: 'kit-input', type: 'text', aria: { label: 'Playlist name' } });
 		inp.value = suggested || '';
 		f.appendChild(h('label', { class: 'ts-field' }, [h('span', { text: 'Name' }), inp]));
-		var count = kind === 'manual' ? (data.ids || []).length : S.select(L.list(lib), scopeSelect(data.patch), now()).length;
-		f.appendChild(h('p', { class: 'ts-muted', text: kind === 'manual' ? plural(count, 'song') + ' to start with. Add more from any song\'s menu.' : plural(count, 'song') + ' now. A smart playlist follows its filter: songs you label later join it by themselves.' }));
+		var all = kind === 'manual' ? [] : S.select(L.list(lib), scopeSelect(data.patch), now()), ok = playable(all).length;
+		var count = kind === 'manual' ? (data.ids || []).length : all.length;
+		f.appendChild(h('p', { class: 'ts-muted', text: kind === 'manual' ? plural(count, 'song') + ' to start with. Add more from any song\'s menu.' : plural(count, 'song') + ' now' + (ok < count ? ', ' + n(ok) + ' of them playable' : '') + (focus && listById(focus) ? ', from your whole library, not only ' + q(listById(focus).name) : '') + '. A smart playlist follows its filter: songs you label later join it by themselves.' }));
 		var fl = h('label', { class: 'ts-check' }, [h('input', { type: 'checkbox', checked: opts.focus !== false }), h('span', { text: 'Focus on it now (the whole app works inside it)' })]);
 		f.appendChild(fl);
 		f.appendChild(h('div', { class: 'ts-row-btns' }, [h('button', { class: 'ts-btn ts-btn--primary ts-btn--md', type: 'submit', text: 'Create' }), h('button', { class: 'ts-btn ts-btn--secondary ts-btn--md', text: 'Cancel', on: { click: d.close } })]));
@@ -3456,7 +3391,7 @@
 		if (!li) { view.appendChild(h('p', { class: 'ts-empty', text: 'This playlist is gone.' })); return; }
 		var ts = listTracks(li), ix = idx();
 		var sort = route.query.get('sort') || (li.kind === 'manual' ? 'list' : 'artist');
-		var shown = sort === 'list' ? ts : sorted(ts, sort);
+		var shown = sort === 'list' ? (route.query.get('dir') === 'rev' ? ts.slice().reverse() : ts) : sorted(ts, sort, route.query.get('dir') === 'rev');
 		var cov = coverOf(ts);
 		var desc = li.kind === 'smart' ? mixWords(planWith(li.patch || {})) || 'Everything.' : 'Hand-picked.';
 		var actions = [
@@ -3473,9 +3408,9 @@
 		]; } });
 		var hd = h('div', { class: 'ts-sec-head' }, [h('h2', { text: 'Songs' })]);
 		var opts = (li.kind === 'manual' ? [['list', 'Your order']] : []).concat(SORT_OPTS);
-		hd.appendChild(sortSelect(sort, function (v) { setQuery({ sort: v }); }, opts));
+		sortControls(hd, sort, opts);
 		view.appendChild(hd);
-		trackList(view, shown, { context: { label: li.name, href: link('list', li.id), patch: li.kind === 'smart' ? li.patch : {} }, list: li.kind === 'manual' ? li : null, empty: li.kind === 'manual' ? 'Empty. Add songs from any song\'s menu (Add to playlist), or select several and press Add.' : 'Nothing matches this filter yet.' });
+		trackList(view, shown, { sort: sortConfig(sort), extra: sortExtra(sort), context: { label: li.name, href: link('list', li.id), patch: li.kind === 'smart' ? li.patch : {} }, list: li.kind === 'manual' ? li : null, empty: li.kind === 'manual' ? 'Empty. Add songs from any song\'s menu (Add to playlist), or select several and press Add.' : 'Nothing matches this filter yet.' });
 		if (li.kind === 'smart' && ix.all.length) view.appendChild(h('p', { class: 'ts-muted', text: 'Songs join and leave by themselves as their labels change.' }));
 	}
 	function deleteList(li) {
@@ -4094,7 +4029,7 @@
 	var queueSync = later(function () {
 		if (thumb || demo || !store || !L.list(lib).length) return;
 		var state = {};
-		L.list(lib).forEach(function (t) { if (t.rating || t.blocked || t.plays || t.skips) state[t.id] = { rating: t.rating, blocked: t.blocked, plays: t.plays, skips: t.skips, lastPlayed: t.lastPlayed, stateAt: t.stateAt || null }; });
+		L.list(lib).forEach(function (t) { if (t.rating || t.blocked || t.plays || t.skips) state[t.id] = { rating: t.rating, blocked: t.blocked, plays: t.plays, skips: t.skips, lastPlayed: t.lastPlayed, stateAt: t.stateAt || null, likedAt: t.likedAt || null }; });
 		store.set('sync:outbox', { format: 'true-shuffle-sync', version: 1, savedAt: new Date().toISOString(), labels: L.exportLabels(lib, Date.now()), state: state, stations: lists, history: histCache.slice(0, 5000) });
 	}, 4000);
 	var inboxBusy = null;
@@ -4110,7 +4045,7 @@
 				var t = lib.tracks[id], s = st[id];
 				if (!t || !s) return;
 				var newer = s.stateAt && (!t.stateAt || s.stateAt > t.stateAt);
-				if (newer) { t.rating = +s.rating || 0; t.blocked = !!s.blocked; t.stateAt = s.stateAt; }
+				if (newer) { L.edit(lib, id, { rating: s.rating, blocked: s.blocked, at: s.stateAt }); if (t.rating >= 4 && 'likedAt' in s) t.likedAt = s.likedAt || null; }
 				t.plays = Math.max(t.plays, +s.plays || 0);
 				t.skips = Math.max(t.skips, +s.skips || 0);
 				if (s.lastPlayed && (!t.lastPlayed || s.lastPlayed > t.lastPlayed)) t.lastPlayed = s.lastPlayed;
@@ -4707,14 +4642,14 @@
 	function toggleLike(t) {
 		if (!t) return;
 		if (t.transient && engine) { engine.keep(t.id); t = lib.tracks[t.id] || t; if (t.transient) return; }
-		var was = t.rating || 0, on = !liked(t), keep = beforeLike[t.id], to;
+		var was = t.rating || 0, likedAt = t.likedAt || null, on = !liked(t), keep = beforeLike[t.id], to;
 		if (on) { to = 5; if (was < 4) beforeLike[t.id] = was; }
 		else { to = keep != null ? keep : 3; delete beforeLike[t.id]; }
 		saveBeforeLike();
 		L.edit(lib, t.id, { rating: to });
 		changed([t.id]);
 		U.toast(on ? 'Added to Liked songs.' : 'Removed from Liked songs' + (to ? ' (now ' + plural(to, 'star') + ').' : '.'), { action: 'Undo', onAction: function () {
-			L.edit(lib, t.id, { rating: was });
+			L.edit(lib, t.id, { rating: was }); t.likedAt = likedAt;
 			if (on) delete beforeLike[t.id]; else if (keep != null) beforeLike[t.id] = keep;
 			saveBeforeLike();
 			changed([t.id]);
@@ -4738,7 +4673,7 @@
 	}
 	function viewLiked(view) {
 		var ts = idx().all.filter(function (t) { return liked(t); });
-		collection(view, { kicker: 'Playlist', title: 'Liked songs', blurb: ts.length ? 'Every song you rated four stars or more, or liked with the heart.' : 'Press the heart on any song (or L while it plays) and it lands here.', hue: { h: 340, s: 60 }, tracks: ts, ctx: { label: 'Liked songs', href: '#/liked', patch: { minRating: 4 } }, sort: 'added', breakdown: 'family' });
+		collection(view, { kicker: 'Playlist', title: 'Liked songs', blurb: ts.length ? 'Every song you rated four stars or more, or liked with the heart.' : 'Press the heart on any song (or L while it plays) and it lands here.', hue: { h: 340, s: 60 }, tracks: ts, ctx: { label: 'Liked songs', href: '#/liked', patch: { minRating: 4 } }, sort: 'liked', sorts: [['liked', 'Recently liked']].concat(SORT_OPTS), breakdown: 'family' });
 	}
 
 	// ---- The seek bar: the time under the pointer ----------------------------------------------------------
@@ -5743,6 +5678,7 @@
 		$('stale-signin').addEventListener('click', signIn);
 		$('focus-btn').addEventListener('click', function (e) { focusMenu(e.currentTarget); });
 		U.setIcon($('btn-repeat'), 'repeat');
+		$('btn-repeat').title = A.VOCAB.repeat.desc + ' (' + A.VOCAB.repeat.key + ')';
 		$('btn-repeat').addEventListener('click', toggleRepeat);
 		dropTarget($('now'), function (ids) { queueLater(ids); });
 		U.safe.player($('player'), function () { return document.body.classList.contains('has-player'); });

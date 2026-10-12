@@ -288,7 +288,7 @@
 			channel: '', channelId: '', durationSec: 0, publishedAt: null, year: null, yearSource: '', decade: '',
 			addedAt: {}, playlists: [],
 			genres: [], topics: [], embeddable: true, removed: false, removedReason: '', playerError: null,
-			rating: 0, plays: 0, skips: 0, lastPlayed: null, blocked: false, tags: [], userEdits: {}, labels: null, stateAt: null,
+			rating: 0, plays: 0, skips: 0, lastPlayed: null, blocked: false, tags: [], userEdits: {}, labels: null, stateAt: null, likedAt: null,
 			titleAlt: '', artistNative: '', origArtist: '', scene: '', work: '', role: '', lang: '', mood: '', kind: '',
 			raw: { title: '', channel: '' }, guess: { artist: '', title: '', rule: 'none', confidence: 0 }, artistGuess: '', spreadKey: '',
 			run: null, live: false, releaseYear: null, categoryId: '', fetchedAt: null
@@ -677,7 +677,11 @@
 			if (t.userEdits[k] === null) delete t.userEdits[k];
 		});
 		if ('rating' in fields || 'blocked' in fields) t.stateAt = fields.at ? iso(fields.at) : iso();
-		if ('rating' in fields) t.rating = Math.max(0, Math.min(5, Math.round(+fields.rating || 0)));
+		if ('rating' in fields) {
+			var rating = Math.max(0, Math.min(5, Math.round(+fields.rating || 0)));
+			if (rating >= 4 && (t.rating || 0) < 4) t.likedAt = t.stateAt; else if (rating < 4) t.likedAt = null;
+			t.rating = rating;
+		}
 		if ('blocked' in fields) t.blocked = !!fields.blocked;
 		if ('tags' in fields) t.tags = uniq(fields.tags);
 	}

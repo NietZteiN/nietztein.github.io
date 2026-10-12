@@ -37,8 +37,9 @@ export default async function ({newPage, baseUrl, assert, outDir}) {
   assert.ok(await page.eval(()=>[...document.querySelectorAll('[role="menuitem"]')].some(b=>b.textContent.trim()==='Edit filter')));
   await menu('Delete playlist');assert.equal(await page.eval(()=>document.querySelector('.ts-modal')),null);
   await page.waitFor(()=>location.hash==='#/lists');
-  await page.eval(id=>{location.hash='#/track/'+id;},ids[0]);await page.waitFor(()=>document.querySelector('.ts-kicker')?.textContent.startsWith('Song'));
-  await page.click('.ts-actions [data-label="More actions"]');
+  await page.eval(id=>{location.hash='#/track/'+id;},ids[0]);await page.waitFor(id=>document.querySelector('#view .ts-hero-title')?.textContent===window.__ts.pageCtx.words.title(window.__ts.lib.tracks[id]),{args:[ids[0]]});
+  await page.eval(()=>new Promise(resolve=>setTimeout(resolve,160)));
+  await page.click('.ts-actions [data-label="More actions"]');await page.waitFor('.ts-menu');
   assert.ok(await page.eval(()=>[...document.querySelectorAll('[role="menuitem"]')].some(b=>b.textContent.startsWith('Trim and volume'))));
   assert.ok(!(await page.eval(()=>[...document.querySelectorAll('[role="menuitem"]')].some(b=>b.textContent.trim()==='More'))));
   await page.key('Escape');
