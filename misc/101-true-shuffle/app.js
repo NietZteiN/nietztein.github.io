@@ -749,8 +749,8 @@
 		var ul = $('stations');
 		clear(ul);
 		renderFocusBtn();
-		if (!lists.length) { ul.appendChild(h('li', { class: 'ts-side-empty' }, ['Work with part of your library: ', h('a', { href: '#/lists', text: 'make or pick a playlist' }), '.'])); return; }
-		lists.forEach(function (li) {
+		if (!savedLists().length) { ul.appendChild(h('li', { class: 'ts-side-empty' }, ['Work with part of your library: ', h('a', { href: '#/lists', text: 'make or pick a playlist' }), '.'])); return; }
+		savedLists().forEach(function (li) {
 			var a = h('a', { class: 'ts-station' + (focus === li.id ? ' is-focused' : '') + (route.parts[0] === 'list' && route.parts[1] === li.id ? ' is-on' : ''), href: link('list', li.id), title: li.name, data: { list: li.id } }, [U.swatch(li.kind === 'manual' ? 200 : 265, li.name, 'ts-station-art'), h('span', { text: li.name }), focus === li.id ? icon('mix', 'ts-station-focus') : null]);
 			if (li.kind === 'manual') dropTarget(a, function (ids) { ids.forEach(function (id) { if (li.ids.indexOf(id) < 0) li.ids.push(id); }); saveLists(); if (focus === li.id) { dirty(); redrawView(); } say(plural(ids.length, 'song') + ' added to ' + q(li.name) + '.'); });
 			ul.appendChild(h('li', null, a));
@@ -1973,7 +1973,7 @@
 			if (sgs.length) {
 				sectionHead(view, 'Work with part of your library', { href: '#/lists', text: 'Playlists' });
 				var fr = h('div', { class: 'ts-chips ts-chipbar' });
-				sgs.forEach(function (s) { fr.appendChild(h('button', { class: 'ts-chip is-hued', style: { '--h': String(s.hue.h), '--s': s.hue.s + '%' }, on: { click: function () { var li = { id: newId(), name: s.name, kind: 'smart', patch: s.patch, created: new Date().toISOString(), auto: true }; lists.push(li); saveLists(); setFocus(li.id); } } }, [h('span', { text: s.name }), h('span', { class: 'ts-count', text: n(s.n) })])); });
+				sgs.forEach(function (s) { fr.appendChild(h('button', { class: 'ts-chip is-hued', style: { '--h': String(s.hue.h), '--s': s.hue.s + '%' }, on: { click: function () { focusOn(s.name, s.patch); } } }, [h('span', { text: s.name }), h('span', { class: 'ts-count', text: n(s.n) })])); });
 				view.appendChild(fr);
 			}
 		}
@@ -2601,7 +2601,7 @@
 			['songs', 'Songs', 'songs', plural(ix.music.length, 'song')], ['artists', 'Artists', 'artist', plural(Object.keys(ix.artists).length, 'artist')], ['channels', 'Channels', 'channel', 'Where your songs were uploaded'],
 			['genres', 'Genres', 'genre', plural(Object.keys(ix.genres).length, 'genre')], ['browse', 'Moods & scenes', 'mood', 'Moods, scenes, languages, decades'],
 			['works', 'Anime, games & stage', 'works', plural(Object.keys(ix.works).length, 'work')], ['stats', 'Your numbers', 'stats', 'What you have and play'],
-			['for-you', 'For you', 'sparkle', 'New songs picked from what you play'], ['lists', 'Playlists', 'list', plural(lists.length, 'playlist')], ['map', 'Map', 'map', 'Your library as a map of sound'], ['history', 'History', 'history', 'What you played'], ['label', 'Quick labeller', 'edit', plural(idx().all.filter(needsLabel).length, 'song') + ' to label'],
+			['for-you', 'For you', 'sparkle', 'New songs picked from what you play'], ['lists', 'Playlists', 'list', plural(savedLists().length, 'playlist')], ['map', 'Map', 'map', 'Your library as a map of sound'], ['history', 'History', 'history', 'What you played'], ['label', 'Quick labeller', 'edit', plural(idx().all.filter(needsLabel).length, 'song') + ' to label'],
 			moduleReady('wrapped') ? ['wrapped', 'Your year', 'sparkle', 'Your listening, in review'] : null, moduleReady('quiz') ? ['quiz', 'Guess the anime', 'tv', 'A quiz from your openings and endings'] : null, moduleReady('duel') ? ['duel', 'Rank your songs', 'blend', 'Which of two songs you like more'] : null, moduleReady('car') ? ['car', 'Car mode', 'car', 'Big buttons for driving; the screen stays on'] : null,
 			['fix', 'Needs attention', 'fix', ix.needs.unsure ? plural(ix.needs.unsure, 'unsure artist') : 'All good'], ['settings', 'Settings', 'settings', 'Import, labels, backup, privacy']
 		].filter(Boolean);
@@ -3207,6 +3207,20 @@
 	function newId() { return 'l' + Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36); }
 	function listById(id) { for (var i = 0; i < lists.length; i++) if (lists[i].id === id) return lists[i]; return null; }
 	function saveLists() { if (!thumb) store.set('lists', lists); queueSync(); renderNav(); }
+	function savedLists() { return lists.filter(function (li) { return !li.auto; }); }
+	function recentFocuses() { return lists.filter(function (li) { return li.auto; }).sort(function (a, b) { return (b.used || Date.parse(b.created) || 0) - (a.used || Date.parse(a.created) || 0); }); }
+	function pruneFocuses() {
+		var keep = recentFocuses().slice(0, 5).map(function (li) { return li.id; });
+		lists = lists.filter(function (li) { return !li.auto || li.id === focus || keep.indexOf(li.id) >= 0; });
+	}
+	function matchingList(patch) { return lists.filter(function (li) { return li.kind === 'smart' && S.signature(li.patch || {}) === S.signature(patch || {}); }).sort(function (a, b) { return !!a.auto - !!b.auto; })[0]; }
+	function focusOn(name, patch) {
+		var li = matchingList(patch);
+		if (!li) { li = { id: newId(), name: name, kind: 'smart', patch: patch, created: new Date().toISOString(), auto: true }; lists.push(li); }
+		li.used = Date.now();
+		focus = li.id; pruneFocuses(); saveLists(); setFocus(li.id);
+		return li;
+	}
 	function scopeSelect(patch) { var s = selectOf(planWith(patch || {}, 'true')); s.includeBlocked = true; s.includeUnplayable = true; return s; }
 	function listTracks(li) {
 		if (!li) return [];
@@ -3223,6 +3237,10 @@
 	}
 	function setFocus(id, quiet) {
 		focus = id || null;
+		var li = focus && listById(focus);
+		if (li && li.auto) li.used = Date.now();
+		pruneFocuses();
+		if (!thumb) store.set('lists', lists);
 		scopeMemo = null;
 		dirty();
 		if (!thumb) store.set('focus', focus);
@@ -3245,7 +3263,10 @@
 	}
 	function focusMenu(anchor) {
 		var items = [{ heading: 'Work inside' }, { label: 'Everything', icon: 'songs', checked: !focus, onSelect: function () { setFocus(null); } }];
-		lists.forEach(function (li) { items.push({ label: li.name, icon: li.kind === 'manual' ? 'list' : 'mix', hint: n(listTracks(li).length), checked: focus === li.id, onSelect: function () { setFocus(li.id); } }); });
+		function item(li) { items.push({ label: li.name, icon: li.kind === 'manual' ? 'list' : 'mix', hint: n(listTracks(li).length), checked: focus === li.id, onSelect: function () { setFocus(li.id); } }); }
+		savedLists().forEach(item);
+		var recent = recentFocuses();
+		if (recent.length) { items.push({ heading: 'Recent focuses' }); recent.forEach(item); }
 		items.push({ sep: true });
 		items.push({ label: 'Suggested and all playlists' + ELL, icon: 'genre', onSelect: function () { location.hash = '#/lists'; } });
 		items.push({ label: 'New smart playlist' + ELL, icon: 'plus', onSelect: function () { draft = copyPlan(DEFAULT_PLAN); editingList = null; location.hash = '#/mix'; } });
@@ -3254,6 +3275,8 @@
 	// Ask for a name, create the playlist, optionally focus it.
 	function createList(kind, data, suggested, opts) {
 		opts = opts || {};
+		var promote = kind === 'smart' && matchingList(data.patch);
+		if (promote && !promote.auto) promote = null;
 		var d = U.openDialog({ title: kind === 'manual' ? 'New playlist' : 'Save as a playlist' });
 		var f = h('form', { class: 'ts-edit' });
 		var inp = h('input', { class: 'kit-input', type: 'text', aria: { label: 'Playlist name' } });
@@ -3264,20 +3287,21 @@
 		f.appendChild(h('p', { class: 'ts-muted', text: kind === 'manual' ? plural(count, 'song') + ' to start with. Add more from any song\'s menu.' : plural(count, 'song') + ' now' + (ok < count ? ', ' + n(ok) + ' of them playable' : '') + (focus && listById(focus) ? ', from your whole library, not only ' + q(listById(focus).name) : '') + '. A smart playlist follows its filter: songs you label later join it by themselves.' }));
 		var fl = h('label', { class: 'ts-check' }, [h('input', { type: 'checkbox', checked: opts.focus !== false }), h('span', { text: 'Focus on it now (the whole app works inside it)' })]);
 		f.appendChild(fl);
-		f.appendChild(h('div', { class: 'ts-row-btns' }, [h('button', { class: 'ts-btn ts-btn--primary ts-btn--md', type: 'submit', text: 'Create' }), h('button', { class: 'ts-btn ts-btn--secondary ts-btn--md', text: 'Cancel', on: { click: d.close } })]));
+		f.appendChild(h('div', { class: 'ts-row-btns' }, [h('button', { class: 'ts-btn ts-btn--primary ts-btn--md', type: 'submit', text: promote ? 'Save' : 'Create' }), h('button', { class: 'ts-btn ts-btn--secondary ts-btn--md', text: 'Cancel', on: { click: d.close } })]));
 		f.addEventListener('submit', function (e) {
 			e.preventDefault();
 			var name = inp.value.trim();
 			if (!name) { inp.focus(); return; }
-			var li = { id: newId(), name: name, kind: kind, created: new Date().toISOString() };
+			var li = promote || { id: newId(), name: name, kind: kind, created: new Date().toISOString() };
+			li.name = name; delete li.auto;
 			if (kind === 'manual') li.ids = (data.ids || []).slice(); else { li.patch = data.patch || {}; if (data.mode) li.mode = data.mode; }
-			lists.push(li);
+			if (!promote) lists.push(li);
 			saveLists();
 			d.close();
 			if (fl.querySelector('input').checked) setFocus(li.id, true);
 			if (opts.go !== false) location.hash = link('list', li.id);
-			say('Created ' + q(name) + '.');
-			if (opts.done) opts.done(li);
+			say((promote ? 'Saved ' : 'Created ') + q(name) + '.');
+			if (opts.done) opts.done(li); else if (opts.go === false) renderView(true);
 		});
 		d.body.appendChild(f);
 		inp.focus();
@@ -3311,14 +3335,13 @@
 	// The buttons a collection page offers for working inside it.
 	function scopeButtons(patch, name, ids) {
 		var out = [];
-		var existing = lists.filter(function (li) { return li.kind === 'smart' && S.signature(li.patch || {}) === S.signature(patch || {}); })[0];
+		var existing = matchingList(patch);
 		if (existing) out.push(actionBtn(focus === existing.id ? 'close' : 'mix', focus === existing.id ? 'Leave focus' : 'Focus', function () { setFocus(focus === existing.id ? null : existing.id); }));
 		else if (patch) out.push(actionBtn('mix', 'Focus', function () {
-			var li = { id: newId(), name: name, kind: 'smart', patch: patch, created: new Date().toISOString(), auto: true };
-			lists.push(li); saveLists(); setFocus(li.id);
+			focusOn(name, patch);
 		}));
-		out.push(actionBtn('plus', existing ? 'Saved' : 'Save as playlist', function () {
-			if (existing) { location.hash = link('list', existing.id); return; }
+		out.push(actionBtn('plus', existing && !existing.auto ? 'Saved' : 'Save as playlist', function () {
+			if (existing && !existing.auto) { location.hash = link('list', existing.id); return; }
 			if (patch) createList('smart', { patch: patch }, name, { focus: false, go: false });
 			else createList('manual', { ids: ids }, name, { focus: false, go: false });
 		}));
@@ -3346,7 +3369,7 @@
 		L.list(lib).forEach(function (t) { if (t.kind === 'clip') return; var y = S.addedKeys(t)[0]; if (y) yc[y] = (yc[y] || 0) + 1; });
 		Object.keys(yc).filter(function (y) { return yc[y] >= 40; }).sort().reverse().forEach(function (y) { out.push({ name: 'Added in ' + y, patch: { added: [y] }, n: yc[y], hue: addedHue(y) }); });
 		Object.keys(ix.works).filter(function (w) { return ix.works[w] >= 6; }).sort(function (a, b) { return ix.works[b] - ix.works[a]; }).slice(0, 14).forEach(function (w) { out.push({ name: w, patch: { works: [w] }, n: ix.works[w], hue: { h: 210, s: 40 } }); });
-		return out.filter(function (sg) { return !lists.some(function (li) { return li.kind === 'smart' && S.signature(li.patch || {}) === S.signature(sg.patch); }); });
+		return out.filter(function (sg) { return !savedLists().some(function (li) { return li.kind === 'smart' && S.signature(li.patch || {}) === S.signature(sg.patch); }); });
 	}
 	function viewLists(view) {
 		view.appendChild(h('h1', { class: 'ts-h1', text: 'Playlists' }));
@@ -3356,9 +3379,9 @@
 		row.appendChild(actionBtn('list', 'New hand-picked playlist', function () { createList('manual', { ids: [] }, ''); }));
 		if (focus) row.appendChild(actionBtn('close', 'Leave focus', function () { setFocus(null); }));
 		view.appendChild(row);
-		if (lists.length) {
+		if (savedLists().length) {
 			sectionHead(view, 'Yours');
-			grid(view, lists.map(function (li) {
+			grid(view, savedLists().map(function (li) {
 				var ts = listTracks(li), cov = coverOf(ts);
 				var c = card({ href: link('list', li.id), art: cov ? artFor(cov) : U.swatch(200, li.name), title: li.name, sub: (li.kind === 'manual' ? 'Hand-picked' : 'Smart') + ' ' + DOT + ' ' + plural(ts.length, 'song') + (focus === li.id ? ' ' + DOT + ' focused' : ''), play: function () { playList(li, true); }, playLabel: 'Shuffle ' + li.name });
 				if (focus === li.id) c.classList.add('is-focused');
@@ -3372,7 +3395,7 @@
 			grid(view, sg.map(function (s) {
 				var wrap = tile({ href: '#', title: s.name, sub: plural(s.n, 'song'), hue: s.hue });
 				var a = wrap.querySelector('a');
-				a.addEventListener('click', function (e) { e.preventDefault(); var li = { id: newId(), name: s.name, kind: 'smart', patch: s.patch, created: new Date().toISOString(), auto: true }; lists.push(li); saveLists(); setFocus(li.id); location.hash = link('list', li.id); });
+				a.addEventListener('click', function (e) { e.preventDefault(); var li = focusOn(s.name, s.patch); location.hash = link('list', li.id); });
 				wrap.appendChild(h('button', { class: 'ts-bigplay is-plus', aria: { label: 'Save ' + s.name + ' as a playlist' }, title: 'Save as playlist', on: { click: function (e) { e.preventDefault(); createList('smart', { patch: s.patch }, s.name, { focus: false, go: false, done: function () { renderView(true); } }); } } }, icon('plus')));
 				return wrap;
 			}), 'is-tiles is-small');
@@ -3400,7 +3423,8 @@
 			actionBtn(focus === li.id ? 'close' : 'mix', focus === li.id ? 'Leave focus' : 'Focus', function () { setFocus(focus === li.id ? null : li.id); })
 		];
 		if (li.kind === 'smart') actions.push(actionBtn('edit', 'Edit filter', function () { draft = planWith(li.patch || {}, li.mode || plan.mode); editingList = li.id; location.hash = '#/mix'; }));
-		headerBlock(view, { kicker: (li.kind === 'manual' ? 'Hand-picked playlist' : 'Smart playlist') + (focus === li.id ? ' ' + DOT + ' focused' : ''), title: li.name, blurb: desc, hue: cov ? trackHue(cov) : { h: 200, s: 40 }, artNode: cov ? artFor(cov, 'ts-hero-art') : null, meta: metaLine(ts), actions: actions, more: function () { return [
+		headerBlock(view, { kicker: (li.auto ? 'Smart filter' + ' ' + DOT + ' not saved' : li.kind === 'manual' ? 'Hand-picked playlist' : 'Smart playlist') + (focus === li.id ? ' ' + DOT + ' focused' : ''), title: li.name, blurb: desc, hue: cov ? trackHue(cov) : { h: 200, s: 40 }, artNode: cov ? artFor(cov, 'ts-hero-art') : null, meta: metaLine(ts), actions: actions, more: function () { return [
+			li.auto ? { label: 'Save as playlist' + ELL, icon: 'plus', onSelect: function () { createList('smart', { patch: li.patch, mode: li.mode }, li.name, { focus: false, go: false, done: function () { renderView(true); } }); } } : null,
 			{ label: 'Rename' + ELL, icon: 'edit', onSelect: function () { renameList(li); } },
 			{ label: 'Edit every song' + ELL, icon: 'edit', disabled: !ts.length, onSelect: function () { openEditor(ts.map(function (t) { return t.id; })); } },
 			li.kind === 'smart' ? { label: 'Copy as hand-picked', icon: 'list', onSelect: function () { createList('manual', { ids: ts.map(function (t) { return t.id; }) }, li.name + ' (copy)', { focus: false }); } } : null,
@@ -4030,7 +4054,7 @@
 		if (thumb || demo || !store || !L.list(lib).length) return;
 		var state = {};
 		L.list(lib).forEach(function (t) { if (t.rating || t.blocked || t.plays || t.skips) state[t.id] = { rating: t.rating, blocked: t.blocked, plays: t.plays, skips: t.skips, lastPlayed: t.lastPlayed, stateAt: t.stateAt || null, likedAt: t.likedAt || null }; });
-		store.set('sync:outbox', { format: 'true-shuffle-sync', version: 1, savedAt: new Date().toISOString(), labels: L.exportLabels(lib, Date.now()), state: state, stations: lists, history: histCache.slice(0, 5000) });
+		store.set('sync:outbox', { format: 'true-shuffle-sync', version: 1, savedAt: new Date().toISOString(), labels: L.exportLabels(lib, Date.now()), state: state, stations: savedLists(), history: histCache.slice(0, 5000) });
 	}, 4000);
 	var inboxBusy = null;
 	function checkInbox() {
@@ -4051,9 +4075,11 @@
 				if (s.lastPlayed && (!t.lastPlayed || s.lastPlayed > t.lastPlayed)) t.lastPlayed = s.lastPlayed;
 				ids.push(id); touched++;
 			});
-			var names = {};
-			lists.forEach(function (li) { names[li.id] = true; });
-			(box.stations || []).forEach(function (li) { if (li && li.id && !names[li.id]) lists.push(li); });
+			(box.stations || []).forEach(function (li) {
+				if (!li || !li.id || li.auto) return;
+				var local = listById(li.id);
+				if (!local) lists.push(li); else if (local.auto) lists[lists.indexOf(local)] = li;
+			});
 			var have = {};
 			histCache.forEach(function (e) { have[e.id + '@' + e.at] = true; });
 			if (TS.rescue) TS.rescue.seenListens(have);
@@ -4714,7 +4740,7 @@
 		NAV.forEach(function (it) { if (!it.sep && !(it.needs && !moduleReady(it.needs))) add('Page', it.label, '', function () { location.hash = '#/' + it.key; }, it.icon, 6); });
 		add('Page', 'Liked songs', '', function () { location.hash = '#/liked'; }, 'heart', 6);
 		if (!f) return out.sort(function (a2, b2) { return b2.s - a2.s; }).slice(0, 14);
-		lists.forEach(function (li) { add('Playlist', li.name, li.kind === 'smart' ? 'smart' : 'hand-picked', function () { location.hash = link('list', li.id); }, 'list', 4); });
+		savedLists().forEach(function (li) { add('Playlist', li.name, li.kind === 'smart' ? 'smart' : 'hand-picked', function () { location.hash = link('list', li.id); }, 'list', 4); });
 		Object.keys(ix.artists).forEach(function (k) { var a2 = ix.artists[k]; add('Artist', a2.name + (a2.native ? ' ' + a2.native : ''), plural(a2.tracks.length, 'song'), function () { location.hash = link('artist', k); }, 'artist', 3); });
 		Object.keys(ix.works).forEach(function (w) { add('From', w, plural(ix.works[w].tracks.length, 'song'), function () { location.hash = link('work', w); }, 'works', 3); });
 		Object.keys(ix.genres).forEach(function (g) { add('Genre', g, plural(ix.genres[g].tracks.length, 'song'), function () { location.hash = link('genre', g); }, 'genre', 2); });
@@ -5744,6 +5770,7 @@
 			(Array.isArray(r[6]) ? r[6] : []).forEach(function (id) { hand[id] = true; });
 			lists = Array.isArray(r[4]) ? r[4] : (Array.isArray(r[1]) ? r[1].map(function (p) { return { id: newId(), name: p.name, kind: 'smart', patch: patchOf(copyPlan(p.plan)), mode: p.plan && p.plan.mode, created: new Date().toISOString() }; }) : []);
 			focus = r[5] && lists.some(function (li) { return li.id === r[5]; }) ? r[5] : null;
+			pruneFocuses(); store.set('lists', lists);
 			plan = copyPlan(r[0] || DEFAULT_PLAN);
 			if (!ORDER.some(function (o) { return o.key === plan.mode; })) plan.mode = 'true';
 			stations = Array.isArray(r[1]) ? r[1] : [];
