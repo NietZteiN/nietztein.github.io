@@ -216,3 +216,5 @@ html.is-reduced .ts-btn.is-busy::before, html.is-reduced .ts-spin { animation-du
 
 /* a primary button that is a link: app.css gives every link in the page its text colour */
 .ts a.ts-btn--primary, .ts a.ts-btn--primary:hover { color: var(--ts-play-ink); }
+
+@media (pointer: coarse) { .ts-menu-hint.is-key { display: none; } }

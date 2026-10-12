@@ -637,18 +637,17 @@
 	// other playlist and `dropOrphans` is set; even then a track the user has
 	// played, rated or corrected is kept. -> { changed, deleted }
 	function removePlaylist(lib, playlistId, opts) {
+		var deleted = opts && opts.dropOrphans ? orphansOf(lib, playlistId, opts.keep) : [];
 		var r = reconcilePlaylist(lib, playlistId, []);
 		delete lib.playlists[playlistId];
-		var deleted = [];
-		if (opts && opts.dropOrphans) {
-			r.orphans.forEach(function (id) {
-				var t = lib.tracks[id];
-				if (t.plays || t.skips || t.rating || t.blocked || t.tags.length || Object.keys(t.userEdits).length) return;
-				delete lib.tracks[id];
-				deleted.push(id);
-			});
-		}
+		deleted.forEach(function (id) { delete lib.tracks[id]; });
 		return { changed: r.changed.filter(function (id) { return deleted.indexOf(id) < 0; }), deleted: deleted };
+	}
+	// Preview exactly the untouched songs that removal would delete.
+	function orphansOf(lib, playlistId, keep) {
+		return list(lib).filter(function (t) {
+			return t.playlists.length === 1 && t.playlists[0] === playlistId && !t.plays && !t.skips && !t.rating && !t.blocked && !t.tags.length && !Object.keys(t.userEdits).length && !(keep && keep(t.id));
+		}).map(function (t) { return t.id; });
 	}
 
 	// Tracks whose YouTube data is older than `days` (30 by default): the API
@@ -1141,7 +1140,7 @@
 		genresFromTopics: genresFromTopics, genresOf: genresOf,
 		derive: derive, deriveAll: deriveAll, knownArtists: knownArtists, knownCollector: knownCollector, resolveArtists: resolveArtists,
 		upsert: upsert, markMissing: markMissing, markUnplayable: markUnplayable, clearPlayerErrors: clearPlayerErrors,
-		setPlaylist: setPlaylist, reconcilePlaylist: reconcilePlaylist, removePlaylist: removePlaylist, stale: stale,
+		setPlaylist: setPlaylist, reconcilePlaylist: reconcilePlaylist, removePlaylist: removePlaylist, orphansOf: orphansOf, stale: stale,
 		edit: edit, editMany: editMany, deriveIds: deriveIds, ambiguousIds: ambiguousIds,
 		declareAlias: declareAlias, declareAliases: declareAliases, planAliases: planAliases, removeAlias: removeAlias,
 		setChannelRule: setChannelRule, learnRule: learnRule, channelName: channelName,

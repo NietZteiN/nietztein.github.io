@@ -80,6 +80,7 @@
 		'shortcuts': { label: 'Keyboard shortcuts', icon: 'keyboard', key: '?' },
 		'see-all': { label: 'See all', icon: 'arrow-right' },
 		'retry': { label: 'Try again', icon: 'retry' },
+		'select': { label: 'Select', icon: 'check-circle', desc: 'Choose several songs' },
 		'more': { label: 'More actions', icon: 'more' }
 	};
 	// Icons that several actions share, because they are one family.
@@ -98,7 +99,7 @@
 		var v = VOCAB[name];
 		if (!v) throw new Error('actions: no action ' + name);
 		opts = opts || {};
-		return { label: opts.label || v.label, icon: v.icon, hint: opts.hint != null ? opts.hint : (v.key && v.key.length <= 6 ? v.key : undefined), desc: opts.desc, disabled: opts.disabled, checked: opts.checked, onSelect: onSelect };
+		return { label: opts.label || v.label, icon: v.icon, hint: opts.hint != null ? opts.hint : (v.key && v.key.length <= 6 ? v.key : undefined), keyHint: opts.hint == null && !!v.key, desc: opts.desc, disabled: opts.disabled, checked: opts.checked, onSelect: onSelect };
 	}
 	function label(name) { return VOCAB[name] ? VOCAB[name].label : name; }
 

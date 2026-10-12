@@ -11,8 +11,8 @@
 <meta name="theme-color" content="#0b0d10" media="(prefers-color-scheme: dark)">
 <link rel="apple-touch-icon" href="icons/192.png">
 <link rel="stylesheet" href="../_kit/kit.css"><script src="../_kit/kit.js"></script>
-<link rel="stylesheet" href="app.css?v=2026101115">
-<link rel="stylesheet" href="ds.css?v=2026101115">
+<link rel="stylesheet" href="app.css?v=2026101203">
+<link rel="stylesheet" href="ds.css?v=2026101203">
 </head>
 <body class="ts">
 
@@ -109,7 +109,7 @@
 				<button class="ts-play" id="btn-toggle" type="button" aria-label="Play" title="Play or pause (space)"></button>
 				<button class="ts-icon-btn" id="btn-next" type="button" aria-label="Next track" title="Next (n)"></button>
 				<button class="ts-icon-btn" id="btn-reshuffle" type="button" aria-label="Shuffle again" title="Shuffle what comes next again (s)"></button>
-				<button class="ts-icon-btn" id="btn-repeat" type="button" aria-label="Repeat the queue" aria-pressed="false" title="Repeat the queue (r)"></button>
+				<button class="ts-icon-btn" id="btn-repeat" type="button" aria-label="Repeat the queue" aria-pressed="false" title="Repeat the queue (Shift+R)"></button>
 			</div>
 			<div class="ts-seek" id="seekbox">
 				<span class="ts-seektip" id="seektip" hidden></span>
@@ -141,7 +141,7 @@
 	<h3>Shuffling</h3>
 	<p><b>True shuffle</b> gives every order the same chance and repeats nothing until the whole selection has played, also after a reload. The mode button left of Play changes how the next tracks are chosen: spread artists apart, fresh first, favourites, rediscover, artist rotation, genre blocks, newest first. <b>Mix builder</b> combines filters, limits and the order, and saves them as stations.</p>
 	<h3>Labels</h3>
-	<p>Every track can carry hand-made labels: artist, title, genres, mood, scene, the work it is from and its role there (OP, ED&hellip;), language and kind. Edit one track with <kbd>e</kbd> or the pencil; select several in a list to edit them together. A labels file (Settings) applies a whole set at once and is kept apart from your corrections, which always win.</p>
+	<p>Every track can carry hand-made labels: artist, title, genres, mood, scene, the work it is from and its role there (OP, ED&hellip;), language and kind. Edit one track with <kbd>I</kbd> or the pencil; select several in a list to edit them together. A labels file (Settings) applies a whole set at once and is kept apart from your corrections, which always win.</p>
 	<h3>Keys</h3>
 	<p id="help-keys">Space play or pause &middot; n next &middot; p previous &middot; ? every key.</p>
 	<h3>What this page stores</h3>
@@ -153,45 +153,49 @@
 	<p>This page uses YouTube API Services: <a href="https://www.youtube.com/t/terms" rel="noopener">YouTube Terms of Service</a> &middot; <a href="https://policies.google.com/privacy" rel="noopener">Google Privacy Policy</a> &middot; <a href="https://myaccount.google.com/permissions" rel="noopener">remove access at Google</a></p>
 </template>
 
-<script src="config.js?v=2026101115"></script>
-<script src="parse.js?v=2026101115"></script>
-<script src="library.js?v=2026101115"></script>
-<script src="shuffle.js?v=2026101115"></script>
-<script src="store.js?v=2026101115"></script>
-<script src="player.js?v=2026101115"></script>
-<script src="transport.js?v=2026101115"></script>
-<script src="taxonomy.js?v=2026101115"></script>
-<script src="embed.js?v=2026101115"></script>
-<script src="discover.js?v=2026101115"></script>
-<script src="match.js?v=2026101115"></script>
-<script src="sources.js?v=2026101115"></script>
-<script src="finds.js?v=2026101115"></script>
-<script src="feeder.js?v=2026101115"></script>
-<script src="engine.js?v=2026101115"></script>
-<script src="demo.js?v=2026101115"></script>
-<script src="yt.js?v=2026101115"></script>
-<script src="ui.js?v=2026101115"></script>
-<script src="actions.js?v=2026101115"></script>
-<script src="lyrics.js?v=2026101115"></script>
-<script src="quiz.js?v=2026101115"></script>
-<script src="wrapped.js?v=2026101115"></script>
-<script src="share.js?v=2026101115"></script>
-<script src="channel.js?v=2026101115"></script>
-<script src="lanes.js?v=2026101115"></script>
-<script src="media.js?v=2026101115"></script>
-<script src="works.js?v=2026101115"></script>
-<script src="artists.js?v=2026101115"></script>
-<script src="explore.js?v=2026101115"></script>
-<script src="car.js?v=2026101115"></script>
-<script src="credits.js?v=2026101115"></script>
-<script src="recs.js?v=2026101115"></script>
-<script src="foryou.js?v=2026101115"></script>
-<script src="rescue.js?v=2026101115"></script>
-<script src="fuzzy.js?v=2026101115"></script>
-<script src="handoff.js?v=2026101115"></script>
-<script src="habits.js?v=2026101115"></script>
-<script src="pip.js?v=2026101115"></script>
-<script src="duel.js?v=2026101115"></script>
-<script src="app.js?v=2026101115"></script>
+<script src="config.js?v=2026101203"></script>
+<script src="parse.js?v=2026101203"></script>
+<script src="library.js?v=2026101203"></script>
+<script src="shuffle.js?v=2026101203"></script>
+<script src="store.js?v=2026101203"></script>
+<script src="player.js?v=2026101203"></script>
+<script src="transport.js?v=2026101203"></script>
+<script src="taxonomy.js?v=2026101203"></script>
+<script src="embed.js?v=2026101203"></script>
+<script src="discover.js?v=2026101203"></script>
+<script src="match.js?v=2026101203"></script>
+<script src="sources.js?v=2026101203"></script>
+<script src="finds.js?v=2026101203"></script>
+<script src="feeder.js?v=2026101203"></script>
+<script src="engine.js?v=2026101203"></script>
+<script src="demo.js?v=2026101203"></script>
+<script src="yt.js?v=2026101203"></script>
+<script src="ui.js?v=2026101203"></script>
+<script src="actions.js?v=2026101203"></script>
+<script src="lyrics.js?v=2026101203"></script>
+<script src="quiz.js?v=2026101203"></script>
+<script src="wrapped.js?v=2026101203"></script>
+<script src="share.js?v=2026101203"></script>
+<script src="channel.js?v=2026101203"></script>
+<script src="lanes.js?v=2026101203"></script>
+<script src="media.js?v=2026101203"></script>
+<script src="works.js?v=2026101203"></script>
+<script src="artists.js?v=2026101203"></script>
+<script src="explore.js?v=2026101203"></script>
+<script src="car.js?v=2026101203"></script>
+<script src="credits.js?v=2026101203"></script>
+<script src="recs.js?v=2026101203"></script>
+<script src="foryou.js?v=2026101203"></script>
+<script src="rescue.js?v=2026101203"></script>
+<script src="fuzzy.js?v=2026101203"></script>
+<script src="handoff.js?v=2026101203"></script>
+<script src="habits.js?v=2026101203"></script>
+<script src="pip.js?v=2026101203"></script>
+<script src="duel.js?v=2026101203"></script>
+<script src="edits.js?v=2026101203"></script>
+<script src="backup.js?v=2026101203"></script>
+<script src="history.js?v=2026101203"></script>
+<script src="playlist-actions.js?v=2026101203"></script>
+<script src="app.js?v=2026101203"></script>
 </body>
 </html>

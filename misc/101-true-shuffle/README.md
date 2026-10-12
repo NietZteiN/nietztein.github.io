@@ -194,7 +194,7 @@ Every collection has Play (in order) and Shuffle (its filters as a plan, in the 
 
 **Moods & scenes (#/browse).** A mix-and-match panel combines moods, scenes, languages, genre families, eras and years added (alternatives within a row, rows narrowing each other; every choice shows how many songs it would give with the others), keeps the choice in the address, and offers Play, Shuffle, Focus and Save as playlist with the list below. A grid of moods against scenes, genre families, languages, years added or eras links every cell to that combination. Mood and scene pages show how to split them further.
 
-**History (#/history), the quick labeller (#/label), small things.** History keeps every listen in the store and shows On repeat, plays per month and the days. The labeller walks the unlabelled songs (or a selection) one at a time with suggestions from the channel, the artist and similar titles; 1 to 6 set the mood, Enter saves, the arrows move. Work pages filter by role (openings, endings...). The player bar has repeat and a sleep timer.
+**History (#/history), the quick labeller (#/label), small things.** History keeps every listen in the store and shows On repeat, plays per month and the days, grouped by the listener's local calendar. The labeller walks the unlabelled songs (or a selection) one at a time with suggestions from the channel, the artist and similar titles; 1 to 6 set the mood, Enter saves, the arrows move. Work pages filter by role (openings, endings...). The player bar has repeat and a sleep timer.
 
 **Sync with the Desk.** The page keeps `sync:outbox` in its store: `{ format: 'true-shuffle-sync', version: 1, savedAt, labels (exportLabels), state: { videoId: { rating, blocked, plays, skips, lastPlayed, stateAt } }, stations (the playlists), history }`, the owner's own data and never YouTube's. The Desk's Music view (`desk/views/music.js`) pushes it to the private repository and pulls it back into `sync:inbox`, which the page merges on start and on focus (ratings and blocks by `stateAt`, which `edit` stamps; plays and skips as the larger count; labels applied; playlists and history added) and deletes.
 
@@ -1531,7 +1531,8 @@ A track:
 | `clearPlayerErrors(lib, ids)` | "Try the unplayable ones again." `-> ids` |
 | `setPlaylist(lib, record)` | Add or update a playlist record. |
 | `reconcilePlaylist(lib, playlistId, keepIds)` | Tracks not in `keepIds` leave the playlist. `-> { changed, orphans }` |
-| `removePlaylist(lib, playlistId, { dropOrphans })` | Takes a playlist out; deletes only untouched tracks that are in no other playlist, and only when asked. `-> { changed, deleted }` (delete those ids from the store too) |
+| `removePlaylist(lib, playlistId, { dropOrphans, keep })` | Takes a playlist out; deletes only untouched tracks that are in no other playlist, and only when asked. The optional `keep(id)` protects hand-picked songs and trim settings. `-> { changed, deleted }` (delete those ids from the store too) |
+| `orphansOf(lib, playlistId, keep)` | Pure preview of the song ids that removal with `dropOrphans` would delete; uses the same protection rule as removal. |
 | `stale(lib, now, days)` | Ids whose YouTube data is older than `days` (30). |
 | `edit(lib, id, fields, known)` | Corrections: `title`, `artist`, `version`, `year`, `genres` (null takes one back); and `rating`, `blocked`, `tags`, which derive nothing and parse nothing. `known` (optional) is a `knownArtists(lib)` the caller already has. `-> track` |
 | `editMany(lib, ids, fields, known)` | The same correction on many tracks in time linear in their number: `knownArtists` is read once. The page reads `known` itself in slices (`knownCollector`), calls `editMany` on slices of 100 for at most about 12 ms before giving the page a turn, then re-reads the toss-ups the same way; the store writes 400 tracks per transaction with a turn in between. `-> ids` |
@@ -1920,3 +1921,31 @@ More switches: `sourceFail: { host: n }` (the next n answer 503), `sourceRate: {
 - Liked videos beyond YouTube's 5,000-item cap; live streams (length 0, class "unknown"); region-blocked videos (they surface as player errors).
 - The decade of a track without a stated release date is its upload year (`yearSource: 'upload'`).
 - Two tabs on one library: last write wins. The page could listen for `storage`-free signals (BroadcastChannel) if this matters.
+
+
+### Backup restore (backup.js)
+
+`TS.backup.confirm(data, name, ctx)` validates a backup before displaying its saved date and song, listen and playlist counts alongside the current library. Both Settings and file drop use it. Cancel has initial focus; Replace everything takes a temporary snapshot held only in memory. The confirmation also offers Save what is here first. A successful restore offers Undo for 15 seconds, restoring the entire snapshot; no merge is offered. Labels files keep their separate apply flow.
+
+UX audit regression: `node scripts/qa/drive.mjs misc/101-true-shuffle/test/ux-audit.drive.mjs` checks trim Save, volume keys, restore cancellation and full snapshot undo, Mix builder focus, suggested-artist row bounds and local History dates in both themes at desktop and phone sizes.
+
+The Mix builder retains keyboard focus when chips or order cards redraw; numeric, date and checkbox limits update its summary without rebuilding the controls. Needs attention gives unsure-artist readings a separate line with taller rows at both normal and compact density.
+
+
+### Correction Undo and bulk values (edits.js)
+
+`TS.edits.keep(ctx, ids)` captures distinct ratings and user corrections and returns an Undo callback. It derives restored labels and stamps rating changes afresh for Desk sync. Rating menus, stars and editor saves offer Undo; a second click of a star double-click is ignored. `remove(ctx, ids, close)` confirms removing corrections across multiple songs, shows the correction/song counts, preserves ratings and blocks, and offers Undo. `shared(lib, ids, key)` returns `{ mixed, count, value }` for bulk editor fields. Shared values appear in the form; Mixed values stay unchanged unless set. Saving an unchanged form adds no corrections, and clearing a shared field clears it across the selection.
+
+Editor actions stay visible while scrolling. Dirty edits survive backdrop clicks; Cancel, Close and Escape still close explicitly. Escape in a nonempty genre search clears the search first. On touch, the editor initially focuses its heading unless a field was explicitly requested.
+
+Song selection persists through ratings, likes, edits, sorting and filtering on the same page; songs hidden by a filter leave the selection. Escape or Clear selection clears it. On touch, a song menu offers Select, taps then toggle songs, and Done ends selection. Dragging, holding a row, dismissing an overlay, or stopping a recent scroll does not play it. Menus fit below a wide protected player and hide keyboard-only hints on touch.
+
+The quick labeller and Not labelled counts use the same rule: no mood, kind, work or role yet. Naming an artist or fixing a title does not count as labelling. Automatically built queues prune songs labelled elsewhere when returning; deliberately selected queues retain their songs.
+
+Browser regression for this batch: `node scripts/qa/drive.mjs misc/101-true-shuffle/test/ux-edits.drive.mjs`.
+
+### Playlist safeguards and History (2026-10-12)
+
+`playlist-actions.js` previews YouTube playlist removal with the exact deletion count and focuses Keep it. Songs held in hand-picked playlists or with trim/volume settings survive removal. Nothing changes on YouTube. Deleting a hand-picked playlist with songs asks first; every playlist delete has Undo, restoring its position, Focus and page. Playlist and song headers open their full action menu directly from the visible More actions button.
+
+`history.js` draws History from fresh application state on each render, retaining local calendar grouping and the existing playback actions. Both browser modules load before app.js.

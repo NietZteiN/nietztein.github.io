@@ -1,0 +1,71 @@
+export default async function ({newPage, baseUrl, assert, outDir}) {
+ for (const theme of ['dark','light']) for (const width of [1280,390]) {
+  const page=await newPage({width,height:width===390?844:860,mobile:width===390,theme});
+  const menu=async label=>{
+   await page.eval(label=>{const b=[...document.querySelectorAll('[role="menuitem"]')].find(b=>b.textContent.trim()===label);if(!b)throw Error('Missing menu item '+label);b.id='audit-action';},label);
+   await page.click('#audit-action');
+  };
+  await page.goto(baseUrl+'misc/101-true-shuffle/?demo=1#/songs');
+  await page.waitFor('.ts-row');
+  const ids=await page.eval(()=>Object.keys(window.__ts.lib.tracks).slice(0,4));
+  await page.eval(ids=>{const ts=window.__ts;ts.lists().push({id:'audit-hand',name:'Road trip',kind:'manual',ids:ids.slice(0,3)});ts.pageCtx.lists.save();ts.setFocus('audit-hand');location.hash='#/list/audit-hand';},ids);
+  await page.waitFor(()=>document.querySelector('.ts-hero-title')?.textContent==='Road trip');
+  await page.click('.ts-actions [data-label="More actions"]');
+  const beforeLists=await page.eval(()=>window.__ts.lists().map(li=>li.id));
+  const labels=await page.eval(()=>[...document.querySelectorAll('[role="menuitem"]')].map(b=>b.textContent.trim()));
+  assert.equal(labels.length,3);assert.ok(labels.includes('Delete playlist'));assert.ok(!labels.includes('More'));
+  const position=await page.eval(()=>{const b=document.querySelector('.ts-actions [data-label="More actions"]').getBoundingClientRect(),m=document.querySelector('.ts-menu').getBoundingClientRect();return {left:m.left,right:m.right,top:m.top,bottom:m.bottom,anchor:b.bottom};});
+  assert.ok(position.left>=0&&position.right<=width);assert.ok(position.top>100);
+  await page.screenshot(outDir+`/shuffle-playlist-menu-${theme}-${width}.png`);
+  await menu('Delete playlist');
+  assert.equal(await page.eval(()=>document.activeElement.textContent),'Keep it');
+  assert.ok(await page.eval(()=>document.querySelector('.ts-modal').textContent.includes('3 hand-picked songs')));
+  await page.key('Escape');assert.equal(await page.eval(()=>document.activeElement.dataset.label),'More actions');
+  assert.ok(await page.eval(()=>window.__ts.lists().some(li=>li.id==='audit-hand')));
+  await page.click('.ts-actions [data-label="More actions"]');await menu('Delete playlist');
+  await page.screenshot(outDir+`/shuffle-playlist-delete-${theme}-${width}.png`);
+  await page.click('.ts-modal .ts-btn--danger');await page.waitFor(()=>location.hash==='#/lists');
+  assert.ok(!(await page.eval(()=>window.__ts.lists().some(li=>li.id==='audit-hand'))));
+  assert.equal(await page.eval(()=>document.getElementById('focus-btn').textContent.trim()),'Everything');
+  await page.eval(()=>{[...document.querySelectorAll('button')].find(b=>b.textContent==='Undo').id='audit-undo';});await page.click('#audit-undo');
+  await page.waitFor(()=>location.hash==='#/list/audit-hand');
+  assert.equal(await page.eval(()=>window.__ts.lists().find(li=>li.id==='audit-hand').ids.length),3);
+  assert.deepEqual(await page.eval(()=>window.__ts.lists().map(li=>li.id)),beforeLists);
+  assert.equal(await page.eval(()=>document.getElementById('focus-btn').textContent.trim()),'Road trip');
+  await page.eval(()=>{window.__ts.setFocus(null);window.__ts.createSmart('Smart test',{});const li=window.__ts.lists().find(li=>li.name==='Smart test');location.hash='#/list/'+li.id;});
+  await page.waitFor(()=>document.querySelector('.ts-hero-title')?.textContent==='Smart test');await page.click('.ts-actions [data-label="More actions"]');
+  assert.ok(await page.eval(()=>[...document.querySelectorAll('[role="menuitem"]')].some(b=>b.textContent.trim()==='Edit filter')));
+  await menu('Delete playlist');assert.equal(await page.eval(()=>document.querySelector('.ts-modal')),null);
+  await page.waitFor(()=>location.hash==='#/lists');
+  await page.eval(id=>{location.hash='#/track/'+id;},ids[0]);await page.waitFor(()=>document.querySelector('.ts-kicker')?.textContent.startsWith('Song'));
+  await page.click('.ts-actions [data-label="More actions"]');
+  assert.ok(await page.eval(()=>[...document.querySelectorAll('[role="menuitem"]')].some(b=>b.textContent.startsWith('Trim and volume'))));
+  assert.ok(!(await page.eval(()=>[...document.querySelectorAll('[role="menuitem"]')].some(b=>b.textContent.trim()==='More'))));
+  await page.key('Escape');
+  await page.eval(()=>{window.__ts.lists().push({id:'audit-empty',name:'Empty list',kind:'manual',ids:[]});window.__ts.pageCtx.lists.save();location.hash='#/list/audit-empty';});
+  await page.waitFor(()=>document.querySelector('.ts-hero-title')?.textContent==='Empty list');await page.click('.ts-actions [data-label="More actions"]');await menu('Delete playlist');
+  assert.equal(await page.eval(()=>document.querySelector('.ts-modal')),null);await page.waitFor(()=>location.hash==='#/lists');
+  await page.eval(()=>{[...document.querySelectorAll('button')].find(b=>b.textContent==='Undo').id='audit-empty-undo';});await page.click('#audit-empty-undo');
+  await page.waitFor(()=>document.querySelector('.ts-hero-title')?.textContent==='Empty list');
+  // A real IndexedDB library on a mock player exercises the actual Settings removal.
+  const fixture=await page.eval(ids=>ids.map(id=>{const t=JSON.parse(JSON.stringify(window.__ts.lib.tracks[id]));t.playlists=['audit-source'];t.addedAt={'audit-source':Date.now()};t.plays=0;t.skips=0;t.rating=0;t.blocked=false;t.tags=[];t.userEdits={};return t;}),ids);
+  fixture[2].rating=3;
+  await page.goto(baseUrl+'misc/101-true-shuffle/?player=mock#/settings');
+  await page.waitFor(()=>!!window.__ts?.store);
+  await page.eval(async tracks=>{const s=window.__ts.store;await s.putTracks(tracks);await s.putPlaylists([{id:'audit-source',title:'Imported songs'}]);await s.set('lists',[{id:'audit-kept',name:'Hand picks',kind:'manual',ids:[tracks[0].id]}]);await s.set('songprefs',{[tracks[1].id]:{start:10,vol:90}});},fixture);
+  await page.reload();await page.waitFor('button[aria-label="Remove Imported songs from the library"]');
+  await page.click('button[aria-label="Remove Imported songs from the library"]');
+  assert.equal(await page.eval(()=>document.activeElement.textContent),'Keep it');
+  assert.ok(await page.eval(()=>document.querySelector('.ts-modal').textContent.includes('1 of its 4 songs')));
+  await page.key('Escape');assert.equal(await page.eval(()=>Object.keys(window.__ts.lib.tracks).length),4);
+  await page.click('button[aria-label="Remove Imported songs from the library"]');
+  await page.screenshot(outDir+`/shuffle-playlist-remove-${theme}-${width}.png`);
+  assert.ok(await page.eval(()=>document.querySelector('.ts-modal').scrollWidth<=document.querySelector('.ts-modal').clientWidth));
+  await page.click('.ts-modal .ts-btn--danger');await page.waitFor(()=>!window.__ts.lib.playlists['audit-source']);
+  assert.deepEqual(await page.eval(()=>Object.keys(window.__ts.lib.tracks)),ids.slice(0,3));
+  assert.deepEqual(await page.eval(()=>window.__ts.lists()[0].ids),[ids[0]]);
+  assert.equal(await page.eval(id=>window.__ts.pageCtx.songPref(id).start,ids[1]),10);
+  await page.reload();assert.deepEqual(await page.eval(()=>Object.keys(window.__ts.lib.tracks)),ids.slice(0,3));
+  assert.deepEqual(page.errors,[]);assert.deepEqual(page.externalHosts,[]);await page.close();
+ }
+}

@@ -1,4 +1,6 @@
-// Builds blog/index.json from the Markdown files in blog/posts/.
+// Builds blog/index.json from tracked Markdown files in blog/posts/.
+// Untracked working notes and drafts never enter the public index. Stage a
+// new post with git add before building its index entry.
 //
 // Zero dependencies — run with:  node scripts/build-blog-index.mjs
 // It is also run automatically by .github/workflows/build-blog.yml on every push
@@ -15,9 +17,10 @@
 //
 // Missing fields fall back sensibly (date/slug are derived from the filename).
 
-import { readdirSync, readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { execFileSync } from 'node:child_process';
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const root = join(scriptDir, '..');
@@ -58,7 +61,9 @@ function build() {
 		mkdirSync(postsDir, { recursive: true });
 	}
 
-	const files = readdirSync(postsDir).filter((f) => /\.md$/i.test(f));
+	const tracked = execFileSync('git', ['ls-files', '-z', '--', 'blog/posts/'], { cwd: root, encoding: 'utf8' });
+	const files = tracked.split('\0').filter(Boolean).map((file) => file.slice('blog/posts/'.length))
+		.filter((file) => /^[^/\\]+\.md$/i.test(file) && existsSync(join(postsDir, file)));
 
 	const posts = files.map((file) => {
 		const text = readFileSync(join(postsDir, file), 'utf8');

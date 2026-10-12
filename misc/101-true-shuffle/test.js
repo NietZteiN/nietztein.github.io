@@ -736,6 +736,16 @@ describe('library', function () {
 	L.edit(lib, 'v15', { rating: 3 });
 	rec = L.removePlaylist(lib, 'PL3', { dropOrphans: true });
 	eq([rec.deleted, !!lib.tracks.v14, !!lib.tracks.v15, rec.changed], [['v14'], false, true, ['v15']], 'removePlaylist with dropOrphans deletes an untouched track and keeps a rated one');
+	(function () {
+		var isolated = L.create();
+		L.upsert(isolated, [video('held', 'A - Held', 'c', {}), video('gone', 'A - Gone', 'c', {})], { playlistId: 'source', now: T0 });
+		var keep = function (id) { return id === 'held'; }, preview = L.orphansOf(isolated, 'source', keep);
+		eq(Object.keys(isolated.tracks).length, 2, 'orphansOf: preview does not change the library');
+		var removed = L.removePlaylist(isolated, 'source', { dropOrphans: true, keep: keep });
+		eq(removed.deleted, preview, 'removePlaylist: deletion matches the preview');
+		ok(!!isolated.tracks.held && !isolated.tracks.gone, 'removePlaylist: caller-protected songs survive');
+		eq(isolated.tracks.held.playlists, [], 'removePlaylist: protected songs still leave the source playlist');
+	})();
 
 	// ---- storing
 	var parts = JSON.parse(JSON.stringify(L.toParts(lib)));
@@ -2405,6 +2415,7 @@ describe('actions', function () {
 // =============================================================================
 
 describe('lint', function () {
+	ok(/function btn\(o\)[\s\S]{0,700}type: o\.type/.test(fs.readFileSync(path.join(HERE, 'ui.js'), 'utf8')), 'ui.js btn(): submit type reaches the button');
 	var src = fs.readFileSync(path.join(HERE, 'app.js'), 'utf8');
 	var seen = {}, dups = [];
 	src.split('\n').forEach(function (line) { var m = /^\tfunction ([A-Za-z0-9_$]+)\(/.exec(line); if (m) { if (seen[m[1]]) dups.push(m[1]); seen[m[1]] = true; } });

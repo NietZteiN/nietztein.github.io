@@ -158,7 +158,7 @@
 
 	// ---- Buttons: one component -------------------------------------------------------------
 	// U.btn({ label, icon, variant, size, iconOnly, pressed, menu, cost, kbd, busy, busyLabel,
-	//         href, target, rel, disabled, title, cls, on, aria, data })
+	//         href, target, rel, type, disabled, title, cls, on, aria, data })
 	// variant: primary (at most one per surface) | secondary | ghost | icon | chip | danger
 	// size: sm 32 | md 40 | lg 48 | xl 56 | 2xl 72 | car 96 (px). A cost is a badge, never words
 	// in the label; the accessible name says it ("Play, uses 100 YouTube units").
@@ -169,7 +169,7 @@
 		var size = o.size || (variant === 'chip' ? 'sm' : 'md');
 		var b = h(o.href ? 'a' : 'button', {
 			class: 'ts-btn ts-btn--' + variant + ' ts-btn--' + size + (iconOnly ? ' is-icon' : '') + (o.cls ? ' ' + o.cls : ''),
-			href: o.href, target: o.target, rel: o.rel,
+			href: o.href, target: o.target, rel: o.rel, type: o.type,
 			title: o.title || (iconOnly ? (o.label || '') + (o.kbd ? ' (' + o.kbd + ')' : '') : (o.kbd ? (o.label || '') + ' (' + o.kbd + ')' : null)),
 			disabled: o.disabled, data: o.data, on: o.on
 		});
@@ -288,11 +288,11 @@
 			if (!it) return;
 			if (it.sep) { m.appendChild(h('div', { class: 'ts-menu-sep', role: 'separator' })); return; }
 			if (it.heading) { m.appendChild(h('div', { class: 'ts-menu-h', text: it.heading })); return; }
-			var b = h('button', { class: 'ts-menu-item' + (it.checked ? ' is-checked' : ''), role: it.checked != null ? 'menuitemradio' : 'menuitem', disabled: it.disabled, tabindex: '-1', aria: { checked: it.checked != null ? !!it.checked : null } });
+			var b = h('button', { class: 'ts-menu-item' + (it.checked ? ' is-checked' : '') + (it.danger ? ' ts-danger' : ''), role: it.checked != null ? 'menuitemradio' : 'menuitem', disabled: it.disabled, tabindex: '-1', aria: { checked: it.checked != null ? !!it.checked : null } });
 			b.appendChild(it.icon ? icon(it.icon) : h('span', { class: 'ts-i-sp' }));
 			if (it.desc) b.appendChild(h('span', { class: 'ts-menu-two' }, [h('span', { class: 'ts-menu-label', text: it.label }), h('span', { class: 'ts-menu-desc', text: it.desc })]));
 			else b.appendChild(h('span', { class: 'ts-menu-label', text: it.label }));
-			if (it.hint) b.appendChild(h('span', { class: 'ts-menu-hint', text: it.hint }));
+			if (it.hint) b.appendChild(h('span', { class: 'ts-menu-hint' + (it.keyHint ? ' is-key' : ''), text: it.hint }));
 			if (it.checked) b.appendChild(icon('check', 'ts-menu-check'));
 			b.addEventListener('click', function () { menuReturn = opts.returnTo || null; closeMenu(); if (it.onSelect) it.onSelect(); });
 			m.appendChild(b);
@@ -313,6 +313,7 @@
 		// place it inside the window, and off the YouTube player
 		var r = at && at.getBoundingClientRect ? at.getBoundingClientRect() : { left: at.x, right: at.x, top: at.y, bottom: at.y };
 		var mw = m.offsetWidth, mh = m.offsetHeight, vw = document.documentElement.clientWidth, vh = window.innerHeight;
+		safe.rects().forEach(function (rect) { if (rect.right - rect.left > vw - mw - 16 && rect.bottom < vh - 16) m.style.maxHeight = (vh - rect.bottom - 16) + 'px'; }); mh = m.offsetHeight;
 		var x = opts.alignRight ? r.right - mw : r.left, y = r.bottom + 4;
 		if (y + mh > vh - 8) y = Math.max(8, r.top - mh - 4);
 		x = Math.max(8, Math.min(x, vw - mw - 8));
@@ -349,7 +350,7 @@
 			if (returnTo && document.body.contains(returnTo)) { try { returnTo.focus(); } catch (e) { /* gone */ } }
 		}
 		x.addEventListener('click', close);
-		back.addEventListener('pointerdown', function (e) { if (e.target === back) close(); });
+		back.addEventListener('pointerdown', function (e) { if (e.target !== back) return; if (opts.keepOpen && opts.keepOpen()) { e.preventDefault(); return; } close(); });
 		box.addEventListener('keydown', function (e) {
 			if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close(); return; }
 			if (e.key !== 'Tab') return;
