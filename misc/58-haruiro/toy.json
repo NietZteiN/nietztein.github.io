@@ -1,0 +1,29 @@
+{
+	"n": 58,
+	"slug": "58-haruiro",
+	"title": "Haruiro",
+	"desc": "A Japanese poem by a watercolor shoreline: switch between the art print and a reading view, or download the A3 print.",
+	"note": "",
+	"group": "art",
+	"tags": [
+		"poetry",
+		"Japanese",
+		"watercolor",
+		"print",
+		"はるいろ"
+	],
+	"added": "2026-10-12",
+	"surfaces": [
+		"grid"
+	],
+	"status": "live",
+	"kit": false,
+	"thumb": {
+		"query": "?thumb=1",
+		"viewport": [
+			1600,
+			1000
+		],
+		"settleMs": 1500
+	}
+}
