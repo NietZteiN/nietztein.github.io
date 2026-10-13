@@ -763,7 +763,7 @@
 		var prevKey = route.path + '?' + route.query.toString(), wasLabel = route.parts[0] === 'label';
 		scrollMemo[prevKey] = $('main').scrollTop;
 		route = U.parseHash(location.hash);
-		if (route.parts[0] === 'label' && !wasLabel && labelQueue && !labelPicked) labelQueue = labelQueue.slice(0, labelAt).concat(labelQueue.slice(labelAt).filter(function (id) { return lib.tracks[id] && needsLabel(lib.tracks[id]); }));
+		if (route.parts[0] === 'label' && !wasLabel && labelling.queue && !labelling.picked) labelling.queue = labelling.queue.slice(0, labelling.at).concat(labelling.queue.slice(labelling.at).filter(function (id) { return lib.tracks[id] && needsLabel(lib.tracks[id]); }));
 		stopPreview();
 		closeSheet();
 		U.closeMenu();
@@ -1553,12 +1553,14 @@
 		box.appendChild(row);
 		return box;
 	}
-	function acceptGuess(id, artist, title) {
+	function settleChannel(id) {
 		var ck = L.channelKey(lib.tracks[id]);
-		L.edit(lib, id, { artist: artist, title: title });
 		var amb = L.ambiguousIds(lib).filter(function (x) { return x !== id && L.channelKey(lib.tracks[x]) === ck; });
-		var settled = amb.length ? L.deriveIds(lib, amb).filter(function (x) { return lib.tracks[x].artist; }) : [];
-		changed([id].concat(settled));
+		return amb.length ? L.deriveIds(lib, amb).filter(function (x) { return lib.tracks[x].artist; }) : [];
+	}
+	function acceptGuess(id, artist, title) {
+		L.edit(lib, id, { artist: artist, title: title });
+		changed([id].concat(settleChannel(id)));
 		var planT = L.teachPlan(lib, id, artist);
 		if (planT && planT.ids.length) offerTeach(lib.tracks[id], planT);
 		else say('Saved: ' + q(title) + ' by ' + artist + '.');
@@ -3485,9 +3487,9 @@
 	// suggestions offer genres, scene and work from the channel, the artist and
 	// the songs whose names are nearest.
 
-	var labelQueue = null, labelAt = 0, labelPicked = false;
+	var labelling = { queue: null, at: 0, picked: false, teach: null };
 	function needsLabel(t) { return !t.mood && !t.kind && !t.work && !t.role; }
-	function startLabelling(ids) { labelQueue = ids.slice(); labelAt = 0; labelPicked = true; location.hash = '#/label'; }
+	function startLabelling(ids) { labelling.queue = ids.slice(); labelling.at = 0; labelling.picked = true; labelling.teach = null; location.hash = '#/label'; }
 	function suggestFor(t) {
 		var ck = L.channelKey(t), g = {}, sc = {}, wk = {}, artist = {};
 		function vote(map, k, w) { if (k) map[k] = (map[k] || 0) + w; }
@@ -3512,117 +3514,7 @@
 		return { genres: top(g, 6), scenes: top(sc, 3), works: top(wk, 4), artists: top(artist, 3) };
 	}
 	function viewLabel(view) {
-		if (!labelQueue) { labelQueue = scopeTracks().filter(needsLabel).map(function (t) { return t.id; }); labelAt = 0; labelPicked = false; }
-		var ids = labelQueue;
-		while (labelAt < ids.length && !lib.tracks[ids[labelAt]]) labelAt++;
-		view.appendChild(h('h1', { class: 'ts-h1', text: 'Quick labeller' }));
-		if (!ids.length || labelAt >= ids.length) {
-			view.appendChild(h('p', { class: 'ts-empty', text: ids.length ? 'Done: ' + plural(ids.length, 'song') + ' labelled or skipped.' : 'Every song here has labels. Songs you import later land here; you can also select songs anywhere and choose Label them one by one.' }));
-			view.appendChild(h('div', { class: 'ts-row-btns' }, [actionBtn('rotate', 'Start over with what is left', function () { labelQueue = null; renderView(false); })]));
-			return;
-		}
-		var t = lib.tracks[ids[labelAt]];
-		if (!t) { labelAt++; renderView(true); return; }
-		var sg = suggestFor(t);
-		var fields = { artist: t.artist || '', title: t.title, genres: t.genres.filter(function (g) { return T.genre(g); }), mood: t.mood || '', scene: t.scene || '', work: t.work || '', role: t.role || '', lang: t.lang || '', kind: t.kind || '' };
-		view.appendChild(h('p', { class: 'ts-muted', text: (labelAt + 1) + ' of ' + n(ids.length) + '. Keys: 1 to 6 set the mood, Enter saves and goes on, the right arrow skips, the left arrow goes back, P plays.' }));
-		var card2 = h('div', { class: 'ts-labelcard' });
-		var head = h('div', { class: 'ts-labelhead' });
-		head.appendChild(artFor(t, 'ts-label-art'));
-		var tx = h('div');
-		tx.appendChild(h('p', { class: 'ts-kicker', text: 'On YouTube' }));
-		tx.appendChild(h('h2', { class: 'ts-now-title', text: t.raw.title }));
-		tx.appendChild(h('p', { class: 'ts-muted', text: t.channel + (t.durationSec ? ' ' + DOT + ' ' + clock(t.durationSec) : '') }));
-		tx.appendChild(h('div', { class: 'ts-row-btns' }, [actionBtn('play', 'Play it', function () { playNow([t.id]); })]));
-		head.appendChild(tx);
-		card2.appendChild(head);
-		var g2 = h('div', { class: 'ts-edit-grid' });
-		function text(key, label, list) {
-			var lab = h('label', { class: 'ts-field' }, [h('span', { text: label })]);
-			var inp = h('input', { class: 'kit-input', type: 'text', value: fields[key], autocomplete: 'off', spellcheck: 'false' });
-			inp.addEventListener('input', function () { fields[key] = inp.value; });
-			lab.appendChild(inp);
-			if (list && list.length) {
-				var sug = h('div', { class: 'ts-chips is-tight' });
-				list.forEach(function (v) { sug.appendChild(h('button', { class: 'ts-chip is-small', text: v, on: { click: function () { inp.value = v; fields[key] = v; } } })); });
-				lab.appendChild(sug);
-			}
-			g2.appendChild(lab);
-			return inp;
-		}
-		var picks = guessPicks(t).map(function (p) { return p[0]; });
-		var first = text('artist', 'Artist', sg.artists.concat(picks).filter(function (v, i, a) { return v && a.indexOf(v) === i; }).slice(0, 4));
-		text('title', 'Title');
-		text('work', 'From (anime, game, musical)', sg.works);
-		function chipsRow(label, key, rows, multi, hueFn) {
-			var box = h('div', { class: 'ts-field is-wide' }, [h('span', { text: label })]);
-			var row = h('div', { class: 'ts-chips is-tight' });
-			rows.forEach(function (r, i) {
-				var on = multi ? fields[key].indexOf(r[0]) >= 0 : fields[key] === r[0];
-				var b = h('button', { data: { id: 'lab-' + key + '-' + r[0] }, class: 'ts-chip' + (on ? ' is-on' : '') + (hueFn ? ' is-hued' : ''), aria: { pressed: on ? 'true' : 'false' } }, [h('span', { text: (key === 'mood' ? (i + 1) + ' ' : '') + r[1] })]);
-				if (hueFn) { var hu = hueFn(r[0]); b.style.setProperty('--h', String(hu.h)); b.style.setProperty('--s', hu.s + '%'); }
-				b.addEventListener('click', function (ev) {
-					if (multi) { var at = fields[key].indexOf(r[0]); if (at >= 0) fields[key].splice(at, 1); else { if (fields[key].length >= 3) fields[key].pop(); fields[key].push(r[0]); } }
-					else fields[key] = fields[key] === r[0] ? '' : r[0];
-					redraw(); var back = ev.detail ? view.querySelector('h1') : dyn.querySelector('[data-id="' + CSS.escape('lab-' + key + '-' + r[0]) + '"]'); if (back) { if (ev.detail) back.setAttribute('tabindex', '-1'); back.focus({ preventScroll: true }); }
-				});
-				row.appendChild(b);
-			});
-			box.appendChild(row);
-			return box;
-		}
-		var dyn = h('div', { class: 'ts-labeldyn' });
-		function redraw() {
-			clear(dyn);
-			dyn.appendChild(chipsRow('Mood', 'mood', T.MOODS, false, function (k) { return { h: MOOD_HUE[k], s: 60 }; }));
-			var gs = sg.genres.slice();
-			fields.genres.forEach(function (g) { if (gs.indexOf(g) < 0) gs.push(g); });
-			var gbox = chipsRow('Genres (suggested first; up to three)', 'genres', gs.map(function (g) { return [g, g]; }), true, function (k) { return T.hueOf(k); });
-			var more = h('select', { class: 'kit-input ts-more-genre', aria: { label: 'Another genre' } });
-			more.appendChild(h('option', { value: '', text: 'Another genre' + ELL }));
-			T.FAMILIES.forEach(function (f) { var og = h('optgroup', { label: f.name }); f.list.forEach(function (g) { og.appendChild(h('option', { value: g.name, text: g.name })); }); more.appendChild(og); });
-			more.addEventListener('change', function () { if (more.value && fields.genres.indexOf(more.value) < 0) { if (fields.genres.length >= 3) fields.genres.pop(); fields.genres.push(more.value); } redraw(); dyn.querySelector('.ts-more-genre').focus(); });
-			gbox.appendChild(more);
-			dyn.appendChild(gbox);
-			var scenes = T.SCENES.slice().sort(function (a, b) { return (sg.scenes.indexOf(b[0]) >= 0) - (sg.scenes.indexOf(a[0]) >= 0); });
-			dyn.appendChild(chipsRow('Scene', 'scene', scenes, false));
-			dyn.appendChild(chipsRow('Role', 'role', T.ROLES, false));
-			dyn.appendChild(chipsRow('Language', 'lang', T.LANGS, false));
-			dyn.appendChild(chipsRow('Kind', 'kind', T.KINDS, false));
-		}
-		redraw();
-		card2.appendChild(g2);
-		card2.appendChild(dyn);
-		var btns = h('div', { class: 'ts-row-btns' });
-		function save() {
-			var out = {};
-			['artist', 'title', 'work'].forEach(function (k) { var v = String(fields[k] || '').trim(); if (v !== String(t[k] || '')) out[k] = v || null; });
-			['mood', 'scene', 'role', 'lang', 'kind'].forEach(function (k) { if (fields[k] !== (t[k] || '')) out[k] = fields[k]; });
-			if (fields.genres.join('|') !== t.genres.join('|') && fields.genres.length) out.genres = fields.genres.slice();
-			if (!out.mood && !t.mood && fields.mood) out.mood = fields.mood;
-			out.kind = fields.kind || 'song';
-			L.edit(lib, t.id, out);
-			changed([t.id]);
-			labelAt++;
-			renderView(false);
-		}
-		btns.appendChild(actionBtn('check', 'Save and next', save, true));
-		btns.appendChild(actionBtn('fwd', 'Skip', function () { labelAt++; renderView(false); }));
-		if (labelAt > 0) btns.appendChild(actionBtn('back', 'Back', function () { labelAt--; renderView(false); }));
-		card2.appendChild(btns);
-		view.appendChild(card2);
-		labelKeys = function (e) {
-			var tag = (e.target && e.target.tagName) || '';
-			if (/^(BUTTON|A|SUMMARY|SELECT|TEXTAREA)$/.test(tag) || !(e.target.closest && e.target.closest('#view'))) return false;
-			if (tag === 'INPUT' && e.key !== 'Enter') return false;
-			if (e.key >= '1' && e.key <= '6') { fields.mood = T.MOODS[+e.key - 1][0]; redraw(); return true; }
-			if (e.key === 'Enter') { save(); return true; }
-			if (e.key === 'ArrowRight') { labelAt++; renderView(false); return true; }
-			if (e.key === 'ArrowLeft' && labelAt > 0) { labelAt--; renderView(false); return true; }
-			if (e.key === 'p' || e.key === 'P') { playNow([t.id]); return true; }
-			return false;
-		};
-		if (first && !fields.artist) first.focus();
+		TS.labellerView(view, { state: labelling, lib: lib, L: L, T: T, h: h, scopeTracks: scopeTracks, needsLabel: needsLabel, plural: plural, actionBtn: actionBtn, renderView: renderView, suggestFor: suggestFor, n: n, artFor: artFor, DOT: DOT, clock: clock, playNow: playNow, clear: clear, MOOD_HUE: MOOD_HUE, ELL: ELL, guessPicks: guessPicks, changed: changed, settleChannel: settleChannel, Parse: Parse, ruleWords: ruleWords, q: q, say: say, keys: function (fn) { labelKeys = fn; } });
 	}
 	var labelKeys = null;
 
