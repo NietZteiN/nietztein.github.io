@@ -1944,6 +1944,14 @@ The quick labeller and Not labelled counts use the same rule: no mood, kind, wor
 
 Browser regression for this batch: `node scripts/qa/drive.mjs misc/101-true-shuffle/test/ux-edits.drive.mjs`.
 
+### Artist discovery and Add to music (2026-10-13)
+
+For you starts with `artistDiscovery(view, ctx, query)`: choose an artist or performer from the whole library, or type any name. Songs, Albums & EPs and Singles open their catalog; Only songs I do not have filters the song list. Keep this artist here stores chosen names locally; `artistDiscovery.chosen(ctx)` supplies them first to New releases. A song-title search asks YouTube only on submission, showing its 100-unit cost and selectable videos. Catalog failures leave YouTube search available. Anime/series lanes mount only when their section opens; existing `?lane=season`, `airing` and `series` links open it directly. The new `artist-discovery.js` loads before foryou.js.
+
+Songs, now playing and discovery rows offer a direct Add to music when an imported YouTube playlist has that name (case-insensitive). Otherwise the last destination or largest imported playlist is used. The action does not open the playlist picker; More retains the other-playlist choice. Already-added songs show a disabled In music button. Google write permission is requested when needed, with known video ids retained across the redirect. Add and Undo use the existing YouTube insert/delete flow and persist playlist membership. Quota badges show 50 units for a library song, 51 for a known video to import, and 151 for a catalog song needing a search. No YouTube playlist is changed by browsing or playing.
+
+Regression: `node scripts/qa/drive.mjs misc/101-true-shuffle/test/ux-artist-discovery.drive.mjs` covers both themes at desktop/phone sizes, catalog/albums/missing-song filtering, chosen artists, lazy anime and deep links, and mocked YouTube search, direct music addition, duplicate prevention, Undo, reload and the permission handoff.
+
 ### Artist spellings (2026-10-12)
 
 Artist > More actions > Same artist as opens a name picker with song counts, prioritising matching native names and similar spellings. Suggestions omit multi-person credits; a different credit can still be typed. Merge lists that spelling under the chosen artist for current songs and later imports. Undo restores the entire earlier alias map and re-reads current songs, including intervening imports. Existing artist focuses, saved filters and old artist links follow the merged spelling.

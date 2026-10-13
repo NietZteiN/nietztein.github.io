@@ -47,7 +47,7 @@
 	var MEMO_MS = 6 * HOUR;   // a series or an artist read is not read again this session for so long
 	var DOT = String.fromCharCode(0xB7), ELL = String.fromCharCode(0x2026), RSQ = String.fromCharCode(0x2019);
 	var AIRING = 'query ($from: Int, $to: Int, $page: Int) { Page(page: $page, perPage: 50) { pageInfo { hasNextPage } airingSchedules(airingAt_greater: $from, airingAt_lesser: $to, sort: TIME) { airingAt episode media { id idMal title { romaji english native } popularity isAdult format season seasonYear coverImage { medium } } } } }';
-	var JUMP = [['radio', 'Your radio'], ['season', 'This season'], ['airing', 'Airing today'], ['series', 'Your series'], ['releases', 'New releases'], ['channels', 'Your channels'], ['because-0', 'Because you play'], ['saved', 'Saved']];
+	var JUMP = [['artists', 'Choose an artist'], ['releases', 'New releases'], ['because-0', 'Similar artists'], ['radio', 'Your radio'], ['channels', 'Your channels'], ['saved', 'Saved']];
 
 	function str(v) { return v == null ? '' : String(v); }
 	function num(v) { var n = +v; return isFinite(n) ? n : 0; }
@@ -876,6 +876,8 @@
 			load: function (signal) {
 				return P.ready.then(function () {
 					var artists = P.prof.artists.slice(0, ARTISTS_MAX);
+					var picked = root.TrueShuffle.artistDiscovery ? root.TrueShuffle.artistDiscovery.chosen(ctx).map(function (name) { return { key: ctx.L.normArtist(name), name: name }; }) : [];
+					artists = picked.concat(artists.filter(function (a) { return !picked.some(function (p) { return p.key === a.key; }); })).slice(0, ARTISTS_MAX);
 					if (!artists.length) return { items: [] };
 					var k = 0;
 					var s = stream(artists, function (a) {
@@ -938,6 +940,7 @@
 	}
 	function releaseCard(P, al) {
 		var ctx = P.c, h = ctx.h, U = ctx.U;
+		ctx.discoveryChanged = function () { if (P.lanes.releases) P.lanes.releases.reload(); };
 		var art = artOn(ctx) && al.cover ? h('span', { class: 'ts-art' }, h('img', { src: al.cover, alt: '', loading: 'lazy', referrerpolicy: 'no-referrer' })) : U.swatch(hueOf(al.title), al.title, '', 45);
 		var type = al.type === 'ep' ? 'EP' : al.type === 'single' ? 'Single' : al.type === 'compilation' ? 'Compilation' : 'Album';
 		var sub = [al.artistName, type, dateWords(P, str(al.date).slice(0, 10))].filter(Boolean).join(' ' + DOT + ' ');
@@ -1332,10 +1335,11 @@
 		var ctx = P.c, h = ctx.h, U = ctx.U;
 		var prof = P.prof;
 		var meta = prof.songs.length ? 'From ' + plural(ctx, prof.songs.length, 'song') + ' you play or like' + (prof.artists.length ? ' ' + DOT + ' ' + plural(ctx, prof.artists.length, 'artist') : '') + (prof.works.length ? ' ' + DOT + ' ' + plural(ctx, prof.works.length, 'series', 'series') : '') : 'Play or like a few songs: this page learns from what you play.';
-		if (ctx.ui && ctx.ui.headerBlock) ctx.ui.headerBlock(el, { kicker: 'Discover', title: 'For you', art: false, hue: { h: 265, s: 45 }, blurb: 'New music from your own listening: a radio of your favourites and songs like them, this season' + RSQ + 's anime, the songs missing from your series, new releases and uploads from the artists and channels you follow.', meta: meta });
+		if (ctx.ui && ctx.ui.headerBlock) ctx.ui.headerBlock(el, { kicker: 'Discover', title: 'For you', art: false, hue: { h: 265, s: 45 }, blurb: 'Find more songs by artists you listen to, choose someone new, or explore artists like your favourites. Search YouTube for a song and add it to your playlist.', meta: meta });
 		else el.appendChild(h('h1', { class: 'ts-h1', text: 'For you' }));
 		var jump = h('div', { class: 'ts-fy-jump', role: 'navigation', aria: { label: 'Jump to' } });
 		el.appendChild(jump);
+		if (root.TrueShuffle.artistDiscovery) root.TrueShuffle.artistDiscovery(el, ctx, query);
 		el.addEventListener('click', function (e) {
 			var a = e.target && e.target.closest ? e.target.closest('a[href^="#/explore/find/"]') : null;
 			if (!a) return;
@@ -1343,7 +1347,7 @@
 			try { key = decodeURIComponent(a.getAttribute('href').slice('#/explore/find/'.length)); } catch (x) { return; }
 			if (P.known[key]) exploreFind(P, { key: key });
 		}, true);
-		var specs = [['radio', radioLane(P)], ['season', seasonLane(P)], ['airing', airingLane(P)], ['series', seriesLane(P)], ['releases', releasesLane(P)], ['channels', channelsLane(P)]];
+		var specs = [['releases', releasesLane(P)], ['radio', radioLane(P)], ['channels', channelsLane(P)]];
 		var mounted = [];
 		function mount(id, spec, after) {
 			var wrap = h('section', { class: 'ts-fy-lane', id: 'fy-lane-' + id });
@@ -1358,6 +1362,10 @@
 		var firstBecause = mount('because-0', becauseLane(P, 0));
 		var savedWrap = mount('saved', savedLane(P));
 		mount('hidden', hiddenLane(P));
+		var anime = h('details', { class: 'ts-discovery-anime' }, h('summary', { text: 'Anime & series: this season, airing today, and songs from your series' })); el.appendChild(anime);
+		var animeMounted = false;
+		function openAnime() { if (animeMounted || !anime.open) return; animeMounted = true; [['season', seasonLane(P)], ['airing', airingLane(P)], ['series', seriesLane(P)]].forEach(function (x) { var w = mount(x[0], x[1]); anime.appendChild(w); }); }
+		anime.addEventListener('toggle', openAnime);
 		// the other Because lanes, for the other artists Deezer knows, after the first
 		P.morePicks = function (picks) {
 			for (var k = 1; k < Math.min(picks.length, BECAUSE_MAX); k++) {
@@ -1376,10 +1384,11 @@
 			var off2 = en.on('hidden', function () { var l = P.lanes.hidden; if (!l || !l.node.isConnected) { off2(); return; } if (l.state() !== 'loading') l.reload(); });
 		}
 		JUMP.forEach(function (j) {
-			jump.appendChild(U.btn({ variant: 'chip', label: j[1], on: { click: function () { var w = root.document.getElementById('fy-lane-' + j[0]); if (w) w.scrollIntoView({ behavior: 'smooth', block: 'start' }); } } }));
+			jump.appendChild(U.btn({ variant: 'chip', label: j[1], on: { click: function () { var w = root.document.getElementById(j[0] === 'artists' ? 'fy-artists' : 'fy-lane-' + j[0]); if (w) w.scrollIntoView({ behavior: 'smooth', block: 'start' }); } } }));
 		});
 		var want = query && query.get ? query.get('lane') : '';
 		if (want === 'because') want = 'because-0';
+		if (['season', 'airing', 'series'].indexOf(want) >= 0) { anime.open = true; openAnime(); }
 		if (want && root.document && root.document.getElementById('fy-lane-' + want)) setTimeout(function () { var w = root.document.getElementById('fy-lane-' + want); if (w) w.scrollIntoView({ block: 'start' }); }, 60);
 		return { lanes: mounted, profile: prof };
 	}

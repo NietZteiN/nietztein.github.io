@@ -1023,6 +1023,7 @@
 		row.appendChild(U.iconBtn('edit', 'Edit details', { on: { click: function () { openEditor([t.id]); } } }));
 		row.appendChild(U.iconBtn('more', 'More', { on: { click: function (e) { trackMenu(t, e.currentTarget, null); } } }));
 		box.appendChild(row);
+		var quickAdd = addButton(t); if (quickAdd) box.appendChild(quickAdd);
 		if (isGuess(t)) box.appendChild(guessBox(t));
 	}
 	function stars(t) {
@@ -1411,7 +1412,8 @@
 		}
 		items.push({ heading: 'Keep' });
 		items.push(A.item('add-to-playlist', function () { addToList(ids, menuAt); }));
-		if (one && !demo && U.YT_ID.test(one.id) && ytTargets().some(function (p) { return !inPlaylist(one.id, p); })) items.push(A.item('add-to-youtube', function () { addToYouTube({ id: one.id, artist: one.artist, title: trackTitle(one), _video: { videoId: one.id } }, menuAt); }, { label: addLabel() + ' on YouTube' + (ytTargets().length > 1 ? ELL : '') }));
+		if (one && !demo && U.YT_ID.test(one.id) && ytTarget() && !inPlaylist(one.id, ytTarget())) items.push(A.item('add-to-youtube', function () { addTo(one, ytTarget(), menuAt); }, { label: addLabel() + ' on YouTube' }));
+		if (one && !demo && U.YT_ID.test(one.id) && ytTargets().length > 1) items.push(A.item('add-to-youtube', function () { addToYouTube(one, menuAt); }, { label: 'Add to another YouTube playlist' + ELL }));
 		var pl = route.parts[0] === 'list' && listById(route.parts[1]);
 		if (pl && pl.kind === 'manual') items.push(A.item('remove-from-list', function () { removeFromList(pl, ids); }, { label: 'Remove from ' + pl.name }));
 		if (one && (one.artistKey || one.work || one.channelId)) {
@@ -2238,6 +2240,7 @@
 			actions: [
 				actionBtn('play', 'Play', function () { playFrom(tracks.map(function (t) { return t.id; }), 0, ctx); }, true),
 				shuffleSplit({ artists: [key] }, ctx),
+				actionBtn('compass', 'Discover their songs', function () { location.hash = '#/for-you?artist=' + encodeURIComponent(a.name); }),
 				actionBtn('radio', 'Artist radio', function () { artistRadio(key); }),
 				actionBtn('edit', 'Edit all', function () { openEditor(a.tracks.map(function (t) { return t.id; })); }),
 				key.charAt(0) !== '~' ? actionBtn('artist', 'Same artist as' + ELL, function () { TS.artistAliases.merge(pageCtx, key, a); }) : null
@@ -2570,6 +2573,7 @@
 			chips: Array.prototype.slice.call(chips.childNodes),
 			actions: [
 				actionBtn('play', 'Play', function () { playNow([t.id]); }, true),
+				addButton(t),
 				actionBtn('radio', 'Start radio', function () { startRadio(t); }),
 				actionBtn('edit', 'Edit details', function () { openEditor([t.id]); })
 			],
@@ -4300,6 +4304,7 @@
 		extras: { channel: function (view, id, mine) { channelExtras(view, id, mine); } },
 		http: srcHttp, deezer: deezer, libIndex: libIndex, findsMap: findsMap, signIn: signIn,
 		lastfmKey: function () { return String(ToyKit.load('lastfmKey', '') || '').trim(); },
+		youtube: { button: addButton, add: addToYouTube },
 		similar: function (t) { var r = recsFor(t); return { together: r.together, work: r.work, close: r.close.map(function (x) { return { t: x.t, why: whyWords(x.why) }; }) }; },
 		like: function (id) { toggleLike(trackOf(id)); }, liked: function (id) { var t = trackOf(id); return !!(t && (t.rating || 0) >= 4); },
 		previewList: function (items, label) { pvStart((items || []).map(function (it) { return { id: it.key, title: it.title, artist: it.artist, preview: it.preview, cover: it.cover, album: it.album, key: it.key, videoId: it.videoId || null, find: it.find || null }; }), 0, label); },
@@ -5137,18 +5142,19 @@
 			.filter(function (p) { return p && !p.special && !/^local:/.test(p.id) && !/^LL/.test(p.id); })
 			.sort(function (a, b) { return (b.count || 0) - (a.count || 0); });
 	}
-	function ytTarget() { var ts = ytTargets(), last = ToyKit.load('addTo', ''); return ts.filter(function (p) { return p.id === last; })[0] || ts[0] || null; }
+	function ytTarget() { var ts = ytTargets(), last = ToyKit.load('addTo', ''); return ts.filter(function (p) { return String(p.title || '').trim().toLowerCase() === 'music'; })[0] || ts.filter(function (p) { return p.id === last; })[0] || ts[0] || null; }
 	function addLabel() { var tg = ytTarget(); return tg ? 'Add to ' + (tg.title || 'playlist') : 'Add to playlist'; }
 	// The video id a found song already has, if any.
-	function videoOf(t) { return t._video ? t._video.videoId : (lib.tracks[t.id] ? t.id : null); }
+	function videoOf(t) { return t._video ? t._video.videoId : t.videoId || (t.sameRecording !== false && t.mine) || ((lib.tracks[t.id] || t.transient) && U.YT_ID.test(t.id) ? t.id : null); }
 	function inPlaylist(vid, p) { var tr = vid && lib.tracks[vid]; return !!(tr && tr.playlists.indexOf(p.id) >= 0); }
 
 	// The Add button for a song that is not in the playlist yet.
 	function addButton(t, cls) {
 		var tg = ytTarget(), vid = videoOf(t);
-		if (demo || !tg || (vid && ytTargets().every(function (p) { return inPlaylist(vid, p); }))) return null;
-		var b = h('button', { class: 'ts-btn ts-btn--secondary ts-btn--sm ts-addyt' + (cls ? ' ' + cls : ''), text: 'Add', title: addLabel() + ' on YouTube (' + (vid ? 50 : 151) + ' quota units)', aria: { label: addLabel() + ' on YouTube: ' + t.title } });
-		b.addEventListener('click', function (e) { e.stopPropagation(); addToYouTube(t, b); });
+		if (demo || !tg) return null;
+		var has = vid && inPlaylist(vid, tg);
+		var b = U.btn({ icon: 'youtube-add', label: has ? 'In ' + tg.title : 'Add to ' + tg.title, variant: 'secondary', size: 'md', cls: 'ts-addyt' + (cls ? ' ' + cls : ''), disabled: !!has, cost: has ? null : vid ? lib.tracks[vid] ? 50 : 51 : 151, title: (has ? 'Already in ' : 'Add to ') + tg.title + ' on YouTube', aria: { label: (has ? 'Already in ' : 'Add to ') + tg.title + ' on YouTube: ' + t.title } });
+		b.addEventListener('click', function (e) { e.stopPropagation(); addTo(t, tg, b); });
 		return b;
 	}
 	// Pick the playlist (a menu when there are several), then add.
@@ -5183,7 +5189,7 @@
 	}
 	function slimFound(t) {
 		var o = { id: t.id, artist: t.artist || '', title: t.title || '' };
-		if (t._video) o._video = { videoId: t._video.videoId, title: t._video.title || '', channel: t._video.channel || '' };
+		var vid = videoOf(t); if (vid) o._video = { videoId: vid, title: t.title || '', channel: t.channel || '' };
 		return o;
 	}
 	// Back from Google: finish the add that sent the reader there. -> true when there was one.
@@ -5202,7 +5208,7 @@
 		if (btn && !btn.nodeType) btn = null;
 		if (!auth.signedIn() || !auth.canWrite()) { askWrite(t, p); return; }
 		if (btn) U.btnState(btn, { busy: true });
-		var found = !t._video && !lib.tracks[t.id], vid = videoOf(t), wasIn = !!(vid && lib.tracks[vid]);
+		var vid = videoOf(t), found = !vid && !lib.tracks[t.id], wasIn = !!(vid && lib.tracks[vid]);
 		var job = U.job('Adding ' + q(t.title) + ' to ' + q(p.title) + ELL);
 		var find = vid ? Promise.resolve(vid) : client.search(DX.youtubeQuery(t), { max: 6 }).then(function (results) {
 			var best = DX.bestVideo(results, t);

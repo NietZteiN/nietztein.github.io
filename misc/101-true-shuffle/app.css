@@ -530,6 +530,22 @@ body:not(.is-playing) .ts-eq i { animation: none; height: 55%; }
 .ts-setup li { margin: 4px 0; overflow-wrap: anywhere; }
 .ts-inline-form { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 10px 0; }
 .ts-inline-form .kit-input { flex: 1 1 260px; }
+.ts-artist-discovery { padding: 20px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); margin: 16px 0 28px; }
+.ts-artist-discovery h2, .ts-artist-discovery h3 { margin: 12px 0; }
+.ts-artist-discovery .ts-btn { min-height: 44px; }
+.ts-discovery-result { margin-top: 20px; }
+.ts-discovery-anime { margin: 24px 0; }
+.ts-discovery-anime > summary { padding: 16px; cursor: pointer; font-weight: 600; }
+.ts-m-row.has-quick-add .ts-m-next { display: none; }
+.ts-m-row.has-quick-add .ts-addyt { max-width: 220px; }
+.ts-addyt .ts-btn-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 760px) {
+	.ts-artist-discovery { padding: 12px; }
+	.ts-m-row.has-quick-add { flex-wrap: wrap; }
+	.ts-m-row.has-quick-add .ts-m-text { flex-basis: calc(100% - 65px); }
+	.ts-m-row.has-quick-add .ts-m-acts { margin-left: 0; width: 100%; justify-content: flex-end; }
+	.ts-m-row.has-quick-add .ts-addyt { max-width: 200px; padding: 0 10px; }
+}
 .ts-sources { list-style: none; margin: 6px 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 .ts-progress progress { width: 100%; }
 .ts-facts { display: grid; grid-template-columns: max-content 1fr; gap: 6px 18px; font-size: 13.5px; margin: 18px 0 0; max-width: 760px; }

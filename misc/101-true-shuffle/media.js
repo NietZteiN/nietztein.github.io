@@ -554,6 +554,7 @@
 			}, function () { U.btnState(pb, { busy: false }); });
 		});
 		acts.appendChild(pb);
+		var add = ctx.youtube && ctx.youtube.button ? ctx.youtube.button(it) : null; if (add) { acts.appendChild(add); li.classList.add('has-quick-add'); }
 		if (c !== 0) estimate(ctx, it, function (e) { if (e && e.status) setCost(cost(ctx, it, e), e.status); });
 		var nx = U.btn({ icon: 'queue-next', label: 'Play ' + name + ' next', iconOnly: true, size: 'sm', cls: 'ts-m-next ts-m-hover' });
 		nx.addEventListener('click', function () { play(ctx, it, 'next', opts); });
@@ -702,6 +703,7 @@
 
 		// keep or let go
 		var keep = [];
+		if (ctx.youtube && ctx.youtube.add) keep.push(A.item('add-to-youtube', function () { ctx.youtube.add(it, at); }));
 		if (it.preview && typeof ctx.preview === 'function') keep.push(A.item('preview', function () { ctx.preview(it, at && at.nodeType ? at : null); }));
 		if (f && en && typeof en.isSaved === 'function' && typeof en.save === 'function') {
 			var saved = en.isSaved(f.key);
