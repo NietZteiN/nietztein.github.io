@@ -63,9 +63,15 @@ Regression: `node scripts/qa/drive.mjs misc/101-true-shuffle/test/ux-labeller.dr
 
 Sixth-batch validation: all 2,969 shuffle checks passed; the clean checkout passed all 36 repo suites, smoke, the labeller regression (including rapid keyboard saves and real-mode persistence/sync), and the existing editing regression.
 
-Twenty of the audit's original 23 verified findings have now been addressed. The audit remains incomplete. The first three batches were pushed in `65f5d9a`, followed by `94aea86` to preserve vendored file bytes on Windows. The fourth batch was pushed in `013e4cb` and the recent-focus batch in `e8003a5`. Radio regression: `node scripts/qa/drive.mjs misc/101-true-shuffle/test/ux-radio.drive.mjs`, checking R replacement/Undo in ordered and true-shuffle queues, context and feeder state, and Shift+R preserving the queue.
+The seventh batch (2026-10-12) fixes library-19: artist More actions offers Same artist as, with whole-library name suggestions and song counts, matching native names first and multi-person credits excluded from suggestions. Merge persists aliases for later imports. Undo restores the entire earlier alias map and derives current songs, including intervening imports. Settings lists spellings with Remove/Undo, and alias-only libraries can export labels. Existing artist focuses and saved filters resolve old spellings, and old artist routes redirect to the canonical artist.
 
-Remaining originally verified findings: library-12 (playlist reordering/additions), library-18 (duplicates) and library-19 (artist aliases).
+Regression: `node scripts/qa/drive.mjs misc/101-true-shuffle/test/ux-aliases.drive.mjs`, covering cancellation, own-name rejection, merge/removal/Undo, repointed chains, later imports, focus continuity, saved-filter/Mix names, 44 px targets, both themes at desktop/phone sizes, and real-mode IndexedDB reload plus incoming/outgoing labels sync. The real-mode artist fixture requests the existing music-service lookups; the harness blocks them. Demo checks request only the local server. Screenshots: `scripts/qa/out/shuffle-aliases-*.png` and `shuffle-alias-dialog-*.png`.
+
+Seventh-batch validation: all 2,969 shuffle checks passed, and the clean checkout passed all 36 repo suites, smoke, the full alias browser regression (40.4 seconds), and the existing focus regression (58 seconds). Desktop and phone screenshots were inspected. The preceding labeller batch was pushed in `c3bad84`.
+
+Twenty-one of the audit's original 23 verified findings have now been addressed. The audit remains incomplete. The first three batches were pushed in `65f5d9a`, followed by `94aea86` to preserve vendored file bytes on Windows. The fourth batch was pushed in `013e4cb` and the recent-focus batch in `e8003a5`. Radio regression: `node scripts/qa/drive.mjs misc/101-true-shuffle/test/ux-radio.drive.mjs`, checking R replacement/Undo in ordered and true-shuffle queues, context and feeder state, and Shift+R preserving the queue.
+
+Remaining originally verified findings: library-12 (playlist reordering/additions) and library-18 (duplicates).
 
 Validation: True Shuffle unit suite, browser smoke, and the repo test suite. Reusable browser regression: `node scripts/qa/drive.mjs misc/101-true-shuffle/test/ux-audit.drive.mjs`. It checks desktop/phone in both themes, zero external demo hosts, Trim Save, base-volume keys, backup cancellation/replacement/Undo, Mix chip focus, naming-row bounds and local date grouping across a UTC day/month boundary. Screenshots land in `scripts/qa/out/shuffle-*.png`.
 

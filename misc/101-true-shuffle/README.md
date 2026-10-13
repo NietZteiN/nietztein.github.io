@@ -1944,6 +1944,12 @@ The quick labeller and Not labelled counts use the same rule: no mood, kind, wor
 
 Browser regression for this batch: `node scripts/qa/drive.mjs misc/101-true-shuffle/test/ux-edits.drive.mjs`.
 
+### Artist spellings (2026-10-12)
+
+Artist > More actions > Same artist as opens a name picker with song counts, prioritising matching native names and similar spellings. Suggestions omit multi-person credits; a different credit can still be typed. Merge lists that spelling under the chosen artist for current songs and later imports. Undo restores the entire earlier alias map and re-reads current songs, including intervening imports. Existing artist focuses, saved filters and old artist links follow the merged spelling.
+
+Settings > Labels > Artist spellings lists mappings with Remove and Undo. Aliases travel in labels exports and Desk sync, and an alias-only library can export them. Site-label updates may reapply mappings supplied by the site. `artist-aliases.js` owns the dialog and Settings list. Regression: `node scripts/qa/drive.mjs misc/101-true-shuffle/test/ux-aliases.drive.mjs` (both themes and desktop/phone sizes, merge/cancellation/removal/Undo, focus continuity, later imports, real IndexedDB reload and incoming/outgoing sync).
+
 ### Playlist safeguards and History (2026-10-12)
 
 `playlist-actions.js` previews YouTube playlist removal with the exact deletion count and focuses Keep it. Songs held in hand-picked playlists or with trim/volume settings survive removal. Nothing changes on YouTube. Deleting a hand-picked playlist with songs asks first; every playlist delete has Undo, restoring its position, Focus and page. Playlist and song headers open their full action menu directly from the visible More actions button.

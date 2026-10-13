@@ -726,6 +726,7 @@ body.is-dragging .ts-now, body.is-dragging .ts-station { outline: 2px dashed var
 
 /* ---------- Quick labeller ---------- */
 .ts-labelcard { max-width: 880px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; }
+.ts-alias-dialog .ts-btn, .ts-alias-list .ts-btn { min-height: 44px; }
 .ts-labelhead { display: flex; gap: 18px; align-items: flex-start; margin-bottom: 14px; }
 .ts-label-art { width: 128px; height: 128px; border-radius: 10px; flex: none; }
 .ts-labelhead .ts-now-title { font-size: 18px; overflow-wrap: anywhere; }
