@@ -40,6 +40,34 @@
     "story": null
   },
   {
+    "id": "directional-collapse-in-fine-tuning-preserving-the-way-back",
+    "title": "Directional Collapse in Fine-Tuning: Preserving the Way Back",
+    "authors": [
+      "J. V. Le",
+      "Tien Nguyen"
+    ],
+    "authorsText": "J. V. Le, Tien Nguyen",
+    "year": 2026,
+    "section": "Preprints",
+    "venue": "Submitted to ACL Rolling Review (ARR), October 2026.",
+    "links": [],
+    "story": null
+  },
+  {
+    "id": "correct-values-can-be-recovered-before-wrong-reasoning-steps",
+    "title": "Correct Values Can Be Recovered Before Wrong Reasoning Steps",
+    "authors": [
+      "J. V. Le",
+      "Tien Nguyen"
+    ],
+    "authorsText": "J. V. Le, Tien Nguyen",
+    "year": 2026,
+    "section": "Preprints",
+    "venue": "Submitted to ACL Rolling Review (ARR), October 2026.",
+    "links": [],
+    "story": null
+  },
+  {
     "id": "composing-obfuscation-specialists-by-merging",
     "title": "Composing Obfuscation Specialists by Merging",
     "authors": [

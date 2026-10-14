@@ -27,7 +27,7 @@
 (function () {
 	'use strict';
 
-	var CV_URL = 'assets/documents/JackLeCV.pdf?v=20261010';
+	var CV_URL = 'assets/documents/JackLeCV.pdf?v=20261014';
 	var POSTS_INDEX = 'blog/index.json';
 	var THEATRE_URL = 'misc/55-paper-theatre/';
 	var STORIES_INDEX = THEATRE_URL + 'stories/index.json';
