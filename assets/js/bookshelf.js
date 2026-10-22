@@ -1982,8 +1982,16 @@
 
 	function loadData() {
 		if (loading) return loading;
-		loading = fetch(DATA_URL)
-			.then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+		loading = Promise.all([DATA_URL, 'assets/data/library-additions.json'].map(function (url) {
+			return fetch(url).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
+		})).then(function (catalogs) {
+			var data = catalogs[0], extra = catalogs[1].books || [];
+			var ids = new Set(data.books.map(function (b) { return b.id; }));
+			extra = extra.filter(function (b) { return !ids.has(b.id); });
+			data.books = data.books.concat(extra);
+			data.counts = Object.assign({}, data.counts, { books: data.books.length });
+			return data;
+		})
 			.then(function (data) {
 				books = data.books || [];
 				counts = data.counts || {};

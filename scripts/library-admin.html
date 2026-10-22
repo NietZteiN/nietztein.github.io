@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Library manager</title>
+<style>
+:root{color-scheme:light;font:16px/1.5 Georgia,serif;color:#292820;background:#f6f3ec}body{max-width:1000px;margin:48px auto;padding:0 24px}h1{font-size:38px;margin:0}h2{font-size:22px}p{color:#666253}section{background:#fffdf8;border:1px solid #dcd6c9;border-radius:12px;padding:24px;margin:24px 0}form{display:grid;grid-template-columns:1fr 1fr;gap:16px}label{display:flex;flex-direction:column;gap:5px;font:14px/1.4 system-ui}input,select,textarea,button{font:inherit;padding:10px;border:1px solid #bfb8aa;border-radius:5px;min-width:0;background:white;color:inherit}textarea{min-height:85px}button{cursor:pointer;background:#304e3c;color:white;border-color:#304e3c}button:disabled{opacity:.5;cursor:wait}.wide{grid-column:1/-1}.actions{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.secondary{background:transparent;color:#304e3c}#status{white-space:pre-wrap;padding:14px;border-left:3px solid #8b805f}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:10px;border-bottom:1px solid #ddd;overflow-wrap:anywhere}.table-wrap{overflow:auto}small{color:#666253}a{color:#304e3c}@media(max-width:600px){body{margin:24px auto;padding:0 12px}form{grid-template-columns:1fr}section{padding:16px}h1{font-size:30px}}
+</style>
+<h1>Library manager</h1>
+<p>Add to your public bookshelf. Review the queue, then publish when it looks right.</p>
+<div id="status" role="status" aria-live="polite">Loading catalog…</div>
+<section>
+<h2>Add a book</h2>
+<form id="book-form">
+<label class="wide">Title *<input name="t" required maxlength="1000"></label>
+<label>Author / editor<input name="a" maxlength="1000"></label>
+<label>Publisher / series<input name="pub" maxlength="1000"></label>
+<label>Language<select name="l"><option value="EN">English</option><option value="JA">Japanese</option><option value="DE">German</option><option value="IT">Italian</option><option value="LA">Latin</option><option value="VI">Vietnamese</option><option value="EN/JA">English / Japanese</option><option value="?">Other / unknown</option></select></label>
+<label>First publication year<input name="y" type="number" min="-9999" max="9999" step="1"></label>
+<label>Genre<select name="g" id="genres"></select></label>
+<label>Type<input name="ty" value="Book" list="types"><datalist id="types"></datalist></label>
+<label class="wide">Shelf<select id="location"></select></label>
+<label>Description<textarea name="d" maxlength="10000"></textarea></label>
+<label>Position on shelf (optional)<input name="p" type="number" min="1" max="100000" step="1"><small>Leave blank to place at the end.</small></label>
+<div class="wide"><button id="add" disabled>Add to queue</button></div>
+</form>
+</section>
+<section>
+<h2>Import books</h2>
+<p>Upload a CSV or JSON catalog to add multiple books. Imports add books; they never replace the existing catalog.</p>
+<p><small>CSV columns: Title (required), Author, Publisher, Language (EN, JA, etc.), Year, Genre, Type, Unit, Shelf, Position, Description. Leave Unit and Shelf blank to use “New books”. JSON accepts an array or an object with a books array.</small></p>
+<div class="actions"><label>Catalog file<input id="upload" type="file" accept=".csv,.json,text/csv,application/json" disabled></label><button id="template" class="secondary">Download CSV template</button></div>
+</section>
+<section>
+<h2>Ready to publish <span id="queue-count">(0)</span></h2>
+<p>Books in this queue are not saved until you publish. Publishing creates a Git commit and pushes it to your public site.</p>
+<div class="table-wrap"><table><thead><tr><th>Title</th><th>Author</th><th>Shelf</th><th></th></tr></thead><tbody id="queue"></tbody></table></div>
+<div class="actions" style="margin-top:20px"><button id="publish" disabled>Publish books</button><button id="backup" class="secondary" disabled>Download queue</button></div>
+</section>
+<p><a href="https://nietztein.github.io/#/bookshelf" target="_blank" rel="noopener">Open public bookshelf ↗</a></p>
+<script>
+'use strict';
+const token = '__TOKEN__';
+const $ = id => document.getElementById(id);
+let pending = [], catalog = [], working = false;
+const status = text => { $('status').textContent = text; };
+async function api(route,body) {
+  const response = await fetch(route,{method:body?'POST':'GET',headers:{'X-Library-Token':token,'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined});
+  const data = await response.json();
+  if (!response.ok) { if(data.saved){ pending=[]; renderQueue(); } throw new Error(data.error); }
+  return data;
+}
+function download(name,text,type) {
+  const link = document.createElement('a'), url = URL.createObjectURL(new Blob([text],{type}));
+  link.href=url; link.download=name; link.click(); setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+function renderQueue() {
+  $('queue-count').textContent = '('+pending.length+')'; $('queue').replaceChildren();
+  pending.forEach((b,i)=>{
+    const tr=document.createElement('tr');
+    [b.t,b.a,b.u+' / '+b.s].forEach(text=>{const td=document.createElement('td');td.textContent=text;tr.append(td);});
+    const td=document.createElement('td'), remove=document.createElement('button');
+    remove.type='button';remove.className='secondary';remove.textContent='Remove'; remove.disabled=working;
+    remove.setAttribute('aria-label','Remove '+b.t+' from queue');
+    remove.onclick=()=>{pending.splice(i,1);renderQueue();};td.append(remove);tr.append(td);$('queue').append(tr);
+  });
+  $('publish').disabled=working||!pending.length; $('backup').disabled=working||!pending.length;
+}
+function setWorking(on) { working=on; $('add').disabled=on; $('upload').disabled=on; renderQueue(); }
+async function enqueue(body) {
+  setWorking(true);
+  try {
+    const data=await api('/preview',body), ids=new Set(pending.map(b=>b.id));
+    if(data.books.some(b=>ids.has(b.id)))throw new Error('An imported ID is already in your queue.');
+    // Assign sequential positions even when several batches target the same shelf.
+    data.books.forEach(b=>{b.p=Math.max(b.p,...pending.filter(x=>x.u===b.u&&x.s===b.s).map(x=>x.p+1));pending.push(b);});
+    status('Added '+data.books.length+' books to the queue. Review them before publishing.');
+    return true;
+  }catch(e){status(e.message);return false;}finally{setWorking(false);}
+}
+$('book-form').onsubmit=async event=>{
+  event.preventDefault(); const book=Object.fromEntries(new FormData(event.target));
+  const loc=JSON.parse($('location').value);book.u=loc[0];book.s=loc[1];
+  if(await enqueue({books:[book]})){event.target.elements.t.value='';event.target.elements.d.value='';event.target.elements.t.focus();}
+};
+$('upload').onchange=async event=>{
+  const file=event.target.files[0]; if(!file)return;
+  if(file.size>3000000){status('Choose a file smaller than 3 MB.');event.target.value='';return;}
+  try {await enqueue({format:file.name.toLowerCase().endsWith('.csv')?'csv':'json',text:await file.text()});}
+  catch(e){status(e.message);}finally{event.target.value='';}
+};
+$('template').onclick=()=>download('books-template.csv','Title,Author,Publisher,Language,Year,Genre,Type,Unit,Shelf,Position,Description\r\n','text/csv');
+$('backup').onclick=()=>download('books-queue.json',JSON.stringify({books:pending},null,2),'application/json');
+$('publish').onclick=async()=>{
+  setWorking(true);status('Saving and publishing books… Keep this window open.');
+  try{const result=await api('/publish',{books:pending});pending=[];status(result.message);await loadCatalog();}
+  catch(e){status(e.message);}finally{setWorking(false);}
+};
+async function loadCatalog(){
+  const data=await api('/catalog'); catalog=data.books;
+  const locations=new Map([[JSON.stringify(['My','New books']),'New books']]);
+  catalog.forEach(b=>locations.set(JSON.stringify([b.u,b.s]),b.u+' / '+b.s));
+  $('location').replaceChildren();locations.forEach((label,value)=>$('location').add(new Option(label,value)));
+  $('genres').replaceChildren();[...new Set(catalog.map(b=>b.g).concat('Unidentified'))].sort().forEach(g=>$('genres').add(new Option(g,g)));
+  $('genres').value='Unidentified';$('types').replaceChildren();[...new Set(catalog.map(b=>b.ty))].sort().forEach(t=>$('types').append(new Option(t,t)));
+}
+loadCatalog().then(()=>{setWorking(false);status('Catalog loaded. '+catalog.length+' books. Add a book or import a file.');}).catch(e=>status(e.message));
+window.addEventListener('beforeunload',event=>{if(pending.length){event.preventDefault();event.returnValue='';}});
+</script>
+</html>
