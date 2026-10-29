@@ -1,7 +1,7 @@
 @title Fast Errors or Slow Effort?
 @kind paper
 @source paper:Divergent Dual-Process Signatures of Code Obfuscation in Humans and Language Models
-@cite J. V. Le, I. Lahnstein Coronado, A. Nguyen, T. Nguyen. Fast Errors or Slow Effort? Divergent Dual-Process Signatures of Code Obfuscation in Humans and Language Models. Submitted to ACM International Conference on the Foundations of Software Engineering (FSE).
+@cite J. V. Le, I. Lahnstein Coronado, A. Nguyen, T. Nguyen. Fast Errors or Slow Effort? Divergent Dual-Process Signatures of Code Obfuscation in Humans and Language Models. Submitted to IEEE/ACM International Conference on Software Engineering (ICSE).
 @link ../../assets/documents/publications/2026SPLASH-SRC.pdf Two-page SRC abstract
 @authors Jack V. Le, Ilse Lahnstein Coronado, Anh Nguyen, Tien Nguyen
 @note Dialogue is dramatized; coauthors did not say these lines. The manuscript is not public: the hook and the question are drawn from the two-page SPLASH SRC abstract (figures marked §), and the results are withheld.
