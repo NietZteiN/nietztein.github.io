@@ -63,7 +63,7 @@ function siteEntry(file, text) {
 	const fm = siteParseFrontMatter(text);
 	const dateFromName = (file.match(/^(\d{4}-\d{2}-\d{2})-/) || [])[1] || '';
 	const slug = siteSlugFromFile(file);
-	return { slug, title: fm.title || slug, date: fm.date || dateFromName || '', summary: fm.summary || '', tags: Array.isArray(fm.tags) ? fm.tags : fm.tags ? [fm.tags] : [], file };
+	return { slug, title: fm.title || slug, date: fm.date || dateFromName || '', summary: fm.summary || '', tags: Array.isArray(fm.tags) ? fm.tags : fm.tags ? [fm.tags] : [], file, ...(fm.kind === 'note' ? { kind: 'note' } : {}) };
 }
 
 function fmOnly(o) {
@@ -120,6 +120,24 @@ for (const e of index) {
 	roundTripped++;
 }
 ok(roundTripped === index.length, 'every listed post round-tripped (' + roundTripped + ')');
+
+// Short notes are an explicit format, never inferred from a private Notes file.
+{
+	const fields = { title: 'Fixture short note', date: '2026-10-05', summary: 'A brief authored fixture.', tags: ['language'], kind: 'note', slug: 'fixture-short-note', published: '', publishedSha: '' };
+	const text = P.buildPost(fields, 'A short public fixture.');
+	eq(siteParseFrontMatter(text).kind, 'note', 'note format reaches the public front matter');
+	eq(siteParsePost(text).fm.kind, 'note', 'site reader sees note format');
+	eq(P.indexEntry('2026-10-05-fixture-short-note.md', text), siteEntry('2026-10-05-fixture-short-note.md', text), 'note index entry agrees with publishing builder');
+	eq(P.indexEntry('2026-10-05-fixture-short-note.md', text).kind, 'note', 'note index carries its explicit kind');
+	const draft = P.buildDraft(fields, 'A short public fixture.');
+	eq(P.readDraft(draft).kind, 'note', 'saved draft retains note format');
+	eq(P.buildPost(P.readDraft(draft), P.readDraft(draft).body), text, 'note draft/public round-trip');
+	ok(!/^kind:/m.test(P.buildPost({ ...fields, kind: '' }, 'Article again.')), 'switching to Article omits kind');
+	ok(!Object.hasOwn(P.indexEntry('2026-10-05-article.md', P.buildPost({ ...fields, kind: 'article' }, 'Article.')), 'kind'), 'Article retains original index shape');
+	const checked = P.checkPublish({ ...fields, body: 'A short public fixture.', existing: {}, today: '2026-10-05' });
+	ok(checked.ok && checked.entry.kind === 'note' && /^kind: note$/m.test(checked.text), 'note uses the normal checked publication path', checked.errors);
+	ok(P.checkPublish({ ...fields, kind: 'tweet', body: 'Fixture.', existing: {} }).errors.some((error) => error.code === 'kind'), 'unsupported publish format is rejected');
+}
 
 // ---- 2. awkward values survive both readers ---------------------------------------
 

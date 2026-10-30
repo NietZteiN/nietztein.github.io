@@ -9,6 +9,7 @@
 	{ "sel": "#top-nav .nav-link[data-route=\"experience\"]", "en": "Experience", "ja": "経歴" },
 	{ "sel": "#top-nav .nav-link[data-route=\"bookshelf\"]", "en": "Bookshelf", "ja": "本棚" },
 	{ "sel": "#top-nav .nav-link[data-route=\"misc\"]", "en": "Misc", "ja": "その他" },
+	{ "sel": ".saved-open-label", "en": "Saved", "ja": "保存済み" },
 
 	{
 		"sel": "#leftPanel > p > span",
@@ -26,10 +27,28 @@
 	},
 
 	{
-		"sel": "#aboutmeContent .row > p.justify",
+		"sel": "#home-background-copy",
 		"en": "Undergraduate researcher at the University of Texas at Dallas since August 2022, with Phi Kappa Phi and Collegium V Honors. His research centers on language models — how they represent meaning, where they generalize, and where they break — with broader interests connecting machine learning to questions about cognition and scientific discovery. He has held a DAAD RISE research internship in Germany and a policy-oriented internship at CSET, alongside applied work in computer vision, software engineering, and ML for materials and scientific text. He teaches and grades introductory CS courses and is active in student organizations and outreach.",
 		"ja": "2022年8月よりテキサス大学ダラス校の学部生研究者として活動しており、ファイ・カッパ・ファイ（Phi Kappa Phi）および Collegium V Honors に所属しています。研究の中心は言語モデルで、意味をどのように表現するのか、どこまで汎化するのか、そしてどこで破綻するのかを扱っています。より広くは、機械学習を認知や科学的発見に関する問いと結びつけることにも関心があります。これまでに、ドイツでの DAAD RISE 研究インターンシップと、CSET での政策志向のインターンシップを経験したほか、コンピュータビジョン、ソフトウェア工学、材料および科学文献を対象とした機械学習といった応用的な仕事にも携わってきました。また、コンピュータサイエンスの入門科目で指導と採点を担当し、学生団体やアウトリーチ活動にも積極的に参加しています。"
 	},
+
+	{ "sel": ".home-kicker", "en": "Language, cognition & code", "ja": "言語・認知・コード" },
+	{ "sel": ".home-title", "en": "How do humans and machines make meaning?", "ja": "人間と機械は、どのように意味を生み出すのか？" },
+	{ "sel": ".home-intro", "en": "I study how language models represent meaning, where they generalize, and where they break. My work connects machine learning with questions about human cognition, language, and scientific discovery.", "ja": "言語モデルが意味をどのように表現し、どこまで汎化し、どこで破綻するのかを研究しています。機械学習を、人間の認知、言語、科学的発見に関する問いと結びつけることに関心があります。" },
+	{ "sel": ".home-background summary", "en": "More about my background", "ja": "これまでの活動について" },
+	{ "sel": "#home-selected-title", "en": "Selected work", "ja": "主な研究・制作" },
+	{ "sel": "#home-updates-title", "en": "Latest writing", "ja": "最近の執筆" },
+	{ "sel": ".home-section-head > a", "en": "All publications →", "ja": "研究業績一覧 →" },
+	{ "sel": ".home-section-head > a", "en": "All posts →", "ja": "記事一覧 →" },
+	{ "sel": ".home-work-kind", "en": "Research", "ja": "研究" },
+	{ "sel": ".home-work-kind", "en": "Essay", "ja": "エッセイ" },
+	{ "sel": ".home-work-kind", "en": "Experiment", "ja": "実験" },
+	{ "sel": ".home-work > p", "en": "Code obfuscation as a probe of human and machine comprehension.", "ja": "コードの難読化を通じて、人間と機械の理解を探る研究。" },
+	{ "sel": ".home-work > p", "en": "Why research behaves like a joke, and why play needs form and friction.", "ja": "研究が冗談に似ている理由、そして遊びに形式と抵抗が必要な理由。" },
+	{ "sel": ".home-work > p", "en": "Scrub through a small transformer's training and watch it learn modular addition.", "ja": "小さなTransformerの学習過程をたどり、剰余加算を学ぶ様子を見る実験。" },
+	{ "sel": ".home-work-action", "en": "Read the abstract ↗", "ja": "研究概要を読む ↗" },
+	{ "sel": ".home-work-action", "en": "Read the essay →", "ja": "エッセイを読む →" },
+	{ "sel": ".home-work-action", "en": "Try the experiment →", "ja": "実験を試す →" },
 
 	{ "sel": "#researchinterestsH4", "en": "Research Interests", "ja": "研究関心" },
 	{

@@ -12,7 +12,7 @@
 //       caller positions; the cat's feet rest on its bottom edge), where it
 //       idles as usual, faces the pointer and purrs when hovered. After `ms`
 //       it goes home by itself. Refused (false) unless the cat is sitting awake
-//       on the navbar, motion is allowed and the window is >= 768px wide.
+//       on the navbar, motion is allowed and the window is >= 1200px wide.
 //   NavCat.leave(immediate) ends a visit early (immediate: no walk back).
 //   NavCat.state -> 'off' | 'going' | 'perched' | the navbar state.
 // 'navcat:visit' / 'navcat:left' fire on document when the cat arrives / has
@@ -328,7 +328,7 @@
 	var pressed = false;
 	var navW = 0;
 	var debug = '';
-	var mqDesktop = window.matchMedia('(min-width: 768px)');
+	var mqDesktop = window.matchMedia('(min-width: 1200px)');
 
 	function now() { return (window.performance && performance.now) ? performance.now() : Date.now(); }
 	function rand(a, b) { return a + Math.random() * (b - a); }

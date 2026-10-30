@@ -1,8 +1,9 @@
-name: Build blog and story indexes
+name: Build blog publishing files and story index
 
-# Regenerates blog/index.json whenever you add or edit a post, and
+# Regenerates blog/index.json, native article pages, RSS and sitemap when a
+# public post or publishing builder changes, and
 # misc/55-paper-theatre/stories/index.json whenever you add or edit a .vn
-# story, then commits the updated index files back to the branch in one
+# story, then commits the generated publishing files back to the branch in one
 # commit. Your publishing workflow is simply:
 #   1. add a Markdown file under blog/posts/ (or a .vn under stories/)
 #   2. git commit && git push
@@ -13,11 +14,23 @@ on:
     branches: [main]
     paths:
       - 'blog/posts/**'
+      - 'scripts/build-blog-index.mjs'
+      - 'scripts/build-blog-pages.mjs'
+      - 'scripts/blog-markdown.mjs'
+      - 'desk/vendor/marked/**'
+      - 'writing/article.css'
+      - 'writing/article.js'
+      - '.github/workflows/build-blog.yml'
       - 'misc/55-paper-theatre/stories/**'
   workflow_dispatch:
 
 permissions:
   contents: write
+  pages: write
+
+concurrency:
+  group: blog-publishing-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   build-indexes:
@@ -25,27 +38,55 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
 
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
 
       - name: Rebuild blog index
         run: node scripts/build-blog-index.mjs
 
+      - name: Rebuild article pages, RSS and sitemap
+        run: node scripts/build-blog-pages.mjs
+
       - name: Rebuild story index
         run: node scripts/build-vn-index.mjs
 
-      - name: Commit updated indexes
+      - name: Commit generated publishing files
+        id: generated
         run: |
-          FILES="blog/index.json misc/55-paper-theatre/stories/index.json"
+          FILES="blog/index.json misc/55-paper-theatre/stories/index.json writing feed.xml sitemap.xml"
           if [ -n "$(git status --porcelain -- $FILES)" ]; then
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add -- $FILES
-            git commit -m "chore(index): rebuild blog and story indexes [skip ci]"
+            git add -A -- $FILES
+            git commit -m "chore(blog): rebuild publishing files and story index [skip ci]"
             git push
+            echo "changed=true" >> "$GITHUB_OUTPUT"
           else
-            echo "blog/index.json and stories/index.json already up to date"
+            echo "Blog publishing files and story index already up to date"
+            echo "changed=false" >> "$GITHUB_OUTPUT"
           fi
+
+      # GITHUB_TOKEN commits do not start a branch-source Pages build themselves.
+      - name: Request Pages rebuild for generated publishing files
+        if: steps.generated.outputs.changed == 'true' && github.ref_name == github.event.repository.default_branch
+        env:
+          PAGES_TOKEN: ${{ github.token }}
+        run: |
+          node --input-type=module <<'NODE'
+          const response = await fetch(`${process.env.GITHUB_API_URL}/repos/${process.env.GITHUB_REPOSITORY}/pages/builds`, {
+            method: 'POST',
+            headers: {
+              Accept: 'application/vnd.github+json',
+              Authorization: `Bearer ${process.env.PAGES_TOKEN}`,
+              'X-GitHub-Api-Version': '2026-03-10'
+            }
+          });
+          await response.arrayBuffer();
+          if (!response.ok) throw new Error(`Pages rebuild request failed (HTTP ${response.status})`);
+          console.log('Requested a Pages rebuild for the generated publishing files.');
+          NODE

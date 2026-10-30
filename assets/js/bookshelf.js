@@ -1358,6 +1358,7 @@
 
 		cardBody.appendChild(cover);
 		cardBody.appendChild(info);
+		document.dispatchEvent(new CustomEvent('bookshelf:book-open', { detail: { book: b, info: info } }));
 
 		card.classList.add('is-open');
 		document.body.classList.add('bs-card-is-open');
@@ -2013,6 +2014,7 @@
 				readUrlState();
 				books.forEach(makeSpine);
 				loaded = true;
+				document.dispatchEvent(new CustomEvent('bookshelf:loaded', { detail: { books: books.slice() } }));
 			});
 		return loading;
 	}
@@ -2043,5 +2045,5 @@
 		}
 	}
 
-	window.Bookshelf = { show: show };
+	window.Bookshelf = { show: show, getCatalog: function () { return loaded ? books.slice() : null; } };
 })();

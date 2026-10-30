@@ -1,0 +1,61 @@
+/* The unified local collection uses the existing site theme. */
+#savedContent .saved-title { margin: .5rem 0 .6rem; font-size: clamp(1.8rem, 3vw, 2.4rem); font-weight: 600; letter-spacing: -.035em; }
+#savedContent .saved-intro { margin-bottom: .5rem; }
+#savedContent .saved-storage-note,
+#savedContent .saved-unresolved { color: var(--text-2); font-size: .85rem; line-height: 1.6; }
+#savedContent .saved-toolbar { display: grid; grid-template-columns: minmax(0, 1fr) 11rem; gap: .8rem; margin: 1.5rem 0 1rem; }
+#savedContent .saved-toolbar label { display: flex; flex-direction: column; gap: .4rem; color: var(--text-2); font-size: .8rem; }
+#savedContent .saved-toolbar input,
+#savedContent .saved-toolbar select { width: 100%; min-width: 0; min-height: 44px; padding: .65rem .75rem; border: 1px solid var(--border-strong); border-radius: 8px; background: var(--surface); color: var(--text); font: inherit; font-size: .95rem; }
+#savedContent .saved-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; margin-bottom: 1rem; }
+#savedContent .saved-count { flex: 1 1 10rem; margin: 0; color: var(--text-2); font-size: .85rem; }
+#savedContent .saved-button { min-height: 44px; padding: .5rem .75rem; border: 1px solid var(--border-strong); border-radius: 7px; background: var(--surface); color: var(--text); font: inherit; font-size: .82rem; cursor: pointer; }
+#savedContent .saved-button:hover:not(:disabled) { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+#savedContent .saved-button:disabled { opacity: .5; cursor: default; }
+#savedContent .saved-list { display: grid; gap: .7rem; margin: 0; padding: 0; list-style: none; }
+#savedContent .saved-item { display: flex; align-items: flex-start; gap: 1rem; min-width: 0; padding: 1rem; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+#savedContent .saved-item-main { flex: 1; min-width: 0; }
+#savedContent .saved-item-link { display: flex; flex-direction: column; align-items: flex-start; gap: .3rem; color: var(--heading); text-decoration: none; overflow-wrap: anywhere; }
+#savedContent .saved-item-link:hover .saved-item-title { color: var(--accent); text-decoration: underline; text-underline-offset: .2em; }
+#savedContent .saved-item-kind { color: var(--text-2); font: .7rem/1.5 var(--font-mono); text-transform: uppercase; letter-spacing: .04em; }
+#savedContent .saved-item-title { font-size: 1rem; font-weight: 500; line-height: 1.5; }
+#savedContent .saved-item-subtitle { margin: .4rem 0 0; color: var(--text-2); font-size: .82rem; line-height: 1.5; overflow-wrap: anywhere; }
+#savedContent .saved-item-note { margin-top: .65rem; }
+#savedContent .saved-item-note summary { width: fit-content; padding: .2rem 0; color: var(--accent); font-size: .8rem; cursor: pointer; }
+#savedContent .saved-item-note p { margin: .5rem 0 0; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--text-2); font-size: .85rem; line-height: 1.6; }
+#savedContent .saved-undo-bar { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin: .8rem 0; padding: .7rem .8rem; border-radius: 8px; background: var(--accent-soft); font-size: .85rem; }
+#savedContent .saved-undo-bar[hidden],
+#savedContent [hidden] { display: none !important; }
+#savedContent .saved-status { min-height: 1.5em; margin: .9rem 0; color: var(--text-2); font-size: .85rem; }
+#savedContent .saved-empty { padding: 1.2rem; border: 1px dashed var(--border-strong); border-radius: 10px; color: var(--text-2); line-height: 1.7; }
+#savedContent .saved-empty .saved-button { display: block; margin-top: .7rem; }
+#savedContent .saved-empty-links { display: flex; flex-wrap: wrap; gap: .5rem 1rem; margin-top: .7rem; font-size: .85rem; }
+#savedContent .saved-import-panel { margin: 1rem 0 1.5rem; padding: 1rem; border: 1px solid var(--border-strong); border-radius: 10px; background: var(--surface); }
+#savedContent .saved-import-panel h2 { margin: 0 0 .5rem; font-size: 1.15rem; }
+#savedContent .saved-import-panel h2:focus { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 2px; }
+#savedContent .saved-import-name { color: var(--text-2); font: .78rem var(--font-mono); overflow-wrap: anywhere; margin-bottom: .7rem; }
+#savedContent .saved-import-policy,
+#savedContent .saved-import-status,
+#savedContent .saved-import-remainder { color: var(--text-2); font-size: .83rem; line-height: 1.6; }
+#savedContent .saved-import-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem; margin: 1rem 0; }
+#savedContent .saved-import-summary > div { min-width: 0; }
+#savedContent .saved-import-summary dt { font-size: .75rem; font-weight: 400; color: var(--text-2); }
+#savedContent .saved-import-summary dd { font: 1.2rem var(--font-mono); margin: .3rem 0 0; color: var(--heading); }
+#savedContent .saved-import-list { list-style: none; padding: 0; margin: .8rem 0; max-height: 22rem; overflow-y: auto; border-top: 1px solid var(--border); }
+#savedContent .saved-import-item { padding: .75rem 0; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: .2rem; overflow-wrap: anywhere; }
+#savedContent .saved-import-item-kind { font-size: .7rem; color: var(--text-2); }
+#savedContent .saved-import-item-title { font-size: .88rem; font-weight: 500; }
+#savedContent .saved-import-item-state,
+#savedContent .saved-import-note-hint { font-size: .75rem; color: var(--text-2); }
+#savedContent .saved-import-actions { display: flex; flex-wrap: wrap; gap: .6rem; }
+#savedContent #saved-import-confirm:not(:disabled) { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+#savedContent .saved-import-error { font-size: .85rem; line-height: 1.6; color: var(--text); border-left: 3px solid var(--accent); padding: .3rem .7rem; margin: .8rem 0; }
+#savedContent .saved-import-status { margin: .7rem 0 0; min-height: 1.5em; }
+@media (max-width: 575.98px) {
+	#savedContent .saved-toolbar { grid-template-columns: 1fr; }
+	#savedContent .saved-toolbar input,
+	#savedContent .saved-toolbar select { font-size: 1rem; }
+	#savedContent .saved-item { gap: .6rem; padding: .9rem; }
+	#savedContent .saved-remove { padding: .5rem .6rem; }
+}
+@media print { #savedContent { display: none !important; } }

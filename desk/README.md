@@ -2,6 +2,11 @@
 
 `https://nietztein.github.io/desk/` is the owner's private side of the site: write and publish posts, keep drafts, notes and a reading log, and see how the site is doing, from any device. The site stays static. The page talks to the GitHub API straight from the browser with a token the owner pastes once per browser; everything private lives in a private repository of his, never in this one.
 
+In **Write**, **Post details → Format** chooses Article or Short note. Short
+notes use explicit `kind: note` front matter and the same draft, preview, and
+reviewed publishing flow as articles. Existing articles keep their original
+file format. The separate private **Notes** view is not a publishing source.
+
 The code here is public and does nothing without that token.
 
 - [How it works](#how-it-works)

@@ -536,7 +536,7 @@ function main(args) {
 			name: m[3],
 			count: Number(m[4]),
 		}));
-		assertEqual(text.split('class="misc-chip"').length - 1, chips.length, 'chips that could be read, of those in the toolbar');
+		assertEqual(text.split('class="misc-chip" data-group=').length - 1, chips.length, 'group chips that could be read, of those in the toolbar');
 		const { headings, cards } = after.grid;
 		assertEqual(chips.length, headings.length + 1, 'chips (All, and one per heading)');
 		assertEqual(JSON.stringify(chips[0]), JSON.stringify({ group: '', pressed: 'true', name: 'All', count: cards.length }), 'the All chip');
@@ -573,6 +573,19 @@ function main(args) {
 		assertEqual(after.html.split(MISC_SCRIPT).length - 1, 1, `${MISC_SCRIPT} in index.html (the toolbar stays hidden without it)`);
 		assert(existsSync(join(root, 'assets', 'js', 'misc.js')), 'assets/js/misc.js does not exist');
 		return `${count[1]} ${count[2]}`;
+	});
+
+	check('tools: discovery scopes, sorting and featured native links leave the grid intact', () => {
+		if (!loaded) notRun();
+		const { text } = readTools(after.html);
+		const scopes = [...text.matchAll(/data-scope="([^"]*)" aria-pressed="(true|false)"/g)].map((m) => `${m[1]}:${m[2]}`);
+		assertEqual(scopes.join(' '), 'all:true favorites:false recent:false', 'discovery scopes');
+		assert(text.includes('id="misc-sort"') && text.includes('value="newest"'), 'newest sort is missing');
+		const featured = [...text.matchAll(/<a class="misc-featured-link" href="([^"]*)" target="_blank" rel="noopener">/g)].map((m) => m[1]);
+		assertEqual(featured.length, 3, 'the curated selection should have three links');
+		assert(new Set(featured).size === featured.length, 'a featured toy is repeated');
+		for (const href of featured) assert(after.grid.cards.some((card) => card.href === href), `featured link is not a live grid card: ${href}`);
+		assert(!text.includes('class="misc-card"'), 'featured links must not duplicate the grid cards indexed by the palette');
 	});
 
 	// 6. The count in the strip's hint.

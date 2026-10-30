@@ -74,6 +74,7 @@ body > *:not(main) {
 	#postsContent,
 	#bookshelfContent,
 	#miscContent,
+	#savedContent,
 	#leftPanel > .row.mb-3,
 	#leftPanel .row.mb-2 > .col-1,
 	#leftPanel .row.mb-2:has(a[href$=".pdf"]),

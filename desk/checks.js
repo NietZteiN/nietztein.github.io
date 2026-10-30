@@ -62,7 +62,7 @@
 
 	// The routes of the site's shell (assets/js/main.js, ROUTES). The test
 	// compares this list with that file.
-	var SITE_ROUTES = ['about', 'education', 'publications', 'press', 'blog', 'post', 'teaching', 'presentations', 'experience', 'bookshelf', 'misc'];
+	var SITE_ROUTES = ['about', 'education', 'publications', 'press', 'blog', 'post', 'teaching', 'presentations', 'experience', 'bookshelf', 'misc', 'saved'];
 	var SITE_HOSTS = ['nietztein.github.io'];
 
 	// A path inside the site, as found in one of the site's JSON files

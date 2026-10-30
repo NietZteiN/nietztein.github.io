@@ -126,6 +126,7 @@ const exists = (p) => fs.existsSync(path.join(root, decodeURIComponent(p.replace
 	eq(C.routeProblem({ route: 'post', arg: 'x' }, { slugs: ['y'] }), 'there is no post "x" in blog/index.json', 'an unknown post is a problem');
 	eq(C.routeProblem({ route: 'post', arg: '' }), 'the link names no post', 'a post link without a slug is a problem');
 	eq(C.routeProblem({ route: 'misc' }), '', 'a known route is fine');
+	eq(C.routeProblem({ route: 'saved' }), '', 'the Saved collection is a known public route');
 }
 
 // ---- safe paths ---------------------------------------------------------------

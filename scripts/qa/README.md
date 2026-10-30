@@ -11,6 +11,22 @@ Everything here runs on Node 24 built-ins and an installed Chrome (or Edge). The
 | `node scripts/qa/shot.mjs <slug...>` | Take 800x500 card thumbnails. |
 | `node scripts/qa/shot.mjs --url <url> --out <file>` | Screenshot any page, for looking at. |
 | `node scripts/qa/drive.mjs <script.mjs>` | Run a scripted interaction (click, type, assert). |
+| `node scripts/qa/drive.mjs scripts/qa/site-update.drive.mjs` | Check About, Saved, navigation, five screen widths, themes, Japanese, and CV printing. |
+| `node scripts/qa/drive.mjs scripts/qa/blog-reader.drive.mjs` | Check article links, topics, reading tools, mobile opening, load recovery, and navigation races. |
+| `node scripts/qa/drive.mjs scripts/qa/reader-libs.drive.mjs` | Check reader-free home/list loads, deferred code/math, library deduplication, failures/retry, and navigation races. |
+| `node scripts/test-reader-libs.mjs` | Check shared resource requests, dependency order, timeout/error recovery, and lazy theme styles. |
+| `node scripts/qa/drive.mjs scripts/qa/short-notes.drive.mjs` | Check note/topic filters, mobile authoring, private draft preservation, preview, and explicit publishing against fake GitHub. |
+| `node scripts/qa/drive.mjs scripts/qa/publications.drive.mjs` | Check topic filters, publication links, citations, and complete CV printing. |
+| `node scripts/qa/drive.mjs scripts/qa/writing.drive.mjs` | Check article URLs and previews, RSS/sitemap XML, reading without JavaScript, themes, and article printing. |
+| `node scripts/qa/drive.mjs scripts/qa/connections.drive.mjs` | Check cross-media links, publication deep links, stale requests, and optional-data failure. |
+| `node scripts/qa/drive.mjs scripts/qa/reading-shelf.drive.mjs` | Check reading paths, local book notes, export, Undo, and unavailable storage. |
+| `node scripts/qa/drive.mjs scripts/qa/saved.drive.mjs` | Check the unified Saved hub, public metadata, filters, export, confirmed clear, merge-safe Undo, focus, and storage failure. |
+| `node scripts/qa/drive.mjs scripts/qa/saved-import.drive.mjs` | Check backup preview/cancel/restore, current-note preservation, late saves, invalid files, and storage failure. |
+| `node scripts/qa/drive.mjs scripts/qa/saved-controls.drive.mjs` | Check publication/article Save controls, legacy collection sync, exact book notes, real storage events, and stable layout with delayed metadata. |
+| `node scripts/qa/drive.mjs scripts/qa/legacy-preservation.drive.mjs` | Check unresolved notes/favorites survive edits and clear/Undo; preserve corrupt original bytes with exportable memory-only changes. |
+| `node scripts/test-saved.mjs` | Check legacy storage compatibility, exact notes, selective writes, safe IDs, catalogue additions, and merge-safe Undo. |
+| `node scripts/test-saved-import.mjs` | Check backup validation, exact annotations, duplicate handling, ignored imported metadata, and merge planning. |
+| `node scripts/qa/drive.mjs scripts/qa/misc-discovery.drive.mjs` | Check featured toys, favorites, recent openings, sorting, storage, and keyboard focus. |
 | `node scripts/test-all.mjs` | Every test in the repo, one table. `--smoke` adds the browser run. |
 | `node scripts/qa/report.mjs` | Write `scripts/qa/out/report.html`, one row per toy. |
 | `node scripts/qa/jpeg.mjs <file...>` | Print the pixel size and weight of JPEGs. |

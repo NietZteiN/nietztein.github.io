@@ -2,7 +2,7 @@
 //
 // Routes (every section is linkable):
 //   #/about  #/education  #/publications  #/press  #/blog  #/post/<slug>
-//   #/teaching  #/presentations  #/experience  #/bookshelf  #/bookshelf/<id>  #/misc
+//   #/teaching  #/presentations  #/experience  #/bookshelf  #/bookshelf/<id>  #/misc  #/saved
 //
 // The blog module (blog.js) renders inside the #/blog and #/post/* routes;
 // this file decides which section is visible and tells Blog what to draw.
@@ -25,6 +25,7 @@
 		experience: 'experienceContent',
 		bookshelf: 'bookshelfContent',
 		misc: 'miscContent',
+		saved: 'savedContent',
 	};
 	var TITLES = {
 		about: 'About',
@@ -38,6 +39,7 @@
 		experience: 'Experience',
 		bookshelf: 'Bookshelf',
 		misc: 'Miscellaneous',
+		saved: 'Saved items',
 	};
 	var DEFAULT_ROUTE = 'about';
 	var SITE_NAME = 'Jack V. Le';
@@ -149,7 +151,7 @@
 
 	function setActiveLink(route) {
 		var linkRoute = route === 'post' ? 'blog' : route;
-		$$('#top-nav .nav-link').forEach(function (a) {
+		$$('#top-nav [data-route]').forEach(function (a) {
 			var on = a.getAttribute('data-route') === linkRoute;
 			a.classList.toggle('active', on);
 			if (on) a.setAttribute('aria-current', 'page');
@@ -231,6 +233,8 @@
 		} else if (r.route === 'bookshelf' && window.Bookshelf) {
 			// #/bookshelf/<id> opens that book's card; bookshelf.js loads lazily.
 			window.Bookshelf.show(r.rest ? decodeURIComponent(r.rest) : '');
+		} else if (r.route === 'saved' && window.Saved) {
+			window.Saved.show();
 		}
 
 		if (r.route !== 'post') {

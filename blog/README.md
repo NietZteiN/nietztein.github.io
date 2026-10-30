@@ -1,7 +1,9 @@
 # Blog
 
-Posts are plain Markdown files in [`posts/`](posts/). Anything in `posts/` is
-published — there is no draft flag. Half-finished writing goes in
+Posts are plain Markdown files immediately inside [`posts/`](posts/). Only
+Git-tracked files enter the public index, article pages, or feed; stage a new
+post with `git add` when it is ready to publish. There is no draft flag.
+Half-finished writing goes in
 [`drafts/`](drafts/) instead, which is gitignored and never leaves this machine.
 
 ## Drafting
@@ -37,12 +39,31 @@ follow the publishing steps below.
 
    Body goes here. Code blocks are syntax-highlighted and `$LaTeX$` math renders.
    ```
-3. Commit and push. That's it.
+3. Stage the post, commit and push. Use a lowercase, hyphen-separated slug and a
+   real `YYYY-MM-DD` date. Two files cannot share the same slug.
 
 A GitHub Action ([`.github/workflows/build-blog.yml`](../.github/workflows/build-blog.yml))
-regenerates `index.json` from the posts folder and commits it back, so the site
-picks up the new post automatically. **`index.json` is generated — do not edit it
-by hand.**
+regenerates `index.json`, native article pages at `/writing/<slug>/`, RSS at
+`/feed.xml`, and `sitemap.xml`, then commits them back. The site picks up the
+new post automatically. The workflow also runs when the publishing builders
+change. **These outputs are generated — do not edit them by hand.**
+
+For a short note, add `kind: note` to the same front-matter block. Existing
+posts omit `kind` and remain Articles; `kind: article` is also accepted but is
+omitted from the public index. Other values fail the publishing build. Short
+notes use the same title, date, summary, tags, file naming, share pages, and RSS
+feed, and carry a visible format label. The blog's All / Articles / Short notes
+filter combines with its topic filter (`#/blog?format=note&tag=language`).
+
+The Desk's **Write → Post details → Format** control chooses Article or Short
+note, keeps that choice in the saved draft and preview, and uses the existing
+reviewed Publish action. The Desk's private **Notes** area remains private;
+nothing from it is automatically published or turned into a short note.
+
+When generated files change on the default branch, the workflow explicitly
+requests a Pages rebuild after its commit. GitHub's workflow token does not
+trigger a branch-source Pages build merely by pushing a commit. See
+[GitHub's publishing-source documentation](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site).
 
 ## One-time setup
 
@@ -55,23 +76,59 @@ it to write:
 No change to the GitHub Pages source is needed — Pages keeps deploying from the
 branch.
 
-## Rebuilding the index locally (optional)
+## Rebuilding publishing files locally (optional)
 
-You normally don't need this, but you can regenerate the index yourself:
+You normally don't need this, but you can regenerate the publishing files:
 
 ```bash
 node scripts/build-blog-index.mjs
+node scripts/build-blog-pages.mjs
 ```
 
-## How posts are rendered
+Both commands accept `--check` to report stale outputs without writing. Builds
+are deterministic and do not add current-time timestamps. Untracked posts,
+nested files, and drafts are excluded. Removing a public post removes only its
+generator-marked `writing/<slug>/index.html`; unrelated files survive. An
+existing hand-written page at the same path stops the build rather than being
+overwritten.
 
-The blog is rendered entirely in the browser (no build step for the site
-itself). [`assets/js/blog.js`](../assets/js/blog.js) fetches `index.json`,
+## Reading, sharing, and RSS
+
+Each post has a native, readable page at `/writing/<slug>/`. Its HTML includes
+the article body, title, description, canonical URL, publication date, topic
+links, and social preview metadata, so it works for link previews and without
+JavaScript. The site's existing `#/post/<slug>` reader remains available.
+
+RSS is at [`/feed.xml`](../feed.xml). It contains public titles, summaries,
+categories, canonical article links, stable permalink GUIDs, and publication
+dates at midnight UTC. It includes neither drafts nor commented-out passages.
+
+[`scripts/build-blog-pages.mjs`](../scripts/build-blog-pages.mjs) uses the
+already-vendored Marked parser with a controlled renderer. Standard Markdown,
+tables, images, and code blocks are supported; raw HTML is omitted and unsafe
+link/image protocols are rejected. HTML comments are removed before rendering,
+while literal examples inside inline and fenced code remain visible. Code
+highlighting and math rendering use the existing local vendor files. The
+standalone reader's hand-written assets are [`writing/article.css`](../writing/article.css)
+and [`writing/article.js`](../writing/article.js).
+
+## How the site reader works
+
+The main site's blog reader is rendered in the browser.
+[`assets/js/blog.js`](../assets/js/blog.js) fetches `index.json`,
 renders the list, and — when you open a post — fetches its Markdown, converts it
 with [marked](https://marked.js.org/), sanitizes it with
 [DOMPurify](https://github.com/cure53/DOMPurify), then applies
 [highlight.js](https://highlightjs.org/) and [KaTeX](https://katex.org/).
 Individual posts are linkable at `#/post/<slug>`.
+
+The home page and blog list do not load the Markdown, sanitizing, code, or math
+libraries. [`assets/js/reader-libs.js`](../assets/js/reader-libs.js) loads the
+existing local vendor files when a post needs them, shares in-flight requests,
+and permits retry after a failed load. Markdown and sanitizing must be ready
+before post HTML is shown. Code highlighting and math are optional enhancements
+and load only when the article contains matching content. Static article pages
+use the same optional enhancements and remain readable without JavaScript.
 
 ## Views, likes, and comments
 

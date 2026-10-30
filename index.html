@@ -24,6 +24,7 @@
 	<!-- Improve SEO -->
 	<meta name="robots" content="index,follow" />
 	<link rel="canonical" href="https://nietztein.github.io/">
+	<link rel="alternate" type="application/rss+xml" title="Jack V. Le — Writing" href="feed.xml">
 	<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
 	<meta name="theme-color" content="#0f1115" media="(prefers-color-scheme: dark)">
 
@@ -92,6 +93,14 @@
 		integrity="sha384-PPIZEGYM1v8zp5Py7UjFb79S58UeqCL9pYVnVPURKEqvioPROaVAJKKLzvH2rDnI" crossorigin="anonymous">
 	<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
 	<link rel="stylesheet" href="assets/css/main.css">
+	<link rel="stylesheet" href="assets/css/home.css">
+	<link rel="stylesheet" href="assets/css/publications.css">
+	<link rel="stylesheet" href="assets/css/blog-reader.css">
+	<link rel="stylesheet" href="assets/css/misc-discovery.css">
+	<link rel="stylesheet" href="assets/css/reading-shelf.css">
+	<link rel="stylesheet" href="assets/css/connections.css">
+	<link rel="stylesheet" href="assets/css/saved.css">
+	<link rel="stylesheet" href="assets/css/saved-controls.css">
 	<link rel="stylesheet" href="assets/css/glance.css">
 	<link rel="stylesheet" href="assets/css/i18n.css">
 	<!-- Gadgets: small shell-level effects, each switchable from the sparkle menu / Ctrl+K (assets/js/gadgets/core.js) -->
@@ -103,11 +112,6 @@
 	<link rel="stylesheet" href="assets/css/gadgets/navcat.css">
 	<link rel="stylesheet" href="assets/css/gadgets/book3d.css">
 	<link rel="stylesheet" href="assets/css/gadgets/eggs.css">
-
-	<!-- Blog: code highlighting (stylesheet swapped with the light/dark toggle) + math -->
-	<link id="hljs-theme" rel="stylesheet"
-		href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github.min.css">
-	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 
 	<!-- Print: the page itself prints as a CV (window.Site.printCV()) -->
 	<link rel="stylesheet" href="assets/css/print.css" media="print">
@@ -127,9 +131,9 @@
 
 	<!-- Navbar  -->
 	<header class="site-header sticky-top">
-	<nav id="top-nav" class="navbar navbar-expand-md" aria-label="Primary">
+	<nav id="top-nav" class="navbar navbar-expand-xl" aria-label="Primary">
 		<div class="container">
-			<a class="navbar-brand d-md-none" href="#/about">Jack V. Le</a>
+			<a class="navbar-brand d-xl-none" href="#/about">Jack V. Le</a>
 			<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav"
 				aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
 				<span class="navbar-toggler-icon"></span>
@@ -172,6 +176,9 @@
 						class="d-none d-lg-inline">Ctrl K</kbd></button>
 				<button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle dark mode"
 					title="Toggle dark mode"><i class="fa-solid fa-moon"></i></button>
+				<a id="saved-open" class="saved-open" data-route="saved" href="#/saved" hidden aria-label="Saved items" title="Saved items on this device">
+					<i class="fa-regular fa-bookmark" aria-hidden="true"></i><span class="saved-open-label">Saved</span><span class="saved-open-count" data-saved-count hidden>0</span>
+				</a>
 			</div>
 		</div>
 	</nav>
@@ -264,7 +271,14 @@
 			<section class="section col-md-8 offset-md-1 mb-5" id="aboutmeContent" aria-label="About" tabindex="-1">
 				<div class="container">
 					<div class="row">
-						<p class="mt-2 justify">Undergraduate researcher at the University of Texas at Dallas since
+						<p class="home-kicker">Language, cognition &amp; code</p>
+						<h2 class="home-title">How do humans and machines make meaning?</h2>
+						<p class="home-intro justify">I study how language models represent meaning, where they generalize,
+							and where they break. My work connects machine learning with questions about human
+							cognition, language, and scientific discovery.</p>
+						<details class="home-background">
+							<summary>More about my background</summary>
+							<p id="home-background-copy">Undergraduate researcher at the University of Texas at Dallas since
 							August 2022, with Phi Kappa Phi and Collegium V Honors. His research centers on language
 							models — how they represent meaning, where they generalize, and where they break — with
 							broader interests connecting machine learning to questions about cognition and scientific
@@ -272,6 +286,43 @@
 							internship at CSET, alongside applied work in computer vision, software engineering, and ML
 							for materials and scientific text. He teaches and grades introductory CS courses and is active
 							in student organizations and outreach.</p>
+						</details>
+
+						<div id="home-discovery" class="home-discovery">
+							<div class="home-section-head">
+								<h3 id="home-selected-title">Selected work</h3>
+								<a href="#/publications">All publications <span aria-hidden="true">&rarr;</span></a>
+							</div>
+							<div class="home-selected" aria-labelledby="home-selected-title">
+								<a class="home-work" href="https://doi.org/10.1145/3837729.3839573" target="_blank" rel="noopener noreferrer">
+									<span class="home-work-kind">Research</span>
+									<h4>Do machines struggle where humans do?</h4>
+									<p>Code obfuscation as a probe of human and machine comprehension.</p>
+									<span class="home-work-action">Read the abstract <span aria-hidden="true">&nearr;</span></span>
+								</a>
+								<a class="home-work" href="#/post/untitled">
+									<span class="home-work-kind">Essay</span>
+									<h4>Research, Humor, and the Play Drive</h4>
+									<p>Why research behaves like a joke, and why play needs form and friction.</p>
+									<span class="home-work-action">Read the essay <span aria-hidden="true">&rarr;</span></span>
+								</a>
+								<a class="home-work" href="misc/07-grokking-microscope/">
+									<span class="home-work-kind">Experiment</span>
+									<h4>Grokking microscope</h4>
+									<p>Scrub through a small transformer's training and watch it learn modular addition.</p>
+									<span class="home-work-action">Try the experiment <span aria-hidden="true">&rarr;</span></span>
+								</a>
+							</div>
+							<div class="home-section-head home-updates-head">
+								<h3 id="home-updates-title">Latest writing</h3>
+								<a href="#/blog">All posts <span aria-hidden="true">&rarr;</span></a>
+							</div>
+							<ul id="home-updates" class="home-updates" aria-labelledby="home-updates-title">
+								<li><time datetime="2026-10-12">Oct 12, 2026</time><a href="#/post/the-idea-of-order-at-the-screen">The Idea of Order at the Screen</a></li>
+								<li><time datetime="2026-09-23">Sep 23, 2026</time><a href="#/post/benchmarks-we-actually-need">Benchmarks We Actually Need</a></li>
+								<li><time datetime="2026-09-21">Sep 21, 2026</time><a href="#/post/latentland">Latentland</a></li>
+							</ul>
+						</div>
 
 						<h4 id="researchinterestsH4" class="mt-2">Research Interests</h4>
 
@@ -937,10 +988,26 @@
 					</p>
 					<!-- toys:tools:begin (generated by scripts/build-cards.mjs from misc/*/toy.json; do not edit by hand) -->
 					<div class="misc-tools" hidden>
+						<section class="misc-featured" aria-labelledby="misc-featured-title">
+							<div class="misc-featured-heading"><h2 id="misc-featured-title">Start here</h2><span>A few places to begin</span></div>
+							<div class="misc-featured-links">
+								<a class="misc-featured-link" href="misc/55-paper-theatre/" target="_blank" rel="noopener"><span class="misc-featured-kind">Stories and the site</span><strong>Paper Theatre</strong><span>Every paper and post as a two-minute visual novel: a bet, a result, a citation. One engine; each story is a plain-text script you can read in the repo.</span></a>
+								<a class="misc-featured-link" href="misc/07-grokking-microscope/" target="_blank" rel="noopener"><span class="misc-featured-kind">Machine learning, live</span><strong>Grokking microscope</strong><span>A one-layer transformer learning addition mod 113. Scrub through training and watch it grok.</span></a>
+								<a class="misc-featured-link" href="misc/41-spectrogram-painter/" target="_blank" rel="noopener"><span class="misc-featured-kind">Art and sound</span><strong>Spectrogram Painter</strong><span>Paint on a spectrogram and hear it: pitch runs up, time runs right, brightness is loudness. Stamp a word and hide it in the sound like Aphex Twin did.</span></a>
+							</div>
+						</section>
 						<div class="misc-search">
 							<i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
 							<input type="search" class="misc-filter" id="misc-filter" placeholder="Filter the toys" aria-label="Filter the toys" autocomplete="off" spellcheck="false" enterkeyhint="search">
 							<span class="misc-count" aria-live="polite" aria-atomic="true">46 toys</span>
+						</div>
+						<div class="misc-discovery-bar">
+							<div class="misc-scopes" role="group" aria-label="Your collection">
+								<button type="button" class="misc-chip" data-scope="all" aria-pressed="true">All toys</button>
+								<button type="button" class="misc-chip" data-scope="favorites" aria-pressed="false">Favorites <span class="misc-saved-count">0</span></button>
+								<button type="button" class="misc-chip" data-scope="recent" aria-pressed="false">Recently opened</button>
+							</div>
+							<label class="misc-sort-label" for="misc-sort">Sort <select id="misc-sort" class="misc-sort"><option value="grouped">By group</option><option value="newest">Newest first</option><option value="title">Title A–Z</option><option value="recent">Recently opened first</option></select></label>
 						</div>
 						<div class="misc-bar">
 							<div class="misc-chips" role="group" aria-label="Groups">
@@ -961,7 +1028,9 @@
 								</div>
 							</div>
 						</div>
-						<p class="misc-empty" hidden>Nothing matches. <button type="button" class="misc-clear">Clear the filter</button></p>
+						<p class="misc-empty" hidden><span class="misc-empty-text">Nothing matches.</span> <button type="button" class="misc-clear">Clear the filters</button></p>
+						<p class="misc-local-note">Favorites and recently opened toys stay in this browser.</p>
+						<p class="misc-discovery-status visually-hidden" role="status" aria-live="polite"></p>
 					</div>
 					<!-- toys:tools:end -->
 					<div class="misc-grid">
@@ -1304,6 +1373,13 @@
 				</div>
 			</section>
 
+			<section class="section col-md-8 offset-md-1 mb-5" id="savedContent" aria-label="Saved items" tabindex="-1">
+				<div class="container">
+					<h1>Saved items</h1>
+					<p>Your papers, writing, books, and experiments, kept on this device.</p>
+					<noscript><p>Enable JavaScript to view and manage your saved items.</p></noscript>
+				</div>
+			</section>
 		</div>
 	</main>
 
@@ -1313,16 +1389,19 @@
 		integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
 		crossorigin="anonymous"></script>
 
-	<!-- Blog rendering: markdown -> sanitize -> highlight + math -->
-	<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
-	<script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
-	<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
-	<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
-	<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
-
+	<!-- Reader libraries load on demand when an article needs them. -->
+	<script src="assets/js/reader-libs.js"></script>
 	<script src="assets/js/main.js"></script>
+	<script src="assets/js/saved-store.js" defer></script>
+	<script src="assets/js/saved-import.js" defer></script>
+	<script src="assets/js/saved.js" defer></script>
+	<script src="assets/js/home.js" defer></script>
+	<script src="assets/js/publications.js" defer></script>
+	<script src="assets/js/connections.js" defer></script>
+	<script src="assets/js/saved-controls.js" defer></script>
 	<script src="assets/js/blog.js"></script>
 	<script src="assets/js/bookshelf.js"></script>
+	<script src="assets/js/reading-shelf.js" defer></script>
 	<script src="assets/js/misc.js"></script>
 	<script src="assets/js/palette.js"></script>
 	<script src="assets/js/glance.js" defer></script>

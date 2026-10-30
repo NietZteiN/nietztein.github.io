@@ -177,6 +177,8 @@ eq('longDay / shortDay', [S.longDay('2026-09-23'), S.longDay('2025-01-02', true)
 	check('describe: an unknown post says so and has no link', gone.kind === 'post' && gone.title === 'never-published' && gone.link === '' && /No published post/.test(gone.detail), gone);
 	const route = S.describe('/publications', index, { title: 'Publications · Jack V. Le' });
 	check('describe: a route', route.kind === 'route' && route.title === 'Publications' && route.link === '#/publications', route);
+	const saved = S.describe('/saved', index);
+	check('describe: the Saved route', saved.kind === 'route' && saved.title === 'Saved items' && saved.link === '#/saved', saved);
 	check('describe: home', S.describe('/', index).kind === 'home' && S.describe('/index.html', index).title === 'Home');
 	const book = S.describe('/bookshelf/abc%20def', index);
 	check('describe: a book card', book.kind === 'book' && book.title === 'Bookshelf: abc def' && book.link === '#/bookshelf/abc%20def', book);

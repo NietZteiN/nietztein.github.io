@@ -109,6 +109,10 @@ const NEW_WAVE_SHARE = 3;
 // The filter box's placeholder and its name for screen readers.
 const FILTER_LABEL = 'Filter the toys';
 
+// A deliberately small introduction, chosen only from live cards. These links
+// use their own class so the palette and the grid's counts still index each toy once.
+const FEATURED_SLUGS = ['55-paper-theatre', '07-grokking-microscope', '41-spectrogram-painter'];
+
 // A toy folder is misc/<two or three digits>-<slug>. Anything else under misc/
 // (misc/_kit, for one) is not a toy and is never read.
 export const TOY_DIR_RE = /^(\d{2,3})-[a-z0-9-]+$/;
@@ -471,10 +475,19 @@ export function renderTools(toys, indent = '') {
 		`\t\t\t<button type="button" class="misc-chip" data-group="${id}" aria-pressed="${pressed}">${escapeText(name)} <span class="misc-chip-n">${count}</span></button>`;
 	const lines = [
 		'<div class="misc-tools" hidden>',
+		...renderFeatured(toys),
 		'\t<div class="misc-search">',
 		'\t\t<i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>',
 		`\t\t<input type="search" class="misc-filter" id="misc-filter" placeholder="${FILTER_LABEL}" aria-label="${FILTER_LABEL}" autocomplete="off" spellcheck="false" enterkeyhint="search">`,
 		`\t\t<span class="misc-count" aria-live="polite" aria-atomic="true">${countText(total)}</span>`,
+		'\t</div>',
+		'\t<div class="misc-discovery-bar">',
+		'\t\t<div class="misc-scopes" role="group" aria-label="Your collection">',
+		'\t\t\t<button type="button" class="misc-chip" data-scope="all" aria-pressed="true">All toys</button>',
+		'\t\t\t<button type="button" class="misc-chip" data-scope="favorites" aria-pressed="false">Favorites <span class="misc-saved-count">0</span></button>',
+		'\t\t\t<button type="button" class="misc-chip" data-scope="recent" aria-pressed="false">Recently opened</button>',
+		'\t\t</div>',
+		'\t\t<label class="misc-sort-label" for="misc-sort">Sort <select id="misc-sort" class="misc-sort"><option value="grouped">By group</option><option value="newest">Newest first</option><option value="title">Title A\u2013Z</option><option value="recent">Recently opened first</option></select></label>',
 		'\t</div>',
 		'\t<div class="misc-bar">',
 		'\t\t<div class="misc-chips" role="group" aria-label="Groups">',
@@ -489,10 +502,26 @@ export function renderTools(toys, indent = '') {
 		'\t\t\t</div>',
 		'\t\t</div>',
 		'\t</div>',
-		'\t<p class="misc-empty" hidden>Nothing matches. <button type="button" class="misc-clear">Clear the filter</button></p>',
+		'\t<p class="misc-empty" hidden><span class="misc-empty-text">Nothing matches.</span> <button type="button" class="misc-clear">Clear the filters</button></p>',
+		'\t<p class="misc-local-note">Favorites and recently opened toys stay in this browser.</p>',
+		'\t<p class="misc-discovery-status visually-hidden" role="status" aria-live="polite"></p>',
 		'</div>',
 	];
 	return lines.map((line) => indent + line).join('\n');
+}
+
+function renderFeatured(toys) {
+	const available = toys.filter((toy) => toy.status === 'live' && toy.surfaces.includes('grid'));
+	const featured = FEATURED_SLUGS.map((slug) => available.find((toy) => toy.slug === slug)).filter(Boolean);
+	if (!featured.length) return [];
+	return [
+		'\t<section class="misc-featured" aria-labelledby="misc-featured-title">',
+		'\t\t<div class="misc-featured-heading"><h2 id="misc-featured-title">Start here</h2><span>A few places to begin</span></div>',
+		'\t\t<div class="misc-featured-links">',
+		...featured.map((toy) => `\t\t\t<a class="misc-featured-link" href="misc/${toy.slug}/" target="_blank" rel="noopener"><span class="misc-featured-kind">${escapeText(GROUPS.find((group) => group.id === toy.group).name)}</span><strong>${escapeText(toy.title)}</strong><span>${escapeText(toy.desc)}</span></a>`),
+		'\t\t</div>',
+		'\t</section>',
+	];
 }
 
 // What goes between the markers of one region of REGIONS.

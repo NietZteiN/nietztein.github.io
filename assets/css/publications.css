@@ -1,0 +1,192 @@
+/* Publication discovery follows the existing site tokens in both themes. */
+#publicationsContent .publication-tools {
+	margin: .5rem 0 1.8rem;
+	padding: 1.1rem 1.2rem;
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: 12px;
+}
+
+#publicationsContent .publication-tools-label {
+	margin: 0 0 .65rem;
+	color: var(--heading);
+	font-weight: 600;
+	font-size: .9rem;
+}
+
+#publicationsContent .publication-filters,
+#publicationsContent .publication-meta,
+#publicationsContent .publication-actions {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: .45rem;
+}
+
+#publicationsContent .publication-filter,
+#publicationsContent .publication-action,
+#publicationsContent .publication-cite > summary,
+#publicationsContent .publication-copy {
+	min-height: 36px;
+	padding: .38rem .7rem;
+	border: 1px solid var(--border-strong);
+	border-radius: 7px;
+	background: var(--bg);
+	color: var(--text);
+	font: inherit;
+	font-size: .8rem;
+	line-height: 1.4;
+	text-decoration: none;
+	cursor: pointer;
+}
+
+#publicationsContent .publication-filter:hover,
+#publicationsContent .publication-action:hover,
+#publicationsContent .publication-cite > summary:hover,
+#publicationsContent .publication-copy:hover {
+	background: var(--accent-soft);
+	border-color: var(--accent);
+	color: var(--heading);
+}
+
+#publicationsContent .publication-filter[aria-pressed="true"] {
+	background: var(--accent);
+	border-color: var(--accent);
+	color: var(--bg);
+}
+
+#publicationsContent .publication-filter-count {
+	margin-left: .4rem;
+	font-variant-numeric: tabular-nums;
+	opacity: .85;
+}
+
+#publicationsContent .publication-count {
+	margin: .75rem 0 0;
+	color: var(--text-2);
+	font-size: .8rem;
+}
+
+#publicationsContent .publication-empty {
+	margin: .8rem 0 0;
+}
+
+#publicationsContent .publication-reset {
+	padding: 0;
+	border: 0;
+	background: none;
+	color: var(--accent);
+	font: inherit;
+	text-decoration: underline;
+	text-underline-offset: .15em;
+}
+
+#publicationsContent .publication-meta {
+	margin: 0 0 .65rem;
+	column-gap: .7rem;
+	font-size: .73rem;
+	color: var(--text-2);
+}
+
+#publicationsContent .publication-status {
+	padding: .2rem .45rem;
+	border: 1px solid var(--border);
+	border-radius: 4px;
+	background: var(--surface-2);
+	color: var(--text);
+}
+
+#publicationsContent .publication-status.is-reviewed,
+#publicationsContent .publication-status.is-workshop {
+	background: var(--accent-soft);
+	border-color: transparent;
+	color: var(--accent);
+}
+
+#publicationsContent .publication-question {
+	margin: .55rem 0 .7rem;
+	max-width: 66ch;
+	color: var(--text-2);
+	font-size: .92rem;
+	line-height: 1.6;
+}
+
+#publicationsContent .publication-actions {
+	margin-top: .8rem;
+	align-items: flex-start;
+}
+
+#publicationsContent .publication-cite {
+	flex: 0 1 auto;
+	max-width: 100%;
+}
+
+#publicationsContent .publication-cite[open] {
+	flex-basis: 100%;
+}
+
+#publicationsContent .publication-cite > summary {
+	width: fit-content;
+}
+
+#publicationsContent .publication-cite-panel {
+	margin-top: .6rem;
+	padding: .8rem;
+	border: 1px solid var(--border);
+	border-radius: 8px;
+	background: var(--surface);
+}
+
+#publicationsContent .publication-reference {
+	display: block;
+	width: 100%;
+	min-height: 7rem;
+	margin-bottom: .65rem;
+	padding: .65rem;
+	border: 1px solid var(--border-strong);
+	border-radius: 5px;
+	background: var(--bg);
+	color: var(--text);
+	font: .8rem/1.6 var(--font-mono);
+	resize: vertical;
+}
+
+#publicationsContent .publication-copy-feedback {
+	display: inline-block;
+	margin: .3rem 0 .3rem .65rem;
+	color: var(--text-2);
+	font-size: .8rem;
+}
+
+#publicationsContent .pub-block[hidden],
+#publicationsContent .row[hidden],
+#publicationsContent h3[hidden],
+#publicationsContent .publication-empty[hidden] {
+	display: none !important;
+}
+
+@media screen {
+	/* Keep the original links in place for CV printing and source consumers. */
+	#publicationsContent.publications-enhanced .pub-congress a {
+		display: none;
+	}
+}
+
+@media (max-width: 575px) {
+	#publicationsContent .publication-tools { padding: .9rem; }
+	#publicationsContent .publication-filter,
+	#publicationsContent .publication-action,
+	#publicationsContent .publication-cite > summary,
+	#publicationsContent .publication-copy { min-height: 44px; }
+	#publicationsContent .publication-filter { font-size: .78rem; }
+}
+
+@media print {
+	#publicationsContent .publication-tools,
+	#publicationsContent .publication-meta,
+	#publicationsContent .publication-question,
+	#publicationsContent .publication-actions { display: none !important; }
+	#publicationsContent .pub-block[hidden],
+	#publicationsContent .row[hidden],
+	#publicationsContent h3[hidden] { display: block !important; }
+}

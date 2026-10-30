@@ -27,7 +27,8 @@
 (function () {
 	'use strict';
 
-	var CV_URL = 'assets/documents/JackLeCV.pdf?v=20261014';
+	var cvLink = document.querySelector('#leftPanel a[href*="JackLeCV.pdf"]');
+	var CV_URL = cvLink ? cvLink.getAttribute('href') : 'assets/documents/JackLeCV.pdf';
 	var POSTS_INDEX = 'blog/index.json';
 	var THEATRE_URL = 'misc/55-paper-theatre/';
 	var STORIES_INDEX = THEATRE_URL + 'stories/index.json';
@@ -59,6 +60,7 @@
 		{ label: 'Experience', hash: '#/experience', keywords: 'work internships research industry community' },
 		{ label: 'Bookshelf', hash: '#/bookshelf', keywords: 'books library shelves reading manga novels catalog collection' },
 		{ label: 'Miscellaneous', hash: '#/misc', keywords: 'misc toys side projects games clocks tools playground' },
+		{ label: 'Saved items', hash: '#/saved', keywords: 'saved bookmarks favorites reading list later' },
 	];
 
 	var LINKS = [
@@ -172,6 +174,7 @@
 			window.location.href = url;
 			return;
 		}
+		if (window.Misc && typeof window.Misc.recordOpen === 'function') window.Misc.recordOpen(url);
 		window.open(url, '_blank', 'noopener');
 	}
 

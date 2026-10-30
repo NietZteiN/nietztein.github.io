@@ -643,7 +643,8 @@
 			m.addEventListener('mouseleave', hide); m.addEventListener('blur', hide);
 		});
 
-		bio.insertAdjacentElement('afterend', el);
+		// Keep the selected work and recent writing ahead of the detailed map.
+		($('#home-discovery', row) || bio).insertAdjacentElement('afterend', el);
 		t0 = performance.now();
 		drawLoop();
 		var start = 'loop';

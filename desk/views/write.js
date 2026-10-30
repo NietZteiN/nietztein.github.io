@@ -136,6 +136,7 @@
 			date: S.ui.date.iso(),
 			summary: '',
 			tags: [],
+			kind: '',
 			slug: '',
 			slugAuto: true,
 			body: '',
@@ -155,6 +156,7 @@
 		doc.date = d.date || S.ui.date.iso();
 		doc.summary = d.summary;
 		doc.tags = d.tags;
+		doc.kind = d.kind;
 		doc.body = d.body;
 		doc.published = d.published;
 		doc.publishedSha = d.publishedSha;
@@ -400,6 +402,7 @@
 					kind: 'draft',
 					path: r.path,
 					title: (loc && isDirty(loc) ? loc.title : d.title) || '',
+					postKind: loc && isDirty(loc) ? loc.kind : d.kind,
 					date: d.date,
 					slug: d.slug || '',
 					published: d.published,
@@ -415,11 +418,11 @@
 				if (d.draftPath) {
 					// A draft whose file is gone from the listing (deleted elsewhere,
 					// or the listing is old): what is on the device still counts.
-					rows.push({ kind: 'draft', path: d.draftPath, title: d.title, date: d.date, slug: d.slug, published: d.published, unsaved: isDirty(d), at: d.localAt, missing: !remoteList.error && !remoteList.cached });
+					rows.push({ kind: 'draft', postKind: d.kind, path: d.draftPath, title: d.title, date: d.date, slug: d.slug, published: d.published, unsaved: isDirty(d), at: d.localAt, missing: !remoteList.error && !remoteList.cached });
 				} else if (k.indexOf('site:') === 0) {
-					if (isDirty(d)) rows.push({ kind: 'site', key: k, title: d.title, date: d.date, slug: d.slug, published: d.published, unsaved: true, at: d.localAt });
+					if (isDirty(d)) rows.push({ kind: 'site', postKind: d.kind, key: k, title: d.title, date: d.date, slug: d.slug, published: d.published, unsaved: true, at: d.localAt });
 				} else if (!isEmpty(d)) {
-					rows.push({ kind: 'local', key: k, title: d.title, date: d.date, slug: d.slug, at: d.localAt || d.created, localOnly: true });
+					rows.push({ kind: 'local', postKind: d.kind, key: k, title: d.title, date: d.date, slug: d.slug, at: d.localAt || d.created, localOnly: true });
 				}
 			});
 			rows.sort(function (a, b) {
@@ -467,7 +470,7 @@
 						badge = 'published';
 						kind = 'ok';
 					}
-					var meta = [r.date, r.slug ? '/' + r.slug : '', r.at ? 'edited ' + ui.date.ago(r.at) : ''].filter(Boolean).join(' · ');
+					var meta = [r.postKind === 'note' ? 'Short note' : '', r.date, r.slug ? '/' + r.slug : '', r.at ? 'edited ' + ui.date.ago(r.at) : ''].filter(Boolean).join(' · ');
 					var row = ui.row({
 						title: r.title || (r.unreadable ? r.path : 'Untitled'),
 						meta: meta,
@@ -513,7 +516,7 @@
 						return e && typeof e.file === 'string';
 					})
 					.map(function (e) {
-						return { file: String(e.file), slug: String(e.slug || ''), title: String(e.title || e.slug || ''), date: String(e.date || ''), summary: String(e.summary || ''), tags: Array.isArray(e.tags) ? e.tags.map(String) : [], present: false };
+						return { file: String(e.file), slug: String(e.slug || ''), title: String(e.title || e.slug || ''), date: String(e.date || ''), summary: String(e.summary || ''), tags: Array.isArray(e.tags) ? e.tags.map(String) : [], postKind: e.kind === 'note' ? 'note' : '', present: false };
 					});
 				var present = {};
 				files.forEach(function (f) {
@@ -558,7 +561,7 @@
 				res.rows.forEach(function (r) {
 					var row = ui.row({
 						title: r.title,
-						meta: [r.date, '/' + r.slug].filter(Boolean).join(' · '),
+						meta: [r.postKind === 'note' ? 'Short note' : '', r.date, '/' + r.slug].filter(Boolean).join(' · '),
 						badge: r.notIndexed ? 'not in the list yet' : !r.present ? 'file missing' : '',
 						badgeKind: r.notIndexed ? 'warn' : 'bad',
 						onClick: function () {
@@ -942,6 +945,8 @@
 		E.title = h('input', { class: 'input w-title-input', id: 'w-title', type: 'text', autocomplete: 'off', spellcheck: 'true', value: doc.title, placeholder: 'Title' });
 		E.date = h('input', { class: 'input', id: 'w-date', type: 'date', value: doc.date });
 		E.summary = h('input', { class: 'input', id: 'w-summary', type: 'text', autocomplete: 'off', spellcheck: 'true', value: doc.summary, placeholder: 'One line shown in the post list' });
+		E.kind = h('select', { class: 'input', id: 'w-kind', 'aria-describedby': 'w-kind-hint' }, [h('option', { value: '', text: 'Article' }), h('option', { value: 'note', text: 'Short note' })]);
+		E.kind.value = doc.kind === 'note' ? 'note' : '';
 		E.slug = h('input', { class: 'input mono', id: 'w-slug', type: 'text', autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false', value: doc.slug, inputmode: 'url' });
 		E.slugHint = h('div', { class: 'field-hint', id: 'w-slug-hint' });
 		E.slug.setAttribute('aria-describedby', 'w-slug-hint');
@@ -956,6 +961,7 @@
 			h('div', { class: 'w-meta-grid' }, [
 				h('div', { class: 'field w-f-title' }, [h('label', { for: 'w-title', text: 'Title' }), E.title]),
 				h('div', { class: 'field w-f-summary' }, [h('label', { for: 'w-summary', text: 'Summary' }), E.summary]),
+				h('div', { class: 'field w-f-kind' }, [h('label', { for: 'w-kind', text: 'Format' }), E.kind, h('div', { class: 'field-hint', id: 'w-kind-hint', text: 'Short notes appear alongside articles and can be filtered separately.' })]),
 				h('div', { class: 'field w-f-date' }, [h('label', { for: 'w-date', text: 'Date' }), E.date]),
 				h('div', { class: 'field w-f-slug' }, [h('label', { for: 'w-slug', text: 'Address (slug)' }), h('div', { class: 'w-slug-row' }, [h('span', { class: 'w-slug-pre mono small muted', text: '#/post/' }), E.slug, E.slugChange]), E.slugHint]),
 				h('div', { class: 'field w-f-tags' }, [h('label', { for: 'w-tag-input', text: 'Tags' }), E.tagBox, h('div', { class: 'field-hint', id: 'w-tags-hint', text: 'Enter or comma adds a tag; lowercase with dashes.' })]),
@@ -1013,6 +1019,7 @@
 		E.uploads = h('div', { class: 'w-uploads small', id: 'w-uploads', role: 'status', 'aria-live': 'polite' });
 
 		E.previewHost = h('div', { class: 'w-preview-host', id: 'w-preview-host' });
+		E.previewFormat = h('span', { class: 'small muted w-preview-format', text: doc.kind === 'note' ? 'Short note' : 'Article' });
 		E.themeLight = h('button', { type: 'button', class: 'btn btn-quiet w-ptheme', data: { theme: 'light' }, text: 'Light' });
 		E.themeDark = h('button', { type: 'button', class: 'btn btn-quiet w-ptheme', data: { theme: 'dark' }, text: 'Dark' });
 		[E.themeLight, E.themeDark].forEach(function (b) {
@@ -1026,7 +1033,7 @@
 		E.panes = h('div', { class: 'w-panes', data: { pane: S.pane } }, [
 			h('section', { class: 'w-pane w-edit', id: 'w-pane-edit', role: 'tabpanel', 'aria-labelledby': 'w-tab-edit' }, [E.tools, E.file, E.text, h('div', { class: 'w-under' }, [E.count, E.uploads])]),
 			h('section', { class: 'w-pane w-preview', id: 'w-pane-preview', role: 'tabpanel', 'aria-labelledby': 'w-tab-preview' }, [
-				h('div', { class: 'w-preview-bar' }, [h('span', { class: 'small muted', text: 'As the site will show it' }), h('div', { class: 'w-ptheme-group', role: 'group', 'aria-label': 'Preview theme' }, [E.themeLight, E.themeDark])]),
+				h('div', { class: 'w-preview-bar' }, [E.previewFormat, h('div', { class: 'w-ptheme-group', role: 'group', 'aria-label': 'Preview theme' }, [E.themeLight, E.themeDark])]),
 				E.previewHost,
 			]),
 		]);
@@ -1077,6 +1084,10 @@
 
 	function wireInputs() {
 		var E = S.edit;
+		E.kind.addEventListener('change', function () {
+			S.doc.kind = E.kind.value === 'note' ? 'note' : '';
+			changed();
+		});
 		E.title.addEventListener('input', function () {
 			var doc = S.doc;
 			doc.title = E.title.value;
@@ -1226,6 +1237,7 @@
 		if (E.title.value !== doc.title) E.title.value = doc.title;
 		if (E.summary.value !== doc.summary) E.summary.value = doc.summary;
 		if (E.date.value !== doc.date) E.date.value = doc.date;
+		if (E.kind.value !== (doc.kind || '')) E.kind.value = doc.kind === 'note' ? 'note' : '';
 		if (E.slug.value !== doc.slug) E.slug.value = doc.slug;
 		if (E.text.value !== doc.body) E.text.value = doc.body;
 		var locked = !!doc.published && !S.slugUnlocked;
@@ -1452,7 +1464,8 @@
 		var c = P.wordCount(S.doc.body);
 		E.count.textContent = c.words.toLocaleString('en-US') + (c.words === 1 ? ' word' : ' words') + ' · ' + c.chars.toLocaleString('en-US') + ' characters';
 		var line = E.meta.querySelector('.w-meta-line');
-		if (line) line.textContent = [S.doc.date, S.doc.slug ? '/' + S.doc.slug : '', S.doc.tags.join(', ')].filter(Boolean).join(' · ');
+		if (line) line.textContent = [S.doc.kind === 'note' ? 'Short note' : 'Article', S.doc.date, S.doc.slug ? '/' + S.doc.slug : '', S.doc.tags.join(', ')].filter(Boolean).join(' · ');
+		if (E.previewFormat) E.previewFormat.textContent = S.doc.kind === 'note' ? 'Short note' : 'Article';
 	}
 
 	// Keeps the document on this device (encrypted). Never fails loudly: the
@@ -1916,6 +1929,16 @@
 		return true;
 	}
 
+	function markPreviewFormat(result) {
+		if (!result || !result.body || !result.fm || result.fm.kind !== 'note') return result;
+		var view = result.body.parentNode;
+		var label = result.body.ownerDocument.createElement('p');
+		label.className = 'blog-info w-preview-kind-label';
+		label.textContent = 'Short note';
+		view.insertBefore(label, view.firstChild);
+		return result;
+	}
+
 	function renderPreview() {
 		if (!S || !S.edit || !previewVisible()) return;
 		var E = S.edit;
@@ -1932,7 +1955,8 @@
 		S.ui
 			.renderMarkdown(E.previewHost, publicText(doc), { post: true, theme: theme, resolveUrl: resolveUrl })
 			.then(
-				function () {
+				function (result) {
+					markPreviewFormat(result);
 					if (E.previewError && E.previewError.parentNode) E.previewError.parentNode.removeChild(E.previewError);
 				},
 				function (err) {
@@ -2316,6 +2340,7 @@
 					date: doc.date,
 					summary: doc.summary,
 					tags: doc.tags,
+					kind: doc.kind,
 					slug: slug,
 					body: body,
 					existing: site.existing,
@@ -2331,7 +2356,7 @@
 				// was lost? Then the file on the site is exactly what we would send.
 				var taken = !check.ok && !ownFile && site.existing[slug] && check.errors.length === 1 && check.errors[0].code === 'slug-taken';
 				if (taken) {
-					var again = P.checkPublish({ title: doc.title, date: doc.date, summary: doc.summary, tags: doc.tags, slug: slug, body: body, existing: site.existing, ownFile: site.existing[slug], today: S.ui.date.iso(), missingImages: missing });
+					var again = P.checkPublish({ title: doc.title, date: doc.date, summary: doc.summary, tags: doc.tags, kind: doc.kind, slug: slug, body: body, existing: site.existing, ownFile: site.existing[slug], today: S.ui.date.iso(), missingImages: missing });
 					var livePath = 'blog/posts/' + site.existing[slug];
 					var imagesLive = plan.every(function (x) {
 						return x.existing || site.siteFiles[x.to] === shas[x.from];
@@ -2456,7 +2481,7 @@
 	function showChecks(check) {
 		var ui = S.ui;
 		var h = ui.el;
-		var FIELD = { title: 'w-title', date: 'w-date', summary: 'w-summary', slug: 'w-slug', 'slug-taken': 'w-slug', body: 'w-text', 'private-image': 'w-text', 'missing-image': 'w-text', 'blob-link': 'w-text', parse: 'w-title' };
+		var FIELD = { title: 'w-title', date: 'w-date', summary: 'w-summary', kind: 'w-kind', slug: 'w-slug', 'slug-taken': 'w-slug', body: 'w-text', 'private-image': 'w-text', 'missing-image': 'w-text', 'blob-link': 'w-text', parse: 'w-title' };
 		ui.dialog(function (dlg, close) {
 			dlg.classList.add('w-checks');
 			var ok = ui.button('Back to the post', { kind: 'primary', onClick: function () {
@@ -2498,6 +2523,7 @@
 		var summary = h('div', { class: 'w-pub-summary' }, [
 			h('p', { class: 'publish-summary', text: (isUpdate ? 'Update "' : 'Publish "') + doc.title.trim() + '" in one commit to ' + api.site.owner + '/' + api.site.repo + ' (' + api.site.branch + ').' }),
 			h('p', {}, ['Address: ', h('span', { class: 'mono', text: siteLink(slug) })]),
+			h('p', { text: 'Format: ' + (doc.kind === 'note' ? 'Short note' : 'Article') }),
 			check.warnings.length
 				? h('ul', { class: 'w-check-list' }, check.warnings.map(function (x) {
 						return h('li', { class: 'is-warn' }, [ui.icon('info', 16), h('span', { text: x.text })]);
@@ -2525,7 +2551,7 @@
 				var clean = String(url || '').replace(/^\.?\//, '');
 				return siteToBlob[clean] ? S && S.blobs[siteToBlob[clean]] : resolveUrl(url);
 			},
-		}).catch(function () {
+		}).then(markPreviewFormat).catch(function () {
 			if (previewHost.isConnected) previewHost.appendChild(ui.notice('The preview could not be drawn here; the list of files above is what will be sent.', 'warn'));
 		});
 		return ticketP.then(function (ticket) {
@@ -2904,7 +2930,7 @@
 				return x && x.slug === o.oldSlug;
 			})) return false;
 			if (!o.entry) return true;
-			return e.title === o.entry.title && e.date === o.entry.date && e.summary === o.entry.summary && JSON.stringify(e.tags || []) === JSON.stringify(o.entry.tags || []);
+			return e.title === o.entry.title && e.date === o.entry.date && e.summary === o.entry.summary && (e.kind || '') === (o.entry.kind || '') && JSON.stringify(e.tags || []) === JSON.stringify(o.entry.tags || []);
 		}
 
 		function checkAction() {

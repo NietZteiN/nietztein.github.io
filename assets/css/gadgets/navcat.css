@@ -70,8 +70,8 @@
 	}
 }
 
-/* Below the md breakpoint the nav collapses into a burger: no ledge to sit on. */
-@media (max-width: 767.98px) {
+/* The navigation menu has no exposed ledge for the cat. */
+@media (max-width: 1199.98px) {
 	.navcat-stage {
 		display: none;
 	}

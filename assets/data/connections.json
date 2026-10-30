@@ -1,0 +1,117 @@
+{
+	"version": 1,
+	"connections": [
+		{
+			"from": { "kind": "publication", "id": "do-machines-struggle-where-humans-do-obfuscation-as-a-probe-of-human-and-machine-code-comprehension" },
+			"to": [
+				{ "kind": "experiment", "id": "04-obfuscation-playground", "description": "Stack code transformations and compare how each changes readability." },
+				{ "kind": "experiment", "id": "05-obfuscation-game", "description": "Try reading obfuscated Python, with correctness, time, and confidence recorded." },
+				{ "kind": "post", "id": "benchmarks-we-actually-need", "description": "More questions about what a model evaluation should measure." }
+			]
+		},
+		{
+			"from": { "kind": "publication", "id": "do-machines-struggle-where-humans-do-llm-and-human-comprehension-of-obfuscated-code" },
+			"to": [
+				{ "kind": "experiment", "id": "05-obfuscation-game", "description": "Test your own reading of short obfuscated Python programs." },
+				{ "kind": "experiment", "id": "04-obfuscation-playground", "description": "Inspect code before and after successive obfuscations." },
+				{ "kind": "post", "id": "benchmarks-we-actually-need", "description": "An essay on evaluating model capabilities." }
+			]
+		},
+		{
+			"from": { "kind": "publication", "id": "the-effect-of-code-obfuscation-on-human-program-comprehension" },
+			"to": [
+				{ "kind": "experiment", "id": "05-obfuscation-game", "description": "Predict program output and compare your time and confidence." },
+				{ "kind": "experiment", "id": "04-obfuscation-playground", "description": "Compare the readability of a program across transformations." }
+			]
+		},
+		{
+			"from": { "kind": "publication", "id": "fast-errors-or-slow-effort-divergent-dual-process-signatures-of-code-obfuscation-in-humans-and-language-models" },
+			"to": [
+				{ "kind": "experiment", "id": "05-obfuscation-game", "description": "Explore a task that records reading accuracy, response time, and confidence." },
+				{ "kind": "experiment", "id": "04-obfuscation-playground", "description": "Look closely at the code transformations being read." }
+			]
+		},
+		{
+			"from": { "kind": "publication", "id": "composing-obfuscation-specialists-by-merging" },
+			"to": [
+				{ "kind": "experiment", "id": "04-obfuscation-playground", "description": "Inspect different obfuscation transformations and combinations." },
+				{ "kind": "experiment", "id": "05-obfuscation-game", "description": "Try the human side of understanding obfuscated programs." }
+			]
+		},
+		{
+			"from": { "kind": "publication", "id": "correct-values-can-be-recovered-before-wrong-reasoning-steps" },
+			"to": [
+				{ "kind": "post", "id": "benchmarks-we-actually-need", "description": "Questions about how to evaluate a model's answers and capabilities." },
+				{ "kind": "experiment", "id": "07-grokking-microscope", "description": "Inspect a different model task: learning modular addition over training." }
+			]
+		},
+		{
+			"from": { "kind": "publication", "id": "what-does-an-embedding-mean-a-semiotic-account-of-learned-representation" },
+			"to": [
+				{ "kind": "post", "id": "metaphors-we-hallucinate-by", "description": "An essay on the metaphors used to think about brains and networks." },
+				{ "kind": "experiment", "id": "19-tokenizer-aquarium", "description": "Inspect tokenization, an earlier step in language-model text processing." },
+				{ "kind": "post", "id": "latentland", "description": "A fictional account of life inside a language model." }
+			]
+		},
+		{
+			"from": { "kind": "publication", "id": "code-as-embedding-as-ai" },
+			"to": [
+				{ "kind": "post", "id": "metaphors-we-hallucinate-by", "description": "Another perspective on the concepts used to describe models." },
+				{ "kind": "experiment", "id": "19-tokenizer-aquarium", "description": "See how text is split into tokens before it is processed by a model." }
+			]
+		},
+		{
+			"from": { "kind": "post", "id": "benchmarks-we-actually-need" },
+			"to": [
+				{ "kind": "publication", "id": "do-machines-struggle-where-humans-do-obfuscation-as-a-probe-of-human-and-machine-code-comprehension", "description": "Research using code obfuscation to probe human and machine comprehension." },
+				{ "kind": "experiment", "id": "05-obfuscation-game", "description": "Try an evaluation task with correctness, time, and confidence." },
+				{ "kind": "experiment", "id": "07-grokking-microscope", "description": "Inspect a model's behavior as training progresses." }
+			]
+		},
+		{
+			"from": { "kind": "post", "id": "latentland" },
+			"to": [
+				{ "kind": "experiment", "id": "32-latentland-map", "description": "Explore the neuron's memoir place by place on its illustrated map." },
+				{ "kind": "experiment", "id": "19-tokenizer-aquarium", "description": "A separate visual experiment with the tokens of a language model." },
+				{ "kind": "publication", "id": "what-does-an-embedding-mean-a-semiotic-account-of-learned-representation", "description": "A philosophical question about the meaning of learned representations." }
+			]
+		},
+		{
+			"from": { "kind": "post", "id": "untitled" },
+			"to": [
+				{ "kind": "experiment", "id": "07-grokking-microscope", "description": "A playful instrument for inspecting a small model's training." },
+				{ "kind": "experiment", "id": "16-fake-paper-titles", "description": "Play with the conventions and cliches of machine-learning paper titles." }
+			]
+		},
+		{
+			"from": { "kind": "post", "id": "open-questions-in-language-acquisition" },
+			"to": [
+				{ "kind": "experiment", "id": "12-translation-aligner", "description": "Compare source and translation sentence by sentence." },
+				{ "kind": "experiment", "id": "13-aozora-frequency-reader", "description": "Inspect a Japanese text through the words it uses unusually often." },
+				{ "kind": "experiment", "id": "25-grammar-fossil-dig", "description": "Explore the historical layers of vocabulary in an English passage." }
+			]
+		},
+		{
+			"from": { "kind": "post", "id": "metaphors-we-hallucinate-by" },
+			"to": [
+				{ "kind": "publication", "id": "what-does-an-embedding-mean-a-semiotic-account-of-learned-representation", "description": "A semiotic account of what a learned representation means." },
+				{ "kind": "experiment", "id": "19-tokenizer-aquarium", "description": "Inspect a concrete part of text processing through a visual metaphor." },
+				{ "kind": "experiment", "id": "07-grokking-microscope", "description": "Examine a small model's training through an interactive visualization." }
+			]
+		},
+		{
+			"from": { "kind": "post", "id": "what-language-models-represent" },
+			"to": [
+				{ "kind": "experiment", "id": "11-poetry-form-checker", "description": "Look at a poem's syllables, meter, and rhyme line by line." },
+				{ "kind": "experiment", "id": "44-text-tartan", "description": "Explore a different formal transformation of words into a woven pattern." }
+			]
+		},
+		{
+			"from": { "kind": "post", "id": "the-idea-of-order-at-the-screen" },
+			"to": [
+				{ "kind": "experiment", "id": "44-text-tartan", "description": "Turn a passage into a textile pattern shaped by its words." },
+				{ "kind": "experiment", "id": "41-spectrogram-painter", "description": "Explore another exchange between making an image and hearing its result." }
+			]
+		}
+	]
+}

@@ -138,6 +138,8 @@
 [data-view="write"] .w-f-summary,
 [data-view="write"] .w-f-tags { grid-column: 1 / -1; }
 
+[data-view="write"] .w-f-slug { grid-column: 1 / -1; }
+
 [data-view="write"] .w-title-input {
 	font-size: 1.2rem;
 	font-weight: 600;

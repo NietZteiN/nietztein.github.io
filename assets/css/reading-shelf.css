@@ -1,0 +1,115 @@
+/* Compact additions to the existing catalogue; both panels begin collapsed. */
+.reading-shelf {
+	margin: 20px 0 24px;
+	color: var(--text);
+}
+.reading-shelf .rs-panel {
+	border: 1px solid var(--border);
+	border-radius: 10px;
+	background: var(--surface);
+	margin: 0 0 10px;
+	overflow: hidden;
+}
+.reading-shelf summary {
+	padding: 13px 15px;
+	color: var(--heading);
+	font-size: .9rem;
+	font-weight: 500;
+	cursor: pointer;
+}
+.reading-shelf .rs-summary-hint {
+	font-size: .75rem;
+	font-weight: 400;
+	color: var(--text-2);
+	margin-left: 10px;
+}
+.reading-shelf .rs-list-count {
+	font: .75rem var(--font-mono);
+	padding: 2px 6px;
+	border-radius: 5px;
+	background: var(--surface-2);
+}
+.reading-shelf .rs-panel-body { padding: 0 15px 15px; }
+.reading-shelf .rs-path-intro,
+.reading-shelf .rs-storage-note,
+.reading-shelf .rs-empty,
+.reading-shelf .rs-path-description {
+	font-size: .82rem;
+	color: var(--text-2);
+	line-height: 1.55;
+	margin: 0 0 12px;
+}
+.reading-shelf .rs-path { margin-top: 20px; }
+.reading-shelf .rs-path h4 { font-size: .95rem; margin: 0 0 5px; }
+.reading-shelf .rs-path-books,
+.reading-shelf .rs-saved-books { list-style: none; padding: 0; margin: 0; }
+.reading-shelf .rs-path-book,
+.reading-shelf .rs-saved-book {
+	padding: 12px 0;
+	border-top: 1px solid var(--border);
+}
+.reading-shelf .rs-path-book { display: flex; align-items: flex-start; gap: 14px; }
+.reading-shelf .rs-path-book-info,
+.reading-shelf .rs-book-name { min-width: 0; flex: 1; }
+.reading-shelf .rs-title { font-size: .88rem; font-weight: 500; overflow-wrap: anywhere; }
+.reading-shelf .rs-author { display: block; font-size: .78rem; color: var(--text-2); margin-top: 3px; }
+.reading-shelf .rs-curatorial-note { margin: 6px 0 0; font-size: .8rem; line-height: 1.5; color: var(--text-2); }
+.reading-shelf .rs-book-top { display: flex; align-items: flex-start; gap: 12px; }
+.reading-shelf .rs-list-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; }
+.rs-save,
+.reading-shelf .rs-action,
+.reading-shelf .rs-remove {
+	appearance: none;
+	border: 1px solid var(--border);
+	border-radius: 7px;
+	background: var(--bg);
+	color: var(--text);
+	font: inherit;
+	font-size: .78rem;
+	line-height: 1.35;
+	padding: 7px 10px;
+	min-height: 36px;
+	cursor: pointer;
+}
+.rs-save { flex: 0 0 auto; max-width: 135px; }
+.rs-save[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+.rs-save:hover,
+.reading-shelf .rs-action:hover,
+.reading-shelf .rs-remove:hover { border-color: var(--accent); }
+.reading-shelf button:disabled { cursor: default; opacity: .5; }
+.reading-shelf .rs-note-label { display: block; font-size: .78rem; color: var(--text-2); margin: 10px 0 5px; }
+.reading-shelf .rs-note {
+	display: block;
+	width: 100%;
+	max-width: 100%;
+	min-height: 65px;
+	resize: vertical;
+	border: 1px solid var(--border);
+	border-radius: 6px;
+	padding: 8px 10px;
+	background: var(--bg);
+	color: var(--text);
+	font: inherit;
+	font-size: .85rem;
+	line-height: 1.5;
+}
+.reading-shelf .rs-undo { padding: 9px 10px; margin-bottom: 10px; background: var(--accent-soft); border-radius: 7px; font-size: .8rem; }
+.reading-shelf [hidden] { display: none !important; }
+.reading-shelf .rs-status { font-size: .8rem; color: var(--text-2); margin: 5px 0; }
+.reading-shelf .rs-status:empty { display: none; }
+.rs-detail-save { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border); }
+.rs-detail-hint { color: var(--text-2); font-size: .78rem; }
+@media (max-width: 575.98px) {
+	.reading-shelf .rs-panel-body { padding: 0 12px 12px; }
+	.reading-shelf .rs-path-book { flex-wrap: wrap; gap: 8px; }
+	.reading-shelf .rs-path-book-info { flex-basis: 100%; }
+	.reading-shelf .rs-summary-hint { display: inline-block; margin-left: 5px; }
+	.reading-shelf .rs-note { font-size: 1rem; }
+	.rs-save,
+	.reading-shelf .rs-action,
+	.reading-shelf .rs-remove { min-height: 44px; }
+}
+@media print {
+	.reading-shelf,
+	.rs-detail-save { display: none !important; }
+}

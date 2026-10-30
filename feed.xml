@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+	<channel>
+		<title>Jack V. Le · Blog</title>
+		<link>https://nietztein.github.io/#/blog</link>
+		<description>Writing on language, models, and the questions around them.</description>
+		<language>en-us</language>
+		<atom:link href="https://nietztein.github.io/feed.xml" rel="self" type="application/rss+xml"/>
+		<pubDate>Mon, 12 Oct 2026 00:00:00 GMT</pubDate>
+		<item>
+			<title>The Idea of Order at the Screen</title>
+			<link>https://nietztein.github.io/writing/the-idea-of-order-at-the-screen/</link>
+			<guid isPermaLink="true">https://nietztein.github.io/writing/the-idea-of-order-at-the-screen/</guid>
+			<description>A poem after Wallace Stevens, on making, choosing, and the unexpected light of an image.</description>
+			<pubDate>Mon, 12 Oct 2026 00:00:00 GMT</pubDate>
+			<category>poetry</category>
+			<category>art</category>
+			<category>ai</category>
+		</item>
+		<item>
+			<title>Benchmarks We Actually Need</title>
+			<link>https://nietztein.github.io/writing/benchmarks-we-actually-need/</link>
+			<guid isPermaLink="true">https://nietztein.github.io/writing/benchmarks-we-actually-need/</guid>
+			<description>Absurd benchmarks that would convince me LLMs are intelligent, and the closest existing work for each.</description>
+			<pubDate>Wed, 23 Sep 2026 00:00:00 GMT</pubDate>
+			<category>llm</category>
+			<category>benchmarks</category>
+			<category>evaluation</category>
+		</item>
+		<item>
+			<title>Latentland</title>
+			<link>https://nietztein.github.io/writing/latentland/</link>
+			<guid isPermaLink="true">https://nietztein.github.io/writing/latentland/</guid>
+			<description>A Romance of One Dimension.</description>
+			<pubDate>Mon, 21 Sep 2026 00:00:00 GMT</pubDate>
+			<category>llm</category>
+			<category>interpretability</category>
+			<category>fiction</category>
+		</item>
+		<item>
+			<title>Research, Humor, and the Play Drive</title>
+			<link>https://nietztein.github.io/writing/untitled/</link>
+			<guid isPermaLink="true">https://nietztein.github.io/writing/untitled/</guid>
+			<description>Why genuine research behaves like a joke, and why play requires both form and friction.</description>
+			<pubDate>Thu, 27 Aug 2026 00:00:00 GMT</pubDate>
+			<category>research</category>
+			<category>philosophy</category>
+			<category>machine-learning</category>
+		</item>
+		<item>
+			<title>Open Questions in Language Acquisition</title>
+			<link>https://nietztein.github.io/writing/open-questions-in-language-acquisition/</link>
+			<guid isPermaLink="true">https://nietztein.github.io/writing/open-questions-in-language-acquisition/</guid>
+			<description>My version of Erdős problems. Many of these seem intractable.</description>
+			<pubDate>Sat, 01 Aug 2026 00:00:00 GMT</pubDate>
+			<category>linguistics</category>
+			<category>language-acquisition</category>
+		</item>
+		<item>
+			<title>Metaphors We Hallucinate By</title>
+			<link>https://nietztein.github.io/writing/metaphors-we-hallucinate-by/</link>
+			<guid isPermaLink="true">https://nietztein.github.io/writing/metaphors-we-hallucinate-by/</guid>
+			<description>There are more things in brains and networks, Horatio, than are dreamt of in your metaphors.</description>
+			<pubDate>Wed, 15 Jul 2026 00:00:00 GMT</pubDate>
+			<category>llm</category>
+			<category>linguistics</category>
+		</item>
+		<item>
+			<title>Towards a Sort of AI Poetry</title>
+			<link>https://nietztein.github.io/writing/what-language-models-represent/</link>
+			<guid isPermaLink="true">https://nietztein.github.io/writing/what-language-models-represent/</guid>
+			<description>towards a sort of ai poetry.</description>
+			<pubDate>Tue, 14 Jul 2026 00:00:00 GMT</pubDate>
+			<category>nlp</category>
+			<category>poetry</category>
+		</item>
+	</channel>
+</rss>

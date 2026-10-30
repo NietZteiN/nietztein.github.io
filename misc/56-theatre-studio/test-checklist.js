@@ -169,11 +169,16 @@ eq(Object.keys(C.coauthorWords('Jack V. Le† and Anh Nguyen† (co-first), Tien
 /* ---- the board ---- */
 
 var b = C.boardRows(pubs, posts, index);
-eq(b.pubs.length, 10, 'ten publication rows');
+eq(b.pubs.length, 12, 'twelve publication rows');
 var pubStatus = b.pubs.map(function (r) { return r.status || 'none'; });
 eq(pubStatus.filter(function (s) { return s === 'published'; }).length, 4, 'four publications have published stories');
 eq(pubStatus.filter(function (s) { return s === 'embargo'; }).length, 5, 'five publications have embargoed stories');
-eq(pubStatus.filter(function (s) { return s === 'none'; }).length, 1, 'one publication has no story yet');
+eq(pubStatus.filter(function (s) { return s === 'none'; }).length, 3, 'three publications have no story yet');
+eq(b.pubs.filter(function (r) { return !r.status; }).map(function (r) { return r.title; }), [
+	'Directional Collapse in Fine-Tuning: Preserving the Way Back',
+	'Correct Values Can Be Recovered Before Wrong Reasoning Steps',
+	'Composing Obfuscation Specialists by Merging'
+], 'the three papers without stories are represented on the board');
 ok(b.pubs.every(function (r, i) { return r.title === pubs[i].title && r.venue === pubs[i].venue; }), 'titles and venues are copied verbatim');
 ok(b.pubs.filter(function (r) { return r.status === 'published'; }).every(function (r) { return r.linked === r.story; }), 'every published row is the one index.html links');
 eq(b.posts.length, posts.length, 'one row per published post (' + posts.length + ')');

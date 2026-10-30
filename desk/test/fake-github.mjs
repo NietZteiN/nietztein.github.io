@@ -390,6 +390,7 @@ function buildBlogIndex(repo) {
 			summary: fm.summary || '',
 			tags: Array.isArray(fm.tags) ? fm.tags : fm.tags ? [fm.tags] : [],
 			file,
+			...(fm.kind === 'note' ? { kind: 'note' } : {}),
 		});
 	}
 	posts.sort((a, b) => (b.date || '').localeCompare(a.date || ''));

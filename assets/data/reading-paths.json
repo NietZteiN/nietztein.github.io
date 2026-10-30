@@ -1,0 +1,34 @@
+{
+	"paths": [
+		{
+			"id": "mind-meaning",
+			"title": "Mind & meaning",
+			"description": "Three approaches to knowledge, perception, and the limits of language.",
+			"books": [
+				{ "id": "A-A2-05", "note": "Locke develops an account of knowledge grounded in sensation and reflection." },
+				{ "id": "A-A1-16", "note": "Gibson examines perception through information in the environment and the affordances it offers." },
+				{ "id": "F-F1-06", "note": "Wittgenstein's numbered propositions explore logic, language, and the limits of what can be said." }
+			]
+		},
+		{
+			"id": "japanese-literature",
+			"title": "Japanese literature",
+			"description": "A small route through Japanese-language fiction in the catalogue.",
+			"books": [
+				{ "id": "D-D1-07", "note": "In Soseki's Kusamakura, a painter retreats to a mountain hot-spring village in search of detachment." },
+				{ "id": "K-JP-2(Ranpo,Witchcraft)-09", "note": "A Japanese volume pairing Akutagawa's Rashomon and The Nose." },
+				{ "id": "K-JP-1(Jump,Mill)-05", "note": "Dazai's No Longer Human, in Japanese." }
+			]
+		},
+		{
+			"id": "art-storytelling",
+			"title": "Art & storytelling",
+			"description": "Explore visual language, narrative structure, and the history of art.",
+			"books": [
+				{ "id": "A-A1-10", "note": "McCloud explains comics through comics, including closure between panels and the depiction of time." },
+				{ "id": "H-H6-17", "note": "McKee examines structure and principles of screenwriting." },
+				{ "id": "K-TheP-T-20", "note": "Gombrich offers a one-volume history of art." }
+			]
+		}
+	]
+}

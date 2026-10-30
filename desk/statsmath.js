@@ -41,6 +41,7 @@
 		experience: 'Experience',
 		bookshelf: 'Bookshelf',
 		misc: 'Miscellaneous',
+		saved: 'Saved items',
 	};
 
 	function own(obj, key) {

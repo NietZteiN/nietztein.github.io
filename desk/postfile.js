@@ -30,7 +30,7 @@
 	'use strict';
 
 	var FM_RE = /^---\s*\r?\n([\s\S]*?)\r?\n---\s*\r?\n?/;
-	var POST_KEYS = ['title', 'date', 'summary', 'tags'];
+	var POST_KEYS = ['title', 'date', 'summary', 'tags', 'kind'];
 	// Keys a draft in the private repository carries besides the post's own.
 	var DRAFT_KEYS = ['slug', 'published', 'publishedSha'];
 	var SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -87,7 +87,7 @@
 		var name = String(file).replace(/^.*\//, '');
 		var fm = parse(text).fm;
 		var slug = slugFromFile(name);
-		return {
+		var entry = {
 			slug: slug,
 			title: fm.title || slug,
 			date: fm.date || dateFromFile(name) || '',
@@ -95,6 +95,8 @@
 			tags: Array.isArray(fm.tags) ? fm.tags : fm.tags ? [fm.tags] : [],
 			file: name,
 		};
+		if (fm.kind === 'note') entry.kind = 'note';
+		return entry;
 	}
 
 	// ---- writing ----------------------------------------------------------------
@@ -182,7 +184,7 @@
 
 	// The public file: only the keys the site reads.
 	function buildPost(fields, body) {
-		return build({ title: fields.title, date: fields.date, summary: fields.summary, tags: fields.tags || [] }, body, { keys: POST_KEYS });
+		return build({ title: fields.title, date: fields.date, summary: fields.summary, tags: fields.tags || [], kind: fields.kind === 'note' ? 'note' : undefined }, body, { keys: POST_KEYS });
 	}
 
 	// A draft in the private repository: the post's keys plus slug and published.
@@ -193,6 +195,7 @@
 				date: fields.date,
 				summary: fields.summary,
 				tags: fields.tags || [],
+				kind: fields.kind === 'note' ? 'note' : undefined,
 				slug: fields.slug,
 				published: fields.published,
 				publishedSha: fields.publishedSha,
@@ -214,6 +217,7 @@
 			date: typeof fm.date === 'string' ? fm.date : '',
 			summary: typeof fm.summary === 'string' ? fm.summary : '',
 			tags: cleanTags(tags),
+			kind: fm.kind === 'note' ? 'note' : '',
 			slug: slug,
 			published: typeof fm.published === 'string' ? fm.published : '',
 			publishedSha: typeof fm.publishedSha === 'string' ? fm.publishedSha : '',
@@ -518,10 +522,12 @@
 		var date = oneLine(o.date);
 		var summary = oneLine(o.summary);
 		var tags = cleanTags(o.tags || []);
+		var kind = o.kind === 'note' ? 'note' : '';
 		var slug = String(o.slug || '').trim();
 		var body = String(o.body == null ? '' : o.body).replace(/\r\n?/g, '\n');
 		var existing = o.existing || {};
 		var ownFile = o.ownFile || '';
+		if (o.kind !== undefined && o.kind !== '' && o.kind !== 'article' && o.kind !== 'note') err('kind', 'Choose Article or Short note as the format.');
 
 		if (!title) err('title', 'The title is empty. The post list and the post page show it.');
 		if (!date) err('date', 'The date is empty. It goes in the file name and above the post.');
@@ -558,7 +564,7 @@
 		if (!errors.length) {
 			finalFile = ownFile && slugFromFile(ownFile) === slug ? ownFile : fileName(date, slug);
 			finalPath = POSTS_DIR + finalFile;
-			text = buildPost({ title: title, date: date, summary: summary, tags: tags }, body);
+			text = buildPost({ title: title, date: date, summary: summary, tags: tags, kind: kind }, body);
 			// Read it back exactly as the site will.
 			entry = indexEntry(finalFile, text);
 			var back = parse(text);
@@ -570,6 +576,7 @@
 				entry.date === date &&
 				entry.summary === summary &&
 				JSON.stringify(entry.tags) === JSON.stringify(tags) &&
+				(entry.kind || '') === kind &&
 				back.body === wantBody;
 			if (!same) err('parse', 'The file would not read back the same with the site\'s front-matter rules. Simplify the title, summary or tags.');
 			if (/^[ \t]+\S/.test(normalizeBody(body))) warn('leading-space', 'The text starts with spaces. The site drops them, so an indented first line will not show as code.');

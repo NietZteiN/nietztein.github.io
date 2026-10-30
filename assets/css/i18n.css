@@ -44,17 +44,15 @@
 	font-family: 'Inter', "Hiragino Sans", "Yu Gothic UI", "Meiryo", "Noto Sans JP", sans-serif;
 }
 
-@media (max-width: 767.98px) {
+@media (max-width: 1199.98px) {
 	.lang-toggle {
 		margin: .5rem .5rem .25rem 0;
 	}
 }
 
-/* Between md and xl the navbar row has no spare width for one more button
-   (ten links + search + theme + effects already fill the 720/960px container).
-   Make room: a tighter toggle, and the search button drops its "Ctrl K" hint,
-   which has already wrapped onto two lines at these widths. */
-@media (min-width: 768px) and (max-width: 1199.98px) {
+/* Keep personal tools compact in the first expanded navbar width: the ten
+   section links share the 1140px container with search and saved collections. */
+@media (min-width: 1200px) and (max-width: 1399.98px) {
 	.lang-toggle {
 		padding: 0 .4rem;
 		margin-right: .25rem;
