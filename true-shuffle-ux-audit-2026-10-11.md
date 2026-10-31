@@ -11,6 +11,23 @@ A UX audit of True Shuffle (`misc/101-true-shuffle`), written down for picking u
 
 ## Implementation progress (2026-10-12)
 
+### Listening and discovery update (2026-10-31)
+
+The last two of the 23 independently reproduced findings now have implementations
+and browser regressions: **library-12** (whole-library Add songs picker, editable
+manual order by drag/menu/keyboard, safe Undo) and **library-18** (side-by-side,
+version-aware duplicate comparisons and reversible preferred-copy selection).
+This does not verify the other original findings.
+
+The same update simplifies Home and navigation, makes current-artist discovery
+visible in the player, adds searchable/sortable release catalogs, and fixes
+search-navigation races, keyboard sort access and phone queue focus. Details
+and the repeatable demo/mocked-provider checks are in
+`misc/101-true-shuffle/README.md` under Listening experience. The original
+5,950-line app.js cap is retained by extracting Home and navigation modules.
+
+### Earlier batches
+
 The audit is not fully implemented. The first batch fixes these reproduced findings:
 
 - listening-desktop-1: button submit types now reach the DOM; Trim Save and Enter work; the modal volume slider shows its fill and thumb.

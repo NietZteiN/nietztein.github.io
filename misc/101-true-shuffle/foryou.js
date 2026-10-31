@@ -1339,6 +1339,11 @@
 		else el.appendChild(h('h1', { class: 'ts-h1', text: 'For you' }));
 		var jump = h('div', { class: 'ts-fy-jump', role: 'navigation', aria: { label: 'Jump to' } });
 		el.appendChild(jump);
+		el.appendChild(h('div', { class: 'ts-discovery-destinations' }, [h('a', { class: 'ts-chip', href: '#/listening-shelf?tab=albums', text: 'Want to hear' }), h('a', { class: 'ts-chip', href: '#/listening-shelf?tab=tray', text: 'Discovery tray' }), h('a', { class: 'ts-chip', href: '#/listening-shelf?tab=inbox', text: 'Release inbox' })]));
+		if (root.TrueShuffle.artistLaunch && !(query && query.get('artist'))) {
+			var currentArtist = h('div', { class: 'ts-current-artist' }); el.appendChild(currentArtist);
+			root.TrueShuffle.artistLaunch.live(currentArtist, ctx);
+		}
 		if (root.TrueShuffle.artistDiscovery) root.TrueShuffle.artistDiscovery(el, ctx, query);
 		el.addEventListener('click', function (e) {
 			var a = e.target && e.target.closest ? e.target.closest('a[href^="#/explore/find/"]') : null;

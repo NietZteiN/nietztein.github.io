@@ -49,7 +49,7 @@ export default async function ({newPage, baseUrl, assert, outDir}) {
    await page.click('.ts-filter');await page.key('Control+a');await page.key('Backspace');
    await page.waitFor(()=>!window.__ts.pageCtx.route().query.get('f')&&document.querySelectorAll('.ts-row').length>3);
    await page.eval(()=>{document.getElementById('main').scrollTop=700;});await page.waitFor('.ts-sticky.is-on');
-   await page.waitFor(()=>Math.abs(document.querySelector('.ts-thead').getBoundingClientRect().top-document.getElementById('main').getBoundingClientRect().top-60)<1);
+   await page.waitFor(()=>{const main=document.getElementById('main');return Math.abs(document.querySelector('.ts-thead').getBoundingClientRect().top-main.getBoundingClientRect().top-main.clientTop-60)<1;});
    await page.eval(()=>document.querySelector('.ts-row[data-index="0"]').focus({preventScroll:true}));await page.key('ArrowDown');
    assert.ok(await page.eval(()=>document.activeElement.getBoundingClientRect().top>=document.querySelector('.ts-thead').getBoundingClientRect().bottom-1));
   }

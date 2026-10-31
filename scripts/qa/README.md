@@ -27,6 +27,17 @@ Everything here runs on Node 24 built-ins and an installed Chrome (or Edge). The
 | `node scripts/test-saved.mjs` | Check legacy storage compatibility, exact notes, selective writes, safe IDs, catalogue additions, and merge-safe Undo. |
 | `node scripts/test-saved-import.mjs` | Check backup validation, exact annotations, duplicate handling, ignored imported metadata, and merge planning. |
 | `node scripts/qa/drive.mjs scripts/qa/misc-discovery.drive.mjs` | Check featured toys, favorites, recent openings, sorting, storage, and keyboard focus. |
+| `node scripts/qa/drive.mjs misc/101-true-shuffle/test/ux-shell.drive.mjs` | Check grouped music navigation, search races, keyboard sort, and phone queue focus. |
+| `node scripts/qa/drive.mjs misc/101-true-shuffle/test/ux-home.drive.mjs` | Check listening Home, queue-preserving resume, Focus daily mix, and onboarding. |
+| `node scripts/qa/drive.mjs misc/101-true-shuffle/test/ux-artist-launch.drive.mjs` | Check current-artist links, performer selection, playback preservation, and Focus-independent discovery. |
+| `node scripts/qa/drive.mjs misc/101-true-shuffle/test/ux-artist-catalog.drive.mjs` | Check release/song search, sorting, ownership, compilations, and lazy album checks. |
+| `node scripts/qa/drive.mjs misc/101-true-shuffle/test/ux-artist-hub.drive.mjs` | Check unified artist tabs, album bookmarks returning to the release, collection menus, Focus, and history. |
+| `node scripts/qa/drive.mjs misc/101-true-shuffle/test/ux-album-experience.drive.mjs` | Check numbered albums, ordered batch/mixed playback actions, direct album routes, and compact/spacious layouts. |
+| `node scripts/qa/drive.mjs misc/101-true-shuffle/test/ux-music-search.drive.mjs` | Check explicit catalog search, typed results, query state, failures, direct links, and no requests while typing. |
+| `node scripts/qa/drive.mjs misc/101-true-shuffle/test/ux-discovery-shelf.drive.mjs` | Check album/tray persistence, release inbox, playlist creation, partial resolutions, Undo, and cancellation. |
+| `node scripts/qa/drive.mjs misc/101-true-shuffle/test/ux-discovery-state.drive.mjs` | Check artist/album/filter state through history and reload. |
+| `node scripts/qa/drive.mjs misc/101-true-shuffle/test/ux-playlist-editor.drive.mjs` | Check adding, drag/menu/keyboard ordering, copy drops, Undo, and persistence. |
+| `node scripts/qa/drive.mjs misc/101-true-shuffle/test/ux-duplicates.drive.mjs` | Check duplicate comparisons, scope, safe preferred-copy changes, Undo, and persistence. |
 | `node scripts/test-all.mjs` | Every test in the repo, one table. `--smoke` adds the browser run. |
 | `node scripts/qa/report.mjs` | Write `scripts/qa/out/report.html`, one row per toy. |
 | `node scripts/qa/jpeg.mjs <file...>` | Print the pixel size and weight of JPEGs. |

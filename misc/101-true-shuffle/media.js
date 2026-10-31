@@ -703,6 +703,11 @@
 
 		// keep or let go
 		var keep = [];
+		var shelf = root.TrueShuffle && root.TrueShuffle.discoveryShelf, entry = shelf && shelf.pack(it, { kind: 'song' });
+		if (entry) {
+			var collected = shelf.read(ctx).tray.some(function (e) { return e.key === entry.key; });
+			keep.push({ label: collected ? 'Remove from discovery tray' : 'Collect in discovery tray', icon: 'plus', onSelect: function () { var button = shelf.songButton(ctx, it); if (button) button.click(); } });
+		}
 		if (ctx.youtube && ctx.youtube.add) keep.push(A.item('add-to-youtube', function () { ctx.youtube.add(it, at); }));
 		if (it.preview && typeof ctx.preview === 'function') keep.push(A.item('preview', function () { ctx.preview(it, at && at.nodeType ? at : null); }));
 		if (f && en && typeof en.isSaved === 'function' && typeof en.save === 'function') {

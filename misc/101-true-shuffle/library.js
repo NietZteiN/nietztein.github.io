@@ -664,7 +664,7 @@
 	// known (optional): knownArtists(lib), computed once by a caller that
 	// edits many tracks. A rating, a block or tags change nothing derived, so
 	// they cost no parse at all.
-	var PLAIN_FIELDS = { rating: true, blocked: true, tags: true };
+	var PLAIN_FIELDS = { rating: true, blocked: true, tags: true, at: true };
 	function needsDerive(fields) {
 		for (var k in fields) if (!PLAIN_FIELDS[k]) return true;
 		return false;

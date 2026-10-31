@@ -2,6 +2,126 @@
 
 Toy 101. A music player for one listener's YouTube playlists and Liked videos: sign in with Google (read-only), import, then browse by artist, genre, mood, scene and the anime or game a song is from, and listen in a real shuffle or by other rules. Since 2026-10-08 the page is an app (see "The page" below) and tracks can carry hand-made labels (see "Labels").
 
+## Listening experience (2026-10-31)
+
+This pass addresses the crowded shell and the two remaining verified library
+workflows from the October 11 audit. Listening, discovery and maintenance had
+equal visual weight; Home led with filter shelves; manual playlists advertised
+"Your order" without editing it; duplicates lacked the facts needed to choose.
+
+- Home now leads with the current queue and a daily mix. Resume keeps the queue
+  and position; Open player does not pause a playing song. Focused daily mixes
+  stay inside that playlist and have a separate cache from the whole library.
+- Home, Search, Discover and the main library destinations stay visible.
+  Browse library and Tools & extras are native disclosures with every existing
+  address retained. The active secondary destination opens its group.
+- Secondary Home shelves mount only when More from your library opens. Empty
+  library onboarding and unsuccessful searches explain the next useful action.
+- A hand-picked playlist has Add songs, a whole-library local picker and Undo.
+  In Your order, drag to reorder, use Alt+Up/Down on focused songs, or choose
+  Move in a song/selection menu. Other sorts keep copy drags. Additions do not
+  repeat IDs; removal Undo restores neighboring positions without losing later
+  additions. Creating a list no longer automatically focuses an empty one.
+- Duplicate review groups matching artist/title/version copies and compares
+  channel, length, plays, stars and availability. Use this copy in shuffles
+  only changes blocked states within the shown scope. Nothing is deleted or
+  changed on YouTube; Undo restores the affected states while keeping later
+  metadata edits. All groups includes resolved and unavailable comparisons.
+- Artist discovery preserves the artist, catalog, album and missing-only
+  filter in the address through Back, Forward and reload. Catalog choices use
+  ordinary pressed filter buttons instead of incomplete ARIA tabs.
+- The player bar has a More music shortcut; Now playing and song details have
+  visible Songs, Albums & EPs, Missing songs and Singles links. Discover offers
+  the current artist without restarting playback. Its card follows song changes
+  and keeps focused controls stable. Collaborations, featured artists, original
+  performers and voice credits can be selected separately; uncertain channel
+  names are not treated as confirmed artists.
+- Catalogs support song/release title search, newest/oldest/title release order,
+  compilations and ownership summaries. Hide complete releases hides only
+  releases whose tracks have been checked, keeping unknown releases visible.
+  These checks use the whole library even inside Focus. Album tracks load when
+  a release opens or you build a playlist from it. Search/order/filter state
+  stays in the URL.
+- Explicit navigation cancels pending search. New queries update the title and
+  reveal the new results. Sort headings are keyboard-accessible buttons, and
+  the phone queue gives focus to Close and returns it when dismissed.
+
+The connected discovery update adds all seven planned improvements:
+
+- `#/artist/<key>` is a unified artist page: In your library, Full catalog,
+  Release inbox and Related artists. Identity stays visible while browsing.
+  Library controls retain Focus, shuffle, artist radio, editing and aliases.
+  Contributor and voice-performer addresses use readable names; the catalog
+  uses the whole library. Show all saved songs expands this view without
+  changing the app's current Focus.
+- Albums have artwork, release details, numbered songs, Play album, Play next,
+  Add to queue, Want to hear and Collect. Queue actions preserve album order;
+  missing songs resolve only after the explicit action. Browsing, bookmarking
+  and collecting keep playback unchanged. Back restores the release list's
+  position, filters, layout and button focus. Numeric provider album addresses
+  (`#/album/itunes/<id>` or `#/album/deezer/<id>`) open a direct album page.
+- Releases have cover cards and compact/spacious layouts. Artwork respects
+  the art preference and stays local in the invented demo.
+- Search offers Your library and Find new music with Artist/Song/Album result
+  types. External searches require Search catalog; typing or changing type
+  clears submitted state. A submitted address restores its results on reload.
+  Song results use the existing preview, playback and Saved-for-later controls.
+- `#/listening-shelf?tab=albums` stores whole albums in Want to hear, without
+  importing every song. `tab=tray` collects songs and releases; select useful
+  discoveries, review/name a playlist, then explicitly find its missing videos.
+  Unresolved items stay in the tray. Closing the dialog during resolution
+  prevents a late playlist or library mutation. Creation is local and does
+  not write to YouTube or replace the current queue.
+- `tab=inbox` shows recent and upcoming releases from chosen artists, with
+  unseen/checked states, counts and album/EP/single/compilation filters. Check
+  releases requests one bounded batch only when pressed. Artist-page inboxes
+  can check that artist directly. Filters and checked state survive reload.
+  Home, Discover, Library and the sidebar link to the shelf.
+
+The shelf and chosen artists use browser-local storage, with separate demo
+keys; saved demo discoveries persist across reloads without touching real
+preferences. Unavailable storage has a visible memory-only fallback.
+
+New modules: `navigation.js` exports `TS.navigation.render`;
+`home.js` exports `TS.home.view`, `noMusic`, `searchHandoff`;
+`playlist-editor.js` exports `TS.playlistEditor.moveIds`, `fillVisibleOrder`,
+`restoreRemoved`, `moveMenu`, `open`; `duplicates.js` exports
+`TS.duplicates.view`, `counts`, `prefer`; `artist-launch.js` exports
+`TS.artistLaunch.targets`, `href`, `render`, `live`. `experience.css` supplies the shared
+visual refresh after the original layout and design-system styles. The Home
+and navigation extraction keeps app.js under its existing line limit.
+
+`artist-hub.js` exports `TS.artistHub.subject`, `href`, `view`;
+`music-search.js` exports `TS.musicSearch.state`, `searchHref`, `albumShape`,
+`songsFrom`, `request`, `view`; `artistDiscovery.album(view, ctx, album, options)`
+draws direct album pages. `discovery-shelf.js` exports `TS.discoveryShelf.empty`,
+`normalize`, `pack`, `setEntry`, `observe`, `counts`, `summary`, `read`,
+`albumButton`, `collectButton`, `songButton`, `recordCatalog`, `markChecked`,
+`inbox`, `view`, `resolveEntries`. The shelf listens for `discovery-shelf` bus
+events; `pageCtx.lists.add(ids, name)` creates a named local list after the
+shelf has reviewed and resolved its selection, without a second dialog.
+
+Browser checks use invented demo data or blocked/mocked service endpoints;
+they do not perform live Google account or YouTube playlist writes:
+
+```text
+node scripts/qa/drive.mjs misc/101-true-shuffle/test/ux-shell.drive.mjs
+node scripts/qa/drive.mjs misc/101-true-shuffle/test/ux-home.drive.mjs
+node scripts/qa/drive.mjs misc/101-true-shuffle/test/ux-discovery-state.drive.mjs
+node scripts/qa/drive.mjs misc/101-true-shuffle/test/ux-artist-launch.drive.mjs
+node scripts/qa/drive.mjs misc/101-true-shuffle/test/ux-artist-catalog.drive.mjs
+node scripts/qa/drive.mjs misc/101-true-shuffle/test/ux-artist-hub.drive.mjs
+node scripts/qa/drive.mjs misc/101-true-shuffle/test/ux-album-experience.drive.mjs
+node scripts/qa/drive.mjs misc/101-true-shuffle/test/ux-music-search.drive.mjs
+node scripts/qa/drive.mjs misc/101-true-shuffle/test/ux-discovery-shelf.drive.mjs
+node scripts/qa/drive.mjs misc/101-true-shuffle/test/ux-playlist-editor.drive.mjs
+node scripts/qa/drive.mjs misc/101-true-shuffle/test/ux-duplicates.drive.mjs
+```
+
+The app still loads its feature modules up front (about 2 MB of decoded local
+JS/CSS before this pass). Deferring optional feature code is a separate future
+architecture change; this pass preserves its existing startup and data model.
+
 | File | What it is | Needs a browser |
 | --- | --- | --- |
 | `config.js` | The settings the owner fills in: the Google client id. | no |

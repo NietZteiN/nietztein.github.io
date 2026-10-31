@@ -7,12 +7,13 @@
 <meta name="description" content="A music player for your own YouTube playlists and Liked videos: browse by artist, genre, mood and the anime or game a song is from, and shuffle it properly. A demo library runs without signing in.">
 <link rel="icon" href="data:,">
 <link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#f3f4f7" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0b0d10" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#eaece4" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0b110e" media="(prefers-color-scheme: dark)">
 <link rel="apple-touch-icon" href="icons/192.png">
 <link rel="stylesheet" href="../_kit/kit.css"><script src="../_kit/kit.js"></script>
-<link rel="stylesheet" href="app.css?v=2026101301">
-<link rel="stylesheet" href="ds.css?v=2026101301">
+<link rel="stylesheet" href="app.css?v=2026103102">
+<link rel="stylesheet" href="ds.css?v=2026103102">
+<link rel="stylesheet" href="experience.css?v=2026103102">
 </head>
 <body class="ts">
 
@@ -27,7 +28,7 @@
 	<form class="ts-search" id="search-form" role="search">
 		<label class="kit-sr" for="search">Search songs, artists, genres and anime</label>
 		<span class="ts-search-icon" aria-hidden="true"></span>
-		<input id="search" type="search" placeholder="Search songs, artists, anime, moods" autocomplete="off" spellcheck="false">
+		<input id="search" type="search" placeholder="Search library" autocomplete="off" spellcheck="false">
 		<kbd class="ts-search-kbd" aria-hidden="true">/</kbd>
 	</form>
 </header>
@@ -153,53 +154,61 @@
 	<p>This page uses YouTube API Services: <a href="https://www.youtube.com/t/terms" rel="noopener">YouTube Terms of Service</a> &middot; <a href="https://policies.google.com/privacy" rel="noopener">Google Privacy Policy</a> &middot; <a href="https://myaccount.google.com/permissions" rel="noopener">remove access at Google</a></p>
 </template>
 
-<script src="config.js?v=2026101301"></script>
-<script src="parse.js?v=2026101301"></script>
-<script src="library.js?v=2026101301"></script>
-<script src="shuffle.js?v=2026101301"></script>
-<script src="store.js?v=2026101301"></script>
-<script src="player.js?v=2026101301"></script>
-<script src="transport.js?v=2026101301"></script>
-<script src="taxonomy.js?v=2026101301"></script>
-<script src="embed.js?v=2026101301"></script>
-<script src="discover.js?v=2026101301"></script>
-<script src="match.js?v=2026101301"></script>
-<script src="sources.js?v=2026101301"></script>
-<script src="finds.js?v=2026101301"></script>
-<script src="feeder.js?v=2026101301"></script>
-<script src="engine.js?v=2026101301"></script>
-<script src="demo.js?v=2026101301"></script>
-<script src="yt.js?v=2026101301"></script>
-<script src="ui.js?v=2026101301"></script>
-<script src="actions.js?v=2026101301"></script>
-<script src="lyrics.js?v=2026101301"></script>
-<script src="quiz.js?v=2026101301"></script>
-<script src="wrapped.js?v=2026101301"></script>
-<script src="share.js?v=2026101301"></script>
-<script src="channel.js?v=2026101301"></script>
-<script src="lanes.js?v=2026101301"></script>
-<script src="media.js?v=2026101301"></script>
-<script src="works.js?v=2026101301"></script>
-<script src="artists.js?v=2026101301"></script>
-<script src="explore.js?v=2026101301"></script>
-<script src="car.js?v=2026101301"></script>
-<script src="credits.js?v=2026101301"></script>
-<script src="recs.js?v=2026101301"></script>
-<script src="artist-discovery.js?v=2026101301"></script>
-<script src="foryou.js?v=2026101301"></script>
-<script src="rescue.js?v=2026101301"></script>
-<script src="fuzzy.js?v=2026101301"></script>
-<script src="handoff.js?v=2026101301"></script>
-<script src="habits.js?v=2026101301"></script>
-<script src="pip.js?v=2026101301"></script>
-<script src="duel.js?v=2026101301"></script>
-<script src="edits.js?v=2026101301"></script>
-<script src="backup.js?v=2026101301"></script>
-<script src="mix.js?v=2026101301"></script>
-<script src="history.js?v=2026101301"></script>
-<script src="playlist-actions.js?v=2026101301"></script>
-<script src="labeller.js?v=2026101301"></script>
-<script src="artist-aliases.js?v=2026101301"></script>
-<script src="app.js?v=2026101301"></script>
+<script src="config.js?v=2026103102"></script>
+<script src="parse.js?v=2026103102"></script>
+<script src="library.js?v=2026103102"></script>
+<script src="shuffle.js?v=2026103102"></script>
+<script src="store.js?v=2026103102"></script>
+<script src="player.js?v=2026103102"></script>
+<script src="transport.js?v=2026103102"></script>
+<script src="taxonomy.js?v=2026103102"></script>
+<script src="embed.js?v=2026103102"></script>
+<script src="discover.js?v=2026103102"></script>
+<script src="match.js?v=2026103102"></script>
+<script src="sources.js?v=2026103102"></script>
+<script src="finds.js?v=2026103102"></script>
+<script src="feeder.js?v=2026103102"></script>
+<script src="engine.js?v=2026103102"></script>
+<script src="demo.js?v=2026103102"></script>
+<script src="yt.js?v=2026103102"></script>
+<script src="ui.js?v=2026103102"></script>
+<script src="actions.js?v=2026103102"></script>
+<script src="lyrics.js?v=2026103102"></script>
+<script src="quiz.js?v=2026103102"></script>
+<script src="wrapped.js?v=2026103102"></script>
+<script src="share.js?v=2026103102"></script>
+<script src="channel.js?v=2026103102"></script>
+<script src="lanes.js?v=2026103102"></script>
+<script src="media.js?v=2026103102"></script>
+<script src="works.js?v=2026103102"></script>
+<script src="artists.js?v=2026103102"></script>
+<script src="explore.js?v=2026103102"></script>
+<script src="car.js?v=2026103102"></script>
+<script src="credits.js?v=2026103102"></script>
+<script src="recs.js?v=2026103102"></script>
+<script src="artist-discovery.js?v=2026103102"></script>
+<script src="artist-launch.js?v=2026103102"></script>
+<script src="artist-hub.js?v=2026103102"></script>
+<script src="discovery-shelf.js?v=2026103102"></script>
+<script src="music-search.js?v=2026103102"></script>
+<script src="foryou.js?v=2026103102"></script>
+<script src="rescue.js?v=2026103102"></script>
+<script src="fuzzy.js?v=2026103102"></script>
+<script src="handoff.js?v=2026103102"></script>
+<script src="habits.js?v=2026103102"></script>
+<script src="pip.js?v=2026103102"></script>
+<script src="duel.js?v=2026103102"></script>
+<script src="edits.js?v=2026103102"></script>
+<script src="backup.js?v=2026103102"></script>
+<script src="mix.js?v=2026103102"></script>
+<script src="history.js?v=2026103102"></script>
+<script src="playlist-actions.js?v=2026103102"></script>
+<script src="labeller.js?v=2026103102"></script>
+<script src="artist-aliases.js?v=2026103102"></script>
+<script src="navigation.js?v=2026103102"></script>
+<script src="home.js?v=2026103102"></script>
+<script src="playlist-editor.js?v=2026103102"></script>
+<script src="duplicates.js?v=2026103102"></script>
+<script src="app.js?v=2026103102"></script>
 </body>
 </html>

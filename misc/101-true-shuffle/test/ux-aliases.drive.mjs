@@ -61,6 +61,6 @@ export default async function ({newPage,baseUrl,assert,outDir}) {
    assert.equal(await page.eval(()=>window.__ts.lib.tracks['real-alias-c'].artistKey),'lanternensemble');
    await page.reload();await page.waitFor(()=>window.__ts?.lib.tracks['real-alias-c']?.artistKey==='lanternensemble');
   }
-  assert.ok(await page.eval(()=>document.documentElement.scrollWidth<=innerWidth));assert.deepEqual(page.errors,[]);if(theme==='dark'&&width===1280)assert.deepEqual([...page.externalHosts].sort(),['api.animethemes.moe','api.deezer.com','itunes.apple.com']);else assert.deepEqual(page.externalHosts,[]);await page.close();
+  assert.ok(await page.eval(()=>document.documentElement.scrollWidth<=innerWidth));assert.deepEqual(page.errors,[]);assert.deepEqual(page.externalHosts,[]);await page.close();
  }
 }
